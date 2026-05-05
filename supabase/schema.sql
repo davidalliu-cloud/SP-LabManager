@@ -191,6 +191,12 @@ create table public.audit_log (
   created_at timestamptz not null default now()
 );
 
+create table public.app_state (
+  id text primary key default 'shared-lab-state',
+  state jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
 create sequence if not exists public.sample_code_seq start with 1;
 create sequence if not exists public.report_number_seq start with 1;
 create sequence if not exists public.test_code_seq start with 1;
@@ -289,6 +295,7 @@ alter table public.aggregate_gradation_tests enable row level security;
 alter table public.reports enable row level security;
 alter table public.notifications enable row level security;
 alter table public.audit_log enable row level security;
+alter table public.app_state enable row level security;
 
 create or replace function public.current_user_role()
 returns user_role
@@ -329,3 +336,7 @@ create policy "own notification update" on public.notifications for update to au
 
 create policy "audit visible to managers" on public.audit_log for select to authenticated using (public.current_user_role() in ('Admin / Managing Director', 'Chief of Lab', 'Quality Manager'));
 create policy "staff insert audit" on public.audit_log for insert to authenticated with check (true);
+
+create policy "public shared state read" on public.app_state for select to anon, authenticated using (id = 'shared-lab-state');
+create policy "public shared state insert" on public.app_state for insert to anon, authenticated with check (id = 'shared-lab-state');
+create policy "public shared state update" on public.app_state for update to anon, authenticated using (id = 'shared-lab-state') with check (id = 'shared-lab-state');

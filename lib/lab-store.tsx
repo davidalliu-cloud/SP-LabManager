@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
   averageNumbers,
   calculateAgeDays,
@@ -54,6 +54,7 @@ import {
   calculateUnitWeightKgPerM
 } from "./calculations";
 import { initialState } from "./seed-data";
+import { createSupabaseBrowserClient } from "./supabase/client";
 import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabState, LabTest, LabUser, Notification, Project, Report, Role, Sample, SteelTensileTest, ThermalInsulationTest } from "./types";
 
 interface NewSampleInput {
@@ -699,6 +700,11 @@ interface LabStoreValue extends LabState {
 
 const LabStoreContext = createContext<LabStoreValue | null>(null);
 const STORAGE_KEY = "sarp-lab-management-state-v1";
+const ONLINE_STATE_ROW_ID = "shared-lab-state";
+
+function hasSupabaseConfig() {
+  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+}
 
 function mergeWithInitialState(saved: Partial<LabState>): LabState {
   const procedureRevisions = (saved.procedureRevisions ?? initialState.procedureRevisions).map((revision) => ({
@@ -747,6 +753,8 @@ function mergeWithInitialState(saved: Partial<LabState>): LabState {
 export function LabStoreProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<LabState>(initialState);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [isRemoteChecked, setIsRemoteChecked] = useState(false);
+  const lastSavedOnlineJson = useRef<string | null>(null);
   const currentUserId = "u-admin";
 
   useEffect(() => {
@@ -770,6 +778,79 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       console.warn("Could not save SARP LAB data.", error);
     }
   }, [isHydrated, state]);
+
+  useEffect(() => {
+    if (!isHydrated) return;
+
+    if (!hasSupabaseConfig()) {
+      setIsRemoteChecked(true);
+      return;
+    }
+
+    let isCancelled = false;
+
+    async function loadOnlineState() {
+      try {
+        const supabase = createSupabaseBrowserClient();
+        const { data, error } = await supabase
+          .from("app_state")
+          .select("state")
+          .eq("id", ONLINE_STATE_ROW_ID)
+          .maybeSingle();
+
+        if (error) {
+          console.warn("Could not load online SARP LAB data.", error.message);
+          return;
+        }
+
+        if (!isCancelled && data?.state) {
+          const mergedState = mergeWithInitialState(data.state as Partial<LabState>);
+          lastSavedOnlineJson.current = JSON.stringify(mergedState);
+          setState(mergedState);
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(mergedState));
+        }
+      } catch (error) {
+        console.warn("Could not connect to Supabase online storage.", error);
+      } finally {
+        if (!isCancelled) setIsRemoteChecked(true);
+      }
+    }
+
+    loadOnlineState();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isHydrated]);
+
+  useEffect(() => {
+    if (!isHydrated || !isRemoteChecked || !hasSupabaseConfig()) return;
+
+    const timer = window.setTimeout(async () => {
+      const json = JSON.stringify(state);
+      if (lastSavedOnlineJson.current === json) return;
+
+      try {
+        const supabase = createSupabaseBrowserClient();
+        const { error } = await supabase.from("app_state").upsert({
+          id: ONLINE_STATE_ROW_ID,
+          state,
+          updated_at: new Date().toISOString()
+        });
+
+        if (error) {
+          console.warn("Could not save online SARP LAB data.", error.message);
+          return;
+        }
+
+        lastSavedOnlineJson.current = json;
+      } catch (error) {
+        console.warn("Could not save SARP LAB data to Supabase.", error);
+      }
+    }, 800);
+
+    return () => window.clearTimeout(timer);
+  }, [isHydrated, isRemoteChecked, state]);
 
   const value = useMemo<LabStoreValue>(() => {
     function addAudit(draft: LabState, action: string, entityType: string, entityId: string, description: string) {
