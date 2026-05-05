@@ -53,6 +53,7 @@ import {
   calculateWaterDemandPercent,
   calculateUnitWeightKgPerM
 } from "./calculations";
+import { officialClientCodes2026 } from "./client-directory";
 import { initialState } from "./seed-data";
 import { createSupabaseBrowserClient } from "./supabase/client";
 import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabState, LabTest, LabUser, Notification, Project, Report, Role, Sample, SteelTensileTest, ThermalInsulationTest } from "./types";
@@ -627,6 +628,7 @@ interface AggregateSoundnessInput {
 }
 
 interface NewClientInput {
+  clientCode?: string;
   clientName: string;
   contactPerson: string;
   email: string;
@@ -636,6 +638,10 @@ interface NewClientInput {
   projectName: string;
   projectLocation: string;
   projectDescription?: string;
+}
+
+interface ClientInput extends NewClientInput {
+  projectId?: string;
 }
 
 interface EmployeeInput {
@@ -662,6 +668,7 @@ interface LabStoreValue extends LabState {
   updateEmployee: (id: string, input: EmployeeInput) => void;
   removeEmployee: (id: string) => void;
   createClient: (input: NewClientInput) => string;
+  updateClient: (id: string, input: ClientInput) => void;
   createSample: (input: NewSampleInput) => string;
   saveConcreteTest: (testId: string, input: ConcreteInput) => void;
   saveConcreteWaterPenetrationTest: (testId: string, input: ConcreteWaterPenetrationInput) => void;
@@ -706,12 +713,79 @@ function hasSupabaseConfig() {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 }
 
+function stableIdFromCode(prefix: string, code: string) {
+  return `${prefix}-${code.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+}
+
+function mergeOfficialClientCodes2026(state: LabState): LabState {
+  let clients = [...state.clients];
+  let projects = [...state.projects];
+  let changed = false;
+
+  for (const directoryClient of officialClientCodes2026) {
+    const existingClient = clients.find((client) => client.clientCode === directoryClient.clientCode);
+    const notes = directoryClient.nipt ? `NIPT: ${directoryClient.nipt}` : undefined;
+
+    if (!existingClient) {
+      const clientId = stableIdFromCode("client-2026", directoryClient.clientCode);
+      clients = [
+        ...clients,
+        {
+          id: clientId,
+          clientCode: directoryClient.clientCode,
+          clientName: directoryClient.clientName,
+          contactPerson: directoryClient.contactPerson,
+          email: directoryClient.email,
+          phone: directoryClient.phone,
+          address: directoryClient.address,
+          notes
+        }
+      ];
+
+      if (directoryClient.projectName) {
+        projects = [
+          ...projects,
+          {
+            id: stableIdFromCode("project-2026", directoryClient.clientCode),
+            clientId,
+            projectName: directoryClient.projectName,
+            location: directoryClient.address,
+            description: notes
+          }
+        ];
+      }
+      changed = true;
+      continue;
+    }
+
+    const hasProject = projects.some(
+      (project) => project.clientId === existingClient.id && project.projectName.trim().toLowerCase() === directoryClient.projectName.trim().toLowerCase()
+    );
+
+    if (directoryClient.projectName && !hasProject) {
+      projects = [
+        ...projects,
+        {
+          id: stableIdFromCode(`project-2026-${existingClient.id}`, directoryClient.clientCode),
+          clientId: existingClient.id,
+          projectName: directoryClient.projectName,
+          location: directoryClient.address,
+          description: notes
+        }
+      ];
+      changed = true;
+    }
+  }
+
+  return changed ? { ...state, clients, projects } : state;
+}
+
 function mergeWithInitialState(saved: Partial<LabState>): LabState {
   const procedureRevisions = (saved.procedureRevisions ?? initialState.procedureRevisions).map((revision) => ({
     ...revision,
     pdfUrl: revision.pdfUrl ?? (revision.fileUrl.endsWith(".doc") ? revision.fileUrl.replace(/\.doc$/, ".pdf") : revision.fileUrl)
   }));
-  return {
+  const mergedState = {
     ...initialState,
     ...saved,
     users: saved.users ?? initialState.users,
@@ -748,10 +822,12 @@ function mergeWithInitialState(saved: Partial<LabState>): LabState {
     notifications: saved.notifications ?? initialState.notifications,
     auditLog: saved.auditLog ?? initialState.auditLog
   };
+
+  return mergeOfficialClientCodes2026(mergedState);
 }
 
 export function LabStoreProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<LabState>(initialState);
+  const [state, setState] = useState<LabState>(() => mergeOfficialClientCodes2026(initialState));
   const [isHydrated, setIsHydrated] = useState(false);
   const [isRemoteChecked, setIsRemoteChecked] = useState(false);
   const lastSavedOnlineJson = useRef<string | null>(null);
@@ -894,7 +970,12 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
     }
 
     function nextClientCode(clients: Client[]) {
-      return `CL-${String(clients.length + 1).padStart(3, "0")}`;
+      const numbers = clients
+        .map((client) => /^K(\d+)$/i.exec(client.clientCode)?.[1])
+        .filter(Boolean)
+        .map((value) => Number(value));
+      const next = numbers.length ? Math.max(...numbers) + 1 : clients.length + 1;
+      return `K${String(next).padStart(2, "0")}`;
     }
 
     function nextMonthlySampleCode(dateReceived: string, samples: Sample[]) {
@@ -1013,7 +1094,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
         setState((previous) => {
           const client: Client = {
             id: clientId,
-            clientCode: nextClientCode(previous.clients),
+            clientCode: input.clientCode || nextClientCode(previous.clients),
             clientName: input.clientName,
             contactPerson: input.contactPerson,
             email: input.email,
@@ -1038,6 +1119,53 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           return draft;
         });
         return clientId;
+      },
+      updateClient(id, input) {
+        setState((previous) => {
+          const client = previous.clients.find((row) => row.id === id);
+          const projectId = input.projectId ?? previous.projects.find((project) => project.clientId === id)?.id;
+          const draft: LabState = {
+            ...previous,
+            clients: previous.clients.map((row) =>
+              row.id === id
+                ? {
+                    ...row,
+                    clientCode: input.clientCode || row.clientCode,
+                    clientName: input.clientName,
+                    contactPerson: input.contactPerson,
+                    email: input.email,
+                    phone: input.phone,
+                    address: input.address,
+                    notes: input.notes
+                  }
+                : row
+            ),
+            projects: projectId
+              ? previous.projects.map((project) =>
+                  project.id === projectId
+                    ? {
+                        ...project,
+                        projectName: input.projectName,
+                        location: input.projectLocation,
+                        description: input.projectDescription
+                      }
+                    : project
+                )
+              : [
+                  ...previous.projects,
+                  {
+                    id: crypto.randomUUID(),
+                    clientId: id,
+                    projectName: input.projectName,
+                    location: input.projectLocation,
+                    description: input.projectDescription
+                  }
+                ],
+            auditLog: [...previous.auditLog]
+          };
+          addAudit(draft, "client_updated", "client", id, `Client ${input.clientCode || client?.clientCode || id} updated.`);
+          return draft;
+        });
       },
       createSample(input) {
         const sampleId = crypto.randomUUID();
