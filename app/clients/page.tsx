@@ -45,6 +45,7 @@ export default function ClientsPage() {
   const [editingClientId, setEditingClientId] = useState("");
   const [selectedErpId, setSelectedErpId] = useState("");
   const [clientDraft, setClientDraft] = useState<ClientDraft>(emptyClientDraft);
+  const [deleteMessage, setDeleteMessage] = useState("");
 
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
   const canEditClients = ["Admin / Managing Director", "Chief of Lab", "Operations Manager"].includes(currentUser?.role ?? "");
@@ -105,6 +106,23 @@ export default function ClientsPage() {
       notes: notesWithoutNipt(client.notes)
     });
     setShowForm(true);
+  }
+
+  function deleteClient(clientId: string) {
+    const client = store.clients.find((item) => item.id === clientId);
+    if (!client) return;
+
+    const confirmed = window.confirm(`Delete client ${client.clientCode} - ${client.clientName}? This will also remove its project entry if there are no linked samples, tests, or reports.`);
+    if (!confirmed) return;
+
+    const result = store.removeClient(clientId);
+    if (!result.ok) {
+      setDeleteMessage(result.message ?? "This client cannot be deleted.");
+      return;
+    }
+
+    setDeleteMessage(`Client ${client.clientCode} was deleted.`);
+    if (editingClientId === clientId) closeForm();
   }
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -210,6 +228,12 @@ export default function ClientsPage() {
         </form>
       ) : null}
 
+      {deleteMessage ? (
+        <div className="mb-4 rounded-md border border-lab-mist bg-lab-porcelain px-4 py-3 text-sm text-ink">
+          {deleteMessage}
+        </div>
+      ) : null}
+
       <SimpleTable>
         <table className="w-full min-w-[1180px] text-left text-sm">
           <thead className="table-head">
@@ -240,9 +264,22 @@ export default function ClientsPage() {
                   <td className="px-4 py-3">{client.notes ?? "-"}</td>
                   {canEditClients ? (
                     <td className="px-4 py-3">
-                      <button type="button" onClick={() => editClient(client.id)} className="rounded-md border border-line px-2 py-1 text-xs font-semibold text-ink hover:border-lab-burgundy hover:text-lab-burgundy">
-                        Edit
-                      </button>
+                      <div className="flex flex-col gap-1">
+                        <button
+                          type="button"
+                          onClick={() => editClient(client.id)}
+                          className="rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700 transition hover:border-blue-400 hover:bg-blue-100"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deleteClient(client.id)}
+                          className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700 transition hover:border-red-400 hover:bg-red-100"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   ) : null}
                 </tr>
@@ -263,4 +300,3 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     </label>
   );
 }
-

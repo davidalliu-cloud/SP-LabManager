@@ -669,6 +669,7 @@ interface LabStoreValue extends LabState {
   removeEmployee: (id: string) => void;
   createClient: (input: NewClientInput) => string;
   updateClient: (id: string, input: ClientInput) => void;
+  removeClient: (id: string) => { ok: boolean; message?: string };
   createSample: (input: NewSampleInput) => string;
   saveConcreteTest: (testId: string, input: ConcreteInput) => void;
   saveConcreteWaterPenetrationTest: (testId: string, input: ConcreteWaterPenetrationInput) => void;
@@ -1166,6 +1167,33 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           addAudit(draft, "client_updated", "client", id, `Client ${input.clientCode || client?.clientCode || id} updated.`);
           return draft;
         });
+      },
+      removeClient(id) {
+        const client = state.clients.find((row) => row.id === id);
+        const linkedSampleCount = state.samples.filter((sample) => sample.clientId === id).length;
+        const linkedTestCount = state.tests.filter((test) => test.clientId === id).length;
+        const linkedReportCount = state.reports.filter((report) => report.clientId === id).length;
+
+        if (linkedSampleCount || linkedTestCount || linkedReportCount) {
+          return {
+            ok: false,
+            message: `Cannot delete ${client?.clientCode ?? "client"} because it is linked to ${linkedSampleCount} sample(s), ${linkedTestCount} test(s), and ${linkedReportCount} report(s).`
+          };
+        }
+
+        setState((previous) => {
+          const removedClient = previous.clients.find((row) => row.id === id);
+          const draft: LabState = {
+            ...previous,
+            clients: previous.clients.filter((row) => row.id !== id),
+            projects: previous.projects.filter((project) => project.clientId !== id),
+            auditLog: [...previous.auditLog]
+          };
+          addAudit(draft, "client_removed", "client", id, `Client ${removedClient?.clientCode ?? id} removed.`);
+          return draft;
+        });
+
+        return { ok: true };
       },
       createSample(input) {
         const sampleId = crypto.randomUUID();
