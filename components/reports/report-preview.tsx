@@ -757,9 +757,9 @@ function ThermalInsulationReportPreview({
 }) {
   const sampleValues = (selector: (index: number) => number) => [0, 1, 2, 3, 4].map(selector);
   return (
-    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 thermal-report print-surface rounded-md border border-line bg-white p-5 shadow-sm">
       <ReportHeader report={report} code="SL-RA-PT-7.8/1" title="RAPORT TESTIMI / TEST REPORT" subtitle="Physical-mechanical characteristics for thermal insulating products" />
-      <div className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
+      <div className="mt-4 grid gap-x-4 gap-y-2 text-[11px] leading-tight sm:grid-cols-2">
         <Info label="Register No." value={sample?.sampleCode} />
         <Info label="Client / Purchaser" value={client?.clientName} />
         <Info label="Address" value={client?.address} />
@@ -778,8 +778,8 @@ function ThermalInsulationReportPreview({
         <Info label="Temperature" value={thermalInsulation.temperature} />
         <Info label="Relative humidity" value={thermalInsulation.humidity} />
       </div>
-      <div className="mt-8 rounded-md border border-line">
-        <table className="report-table w-full text-left text-[11px]">
+      <div className="mt-5 rounded-md border border-line">
+        <table className="report-table w-full text-left text-[10px] leading-tight">
           <colgroup>
             <col className="w-[4%]" />
             <col className="w-[25%]" />
@@ -794,7 +794,7 @@ function ThermalInsulationReportPreview({
             <col className="w-[5%]" />
           </colgroup>
           <thead className="table-head">
-            <tr><th className="px-2 py-2">No.</th><th className="px-2 py-2">Measured parameter</th><th className="px-2 py-2">Test standard</th><th className="px-2 py-2">Unit</th>{[1, 2, 3, 4, 5].map((index) => <th key={index} className="px-2 py-2">Sample {index}</th>)}<th className="px-2 py-2">Average</th><th className="px-2 py-2">Unc.</th></tr>
+            <tr><th className="px-1.5 py-1.5">No.</th><th className="px-1.5 py-1.5">Measured parameter</th><th className="px-1.5 py-1.5">Test standard</th><th className="px-1.5 py-1.5">Unit</th>{[1, 2, 3, 4, 5].map((index) => <th key={index} className="px-1.5 py-1.5">S{index}</th>)}<th className="px-1.5 py-1.5">Avg.</th><th className="px-1.5 py-1.5">Unc.</th></tr>
           </thead>
           <tbody className="divide-y divide-line">
             <ThermalReportRow no="1" label="Përcaktimi i gjatësisë / Determination of length" standard="BS EN 822:2013" unit="mm" values={sampleValues((i) => thermalInsulation.specimens[i]?.lengthMm ?? 0)} average={thermalInsulation.averages.lengthMm} uncertainty="1.4" />
@@ -806,14 +806,14 @@ function ThermalInsulationReportPreview({
           </tbody>
         </table>
       </div>
-      <div className="mt-8 soft-panel p-4 text-sm text-ink"><div className="font-semibold">Notes / Shënime</div><p className="mt-1">{thermalInsulation.notes || "Results relate only to the items tested. The laboratory is not responsible for the sampling phase."}</p></div>
-      <div className="mt-10 grid gap-6 sm:grid-cols-2"><Signature label="TESTUAR NGA / TESTED BY" value={thermalInsulation.technicianName || report.draftedBy} /><Signature label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={thermalInsulation.checkedBy || report.approvedBy || "Ing./Eng. Besiana ALLIU"} /></div>
+      <div className="mt-4 soft-panel p-2 text-[10px] leading-tight text-ink"><div className="font-semibold">Notes / Shënime</div><p className="mt-1">{thermalInsulation.notes || "Results relate only to the items tested. The laboratory is not responsible for the sampling phase."}</p></div>
+      <div className="mt-6 grid gap-4 text-xs sm:grid-cols-2"><Signature label="TESTUAR NGA / TESTED BY" value={thermalInsulation.technicianName || report.draftedBy} /><Signature label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={thermalInsulation.checkedBy || report.approvedBy || "Ing./Eng. Besiana ALLIU"} /></div>
     </section>
   );
 }
 
 function ThermalReportRow({ no, label, standard, unit, values, average, uncertainty }: { no: string; label: string; standard: string; unit: string; values: number[]; average: number; uncertainty: string }) {
-  return <tr><td className="px-2 py-2 font-semibold text-ink">{no}</td><td className="px-2 py-2">{label}</td><td className="px-2 py-2">{standard}</td><td className="px-2 py-2">{unit}</td>{values.map((value, index) => <td key={index} className="px-2 py-2">{value || value === 0 ? value : "-"}</td>)}<td className="px-2 py-2 font-semibold text-ink">{average}</td><td className="px-2 py-2">{uncertainty}</td></tr>;
+  return <tr><td className="px-1.5 py-1.5 font-semibold text-ink">{no}</td><td className="px-1.5 py-1.5">{label}</td><td className="px-1.5 py-1.5">{standard}</td><td className="px-1.5 py-1.5">{unit}</td>{values.map((value, index) => <td key={index} className="px-1.5 py-1.5">{value || value === 0 ? value : "-"}</td>)}<td className="px-1.5 py-1.5 font-semibold text-ink">{average}</td><td className="px-1.5 py-1.5">{uncertainty}</td></tr>;
 }
 
 function SteelReportPreview({
