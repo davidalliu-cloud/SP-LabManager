@@ -26,6 +26,11 @@ textarea {
 }
 
 @media print {
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+
   body {
     background: white;
   }
@@ -37,7 +42,50 @@ textarea {
   .print-surface {
     box-shadow: none !important;
     border: 0 !important;
+    width: 190mm !important;
+    max-width: 190mm !important;
+    min-height: 277mm;
+    margin: 0 auto !important;
+    padding: 0 !important;
   }
+
+  .report-a4 {
+    width: 190mm !important;
+    max-width: 190mm !important;
+  }
+
+  .report-table {
+    width: 100% !important;
+    min-width: 0 !important;
+    table-layout: fixed !important;
+    font-size: 8.5px !important;
+    line-height: 1.2 !important;
+  }
+
+  .report-table th,
+  .report-table td {
+    padding: 3px 4px !important;
+    overflow-wrap: anywhere !important;
+    word-break: normal !important;
+    vertical-align: top !important;
+  }
+}
+
+.report-a4 {
+  width: min(100%, 210mm);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.report-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.report-table th,
+.report-table td {
+  overflow-wrap: anywhere;
+  vertical-align: top;
 }
 
 @layer components {

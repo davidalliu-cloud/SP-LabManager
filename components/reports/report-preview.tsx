@@ -179,7 +179,7 @@ export function ReportPreview({
   const strengthClass = sample?.notes?.match(new RegExp("C\\d+/\\d+"))?.[0];
 
   return (
-    <section className="print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader
         report={report}
         code="SL-RA-B-7.8/1.3"
@@ -389,7 +389,7 @@ function CementConsistencyReportPreview({
     ["4", "Expansion after 24 hours", "BS EN 196-3:2016", "mm", cementConsistency.expansion.expansionMm, "0.9"]
   ] as const;
   return (
-    <section className="print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader report={report} code="SL-RA-Ç-7.8/1.1" title="RAPORT TESTIMI / TEST REPORT" subtitle="Consistency, setting time and expansion of cement" />
       <div className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
         <Info label="Register No." value={sample?.sampleCode} />
@@ -429,7 +429,7 @@ function CementStrengthReportPreview({
   cementStrength: CementStrengthTest;
 }) {
   return (
-    <section className="print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader report={report} code="SL-RA-Ç-7.8/1.3" title="RAPORT TESTIMI / TEST REPORT" subtitle="Flexural and compressive strength of cement mortar" />
       <div className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
         <Info label="Register No." value={sample?.sampleCode} />
@@ -477,7 +477,7 @@ function CementBlaineReportPreview({
 }) {
   const code = cementBlaine.method === "ASTM" ? "SL-RA-Ç-7.8/1.4.2" : "SL-RA-Ç-7.8/1.4.1";
   return (
-    <section className="print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader report={report} code={code} title="RAPORT TESTIMI / TEST REPORT" subtitle={`Blaine specific surface of cement (${cementBlaine.method})`} />
       <div className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
         <Info label="Register No." value={sample?.sampleCode} />
@@ -522,7 +522,7 @@ function ConcreteWaterPenetrationReportPreview({
   concreteWater: ConcreteWaterPenetrationTest;
 }) {
   return (
-    <section className="print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader report={report} code="SL-RA-B-7.8/1.10" title="RAPORT TESTIM / TEST REPORT" subtitle="Depth of water penetration under pressure" />
       <div className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
         <Info label="Register No." value={sample?.sampleCode} />
@@ -575,7 +575,7 @@ function ConcreteFlexuralReportPreview({
   concreteFlexural: ConcreteFlexuralTest;
 }) {
   return (
-    <section className="print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader report={report} code="SL-RA-B-7.8/1.4" title="RAPORT TESTIMI / TEST REPORT" subtitle="Flexural strength of test specimens" />
       <div className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
         <Info label="Register No." value={sample?.sampleCode} />
@@ -642,7 +642,7 @@ function ConcreteDensityReportPreview({
   concreteDensity: ConcreteDensityTest;
 }) {
   return (
-    <section className="print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader report={report} code="SL-RA-B-7.8/1.8" title="RAPORT TESTIM / TEST REPORT" subtitle="Density of hardened concrete" />
       <div className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
         <Info label="Register No." value={sample?.sampleCode} />
@@ -694,7 +694,7 @@ function ConcreteIndirectTensileReportPreview({
 }) {
   const shown = [concreteIndirectTensile.specimens[0], concreteIndirectTensile.specimens[1]];
   return (
-    <section className="print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader report={report} code="SL-RA-B-7.8/1.5" title="RAPORT TESTIMI / TEST REPORT" subtitle="Tensile splitting strength of test specimens" />
       <div className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
         <Info label="Register No." value={sample?.sampleCode} />
@@ -757,7 +757,7 @@ function ThermalInsulationReportPreview({
 }) {
   const sampleValues = (selector: (index: number) => number) => [0, 1, 2, 3, 4].map(selector);
   return (
-    <section className="print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader report={report} code="SL-RA-PT-7.8/1" title="RAPORT TESTIMI / TEST REPORT" subtitle="Physical-mechanical characteristics for thermal insulating products" />
       <div className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
         <Info label="Register No." value={sample?.sampleCode} />
@@ -778,10 +778,23 @@ function ThermalInsulationReportPreview({
         <Info label="Temperature" value={thermalInsulation.temperature} />
         <Info label="Relative humidity" value={thermalInsulation.humidity} />
       </div>
-      <div className="mt-8 overflow-x-auto rounded-md border border-line">
-        <table className="w-full min-w-[1220px] text-left text-sm">
+      <div className="mt-8 rounded-md border border-line">
+        <table className="report-table w-full text-left text-[11px]">
+          <colgroup>
+            <col className="w-[4%]" />
+            <col className="w-[25%]" />
+            <col className="w-[13%]" />
+            <col className="w-[6%]" />
+            <col className="w-[8%]" />
+            <col className="w-[8%]" />
+            <col className="w-[8%]" />
+            <col className="w-[8%]" />
+            <col className="w-[8%]" />
+            <col className="w-[7%]" />
+            <col className="w-[5%]" />
+          </colgroup>
           <thead className="table-head">
-            <tr><th className="px-3 py-2">No.</th><th className="px-3 py-2">Measured parameter</th><th className="px-3 py-2">Test standard</th><th className="px-3 py-2">Unit</th>{[1, 2, 3, 4, 5].map((index) => <th key={index} className="px-3 py-2">Sample {index}</th>)}<th className="px-3 py-2">Average</th><th className="px-3 py-2">Uncertainty</th></tr>
+            <tr><th className="px-2 py-2">No.</th><th className="px-2 py-2">Measured parameter</th><th className="px-2 py-2">Test standard</th><th className="px-2 py-2">Unit</th>{[1, 2, 3, 4, 5].map((index) => <th key={index} className="px-2 py-2">Sample {index}</th>)}<th className="px-2 py-2">Average</th><th className="px-2 py-2">Unc.</th></tr>
           </thead>
           <tbody className="divide-y divide-line">
             <ThermalReportRow no="1" label="Përcaktimi i gjatësisë / Determination of length" standard="BS EN 822:2013" unit="mm" values={sampleValues((i) => thermalInsulation.specimens[i]?.lengthMm ?? 0)} average={thermalInsulation.averages.lengthMm} uncertainty="1.4" />
@@ -800,7 +813,7 @@ function ThermalInsulationReportPreview({
 }
 
 function ThermalReportRow({ no, label, standard, unit, values, average, uncertainty }: { no: string; label: string; standard: string; unit: string; values: number[]; average: number; uncertainty: string }) {
-  return <tr><td className="px-3 py-2 font-semibold text-ink">{no}</td><td className="px-3 py-2">{label}</td><td className="px-3 py-2">{standard}</td><td className="px-3 py-2">{unit}</td>{values.map((value, index) => <td key={index} className="px-3 py-2">{value || value === 0 ? value : "-"}</td>)}<td className="px-3 py-2 font-semibold text-ink">{average}</td><td className="px-3 py-2">{uncertainty}</td></tr>;
+  return <tr><td className="px-2 py-2 font-semibold text-ink">{no}</td><td className="px-2 py-2">{label}</td><td className="px-2 py-2">{standard}</td><td className="px-2 py-2">{unit}</td>{values.map((value, index) => <td key={index} className="px-2 py-2">{value || value === 0 ? value : "-"}</td>)}<td className="px-2 py-2 font-semibold text-ink">{average}</td><td className="px-2 py-2">{uncertainty}</td></tr>;
 }
 
 function SteelReportPreview({
@@ -822,7 +835,7 @@ function SteelReportPreview({
   const diameter = reportSpecimens[0]?.nominalDiameterMm || reportSpecimens[0]?.actualDiameterMm;
 
   return (
-    <section className="print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader
         report={report}
         code="SL-RA-H-7.8/1.1"
@@ -958,7 +971,7 @@ function AggregateReportPreview({
     .join(" ");
 
   return (
-    <section className="print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader
         report={report}
         code="SL-RA-AG-7.8/1.1.a"
@@ -1070,7 +1083,7 @@ function AggregateChemicalReportPreview({
   const results = aggregateChemical.results;
 
   return (
-    <section className="print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader
         report={report}
         code="SL-RA-AG-7.8/1.10"
@@ -1150,7 +1163,7 @@ function AggregateLosAngelesReportPreview({
   aggregateLosAngeles: AggregateLosAngelesTest;
 }) {
   return (
-    <section className="print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader
         report={report}
         code="SL-RA-AG-7.8/1.12"
@@ -1258,7 +1271,7 @@ function AggregateFreezeThawReportPreview({
   aggregateFreezeThaw: AggregateFreezeThawTest;
 }) {
   return (
-    <section className="print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader
         report={report}
         code="SL-RA-AG-7.8/1.13"
@@ -1372,7 +1385,7 @@ function AggregateAcvReportPreview({
   aggregateAcv: AggregateAcvTest;
 }) {
   return (
-    <section className="print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader
         report={report}
         code="SL-RA-AG-7.8/1.15"
@@ -1481,7 +1494,7 @@ function AggregateDensityReportPreview({
 }) {
   const sampleValues = (selector: (index: number) => number) => [selector(0), selector(1)];
   return (
-    <section className="print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader
         report={report}
         code="SL-RA-AG-7.8/1.2"
@@ -1576,7 +1589,7 @@ function AggregateFillerDensityReportPreview({
 }) {
   const values = (selector: (index: number) => number) => [selector(0), selector(1)];
   return (
-    <section className="print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader
         report={report}
         code="SL-RA-AG-7.8/1.2f"
@@ -1668,7 +1681,7 @@ function AggregateSoundnessReportPreview({
   aggregateSoundness: AggregateSoundnessTest;
 }) {
   return (
-    <section className="print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader report={report} code="SL-RA-AG-7.8/1.11" title="RAPORT TESTIMI / TEST REPORT" subtitle="Magnesium Sulfate Soundness Test" />
       <div className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
         <Info label="Register No." value={sample?.sampleCode} />
@@ -1732,7 +1745,7 @@ function AggregateElongationReportPreview({
   aggregateElongation: AggregateElongationIndexTest;
 }) {
   return (
-    <section className="print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader report={report} code="SL-RA-AG-7.8/1.5" title="RAPORT TESTIMI / TEST REPORT" subtitle="Elongation Index of aggregates" />
       <div className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
         <Info label="Register No." value={sample?.sampleCode} />
@@ -1781,7 +1794,7 @@ function AggregateBulkDensityReportPreview({
   aggregateBulkDensity: AggregateBulkDensityTest;
 }) {
   return (
-    <section className="print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader report={report} code="SL-RA-AG-7.8/1.7" title="RAPORT TESTIMI / TEST REPORT" subtitle="Loose bulk density and voids of aggregate" />
       <div className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
         <Info label="Register No." value={sample?.sampleCode} />
@@ -1826,7 +1839,7 @@ function AggregateSandEquivalentReportPreview({
   aggregateSandEquivalent: AggregateSandEquivalentTest;
 }) {
   return (
-    <section className="print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader report={report} code="SL-RA-AG-7.8/1.8" title="RAPORT TESTIMI / TEST REPORT" subtitle="Sand Equivalent test" />
       <div className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
         <Info label="Register No." value={sample?.sampleCode} />
@@ -1870,7 +1883,7 @@ function AggregateShapeIndexReportPreview({
   aggregateShapeIndex: AggregateShapeIndexTest;
 }) {
   return (
-    <section className="print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader
         report={report}
         code="SL-RA-AG-7.8/1.3"
@@ -1958,7 +1971,7 @@ function AggregateFlakinessReportPreview({
   aggregateFlakiness: AggregateFlakinessIndexTest;
 }) {
   return (
-    <section className="print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader
         report={report}
         code="SL-RA-AG-7.8/1.4"
