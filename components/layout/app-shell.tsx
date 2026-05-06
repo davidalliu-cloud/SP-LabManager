@@ -7,6 +7,8 @@ import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 import { NotificationDropdown } from "@/components/notifications/notification-dropdown";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
+import { useLabStore } from "@/lib/lab-store";
+import { canViewClientIdentity } from "@/lib/permissions";
 
 const navItems = [
   ["nav.dashboard", "/"],
@@ -28,8 +30,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const auth = useAuth();
+  const store = useLabStore();
   const { t } = useI18n();
   const isLoginPage = pathname === "/login";
+  const currentUser = store.users.find((user) => user.id === store.currentUserId);
+  const showClientIdentityNav = canViewClientIdentity(currentUser?.role);
 
   if (isLoginPage) return <>{children}</>;
 
@@ -59,7 +64,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="mt-1 text-xs text-muted">{t("brand.domain")}</div>
         </div>
         <nav className="px-3 py-4">
-          {navItems.map(([label, href]) => {
+          {navItems.filter(([, href]) => showClientIdentityNav || !["/clients", "/projects"].includes(href)).map(([label, href]) => {
             const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
             return (
               <Link

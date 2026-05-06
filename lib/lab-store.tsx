@@ -53,6 +53,7 @@ import {
   calculateWaterDemandPercent,
   calculateUnitWeightKgPerM
 } from "./calculations";
+import { useAuth } from "./auth";
 import { officialClientCodes2026 } from "./client-directory";
 import { initialState } from "./seed-data";
 import { createSupabaseBrowserClient } from "./supabase/client";
@@ -670,6 +671,7 @@ interface LabStoreValue extends LabState {
   createClient: (input: NewClientInput) => string;
   updateClient: (id: string, input: ClientInput) => void;
   removeClient: (id: string) => { ok: boolean; message?: string };
+  assignSampleClient: (sampleId: string, clientId: string, projectId: string) => void;
   createSample: (input: NewSampleInput) => string;
   saveConcreteTest: (testId: string, input: ConcreteInput) => void;
   saveConcreteWaterPenetrationTest: (testId: string, input: ConcreteWaterPenetrationInput) => void;
@@ -828,11 +830,16 @@ function mergeWithInitialState(saved: Partial<LabState>): LabState {
 }
 
 export function LabStoreProvider({ children }: { children: React.ReactNode }) {
+  const auth = useAuth();
   const [state, setState] = useState<LabState>(() => mergeOfficialClientCodes2026(initialState));
   const [isHydrated, setIsHydrated] = useState(false);
   const [isRemoteChecked, setIsRemoteChecked] = useState(false);
   const lastSavedOnlineJson = useRef<string | null>(null);
-  const currentUserId = "u-admin";
+  const currentUser =
+    state.users.find((user) => user.email.toLowerCase() === auth.user?.email?.toLowerCase()) ??
+    state.users.find((user) => user.id === "u-admin") ??
+    state.users[0];
+  const currentUserId = currentUser?.id ?? "u-admin";
 
   useEffect(() => {
     try {
@@ -1195,6 +1202,29 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
 
         return { ok: true };
       },
+      assignSampleClient(sampleId, clientId, projectId) {
+        setState((previous) => {
+          const sample = previous.samples.find((row) => row.id === sampleId);
+          const client = previous.clients.find((row) => row.id === clientId);
+          const project = previous.projects.find((row) => row.id === projectId);
+          const draft: LabState = {
+            ...previous,
+            samples: previous.samples.map((row) => (row.id === sampleId ? { ...row, clientId, projectId } : row)),
+            tests: previous.tests.map((row) => (row.sampleId === sampleId ? { ...row, clientId, projectId } : row)),
+            reports: previous.reports.map((row) => (row.sampleId === sampleId ? { ...row, clientId, projectId } : row)),
+            auditLog: [...previous.auditLog],
+            notifications: [...previous.notifications]
+          };
+          addAudit(
+            draft,
+            "sample_client_assigned",
+            "sample",
+            sampleId,
+            `${sample?.sampleCode ?? "Sample"} assigned to ${client?.clientCode ?? "client code"}${project?.projectName ? ` / ${project.projectName}` : ""}.`
+          );
+          return draft;
+        });
+      },
       createSample(input) {
         const sampleId = crypto.randomUUID();
         const sampleCode = nextMonthlySampleCode(input.dateReceived, state.samples);
@@ -1264,10 +1294,17 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
               test.id
             );
           });
+          addNotification(
+            draft,
+            "u-chief",
+            "Client assignment required",
+            `${sampleCode} has been registered and needs client/project assignment by the Chief of Lab.`,
+            firstTestId
+          );
           addAudit(draft, "sample_created", "sample", sampleId, `Sample ${sampleCode} created with ${tests.length} scheduled test batch${tests.length === 1 ? "" : "es"}.`);
           return draft;
         });
-        return firstTestId;
+        return sampleId;
       },
       saveConcreteTest(testId, input) {
         setState((previous) => {

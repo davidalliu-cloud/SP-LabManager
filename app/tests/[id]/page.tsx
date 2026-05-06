@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { isAggregateAcvAccreditedTest, isAggregateBulkDensityAccreditedTest, isAggregateChemicalAccreditedTest, isAggregateDensityAbsorptionAccreditedTest, isAggregateElongationIndexAccreditedTest, isAggregateFillerDensityAccreditedTest, isAggregateFlakinessIndexAccreditedTest, isAggregateFreezeThawAccreditedTest, isAggregateGranulometrySampleType, isAggregateLosAngelesAccreditedTest, isAggregateSandEquivalentAccreditedTest, isAggregateShapeIndexAccreditedTest, isAggregateSoundnessAccreditedTest, isCementBlaineAstmAccreditedTest, isCementBlaineBsEnAccreditedTest, isCementConsistencyAccreditedTest, isCementStrengthAccreditedTest, isConcreteDensityAccreditedTest, isConcreteFlexuralAccreditedTest, isConcreteIndirectTensileAccreditedTest, isConcreteWaterPenetrationAccreditedTest, isSteelSampleType, isThermalInsulationAccreditedTest } from "@/lib/accredited-tests";
 import { useLabStore } from "@/lib/lab-store";
+import { canViewClientIdentity } from "@/lib/permissions";
 import type { LabUser } from "@/lib/types";
 
 const aggregateSieveSizes = [125, 80, 63, 37.5, 31.5, 25, 20, 16, 12.5, 8, 4, 2, 1, 0.5, 0.25, 0.125, 0.063, 0];
@@ -19,8 +20,10 @@ export default function TestDetailPage() {
   if (!test) return <PageHeader title="Test not found" />;
   const activeTest = test;
   const sample = store.samples.find((item) => item.id === activeTest.sampleId);
-  const client = store.clients.find((item) => item.id === activeTest.clientId);
-  const project = store.projects.find((item) => item.id === activeTest.projectId);
+  const currentUser = store.users.find((user) => user.id === store.currentUserId);
+  const showClientIdentity = canViewClientIdentity(currentUser?.role);
+  const client = showClientIdentity ? store.clients.find((item) => item.id === activeTest.clientId) : undefined;
+  const project = showClientIdentity ? store.projects.find((item) => item.id === activeTest.projectId) : undefined;
   const concrete = store.concreteTests.find((item) => item.testId === activeTest.id);
   const concreteWater = store.concreteWaterPenetrationTests.find((item) => item.testId === activeTest.id);
   const concreteFlexural = store.concreteFlexuralTests.find((item) => item.testId === activeTest.id);

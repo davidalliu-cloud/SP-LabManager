@@ -6,18 +6,21 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useI18n } from "@/lib/i18n";
 import { useLabStore } from "@/lib/lab-store";
+import { canViewClientIdentity } from "@/lib/permissions";
 
 export default function SamplesPage() {
   const store = useLabStore();
   const { t } = useI18n();
   const [query, setQuery] = useState("");
+  const currentUser = store.users.find((user) => user.id === store.currentUserId);
+  const showClientIdentity = canViewClientIdentity(currentUser?.role);
   const rows = useMemo(() => {
     return store.samples.filter((sample) => {
       const clientCode = store.clients.find((item) => item.id === sample.clientId)?.clientCode ?? "";
-      const project = store.projects.find((item) => item.id === sample.projectId)?.projectName ?? "";
+      const project = showClientIdentity ? store.projects.find((item) => item.id === sample.projectId)?.projectName ?? "" : "";
       return `${sample.sampleCode} ${clientCode} ${project} ${sample.sampleType}`.toLowerCase().includes(query.toLowerCase());
     });
-  }, [query, store.clients, store.projects, store.samples]);
+  }, [query, showClientIdentity, store.clients, store.projects, store.samples]);
 
   return (
     <>
@@ -71,8 +74,8 @@ export default function SamplesPage() {
                   <tr key={sample.id} className="hover:bg-lab-mist/60">
                     <td className="px-4 py-3 font-semibold text-ink">{sample.sampleCode}</td>
                     <td className="px-4 py-3">{sample.dateReceived}</td>
-                    <td className="px-4 py-3 font-semibold text-ink">{store.clients.find((item) => item.id === sample.clientId)?.clientCode}</td>
-                    <td className="px-4 py-3">{store.projects.find((item) => item.id === sample.projectId)?.projectName}</td>
+                    <td className="px-4 py-3 font-semibold text-ink">{store.clients.find((item) => item.id === sample.clientId)?.clientCode ?? "Pending"}</td>
+                    <td className="px-4 py-3">{showClientIdentity ? store.projects.find((item) => item.id === sample.projectId)?.projectName ?? "Pending assignment" : "Restricted"}</td>
                     <td className="px-4 py-3">{sample.sampleType}</td>
                     <td className="px-4 py-3" title={schedule}>{sample.quantity}</td>
                     <td className="px-4 py-3">{sample.requestedTestType}</td>

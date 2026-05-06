@@ -18,11 +18,9 @@ export default function NewSamplePage() {
   const store = useLabStore();
   const initialSampleType = accreditedSampleTypes[0] ?? "";
   const initialTestId = getAccreditedTestsForSampleType(initialSampleType)[0]?.id ?? "";
-  const [clientId, setClientId] = useState(store.clients[0]?.id ?? "");
   const [sampleType, setSampleType] = useState(initialSampleType);
   const [accreditedTestId, setAccreditedTestId] = useState(initialTestId);
   const [scheduleRows, setScheduleRows] = useState(2);
-  const projects = store.projects.filter((project) => project.clientId === clientId);
   const testOptions = useMemo(() => getAccreditedTestsForSampleType(sampleType), [sampleType]);
   const selectedTest = getAccreditedTestById(accreditedTestId) ?? testOptions[0];
   const showConcreteSchedule = isConcreteCompressiveAccreditedTest(selectedTest);
@@ -44,9 +42,9 @@ export default function NewSamplePage() {
     ]
       .filter(Boolean)
       .join(" | ");
-    const testId = store.createSample({
-      clientId,
-      projectId: String(form.get("projectId")),
+    const sampleId = store.createSample({
+      clientId: "",
+      projectId: "",
       sampleType,
       sampleDescription: String(form.get("sampleDescription")),
       quantity: Number(form.get("quantity")),
@@ -69,23 +67,16 @@ export default function NewSamplePage() {
         : [],
       notes
     });
-    router.push(`/tests/${testId}`);
+    router.push(`/samples/${sampleId}`);
   }
 
   return (
     <>
-      <PageHeader title="New Sample" description="Register using the client code supplied by the head of lab. The client name remains visible on the Clients page only." />
+      <PageHeader title="New Sample" description="Register the received sample without client identity. The Chief of Lab assigns the client/project afterward to preserve impartiality." />
       <form onSubmit={submit} className="surface-card grid gap-4 p-5 lg:grid-cols-2">
-        <Field label="Client code">
-          <select value={clientId} onChange={(event) => setClientId(event.target.value)} className="input">
-            {store.clients.map((client) => <option key={client.id} value={client.id}>{client.clientCode}</option>)}
-          </select>
-        </Field>
-        <Field label="Project">
-          <select name="projectId" className="input">
-            {projects.map((project) => <option key={project.id} value={project.id}>{project.projectName}</option>)}
-          </select>
-        </Field>
+        <div className="soft-panel p-4 text-sm text-muted lg:col-span-2">
+          Client selection is intentionally hidden during sample registration. After saving, the sample appears as pending client assignment for the Chief of Lab.
+        </div>
         <Field label="Sample type">
           <select value={sampleType} onChange={(event) => changeSampleType(event.target.value)} className="input">
             {accreditedSampleTypes.map((type) => (

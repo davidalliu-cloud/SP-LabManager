@@ -1,15 +1,19 @@
 "use client";
 
+import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { SummaryCard } from "@/components/ui/summary-card";
 import { useLabStore } from "@/lib/lab-store";
+import { canAssignSampleClient, canViewClientIdentity } from "@/lib/permissions";
 
 export default function SampleDetailPage() {
   const params = useParams<{ id: string }>();
   const store = useLabStore();
+  const [assignmentClientId, setAssignmentClientId] = useState("");
+  const [assignmentProjectId, setAssignmentProjectId] = useState("");
   const sample = store.samples.find((item) => item.id === params.id);
 
   if (!sample) {
@@ -18,6 +22,12 @@ export default function SampleDetailPage() {
 
   const client = store.clients.find((item) => item.id === sample.clientId);
   const project = store.projects.find((item) => item.id === sample.projectId);
+  const currentUser = store.users.find((user) => user.id === store.currentUserId);
+  const showClientIdentity = canViewClientIdentity(currentUser?.role);
+  const canAssignClient = canAssignSampleClient(currentUser?.role);
+  const selectedAssignmentClientId = assignmentClientId || sample.clientId || store.clients[0]?.id || "";
+  const assignmentProjects = store.projects.filter((item) => item.clientId === selectedAssignmentClientId);
+  const selectedAssignmentProjectId = assignmentProjectId || sample.projectId || assignmentProjects[0]?.id || "";
   const tests = store.tests.filter((item) => item.sampleId === sample.id);
   const reports = store.reports.filter((item) => item.sampleId === sample.id);
   const finishedStatuses = ["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"];
@@ -26,6 +36,13 @@ export default function SampleDetailPage() {
     .reduce((sum, test) => sum + test.cubeCount, 0);
   const remainingCubes = Math.max(0, sample.quantity - completedCubes);
   const nextTest = tests.find((test) => ["Pending", "Scheduled", "In Progress"].includes(test.status));
+
+  function submitAssignment(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!sample) return;
+    const form = new FormData(event.currentTarget);
+    store.assignSampleClient(sample.id, String(form.get("clientId")), String(form.get("projectId")));
+  }
 
   return (
     <>
@@ -47,9 +64,9 @@ export default function SampleDetailPage() {
           <div className="surface-card p-5">
             <h2 className="text-base font-semibold text-ink">Sample Information</h2>
             <div className="mt-4 grid gap-4 text-sm md:grid-cols-3">
-              <Info label="Client code" value={client?.clientCode} />
-              <Info label="Project" value={project?.projectName} />
-              <Info label="Project location" value={project?.location} />
+              <Info label="Client code" value={client?.clientCode ?? "Pending Chief assignment"} />
+              <Info label="Project" value={showClientIdentity ? project?.projectName ?? "Pending assignment" : "Restricted"} />
+              <Info label="Project location" value={showClientIdentity ? project?.location : "Restricted"} />
               <Info label="Sample type" value={sample.sampleType} />
               <Info label="Date received" value={sample.dateReceived} />
               <Info label="Time received" value={sample.timeReceived} />
@@ -112,15 +129,55 @@ export default function SampleDetailPage() {
           <div className="surface-card p-5">
             <h2 className="text-base font-semibold text-ink">Client Access</h2>
             <p className="mt-2 text-sm text-muted">
-              Sample entry staff see the client code. The client name and contact mapping remain available here for authorized users.
+              Client identity is restricted to preserve impartiality during testing. Technicians see only the assigned client code.
             </p>
-            <div className="mt-4 space-y-3 text-sm">
-              <Info label="Client name" value={client?.clientName} />
-              <Info label="Contact" value={client?.contactPerson} />
-              <Info label="Email" value={client?.email} />
-              <Info label="Phone" value={client?.phone} />
-              <Info label="Address" value={client?.address} />
-            </div>
+            {canAssignClient ? (
+              <form onSubmit={submitAssignment} className="mt-4 space-y-3">
+                <label className="block text-sm font-medium text-ink">
+                  Assign client
+                  <select
+                    name="clientId"
+                    value={selectedAssignmentClientId}
+                    onChange={(event) => {
+                      const nextClientId = event.target.value;
+                      setAssignmentClientId(nextClientId);
+                      setAssignmentProjectId(store.projects.find((item) => item.clientId === nextClientId)?.id ?? "");
+                    }}
+                    className="input mt-1"
+                  >
+                    {store.clients.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.clientCode} - {item.clientName}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block text-sm font-medium text-ink">
+                  Assign project
+                  <select name="projectId" value={selectedAssignmentProjectId} onChange={(event) => setAssignmentProjectId(event.target.value)} className="input mt-1">
+                    {assignmentProjects.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.projectName}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button className="btn-primary w-full">Save client assignment</button>
+              </form>
+            ) : null}
+            {showClientIdentity ? (
+              <div className="mt-4 space-y-3 text-sm">
+                <Info label="Client name" value={client?.clientName} />
+                <Info label="Contact" value={client?.contactPerson} />
+                <Info label="Email" value={client?.email} />
+                <Info label="Phone" value={client?.phone} />
+                <Info label="Address" value={client?.address} />
+              </div>
+            ) : (
+              <div className="mt-4 rounded-md border border-line bg-lab-porcelain p-3 text-sm text-muted">
+                Client name and contact details are hidden for this role.
+              </div>
+            )}
           </div>
 
           <div className="surface-card p-5">

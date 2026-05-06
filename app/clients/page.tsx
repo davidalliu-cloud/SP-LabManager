@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { SimpleTable } from "@/components/ui/simple-table";
 import { futureErpClients } from "@/lib/client-directory";
 import { useLabStore } from "@/lib/lab-store";
+import { canViewClientIdentity } from "@/lib/permissions";
 
 const emptyClientDraft = {
   clientCode: "",
@@ -48,7 +49,7 @@ export default function ClientsPage() {
   const [deleteMessage, setDeleteMessage] = useState("");
 
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
-  const canEditClients = ["Admin / Managing Director", "Chief of Lab", "Operations Manager"].includes(currentUser?.role ?? "");
+  const canEditClients = canViewClientIdentity(currentUser?.role);
   const suggestedCode = useMemo(() => nextClientCode(store.clients.map((client) => client.clientCode)), [store.clients]);
 
   function openNewForm() {
@@ -170,7 +171,13 @@ export default function ClientsPage() {
         }
       />
 
-      {showForm ? (
+      {!canEditClients ? (
+        <div className="surface-card p-6 text-sm text-muted">
+          Client identities are restricted to the Chief of Lab, Document Controller, and Admin roles.
+        </div>
+      ) : null}
+
+      {canEditClients && showForm ? (
         <form onSubmit={submit} className="surface-card mb-5 grid gap-4 p-5 lg:grid-cols-2">
           <Field label="Assigned client code">
             <input
@@ -234,6 +241,7 @@ export default function ClientsPage() {
         </div>
       ) : null}
 
+      {canEditClients ? (
       <SimpleTable>
         <table className="w-full min-w-[1180px] text-left text-sm">
           <thead className="table-head">
@@ -288,6 +296,7 @@ export default function ClientsPage() {
           </tbody>
         </table>
       </SimpleTable>
+      ) : null}
     </>
   );
 }
