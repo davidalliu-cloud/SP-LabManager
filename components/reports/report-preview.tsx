@@ -358,6 +358,26 @@ function Info({ label, value }: { label: string; value?: string }) {
   );
 }
 
+function Bilingual({ sq, en, className = "" }: { sq: string; en: string; className?: string }) {
+  return (
+    <span className={`block ${className}`}>
+      <span className="block font-semibold text-ink">{sq}</span>
+      <span className="mt-0.5 block text-[0.82em] font-normal italic leading-tight text-muted">{en}</span>
+    </span>
+  );
+}
+
+function BilingualInfo({ sq, en, value }: { sq: string; en: string; value?: string }) {
+  return (
+    <div>
+      <div className="text-[10px] uppercase text-muted">
+        <Bilingual sq={sq} en={en} />
+      </div>
+      <div className="mt-1 font-medium text-ink">{value ?? "-"}</div>
+    </div>
+  );
+}
+
 function ReportInfoRow({ label, value }: { label: string; value?: string }) {
   return (
     <div className="grid border-b border-line md:grid-cols-[280px_1fr]">
@@ -760,23 +780,23 @@ function ThermalInsulationReportPreview({
     <section className="report-a4 thermal-report print-surface rounded-md border border-line bg-white p-5 shadow-sm">
       <ReportHeader report={report} code="SL-RA-PT-7.8/1" title="RAPORT TESTIMI / TEST REPORT" subtitle="Physical-mechanical characteristics for thermal insulating products" />
       <div className="mt-4 grid gap-x-4 gap-y-2 text-[11px] leading-tight sm:grid-cols-2">
-        <Info label="Register No." value={sample?.sampleCode} />
-        <Info label="Client / Purchaser" value={client?.clientName} />
-        <Info label="Address" value={client?.address} />
-        <Info label="Contact" value={client?.phone || client?.email} />
-        <Info label="Object / Project" value={project?.projectName} />
-        <Info label="Sample" value={sample?.sampleDescription || sample?.sampleType} />
-        <Info label="Type of product" value={thermalInsulation.productType || sample?.sampleType} />
-        <Info label="Delivered form" value={thermalInsulation.deliveredForm} />
-        <Info label="Defects" value={thermalInsulation.defects} />
-        <Info label="Sampling date" value={sample?.dateReceived} />
-        <Info label="Receipt date" value={sample?.dateReceived} />
-        <Info label="Testing start" value={thermalInsulation.testStartDate} />
-        <Info label="Testing end" value={thermalInsulation.testEndDate} />
-        <Info label="Sampling operator" value={sample?.collectionMethod === "Delivered by client" ? "KLIENTI / CLIENT" : sample?.collectedBy} />
-        <Info label="Lab location" value={thermalInsulation.testingLocation || "01/A (Lab. Fiziko-Mekanik / Physical-Mechanical laboratory)"} />
-        <Info label="Temperature" value={thermalInsulation.temperature} />
-        <Info label="Relative humidity" value={thermalInsulation.humidity} />
+        <BilingualInfo sq="Nr. regjistri" en="Register No." value={sample?.sampleCode} />
+        <BilingualInfo sq="Klienti" en="Purchaser" value={client?.clientName} />
+        <BilingualInfo sq="Adresa" en="Address" value={client?.address} />
+        <BilingualInfo sq="Kontakti" en="Contact" value={client?.phone || client?.email} />
+        <BilingualInfo sq="Objekti" en="Project" value={project?.projectName} />
+        <BilingualInfo sq="Mostra" en="Sample" value={sample?.sampleDescription || sample?.sampleType} />
+        <BilingualInfo sq="Lloji i produktit" en="Type of product" value={thermalInsulation.productType || sample?.sampleType} />
+        <BilingualInfo sq="Forma e dorëzimit" en="Delivered form" value={thermalInsulation.deliveredForm} />
+        <BilingualInfo sq="Defekte" en="Defects" value={thermalInsulation.defects} />
+        <BilingualInfo sq="Data e kampionimit" en="Sampling date" value={sample?.dateReceived} />
+        <BilingualInfo sq="Data e pranimit" en="Receipt date" value={sample?.dateReceived} />
+        <BilingualInfo sq="Fillimi i testimit" en="Testing start" value={thermalInsulation.testStartDate} />
+        <BilingualInfo sq="Përfundimi i testimit" en="Testing end" value={thermalInsulation.testEndDate} />
+        <BilingualInfo sq="Operatori i kampionimit" en="Sampling operator" value={sample?.collectionMethod === "Delivered by client" ? "KLIENTI / CLIENT" : sample?.collectedBy} />
+        <BilingualInfo sq="Vendndodhja e laboratorit" en="Lab location" value={thermalInsulation.testingLocation || "01/A (Lab. Fiziko-Mekanik / Physical-Mechanical laboratory)"} />
+        <BilingualInfo sq="Temperatura" en="Temperature" value={thermalInsulation.temperature} />
+        <BilingualInfo sq="Lagështia relative" en="Relative humidity" value={thermalInsulation.humidity} />
       </div>
       <div className="mt-5 rounded-md border border-line">
         <table className="report-table w-full text-left text-[10px] leading-tight">
@@ -794,15 +814,15 @@ function ThermalInsulationReportPreview({
             <col className="w-[5%]" />
           </colgroup>
           <thead className="table-head">
-            <tr><th className="px-1.5 py-1.5">No.</th><th className="px-1.5 py-1.5">Measured parameter</th><th className="px-1.5 py-1.5">Test standard</th><th className="px-1.5 py-1.5">Unit</th>{[1, 2, 3, 4, 5].map((index) => <th key={index} className="px-1.5 py-1.5">S{index}</th>)}<th className="px-1.5 py-1.5">Avg.</th><th className="px-1.5 py-1.5">Unc.</th></tr>
+            <tr><th className="px-1.5 py-1.5"><Bilingual sq="Nr." en="No." /></th><th className="px-1.5 py-1.5"><Bilingual sq="Parametri i matur" en="Measured parameter" /></th><th className="px-1.5 py-1.5"><Bilingual sq="Standardi" en="Test standard" /></th><th className="px-1.5 py-1.5"><Bilingual sq="Njësia" en="Unit" /></th>{[1, 2, 3, 4, 5].map((index) => <th key={index} className="px-1.5 py-1.5"><Bilingual sq={`M${index}`} en={`S${index}`} /></th>)}<th className="px-1.5 py-1.5"><Bilingual sq="Mes." en="Avg." /></th><th className="px-1.5 py-1.5"><Bilingual sq="Pasig." en="Unc." /></th></tr>
           </thead>
           <tbody className="divide-y divide-line">
-            <ThermalReportRow no="1" label="Përcaktimi i gjatësisë / Determination of length" standard="BS EN 822:2013" unit="mm" values={sampleValues((i) => thermalInsulation.specimens[i]?.lengthMm ?? 0)} average={thermalInsulation.averages.lengthMm} uncertainty="1.4" />
-            <ThermalReportRow no="2" label="Përcaktimi i gjerësisë / Determination of width" standard="BS EN 822:2013" unit="mm" values={sampleValues((i) => thermalInsulation.specimens[i]?.widthMm ?? 0)} average={thermalInsulation.averages.widthMm} uncertainty="1.7" />
-            <ThermalReportRow no="3" label="Përcaktimi i trashësisë / Determination of thickness" standard="BS EN 823:2013" unit="mm" values={sampleValues((i) => thermalInsulation.specimens[i]?.thicknessMm ?? 0)} average={thermalInsulation.averages.thicknessMm} uncertainty="1.4" />
-            <ThermalReportRow no="4" label="Përcaktimi i densitetit aparent / Determination of apparent density" standard="BS EN 1602:2013" unit="kg/m3" values={sampleValues((i) => thermalInsulation.specimens[i]?.apparentDensityKgM3 ?? 0)} average={thermalInsulation.averages.apparentDensityKgM3} uncertainty="1" />
-            <ThermalReportRow no="5" label="Absorbimi i ujit me zhytje të pjesshme / Short-term water absorption" standard="BS EN ISO 29767:2019" unit="kg/m2" values={sampleValues((i) => thermalInsulation.specimens[i]?.waterAbsorptionKgM2 ?? 0)} average={thermalInsulation.averages.waterAbsorptionKgM2} uncertainty="0.36" />
-            <ThermalReportRow no="6" label="Përcaktimi i sjelljes ndaj shtypjes / Determination of compression behaviour" standard="BS EN 826:2013" unit="kPa" values={sampleValues((i) => thermalInsulation.specimens[i]?.compressiveStressAtTenPercentKpa || thermalInsulation.specimens[i]?.compressiveStressKpa || 0)} average={thermalInsulation.averages.compressiveStressKpa} uncertainty="2.7" />
+            <ThermalReportRow no="1" labelSq="Përcaktimi i gjatësisë" labelEn="Determination of length" standard="BS EN 822:2013" unit="mm" values={sampleValues((i) => thermalInsulation.specimens[i]?.lengthMm ?? 0)} average={thermalInsulation.averages.lengthMm} uncertainty="1.4" />
+            <ThermalReportRow no="2" labelSq="Përcaktimi i gjerësisë" labelEn="Determination of width" standard="BS EN 822:2013" unit="mm" values={sampleValues((i) => thermalInsulation.specimens[i]?.widthMm ?? 0)} average={thermalInsulation.averages.widthMm} uncertainty="1.7" />
+            <ThermalReportRow no="3" labelSq="Përcaktimi i trashësisë" labelEn="Determination of thickness" standard="BS EN 823:2013" unit="mm" values={sampleValues((i) => thermalInsulation.specimens[i]?.thicknessMm ?? 0)} average={thermalInsulation.averages.thicknessMm} uncertainty="1.4" />
+            <ThermalReportRow no="4" labelSq="Përcaktimi i densitetit aparent" labelEn="Determination of apparent density" standard="BS EN 1602:2013" unit="kg/m3" values={sampleValues((i) => thermalInsulation.specimens[i]?.apparentDensityKgM3 ?? 0)} average={thermalInsulation.averages.apparentDensityKgM3} uncertainty="1" />
+            <ThermalReportRow no="5" labelSq="Absorbimi i ujit me zhytje të pjesshme" labelEn="Short-term water absorption" standard="BS EN ISO 29767:2019" unit="kg/m2" values={sampleValues((i) => thermalInsulation.specimens[i]?.waterAbsorptionKgM2 ?? 0)} average={thermalInsulation.averages.waterAbsorptionKgM2} uncertainty="0.36" />
+            <ThermalReportRow no="6" labelSq="Përcaktimi i sjelljes ndaj shtypjes" labelEn="Determination of compression behaviour" standard="BS EN 826:2013" unit="kPa" values={sampleValues((i) => thermalInsulation.specimens[i]?.compressiveStressAtTenPercentKpa || thermalInsulation.specimens[i]?.compressiveStressKpa || 0)} average={thermalInsulation.averages.compressiveStressKpa} uncertainty="2.7" />
           </tbody>
         </table>
       </div>
@@ -812,8 +832,8 @@ function ThermalInsulationReportPreview({
   );
 }
 
-function ThermalReportRow({ no, label, standard, unit, values, average, uncertainty }: { no: string; label: string; standard: string; unit: string; values: number[]; average: number; uncertainty: string }) {
-  return <tr><td className="px-1.5 py-1.5 font-semibold text-ink">{no}</td><td className="px-1.5 py-1.5">{label}</td><td className="px-1.5 py-1.5">{standard}</td><td className="px-1.5 py-1.5">{unit}</td>{values.map((value, index) => <td key={index} className="px-1.5 py-1.5">{value || value === 0 ? value : "-"}</td>)}<td className="px-1.5 py-1.5 font-semibold text-ink">{average}</td><td className="px-1.5 py-1.5">{uncertainty}</td></tr>;
+function ThermalReportRow({ no, labelSq, labelEn, standard, unit, values, average, uncertainty }: { no: string; labelSq: string; labelEn: string; standard: string; unit: string; values: number[]; average: number; uncertainty: string }) {
+  return <tr><td className="px-1.5 py-1.5 font-semibold text-ink">{no}</td><td className="px-1.5 py-1.5"><Bilingual sq={labelSq} en={labelEn} /></td><td className="px-1.5 py-1.5">{standard}</td><td className="px-1.5 py-1.5">{unit}</td>{values.map((value, index) => <td key={index} className="px-1.5 py-1.5">{value || value === 0 ? value : "-"}</td>)}<td className="px-1.5 py-1.5 font-semibold text-ink">{average}</td><td className="px-1.5 py-1.5">{uncertainty}</td></tr>;
 }
 
 function SteelReportPreview({
