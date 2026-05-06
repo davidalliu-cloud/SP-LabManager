@@ -837,7 +837,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
   const lastSavedOnlineJson = useRef<string | null>(null);
   const currentUser =
     state.users.find((user) => user.email.toLowerCase() === auth.user?.email?.toLowerCase()) ??
-    state.users.find((user) => user.id === "u-admin") ??
+    state.users.find((user) => user.role === "Technician") ??
     state.users[0];
   const currentUserId = currentUser?.id ?? "u-admin";
 
