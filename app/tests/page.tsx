@@ -11,7 +11,7 @@ export default function TestsPage() {
   const showClientIdentity = canViewClientIdentity(currentUser?.role);
   return (
     <>
-      <PageHeader title="Tests" description="Concrete cube compressive strength tests with deadline and status tracking." />
+      <PageHeader title="Testet" description="Lista e testeve me afate, status dhe teknik të caktuar." />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {store.tests.map((test) => (
           <TestCard

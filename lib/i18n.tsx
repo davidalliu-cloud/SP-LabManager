@@ -226,7 +226,7 @@ interface I18nValue {
 const I18nContext = createContext<I18nValue | null>(null);
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguage] = useState<Language>("en");
+  const [language, setLanguage] = useState<Language>("sq");
   const value = useMemo<I18nValue>(() => ({
     language,
     setLanguage,

@@ -10,7 +10,7 @@ export default function DelayedPage() {
   const delayed = store.tests.filter((test) => test.status === "Delayed" || isOverdue(test.requiredTestDate, test.status));
   return (
     <>
-      <PageHeader title="Delayed Items" description="Tests past required date or explicitly marked delayed." />
+      <PageHeader title="Artikuj me vonesë" description="Teste që kanë kaluar datën e kërkuar ose janë shënuar me vonesë." />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {delayed.map((test) => (
           <TestCard
@@ -23,7 +23,7 @@ export default function DelayedPage() {
           />
         ))}
       </div>
-      {!delayed.length ? <div className="rounded-md border border-line bg-white p-6 text-sm text-muted shadow-sm">No delayed tests at the moment.</div> : null}
+      {!delayed.length ? <div className="rounded-md border border-line bg-white p-6 text-sm text-muted shadow-sm">Nuk ka teste me vonesë për momentin.</div> : null}
     </>
   );
 }

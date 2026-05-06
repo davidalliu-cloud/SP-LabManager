@@ -1497,7 +1497,7 @@ export default function TestDetailPage() {
                     <div className="mb-2 text-sm font-semibold text-ink">Sample {sampleIndex}</div>
                     <Field label="M0 before testing [g]"><input name={`flakeInitialMass-${sampleIndex}`} type="number" step="0.01" defaultValue={aggregateFlakiness?.initialSampleMassesG[sampleIndex - 1] ?? ""} className="input" /></Field>
                     <Field label="Discarded mass [g]"><input name={`flakeDiscardedMass-${sampleIndex}`} type="number" step="0.01" defaultValue={aggregateFlakiness?.discardedMassesG[sampleIndex - 1] ?? ""} className="input" /></Field>
-                    <div className="mt-2 text-xs text-muted">M1 before bar sieve: {aggregateFlakiness ? `${aggregateFlakiness.totals.sampleMassBeforeBarSieveG[sampleIndex - 1]} g` : "Save to calculate"}</div>
+                    <div className="mt-2 text-xs text-muted">M1 para sitës me shufra: {aggregateFlakiness ? `${aggregateFlakiness.totals.sampleMassBeforeBarSieveG[sampleIndex - 1]} g` : "Ruaj për të llogaritur"}</div>
                   </div>
                 ))}
               </div>
@@ -1553,18 +1553,18 @@ export default function TestDetailPage() {
 
           <aside className="space-y-4">
             <div className="surface-card p-4">
-              <h2 className="text-base font-semibold text-ink">Workflow Actions</h2>
+              <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
-                <button onClick={complete} disabled={!aggregateFlakiness} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Mark Test as Completed</button>
-                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Generate Report</button>
+                <button onClick={complete} disabled={!aggregateFlakiness} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
+                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
                 <div className="soft-panel p-3 text-xs text-muted">
                   {aggregateFlakiness ? `Flakiness index calculated as ${aggregateFlakiness.totals.finalFlakinessIndexPercent}%.` : "Save worksheet data first to calculate flakiness index."}
                 </div>
-                {report ? <Link className="btn-secondary block text-center" href={`/reports/${report.id}`}>Open Report</Link> : null}
+                {report ? <Link className="btn-secondary block text-center" href={`/reports/${report.id}`}>Hap raportin</Link> : null}
               </div>
             </div>
             <div className="surface-card p-4 text-sm">
-              <h2 className="text-base font-semibold text-ink">Test Metadata</h2>
+              <h2 className="text-base font-semibold text-ink">Të dhënat e testit</h2>
               <Info label="Standard" value={activeTest.standard} />
               <Info label="Required test date" value={activeTest.requiredTestDate} />
               <Info label="Report due date" value={activeTest.dueDate} />
@@ -1633,7 +1633,7 @@ export default function TestDetailPage() {
                           <td className="px-3 py-2"><input name={`shapeFraction-${index}`} defaultValue={row?.fractionLabel ?? defaults[index] ?? ""} className="input min-w-32" /></td>
                           <td className="px-3 py-2"><input name={`shapeMass-${index}`} type="number" step="0.01" defaultValue={row?.testPortionMassG ?? ""} className="input min-w-32" /></td>
                           <td className="px-3 py-2"><input name={`shapeNonCubicalMass-${index}`} type="number" step="0.01" defaultValue={row?.nonCubicalMassG ?? ""} className="input min-w-32" /></td>
-                          <td className="px-3 py-2 font-semibold text-ink">{row ? `${row.shapeIndexPercent}%` : "Save to calculate"}</td>
+                          <td className="px-3 py-2 font-semibold text-ink">{row ? `${row.shapeIndexPercent}%` : "Ruaj për të llogaritur"}</td>
                         </tr>
                       );
                     })}
@@ -1658,18 +1658,18 @@ export default function TestDetailPage() {
 
           <aside className="space-y-4">
             <div className="surface-card p-4">
-              <h2 className="text-base font-semibold text-ink">Workflow Actions</h2>
+              <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
-                <button onClick={complete} disabled={!aggregateShapeIndex} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Mark Test as Completed</button>
-                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Generate Report</button>
+                <button onClick={complete} disabled={!aggregateShapeIndex} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
+                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
                 <div className="soft-panel p-3 text-xs text-muted">
                   {aggregateShapeIndex ? `Shape index calculated as ${aggregateShapeIndex.shapeIndexPercent}%.` : "Save worksheet data first to calculate shape index."}
                 </div>
-                {report ? <Link className="btn-secondary block text-center" href={`/reports/${report.id}`}>Open Report</Link> : null}
+                {report ? <Link className="btn-secondary block text-center" href={`/reports/${report.id}`}>Hap raportin</Link> : null}
               </div>
             </div>
             <div className="surface-card p-4 text-sm">
-              <h2 className="text-base font-semibold text-ink">Test Metadata</h2>
+              <h2 className="text-base font-semibold text-ink">Të dhënat e testit</h2>
               <Info label="Standard" value={activeTest.standard} />
               <Info label="Required test date" value={activeTest.requiredTestDate} />
               <Info label="Report due date" value={activeTest.dueDate} />
@@ -1765,18 +1765,18 @@ export default function TestDetailPage() {
 
           <aside className="space-y-4">
             <div className="surface-card p-4">
-              <h2 className="text-base font-semibold text-ink">Workflow Actions</h2>
+              <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
-                <button onClick={complete} disabled={!aggregateFillerDensity} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Mark Test as Completed</button>
-                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Generate Report</button>
+                <button onClick={complete} disabled={!aggregateFillerDensity} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
+                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
                 <div className="soft-panel p-3 text-xs text-muted">
                   {aggregateFillerDensity ? `Average filler density ${aggregateFillerDensity.averageParticleDensity} Mg/m3.` : "Save worksheet data first to calculate filler density."}
                 </div>
-                {report ? <Link className="btn-secondary block text-center" href={`/reports/${report.id}`}>Open Report</Link> : null}
+                {report ? <Link className="btn-secondary block text-center" href={`/reports/${report.id}`}>Hap raportin</Link> : null}
               </div>
             </div>
             <div className="surface-card p-4 text-sm">
-              <h2 className="text-base font-semibold text-ink">Test Metadata</h2>
+              <h2 className="text-base font-semibold text-ink">Të dhënat e testit</h2>
               <Info label="Standard" value={activeTest.standard} />
               <Info label="Required test date" value={activeTest.requiredTestDate} />
               <Info label="Report due date" value={activeTest.dueDate} />
@@ -1881,18 +1881,18 @@ export default function TestDetailPage() {
 
           <aside className="space-y-4">
             <div className="surface-card p-4">
-              <h2 className="text-base font-semibold text-ink">Workflow Actions</h2>
+              <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
-                <button onClick={complete} disabled={!aggregateDensity} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Mark Test as Completed</button>
-                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Generate Report</button>
+                <button onClick={complete} disabled={!aggregateDensity} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
+                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
                 <div className="soft-panel p-3 text-xs text-muted">
                   {aggregateDensity ? `Average absorption ${aggregateDensity.averageAbsorptionPercent}%, apparent density ${aggregateDensity.averageApparentDensity}.` : "Save the worksheet data first to calculate density and absorption."}
                 </div>
-                {report ? <Link className="btn-secondary block text-center" href={`/reports/${report.id}`}>Open Report</Link> : null}
+                {report ? <Link className="btn-secondary block text-center" href={`/reports/${report.id}`}>Hap raportin</Link> : null}
               </div>
             </div>
             <div className="surface-card p-4 text-sm">
-              <h2 className="text-base font-semibold text-ink">Test Metadata</h2>
+              <h2 className="text-base font-semibold text-ink">Të dhënat e testit</h2>
               <Info label="Standard" value={activeTest.standard} />
               <Info label="Required test date" value={activeTest.requiredTestDate} />
               <Info label="Report due date" value={activeTest.dueDate} />
@@ -1956,12 +1956,12 @@ export default function TestDetailPage() {
                         <td className="px-3 py-2 font-semibold text-ink">{label}</td>
                         <td className="px-3 py-2"><input name={`acvW1-${index}`} type="number" step="0.01" defaultValue={run?.totalDrySampleMassG ?? ""} className="input min-w-36" /></td>
                         <td className="px-3 py-2"><input name={`acvW2-${index}`} type="number" step="0.01" defaultValue={run?.passingTwoPointThirtySixMmMassG ?? ""} className="input min-w-36" /></td>
-                        <td className="px-3 py-2 font-semibold text-ink">{run ? `${run.acvPercent}%` : "Save to calculate"}</td>
+                        <td className="px-3 py-2 font-semibold text-ink">{run ? `${run.acvPercent}%` : "Ruaj për të llogaritur"}</td>
                       </tr>
                     ))}
                     <tr className="bg-lab-porcelain">
                       <td className="px-3 py-2 font-semibold text-ink" colSpan={3}>Mean aggregate crushing value</td>
-                      <td className="px-3 py-2 font-semibold text-ink">{aggregateAcv ? `${aggregateAcv.averageAcvPercent}%` : "Save to calculate"}</td>
+                      <td className="px-3 py-2 font-semibold text-ink">{aggregateAcv ? `${aggregateAcv.averageAcvPercent}%` : "Ruaj për të llogaritur"}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -1978,18 +1978,18 @@ export default function TestDetailPage() {
 
           <aside className="space-y-4">
             <div className="surface-card p-4">
-              <h2 className="text-base font-semibold text-ink">Workflow Actions</h2>
+              <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
-                <button onClick={complete} disabled={!aggregateAcv} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Mark Test as Completed</button>
-                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Generate Report</button>
+                <button onClick={complete} disabled={!aggregateAcv} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
+                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
                 <div className="soft-panel p-3 text-xs text-muted">
                   {aggregateAcv ? `Mean ACV calculated as ${aggregateAcv.averageAcvPercent}%.` : "Save the worksheet data first to calculate ACV."}
                 </div>
-                {report ? <Link className="btn-secondary block text-center" href={`/reports/${report.id}`}>Open Report</Link> : null}
+                {report ? <Link className="btn-secondary block text-center" href={`/reports/${report.id}`}>Hap raportin</Link> : null}
               </div>
             </div>
             <div className="surface-card p-4 text-sm">
-              <h2 className="text-base font-semibold text-ink">Test Metadata</h2>
+              <h2 className="text-base font-semibold text-ink">Të dhënat e testit</h2>
               <Info label="Standard" value={activeTest.standard} />
               <Info label="Required test date" value={activeTest.requiredTestDate} />
               <Info label="Report due date" value={activeTest.dueDate} />
@@ -2067,7 +2067,7 @@ export default function TestDetailPage() {
                           <td className="px-3 py-2"><input name={`initialDryMassG-${index}`} type="number" step="0.01" defaultValue={specimen?.initialDryMassG ?? ""} className="input min-w-32" /></td>
                           <td className="px-3 py-2"><input name={`washingSieveSizeMm-${index}`} type="number" step="0.01" defaultValue={specimen?.washingSieveSizeMm ?? ""} className="input min-w-28" /></td>
                           <td className="px-3 py-2"><input name={`finalDryMassG-${index}`} type="number" step="0.01" defaultValue={specimen?.finalDryMassG ?? ""} className="input min-w-32" /></td>
-                          <td className="px-3 py-2 font-semibold text-ink">{specimen ? `${specimen.massLossPercent}%` : "Save to calculate"}</td>
+                          <td className="px-3 py-2 font-semibold text-ink">{specimen ? `${specimen.massLossPercent}%` : "Ruaj për të llogaritur"}</td>
                           <td className="px-3 py-2"><input name={`particlesBefore-${index}`} type="number" defaultValue={specimen?.particlesBefore ?? ""} className="input min-w-28" /></td>
                           <td className="px-3 py-2"><input name={`splitParticles-${index}`} type="number" defaultValue={specimen?.splitParticles ?? ""} className="input min-w-28" /></td>
                           <td className="px-3 py-2"><input name={`crackedParticles-${index}`} type="number" defaultValue={specimen?.crackedParticles ?? ""} className="input min-w-28" /></td>
@@ -2086,7 +2086,7 @@ export default function TestDetailPage() {
                   <textarea name="notes" rows={4} defaultValue={aggregateFreezeThaw?.notes} className="input mt-1" />
                 </div>
                 <div className="soft-panel p-4 text-sm">
-                  <InfoInline label="Average mass loss" value={aggregateFreezeThaw ? `${aggregateFreezeThaw.averageMassLossPercent}%` : "Save to calculate"} />
+                  <InfoInline label="Humbja mesatare e masës" value={aggregateFreezeThaw ? `${aggregateFreezeThaw.averageMassLossPercent}%` : "Ruaj për të llogaritur"} />
                 </div>
               </div>
 
@@ -2098,18 +2098,18 @@ export default function TestDetailPage() {
 
           <aside className="space-y-4">
             <div className="surface-card p-4">
-              <h2 className="text-base font-semibold text-ink">Workflow Actions</h2>
+              <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
-                <button onClick={complete} disabled={!aggregateFreezeThaw} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Mark Test as Completed</button>
-                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Generate Report</button>
+                <button onClick={complete} disabled={!aggregateFreezeThaw} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
+                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
                 <div className="soft-panel p-3 text-xs text-muted">
                   {aggregateFreezeThaw ? `Average freeze-thaw mass loss calculated as ${aggregateFreezeThaw.averageMassLossPercent}%.` : "Save the worksheet data first to calculate freeze-thaw mass loss."}
                 </div>
-                {report ? <Link className="btn-secondary block text-center" href={`/reports/${report.id}`}>Open Report</Link> : null}
+                {report ? <Link className="btn-secondary block text-center" href={`/reports/${report.id}`}>Hap raportin</Link> : null}
               </div>
             </div>
             <div className="surface-card p-4 text-sm">
-              <h2 className="text-base font-semibold text-ink">Test Metadata</h2>
+              <h2 className="text-base font-semibold text-ink">Të dhënat e testit</h2>
               <Info label="Standard" value={activeTest.standard} />
               <Info label="Required test date" value={activeTest.requiredTestDate} />
               <Info label="Report due date" value={activeTest.dueDate} />
@@ -2191,9 +2191,9 @@ export default function TestDetailPage() {
                 <Field label="Mass retained on 1.6 mm sieve, m [g]"><input name="retainedOnOnePointSixMmG" type="number" step="0.1" defaultValue={aggregateLosAngeles?.retainedOnOnePointSixMmG ?? ""} className="input" /></Field>
                 <div className="soft-panel p-4 text-sm">
                   <div className="grid gap-2 sm:grid-cols-3">
-                    <InfoInline label="Total m0" value={aggregateLosAngeles ? `${aggregateLosAngeles.totalMassG} g` : "Save to calculate"} />
-                    <InfoInline label="Passing m1" value={aggregateLosAngeles ? `${aggregateLosAngeles.passingOnePointSixMmG} g` : "Save to calculate"} />
-                    <InfoInline label="LA loss" value={aggregateLosAngeles ? `${aggregateLosAngeles.fragmentationLossPercent}%` : "Save to calculate"} />
+                    <InfoInline label="Total m0" value={aggregateLosAngeles ? `${aggregateLosAngeles.totalMassG} g` : "Ruaj për të llogaritur"} />
+                    <InfoInline label="Kalimi m1" value={aggregateLosAngeles ? `${aggregateLosAngeles.passingOnePointSixMmG} g` : "Ruaj për të llogaritur"} />
+                    <InfoInline label="Humbja LA" value={aggregateLosAngeles ? `${aggregateLosAngeles.fragmentationLossPercent}%` : "Ruaj për të llogaritur"} />
                   </div>
                 </div>
                 <div className="md:col-span-2">
@@ -2210,18 +2210,18 @@ export default function TestDetailPage() {
 
           <aside className="space-y-4">
             <div className="surface-card p-4">
-              <h2 className="text-base font-semibold text-ink">Workflow Actions</h2>
+              <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
-                <button onClick={complete} disabled={!aggregateLosAngeles} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Mark Test as Completed</button>
-                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Generate Report</button>
+                <button onClick={complete} disabled={!aggregateLosAngeles} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
+                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
                 <div className="soft-panel p-3 text-xs text-muted">
                   {aggregateLosAngeles ? `Fragmentation loss calculated as ${aggregateLosAngeles.fragmentationLossPercent}%.` : "Save the worksheet data first to calculate Los Angeles fragmentation loss."}
                 </div>
-                {report ? <Link className="btn-secondary block text-center" href={`/reports/${report.id}`}>Open Report</Link> : null}
+                {report ? <Link className="btn-secondary block text-center" href={`/reports/${report.id}`}>Hap raportin</Link> : null}
               </div>
             </div>
             <div className="surface-card p-4 text-sm">
-              <h2 className="text-base font-semibold text-ink">Test Metadata</h2>
+              <h2 className="text-base font-semibold text-ink">Të dhënat e testit</h2>
               <Info label="Standard" value={activeTest.standard} />
               <Info label="Required test date" value={activeTest.requiredTestDate} />
               <Info label="Report due date" value={activeTest.dueDate} />
@@ -2305,18 +2305,18 @@ export default function TestDetailPage() {
 
           <aside className="space-y-4">
             <div className="surface-card p-4">
-              <h2 className="text-base font-semibold text-ink">Workflow Actions</h2>
+              <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
-                <button onClick={complete} disabled={!aggregateChemical} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Mark Test as Completed</button>
-                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Generate Report</button>
+                <button onClick={complete} disabled={!aggregateChemical} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
+                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
                 <div className="soft-panel p-3 text-xs text-muted">
                   {aggregateChemical ? "Calculated chloride and sulfate results are ready for the chemical report." : "Save the worksheet data first to calculate report results."}
                 </div>
-                {report ? <Link className="btn-secondary block text-center" href={`/reports/${report.id}`}>Open Report</Link> : null}
+                {report ? <Link className="btn-secondary block text-center" href={`/reports/${report.id}`}>Hap raportin</Link> : null}
               </div>
             </div>
             <div className="surface-card p-4 text-sm">
-              <h2 className="text-base font-semibold text-ink">Test Metadata</h2>
+              <h2 className="text-base font-semibold text-ink">Të dhënat e testit</h2>
               <Info label="Standard" value={activeTest.standard} />
               <Info label="Required test date" value={activeTest.requiredTestDate} />
               <Info label="Report due date" value={activeTest.dueDate} />
@@ -2390,9 +2390,9 @@ export default function TestDetailPage() {
                         <tr key={index}>
                           <td className="px-3 py-2"><input name={`sieveSizeMm-${index}`} type="number" step="0.001" defaultValue={row?.sieveSizeMm ?? aggregateSieveSizes[index] ?? ""} className="input min-w-28" /></td>
                           <td className="px-3 py-2"><input name={`retainedMassG-${index}`} type="number" step="0.01" defaultValue={row?.retainedMassG ?? ""} className="input min-w-32" /></td>
-                          <td className="px-3 py-2 font-semibold text-ink">{row ? row.cumulativeRetainedMassG : "Save to calculate"}</td>
-                          <td className="px-3 py-2 font-semibold text-ink">{row ? `${row.cumulativeRetainedPercent}%` : "Save to calculate"}</td>
-                          <td className="px-3 py-2 font-semibold text-ink">{row ? `${row.cumulativePassingPercent}%` : "Save to calculate"}</td>
+                          <td className="px-3 py-2 font-semibold text-ink">{row ? row.cumulativeRetainedMassG : "Ruaj për të llogaritur"}</td>
+                          <td className="px-3 py-2 font-semibold text-ink">{row ? `${row.cumulativeRetainedPercent}%` : "Ruaj për të llogaritur"}</td>
+                          <td className="px-3 py-2 font-semibold text-ink">{row ? `${row.cumulativePassingPercent}%` : "Ruaj për të llogaritur"}</td>
                         </tr>
                       );
                     })}
@@ -2411,16 +2411,16 @@ export default function TestDetailPage() {
 
           <aside className="space-y-4">
             <div className="surface-card p-4">
-              <h2 className="text-base font-semibold text-ink">Workflow Actions</h2>
+              <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
-                <button onClick={complete} disabled={!aggregate} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Mark Test as Completed</button>
-                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Generate Report</button>
+                <button onClick={complete} disabled={!aggregate} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
+                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
                 <div className="soft-panel p-3 text-xs text-muted">{aggregate?.rows.length ?? 0} sieve row{(aggregate?.rows.length ?? 0) === 1 ? "" : "s"} saved. The report uses BS EN cumulative passing calculations.</div>
-                {report ? <Link className="btn-secondary block text-center" href={`/reports/${report.id}`}>Open Report</Link> : null}
+                {report ? <Link className="btn-secondary block text-center" href={`/reports/${report.id}`}>Hap raportin</Link> : null}
               </div>
             </div>
             <div className="surface-card p-4 text-sm">
-              <h2 className="text-base font-semibold text-ink">Test Metadata</h2>
+              <h2 className="text-base font-semibold text-ink">Të dhënat e testit</h2>
               <Info label="Standard" value={activeTest.standard} />
               <Info label="Required test date" value={activeTest.requiredTestDate} />
               <Info label="Report due date" value={activeTest.dueDate} />
@@ -2528,9 +2528,9 @@ export default function TestDetailPage() {
                           <td className="px-3 py-2"><input name={`yieldLoadKn-${index}`} type="number" step="0.01" defaultValue={specimen?.yieldLoadKn ?? ""} className="input min-w-24" /></td>
                           <td className="px-3 py-2"><input name={`ultimateLoadKn-${index}`} type="number" step="0.01" defaultValue={specimen?.ultimateLoadKn ?? ""} className="input min-w-24" /></td>
                           <td className="px-3 py-2"><input name={`postTestDiameterMm-${index}`} type="number" step="0.01" defaultValue={specimen?.postTestDiameterMm ?? ""} className="input min-w-24" /></td>
-                          <td className="px-3 py-2 font-semibold text-ink">{specimen ? `${specimen.yieldStrengthMpa} MPa` : "Save to calculate"}</td>
-                          <td className="px-3 py-2 font-semibold text-ink">{specimen ? `${specimen.tensileStrengthMpa} MPa` : "Save to calculate"}</td>
-                          <td className="px-3 py-2 font-semibold text-ink">{specimen ? `${specimen.elongationPercent}%` : "Save to calculate"}</td>
+                          <td className="px-3 py-2 font-semibold text-ink">{specimen ? `${specimen.yieldStrengthMpa} MPa` : "Ruaj për të llogaritur"}</td>
+                          <td className="px-3 py-2 font-semibold text-ink">{specimen ? `${specimen.tensileStrengthMpa} MPa` : "Ruaj për të llogaritur"}</td>
+                          <td className="px-3 py-2 font-semibold text-ink">{specimen ? `${specimen.elongationPercent}%` : "Ruaj për të llogaritur"}</td>
                           <td className="px-3 py-2"><input name={`fractureType-${index}`} defaultValue={specimen?.fractureType ?? ""} className="input min-w-40" /></td>
                           <td className="px-3 py-2"><input name={`specimenNotes-${index}`} defaultValue={specimen?.notes ?? ""} className="input min-w-40" /></td>
                         </tr>
@@ -2556,30 +2556,30 @@ export default function TestDetailPage() {
 
           <aside className="space-y-4">
             <div className="surface-card p-4">
-              <h2 className="text-base font-semibold text-ink">Workflow Actions</h2>
+              <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
                 <button
                   onClick={complete}
                   disabled={!steel}
                   className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
-                  Mark Test as Completed
+                  Shëno testin si të përfunduar
                 </button>
                 <button
                   onClick={generateReport}
                   disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)}
                   className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
-                  Generate {steelReportCount} Report{steelReportCount === 1 ? "" : "s"}
+                  Gjenero {steelReportCount} raport{steelReportCount === 1 ? "" : "e"}
                 </button>
                 <div className="soft-panel p-3 text-xs text-muted">
-                  {steel?.specimens.length ?? 0} specimen{(steel?.specimens.length ?? 0) === 1 ? "" : "s"} saved. Reports split by diameter with a maximum of 3 specimens per report.
+                  {steel?.specimens.length ?? 0} mostra të ruajtura. Raportet ndahen sipas diametrit me maksimum 3 mostra për raport.
                 </div>
-                {report ? <Link className="btn-secondary block text-center" href={`/reports/${report.id}`}>Open Report</Link> : null}
+                {report ? <Link className="btn-secondary block text-center" href={`/reports/${report.id}`}>Hap raportin</Link> : null}
               </div>
             </div>
             <div className="surface-card p-4 text-sm">
-              <h2 className="text-base font-semibold text-ink">Test Metadata</h2>
+              <h2 className="text-base font-semibold text-ink">Të dhënat e testit</h2>
               <Info label="Standard" value={activeTest.standard} />
               <Info label="Required test date" value={activeTest.requiredTestDate} />
               <Info label="Report due date" value={activeTest.dueDate} />
@@ -2679,7 +2679,7 @@ export default function TestDetailPage() {
                         <td className="px-3 py-2"><input name={`heightMm-${index}`} type="number" defaultValue={specimen?.heightMm ?? 150} className="input min-w-24" /></td>
                         <td className="px-3 py-2"><input name={`weightKg-${index}`} type="number" step="0.01" defaultValue={specimen?.weightKg ?? ""} className="input min-w-24" /></td>
                         <td className="px-3 py-2"><input name={`maximumLoadKn-${index}`} type="number" step="0.01" defaultValue={specimen?.maximumLoadKn ?? ""} className="input min-w-24" /></td>
-                        <td className="px-3 py-2 font-semibold text-ink">{specimen ? `${specimen.compressiveStrengthMpa} MPa` : "Save to calculate"}</td>
+                        <td className="px-3 py-2 font-semibold text-ink">{specimen ? `${specimen.compressiveStrengthMpa} MPa` : "Ruaj për të llogaritur"}</td>
                         <td className="px-3 py-2"><input name={`visualInspection-${index}`} defaultValue={specimen?.visualInspection ?? ""} className="input min-w-44" /></td>
                         <td className="px-3 py-2"><input name={`specimenNotes-${index}`} defaultValue={specimen?.notes ?? ""} className="input min-w-40" /></td>
                       </tr>
@@ -2702,32 +2702,32 @@ export default function TestDetailPage() {
 
         <aside className="space-y-4">
           <div className="surface-card p-4">
-            <h2 className="text-base font-semibold text-ink">Workflow Actions</h2>
+            <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
             <div className="mt-4 space-y-3">
               <button
                 onClick={complete}
                 disabled={!concrete}
                 className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300"
               >
-                Mark Test as Completed
+                Shëno testin si të përfunduar
               </button>
               <button
                 onClick={generateReport}
                 disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)}
                 className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300"
               >
-                Generate {expectedReportCount} Report{expectedReportCount === 1 ? "" : "s"}
+                Gjenero {expectedReportCount} raport{expectedReportCount === 1 ? "" : "e"}
               </button>
               {concrete ? (
                 <div className="soft-panel p-3 text-xs text-muted">
-                  {specimenCount || 1} cube{(specimenCount || 1) === 1 ? "" : "s"} will be split into reports with a maximum of 3 cubes each.
+                  {specimenCount || 1} kub{(specimenCount || 1) === 1 ? "" : "e"} do të ndahen në raporte me maksimum 3 kube për secilin raport.
                 </div>
               ) : null}
-              {report ? <Link className="btn-secondary block text-center" href={`/reports/${report.id}`}>Open Report</Link> : null}
+              {report ? <Link className="btn-secondary block text-center" href={`/reports/${report.id}`}>Hap raportin</Link> : null}
             </div>
           </div>
           <div className="surface-card p-4 text-sm">
-            <h2 className="text-base font-semibold text-ink">Test Metadata</h2>
+            <h2 className="text-base font-semibold text-ink">Të dhënat e testit</h2>
             <Info label="Standard" value={activeTest.standard} />
             <Info label="Required test date" value={activeTest.requiredTestDate} />
             <Info label="Report due date" value={activeTest.dueDate} />
@@ -2743,7 +2743,7 @@ export default function TestDetailPage() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block text-sm font-medium text-ink">
-      {label}
+      {testUiLabel(label)}
       <div className="mt-1">{children}</div>
     </label>
   );
@@ -2764,7 +2764,7 @@ function EmployeeSelect({
   return (
     <select name={name} required={required} defaultValue={selectedValue} className="input">
       <option value="" disabled={required}>
-        Select employee
+        Zgjidh punonjësin
       </option>
       {employees.map((employee) => (
         <option key={employee.id} value={employee.fullName}>
@@ -2824,16 +2824,16 @@ function TestActionsSidebar({
   return (
     <aside className="space-y-4">
       <div className="surface-card p-4">
-        <h2 className="text-base font-semibold text-ink">Workflow Actions</h2>
+        <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
         <div className="mt-4 space-y-3">
-          <button onClick={complete} disabled={!ready} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Mark Test as Completed</button>
-          <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Generate Report</button>
+          <button onClick={complete} disabled={!ready} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
+          <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
           <div className="soft-panel p-3 text-xs text-muted">{message}</div>
-          {reportId ? <Link className="btn-secondary block text-center" href={`/reports/${reportId}`}>Open Report</Link> : null}
+          {reportId ? <Link className="btn-secondary block text-center" href={`/reports/${reportId}`}>Hap raportin</Link> : null}
         </div>
       </div>
       <div className="surface-card p-4 text-sm">
-        <h2 className="text-base font-semibold text-ink">Test Metadata</h2>
+        <h2 className="text-base font-semibold text-ink">Të dhënat e testit</h2>
         <Info label="Standard" value={activeTest.standard} />
         <Info label="Required test date" value={activeTest.requiredTestDate} />
         <Info label="Report due date" value={activeTest.dueDate} />
@@ -2866,7 +2866,7 @@ function ChemicalSection<T>({
         <table className="w-full min-w-[820px] text-left text-sm">
           <thead className="table-head">
             <tr>
-              <th className="px-3 py-2">Trial</th>
+                    <th className="px-3 py-2">Prova</th>
               {headers.map((header) => (
                 <th key={header} className="px-3 py-2">{header}</th>
               ))}
@@ -2878,7 +2878,7 @@ function ChemicalSection<T>({
               const rowValues = values(row);
               return (
                 <tr key={rowIndex}>
-                  <td className="px-3 py-2 font-semibold text-ink">Test {rowIndex + 1}</td>
+                  <td className="px-3 py-2 font-semibold text-ink">Testi {rowIndex + 1}</td>
                   {headers.map((header, cellIndex) => (
                     <td key={header} className="px-3 py-2">
                       {cellIndex < rowNames.length ? (
@@ -2890,7 +2890,7 @@ function ChemicalSection<T>({
                           className="input min-w-32"
                         />
                       ) : (
-                        <span className="font-semibold text-ink">{rowValues[cellIndex] ?? "Save to calculate"}</span>
+                        <span className="font-semibold text-ink">{rowValues[cellIndex] ?? "Ruaj për të llogaritur"}</span>
                       )}
                     </td>
                   ))}
@@ -2907,7 +2907,7 @@ function ChemicalSection<T>({
 function InfoInline({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div className="text-xs font-medium uppercase tracking-wide text-muted">{label}</div>
+      <div className="text-xs font-medium uppercase tracking-wide text-muted">{testUiLabel(label)}</div>
       <div className="mt-1 font-semibold text-ink">{value}</div>
     </div>
   );
@@ -2916,8 +2916,37 @@ function InfoInline({ label, value }: { label: string; value: string }) {
 function Info({ label, value }: { label: string; value?: string }) {
   return (
     <div className="mt-3 border-t border-line pt-3">
-      <div className="text-xs font-medium uppercase tracking-wide text-muted">{label}</div>
+      <div className="text-xs font-medium uppercase tracking-wide text-muted">{testUiLabel(label)}</div>
       <div className="mt-1 font-semibold text-ink">{value ?? "-"}</div>
     </div>
   );
+}
+
+const testUiLabels: Record<string, string> = {
+  "Sample type": "Tipi i kampionit",
+  "Testing start date": "Data e fillimit të testimit",
+  "Testing end date": "Data e përfundimit të testimit",
+  "Testing location": "Vendi i testimit",
+  Technician: "Tekniku",
+  "Checked by": "Kontrolluar nga",
+  Standard: "Standardi",
+  "Required test date": "Data e kërkuar e testimit",
+  "Report due date": "Afati i raportit",
+  Priority: "Prioriteti",
+  "Assigned technician": "Tekniku i caktuar",
+  "Test Metadata": "Të dhënat e testit",
+  "Register number": "Numri i regjistrit",
+  "Samples received in lab": "Kampionët e pranuar në laborator",
+  "Casting date": "Data e betonimit",
+  "Test date for report": "Data e testimit për raport",
+  Test: "Testi",
+  "Applied standard": "Standardi i aplikuar",
+  "Equipment used": "Pajisjet e përdorura",
+  Temperature: "Temperatura",
+  Humidity: "Lagështia",
+  "General notes": "Shënime të përgjithshme"
+};
+
+function testUiLabel(label: string) {
+  return testUiLabels[label] ?? label;
 }

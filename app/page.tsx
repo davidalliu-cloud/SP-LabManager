@@ -43,8 +43,8 @@ export default function DashboardPage() {
         }
       />
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
-        <SummaryCard label={t("dashboard.samplesThisMonth")} value={samplesThisMonth} detail="April 2026" href="/samples" />
-        <SummaryCard label={t("dashboard.testsCompleted")} value={completedThisMonth} tone="green" detail="April 2026" href="/tests" />
+        <SummaryCard label={t("dashboard.samplesThisMonth")} value={samplesThisMonth} detail="Prill 2026" href="/samples" />
+        <SummaryCard label={t("dashboard.testsCompleted")} value={completedThisMonth} tone="green" detail="Prill 2026" href="/tests" />
         <SummaryCard label={t("dashboard.reportsToPrepare")} value={pendingPreparation} tone="purple" href="/reports" />
         <SummaryCard label={t("dashboard.pendingApproval")} value={pendingApproval} tone="purple" href="/reports" />
         <SummaryCard label={t("dashboard.approvedNotIssued")} value={approvedNotIssued} tone="green" href="/reports" />
@@ -54,15 +54,15 @@ export default function DashboardPage() {
       <section className="mt-6 surface-card p-4">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div>
-            <h2 className="text-base font-semibold text-ink">Procedures Directory</h2>
-            <p className="mt-1 text-sm text-muted">Approved SOPs, revision history, and Lab Chief review for controlled documents.</p>
+            <h2 className="text-base font-semibold text-ink">Dosja e procedurave</h2>
+            <p className="mt-1 text-sm text-muted">Procedurat e miratuara, historiku i rishikimeve dhe kontrolli nga Kryelaboranti për dokumentet e kontrolluara.</p>
           </div>
-          <Link href="/procedures" className="btn-secondary">Open procedures</Link>
+          <Link href="/procedures" className="btn-secondary">Hap procedurat</Link>
         </div>
         <div className="mt-4 grid gap-3 md:grid-cols-3">
-          <Metric label="Aggregate SOPs" value={String(store.procedures.filter((procedure) => procedure.category === "Aggregate").length)} />
-          <Metric label="Current revisions" value={String(store.procedureRevisions.filter((revision) => revision.status === "Current").length)} />
-          <Metric label="Draft / review" value={String(procedureDrafts)} />
+          <Metric label="SOP agregatesh" value={String(store.procedures.filter((procedure) => procedure.category === "Aggregate").length)} />
+          <Metric label="Rishikime aktuale" value={String(store.procedureRevisions.filter((revision) => revision.status === "Current").length)} />
+          <Metric label="Draft / në rishikim" value={String(procedureDrafts)} />
         </div>
       </section>
 
@@ -105,10 +105,10 @@ export default function DashboardPage() {
         <div className="surface-card p-4">
           <h2 className="text-base font-semibold text-ink">{t("dashboard.managementSnapshot")}</h2>
           <div className="mt-4 space-y-4">
-            <Metric label={t("dashboard.topClient")} value="Atlas Contractors" />
+            <Metric label={t("dashboard.topClient")} value="-" />
             <Metric label={t("dashboard.commonSample")} value="Kubike Betoni / Concrete Cubes" />
             <Metric label={t("dashboard.reportsToPrepare")} value={String(pendingPreparation)} />
-            <Metric label={t("dashboard.nextApproval")} value={`${pendingApproval} reports`} />
+            <Metric label={t("dashboard.nextApproval")} value={`${pendingApproval} raporte`} />
           </div>
         </div>
       </section>

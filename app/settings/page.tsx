@@ -1,14 +1,16 @@
 import { PageHeader } from "@/components/ui/page-header";
 
 export default function SettingsPage() {
+  const settings = ["Rregullat e numërtimit", "Formati i raportit", "Ruajtja në Supabase", "Modulet e ardhshme"];
+
   return (
     <>
-      <PageHeader title="Settings" description="Production configuration placeholders for Supabase, numbering, report wording, storage, and digital signatures." />
+      <PageHeader title="Cilësimet" description="Konfigurime për Supabase, numërtimin, tekstet e raporteve, ruajtjen dhe nënshkrimet digjitale." />
       <div className="grid gap-4 md:grid-cols-2">
-        {["Numbering rules", "Report template", "Supabase storage", "Future modules"].map((title) => (
+        {settings.map((title) => (
           <div key={title} className="surface-card p-5">
             <h2 className="text-base font-semibold text-ink">{title}</h2>
-            <p className="mt-2 text-sm text-muted">Ready to connect to production settings after the first workflow is validated.</p>
+            <p className="mt-2 text-sm text-muted">Gati për t’u lidhur me konfigurimet e prodhimit pasi të verifikohet procesi i parë.</p>
           </div>
         ))}
       </div>

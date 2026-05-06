@@ -349,10 +349,30 @@ function ReportHeader({
   );
 }
 
+const commonInfoLabels: Record<string, { sq: string; en: string }> = {
+  "Client / Purchaser": { sq: "Klienti", en: "Purchaser" },
+  "Client / Klienti": { sq: "Klienti", en: "Client" },
+  "Object / Project": { sq: "Objekti / Projekti", en: "Object / Project" },
+  "Testing period": { sq: "Periudha e testimit", en: "Testing period" },
+  "Testing start": { sq: "Fillimi i testimit", en: "Testing start" },
+  "Testing end": { sq: "Përfundimi i testimit", en: "Testing end" },
+  "Testing date": { sq: "Data e testimit", en: "Testing date" },
+  "Testing place": { sq: "Vendi i testimit", en: "Testing place" }
+};
+
+function splitBilingualLabel(label: string) {
+  if (commonInfoLabels[label]) return commonInfoLabels[label];
+  const parts = label.split(" / ");
+  return parts.length >= 2 ? { sq: parts[0], en: parts.slice(1).join(" / ") } : undefined;
+}
+
 function Info({ label, value }: { label: string; value?: string }) {
+  const bilingual = splitBilingualLabel(label);
   return (
     <div>
-      <div className="text-xs font-medium uppercase tracking-wide text-muted">{label}</div>
+      <div className="text-xs font-medium uppercase tracking-wide text-muted">
+        {bilingual ? <Bilingual sq={bilingual.sq} en={bilingual.en} /> : label}
+      </div>
       <div className="mt-1 font-medium text-ink">{value ?? "-"}</div>
     </div>
   );
@@ -379,9 +399,13 @@ function BilingualInfo({ sq, en, value }: { sq: string; en: string; value?: stri
 }
 
 function ReportInfoRow({ label, value }: { label: string; value?: string }) {
+  const cleanLabel = label.replace(/:$/, "");
+  const bilingual = splitBilingualLabel(cleanLabel);
   return (
     <div className="grid border-b border-line md:grid-cols-[280px_1fr]">
-      <div className="bg-lab-porcelain px-3 py-2 font-semibold text-ink">{label}:</div>
+      <div className="bg-lab-porcelain px-3 py-2 font-semibold text-ink">
+        {bilingual ? <Bilingual sq={bilingual.sq} en={bilingual.en} /> : `${cleanLabel}:`}
+      </div>
       <div className="px-3 py-2 font-medium text-ink">{value || "-"}</div>
     </div>
   );

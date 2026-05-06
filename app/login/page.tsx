@@ -38,24 +38,24 @@ export default function LoginPage() {
         <div className="hidden bg-lab-burgundy p-10 text-white md:flex md:flex-col md:justify-between">
           <div>
             <img src="/brand/sarp-logo.png" alt="SARP" className="h-auto w-52 brightness-0 invert" />
-            <h1 className="mt-10 text-3xl font-semibold tracking-normal">SARP LAB Management System</h1>
+            <h1 className="mt-10 text-3xl font-semibold tracking-normal">Sistemi i Menaxhimit SARP LAB</h1>
             <p className="mt-4 max-w-md text-sm leading-6 text-white/80">
-              Secure access for sample registration, testing workflow, report approval, and laboratory document control.
+              Hyrje e sigurt për regjistrimin e kampionëve, ndjekjen e testeve, miratimin e raporteve dhe kontrollin e dokumenteve laboratorike.
             </p>
           </div>
-          <div className="text-xs text-white/70">Construction materials laboratory workspace</div>
+          <div className="text-xs text-white/70">Hapësira e punës për laboratorin e materialeve të ndërtimit</div>
         </div>
 
         <div className="p-6 sm:p-8">
           <div className="md:hidden">
             <img src="/brand/sarp-logo.png" alt="SARP" className="h-auto w-36" />
           </div>
-          <h2 className="mt-8 text-2xl font-semibold text-ink md:mt-0">Sign in</h2>
-          <p className="mt-2 text-sm text-muted">Use the account created by the lab administrator.</p>
+          <h2 className="mt-8 text-2xl font-semibold text-ink md:mt-0">Hyr në sistem</h2>
+          <p className="mt-2 text-sm text-muted">Përdorni llogarinë që është krijuar nga administratori i laboratorit.</p>
 
           {!auth.isConfigured ? (
             <div className="mt-6 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-              Supabase environment variables are not configured.
+              Konfigurimi i Supabase nuk është vendosur ende.
             </div>
           ) : null}
 
@@ -73,7 +73,7 @@ export default function LoginPage() {
             </label>
 
             <label className="block">
-              <span className="text-sm font-medium text-ink">Password</span>
+              <span className="text-sm font-medium text-ink">Fjalëkalimi</span>
               <input
                 type="password"
                 value={password}
@@ -91,7 +91,7 @@ export default function LoginPage() {
               disabled={isSubmitting || !auth.isConfigured}
               className="w-full rounded-md bg-lab-burgundy px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#4F1535] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isSubmitting ? "Signing in..." : "Sign in"}
+              {isSubmitting ? "Duke hyrë..." : "Hyr"}
             </button>
           </form>
         </div>
@@ -99,4 +99,3 @@ export default function LoginPage() {
     </main>
   );
 }
-

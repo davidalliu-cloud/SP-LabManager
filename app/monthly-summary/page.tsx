@@ -22,40 +22,47 @@ export default function MonthlySummaryPage() {
     name: client.clientName,
     tests: store.tests.filter((test) => test.clientId === client.id).length
   }));
-  const byStatus = ["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].map((status) => ({
-    name: status,
-    reports: store.reports.filter((report) => report.reportStatus === status).length
+  const byStatus = [
+    { value: "Completed", label: "Përfunduar" },
+    { value: "Report Drafted", label: "Raport i përgatitur" },
+    { value: "Pending Approval", label: "Në pritje miratimi" },
+    { value: "Approved", label: "Miratuar" },
+    { value: "Issued", label: "Lëshuar" }
+  ].map((status) => ({
+    name: status.label,
+    reports: store.reports.filter((report) => report.reportStatus === status.value).length
   }));
+  const filters = ["Muaji", "Klienti", "Projekti", "Tipi i kampionit", "Tipi i testit", "Tekniku"];
 
   return (
     <>
-      <PageHeader title="Monthly Summary" description="Management filters and workload analytics for the active month." />
+      <PageHeader title="Përmbledhje mujore" description="Filtra menaxherialë dhe analiza të ngarkesës së punës për muajin aktiv." />
       <section className="surface-card mb-5 grid gap-3 p-4 md:grid-cols-6">
-        {["Month", "Client", "Project", "Sample type", "Test type", "Technician"].map((label) => (
+        {filters.map((label) => (
           <label key={label} className="text-sm font-medium text-ink">
             {label}
             <select className="input mt-1">
-              <option>All</option>
-              <option>April 2026</option>
+              <option>Të gjitha</option>
+              <option>Prill 2026</option>
             </select>
           </label>
         ))}
       </section>
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <SummaryCard label="Samples received" value={samplesReceived} />
-        <SummaryCard label="Tests completed" value={completed} tone="green" />
-        <SummaryCard label="Reports issued" value={issued} tone="green" />
-        <SummaryCard label="Delayed tests" value={delayed} tone="red" />
-        <SummaryCard label="Revenue placeholder" value="$0" tone="gray" detail="Ready for invoicing module" />
+        <SummaryCard label="Kampionë të pranuar" value={samplesReceived} />
+        <SummaryCard label="Teste të përfunduara" value={completed} tone="green" />
+        <SummaryCard label="Raporte të lëshuara" value={issued} tone="green" />
+        <SummaryCard label="Teste me vonesë" value={delayed} tone="red" />
+        <SummaryCard label="Vend për të ardhurat" value="$0" tone="gray" detail="Gati për modulin e faturimit" />
       </section>
       <section className="mt-5 grid gap-5 xl:grid-cols-2">
-        <ChartPanel title="Tests by Client" data={byClient} dataKey="tests" />
-        <ChartPanel title="Reports by Status" data={byStatus} dataKey="reports" />
+        <ChartPanel title="Testet sipas klientit" data={byClient} dataKey="tests" />
+        <ChartPanel title="Raportet sipas statusit" data={byStatus} dataKey="reports" />
       </section>
       <section className="mt-5 grid gap-4 md:grid-cols-3">
-        <SummaryCard label="Most active clients" value="Atlas Contractors" detail="Based on current demo data" />
-        <SummaryCard label="Most common test type" value="Kubike Betoni / Concrete Cubes" />
-        <SummaryCard label="Avg registration to completion" value={`${avgRegistrationToComplete} days`} tone="amber" />
+        <SummaryCard label="Klientët më aktivë" value="Atlas Contractors" detail="Bazuar në të dhënat aktuale" />
+        <SummaryCard label="Testi më i shpeshtë" value="Kubike Betoni / Concrete Cubes" />
+        <SummaryCard label="Mesatarja nga regjistrimi në përfundim" value={`${avgRegistrationToComplete} ditë`} tone="amber" />
       </section>
     </>
   );

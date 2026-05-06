@@ -17,16 +17,25 @@ const roles: Role[] = [
   "Technician"
 ];
 
+const roleLabels: Record<Role, string> = {
+  "Admin / Managing Director": "Admin / Drejtor Menaxhues",
+  "Chief of Lab": "Kryelaborant",
+  "Quality Manager": "Menaxher i Cilësisë",
+  "Operations Manager": "Menaxher Operacional",
+  "Document Controller": "Kontrollues Dokumentesh",
+  Technician: "Teknik"
+};
+
 const workAreaOptions = [
-  "Sample retrieval",
-  "Sample registration",
-  "Concrete testing",
-  "Steel testing",
-  "Aggregate testing",
-  "Report preparation",
-  "Technical review",
-  "Approval",
-  "Quality control"
+  "Marrje kampionësh",
+  "Regjistrim kampionësh",
+  "Testim betoni",
+  "Testim çeliku",
+  "Testim agregatesh",
+  "Përgatitje raportesh",
+  "Rishikim teknik",
+  "Miratim",
+  "Kontroll cilësie"
 ];
 
 export default function EmployeesPage() {
@@ -41,7 +50,7 @@ export default function EmployeesPage() {
   function openCreate() {
     if (!canEditEmployees) return;
     setEditing(null);
-    setSelectedAreas(["Sample retrieval", "Concrete testing"]);
+    setSelectedAreas(["Marrje kampionësh", "Testim betoni"]);
     setShowForm(true);
   }
 
@@ -100,27 +109,27 @@ export default function EmployeesPage() {
 
       {!canEditEmployees ? (
         <div className="mb-4 rounded-md border border-line bg-lab-porcelain px-4 py-3 text-sm text-muted">
-          Employee role management is restricted to the Admin / Managing Director account.
+          Menaxhimi i roleve të punonjësve është i kufizuar vetëm për llogarinë Admin / Drejtor Menaxhues.
         </div>
       ) : null}
 
       {canEditEmployees && showForm ? (
         <form onSubmit={submit} className="surface-card mb-5 grid gap-4 p-5 lg:grid-cols-2">
           <Field label={t("employees.fullName")}>
-            <input name="fullName" required defaultValue={editing?.fullName ?? ""} className="input" placeholder="Technician or engineer name" />
+            <input name="fullName" required defaultValue={editing?.fullName ?? ""} className="input" placeholder="Emri i teknikut ose inxhinierit" />
           </Field>
           <Field label={t("employees.position")}>
-            <input name="position" defaultValue={editing?.position ?? ""} className="input" placeholder="Concrete technician, site engineer..." />
+            <input name="position" defaultValue={editing?.position ?? ""} className="input" placeholder="Teknik betoni, inxhinier kantieri..." />
           </Field>
           <Field label={t("employees.email")}>
             <input name="email" type="email" defaultValue={editing?.email ?? ""} className="input" placeholder="employee@sarplab.com" />
           </Field>
           <Field label={t("employees.phone")}>
-            <input name="phone" defaultValue={editing?.phone ?? ""} className="input" placeholder="Phone number" />
+            <input name="phone" defaultValue={editing?.phone ?? ""} className="input" placeholder="Numër telefoni" />
           </Field>
           <Field label={t("employees.role")}>
             <select name="role" defaultValue={editing?.role ?? "Technician"} className="input">
-              {roles.map((role) => <option key={role}>{role}</option>)}
+              {roles.map((role) => <option key={role} value={role}>{roleLabels[role]}</option>)}
             </select>
           </Field>
           <label className="flex items-center gap-2 pt-7 text-sm font-medium text-ink">
@@ -181,7 +190,7 @@ export default function EmployeesPage() {
               <tr key={employee.id} className="hover:bg-lab-mist/60">
                 <td className="px-4 py-3 font-semibold text-ink">{employee.fullName}</td>
                 <td className="px-4 py-3">{employee.position ?? "-"}</td>
-                <td className="px-4 py-3">{employee.role}</td>
+                <td className="px-4 py-3">{roleLabels[employee.role]}</td>
                 <td className="px-4 py-3">{employee.phone ?? "-"}</td>
                 <td className="px-4 py-3">{employee.email}</td>
                 <td className="px-4 py-3">{employee.workAreas?.join(", ") || "-"}</td>

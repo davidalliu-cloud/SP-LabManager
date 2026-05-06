@@ -12,7 +12,7 @@ export default function ReportDetailPage() {
   const [comments, setComments] = useState("");
   const [issueEmail, setIssueEmail] = useState("");
   const report = store.reports.find((item) => item.id === params.id);
-  if (!report) return <PageHeader title="Report not found" />;
+  if (!report) return <PageHeader title="Raporti nuk u gjet" />;
   const test = store.tests.find((item) => item.id === report.testId);
   const sample = store.samples.find((item) => item.id === report.sampleId);
   const client = store.clients.find((item) => item.id === report.clientId);
@@ -43,58 +43,58 @@ export default function ReportDetailPage() {
 
   return (
     <>
-      <PageHeader title={report.reportNumber} description="Report preparation, approval, PDF download, and issuing workflow." />
+      <PageHeader title={report.reportNumber} description="Përgatitja, miratimi, shkarkimi PDF dhe lëshimi i raportit." />
       <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
         <ReportPreview report={report} test={test} sample={sample} client={client} project={project} concrete={concrete} concreteWater={concreteWater} concreteFlexural={concreteFlexural} concreteDensity={concreteDensity} concreteIndirectTensile={concreteIndirectTensile} thermalInsulation={thermalInsulation} cementConsistency={cementConsistency} cementStrength={cementStrength} cementBlaine={cementBlaine} steel={steel} aggregate={aggregate} aggregateChemical={aggregateChemical} aggregateLosAngeles={aggregateLosAngeles} aggregateFreezeThaw={aggregateFreezeThaw} aggregateAcv={aggregateAcv} aggregateDensity={aggregateDensity} aggregateFillerDensity={aggregateFillerDensity} aggregateShapeIndex={aggregateShapeIndex} aggregateFlakiness={aggregateFlakiness} aggregateElongation={aggregateElongation} aggregateBulkDensity={aggregateBulkDensity} aggregateSandEquivalent={aggregateSandEquivalent} aggregateSoundness={aggregateSoundness} />
         <aside className="no-print space-y-4">
           <div className="surface-card p-4">
-            <h2 className="text-base font-semibold text-ink">Approval Actions</h2>
+            <h2 className="text-base font-semibold text-ink">Veprimet e miratimit</h2>
             <div className="mt-4 space-y-3">
               <button
                 onClick={() => store.submitReport(report.id)}
                 disabled={!["Report Drafted", "Rejected"].includes(report.reportStatus)}
                 className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300"
               >
-                Submit for Approval
+                Dërgo për miratim
               </button>
               <button
                 onClick={() => store.approveReport(report.id)}
                 disabled={report.reportStatus !== "Pending Approval"}
                 className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300"
               >
-                Approve Report
+                Mirato raportin
               </button>
               <textarea
                 value={comments}
                 onChange={(event) => setComments(event.target.value)}
                 rows={3}
-                placeholder="Rejection comments"
+                placeholder="Komentet e refuzimit"
                 className="input"
               />
               <button
-                onClick={() => store.rejectReport(report.id, comments || "Please correct report data and resubmit.")}
+                onClick={() => store.rejectReport(report.id, comments || "Ju lutemi korrigjoni të dhënat e raportit dhe dërgojeni përsëri për miratim.")}
                 disabled={report.reportStatus !== "Pending Approval"}
                 className="w-full rounded-md border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-lab-red transition hover:bg-red-50 disabled:cursor-not-allowed disabled:border-line disabled:text-slate-400"
               >
-                Reject Report
+                Refuzo raportin
               </button>
             </div>
           </div>
 
           <div className="surface-card p-4">
-            <h2 className="text-base font-semibold text-ink">Issue Report</h2>
+            <h2 className="text-base font-semibold text-ink">Lëshimi i raportit</h2>
             <div className="mt-4 space-y-3">
               <button
                 onClick={() => window.print()}
                 disabled={report.reportStatus !== "Approved" && report.reportStatus !== "Issued"}
                 className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300"
               >
-                Download Approved PDF
+                Shkarko PDF-në e miratuar
               </button>
               <input
                 value={issueEmail}
                 onChange={(event) => setIssueEmail(event.target.value)}
-                placeholder={client?.email ?? "Client email"}
+                placeholder={client?.email ?? "Email i klientit"}
                 className="input"
               />
               <button
@@ -102,13 +102,13 @@ export default function ReportDetailPage() {
                 disabled={report.reportStatus !== "Approved"}
                 className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300"
               >
-                Mark as Issued
+                Shëno si të lëshuar
               </button>
             </div>
           </div>
           {report.rejectionComments ? (
             <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-lab-red">
-              <div className="font-semibold">Rejection comments</div>
+              <div className="font-semibold">Komentet e refuzimit</div>
               <div className="mt-1">{report.rejectionComments}</div>
             </div>
           ) : null}

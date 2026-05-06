@@ -43,8 +43,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="flex min-h-screen items-center justify-center bg-[#FDFEFD] px-6">
         <div className="w-full max-w-sm rounded-lg border border-line bg-white p-6 text-center shadow-sm">
           <img src="/brand/sarp-logo.png" alt="SARP" className="mx-auto h-auto w-36" />
-          <div className="mt-5 text-sm font-semibold text-ink">Loading secure lab workspace</div>
-          <div className="mt-1 text-xs text-muted">Please wait...</div>
+          <div className="mt-5 text-sm font-semibold text-ink">Duke hapur hapësirën e sigurt të laboratorit</div>
+          <div className="mt-1 text-xs text-muted">Ju lutemi prisni...</div>
         </div>
       </div>
     );
@@ -99,7 +99,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   onClick={() => auth.signOut()}
                   className="rounded-md border border-line px-3 py-2 text-xs font-semibold text-ink transition hover:border-lab-burgundy hover:text-lab-burgundy"
                 >
-                  Sign out
+                  Dil
                 </button>
               ) : null}
             </div>

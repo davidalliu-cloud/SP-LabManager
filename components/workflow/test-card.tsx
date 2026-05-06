@@ -22,7 +22,7 @@ export function TestCard({
   const { t } = useI18n();
   const overdue = isOverdue(test.requiredTestDate, test.status);
   const soon = isApproaching(test.requiredTestDate);
-  const unitLabel = sample?.sampleType.includes("Rebar") || sample?.sampleType.includes("Shufër Çeliku") ? "specimens" : t("test.cubes");
+  const unitLabel = sample?.sampleType.includes("Rebar") || sample?.sampleType.includes("Shufër Çeliku") ? "mostra" : t("test.cubes");
   const batchLabel = test.scheduledAgeDays ? `${test.cubeCount} ${unitLabel} / ${test.scheduledAgeDays}d` : `${test.cubeCount} ${unitLabel}`;
   return (
     <Link
@@ -34,12 +34,12 @@ export function TestCard({
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-sm font-semibold text-ink">{sample?.sampleCode ?? test.testCode}</div>
-          <div className="mt-1 text-xs text-muted">{showClientIdentity ? client?.clientName : client?.clientCode ?? "Client pending"}</div>
+          <div className="mt-1 text-xs text-muted">{showClientIdentity ? client?.clientName : client?.clientCode ?? "Klient në pritje"}</div>
         </div>
         <StatusBadge status={overdue ? "Delayed" : test.status} />
       </div>
       <div className="mt-3 text-sm text-ink">{test.testType}</div>
-      <div className="mt-1 text-xs text-muted">{showClientIdentity ? project?.projectName : "Client identity restricted"}</div>
+      <div className="mt-1 text-xs text-muted">{showClientIdentity ? project?.projectName : "Identiteti i klientit është i kufizuar"}</div>
       <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
         <div>
           <span className="text-muted">{t("test.batch")}</span>

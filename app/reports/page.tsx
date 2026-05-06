@@ -7,6 +7,14 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { useLabStore } from "@/lib/lab-store";
 import type { ReportStatus } from "@/lib/types";
 
+const reportStatusLabels: Record<Exclude<ReportStatus, "Draft">, string> = {
+  "Report Drafted": "Raport i përgatitur",
+  "Pending Approval": "Në pritje miratimi",
+  Approved: "Miratuar",
+  Rejected: "Refuzuar",
+  Issued: "Lëshuar"
+};
+
 export default function ReportsPage() {
   const store = useLabStore();
   const [search, setSearch] = useState("");
@@ -66,10 +74,10 @@ export default function ReportsPage() {
 
   return (
     <>
-      <PageHeader title="Reports" description="Filter, select, approve, download, and prepare batches of reports for client delivery." />
+      <PageHeader title="Raportet" description="Filtro, zgjidh, mirato, shkarko dhe përgatit raporte në grup për dërgim te klienti." />
       {completedWithoutReport.length ? (
         <section className="mb-5 rounded-md border border-fuchsia-100 bg-fuchsia-50 p-4">
-          <h2 className="text-sm font-semibold text-lab-purple">Reports to Prepare</h2>
+          <h2 className="text-sm font-semibold text-lab-purple">Raporte për përgatitje</h2>
           <div className="mt-3 flex flex-wrap gap-2">
             {completedWithoutReport.map((test) => (
               <Link key={test.id} href={`/tests/${test.id}`} className="rounded-md bg-white px-3 py-2 text-sm font-semibold text-lab-purple ring-1 ring-fuchsia-100 hover:bg-lab-mist">
@@ -82,60 +90,60 @@ export default function ReportsPage() {
       <section className="surface-card mb-5 p-4">
         <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
           <label className="text-sm font-medium text-ink">
-            Search
-            <input value={search} onChange={(event) => setSearch(event.target.value)} className="input mt-1" placeholder="Report, sample, client..." />
+            Kërko
+            <input value={search} onChange={(event) => setSearch(event.target.value)} className="input mt-1" placeholder="Raport, kampion, klient..." />
           </label>
           <label className="text-sm font-medium text-ink">
-            Client
+            Klienti
             <select value={clientId} onChange={(event) => { setClientId(event.target.value); setProjectId("all"); }} className="input mt-1">
-              <option value="all">All clients</option>
+              <option value="all">Të gjithë klientët</option>
               {store.clients.map((client) => <option key={client.id} value={client.id}>{client.clientName}</option>)}
             </select>
           </label>
           <label className="text-sm font-medium text-ink">
-            Project
+            Projekti
             <select value={projectId} onChange={(event) => setProjectId(event.target.value)} className="input mt-1">
-              <option value="all">All projects</option>
+              <option value="all">Të gjitha projektet</option>
               {projectsForClient.map((project) => <option key={project.id} value={project.id}>{project.projectName}</option>)}
             </select>
           </label>
           <label className="text-sm font-medium text-ink">
-            Status
+            Statusi
             <select value={status} onChange={(event) => setStatus(event.target.value as ReportStatus | "all")} className="input mt-1">
-              <option value="all">All statuses</option>
-              {["Report Drafted", "Pending Approval", "Approved", "Rejected", "Issued"].map((item) => <option key={item} value={item}>{item}</option>)}
+              <option value="all">Të gjitha statuset</option>
+              {Object.entries(reportStatusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </select>
           </label>
           <label className="text-sm font-medium text-ink">
-            Sample type
+            Tipi i kampionit
             <select value={sampleType} onChange={(event) => setSampleType(event.target.value)} className="input mt-1">
-              <option value="all">All sample types</option>
+              <option value="all">Të gjithë tipat e kampionëve</option>
               {sampleTypes.map((type) => <option key={type} value={type}>{type}</option>)}
             </select>
           </label>
           <label className="text-sm font-medium text-ink">
-            Test type
+            Tipi i testit
             <select value={testType} onChange={(event) => setTestType(event.target.value)} className="input mt-1">
-              <option value="all">All test types</option>
+              <option value="all">Të gjithë tipat e testeve</option>
               {testTypes.map((type) => <option key={type} value={type}>{type}</option>)}
             </select>
           </label>
         </div>
         <div className="mt-4 flex flex-col gap-3 border-t border-line pt-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="text-sm text-muted">
-            Showing <span className="font-semibold text-ink">{filteredRows.length}</span> of <span className="font-semibold text-ink">{store.reports.length}</span> reports. Selected <span className="font-semibold text-ink">{selectedRows.length}</span>.
+            Shfaqen <span className="font-semibold text-ink">{filteredRows.length}</span> nga <span className="font-semibold text-ink">{store.reports.length}</span> raporte. Të zgjedhura <span className="font-semibold text-ink">{selectedRows.length}</span>.
           </div>
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={toggleVisibleReports} className="btn-secondary px-3 py-2">Select visible</button>
-            <button type="button" onClick={() => setSelectedReportIds([])} className="btn-secondary px-3 py-2">Clear selection</button>
-            <button type="button" onClick={clearFilters} className="btn-secondary px-3 py-2">Clear filters</button>
+            <button type="button" onClick={toggleVisibleReports} className="btn-secondary px-3 py-2">Zgjidh të dukshmet</button>
+            <button type="button" onClick={() => setSelectedReportIds([])} className="btn-secondary px-3 py-2">Pastro zgjedhjen</button>
+            <button type="button" onClick={clearFilters} className="btn-secondary px-3 py-2">Pastro filtrat</button>
           </div>
         </div>
         {selectedRows.length ? (
           <div className="mt-4 rounded-md border border-lab-steel bg-lab-mist p-3 text-sm text-ink">
-            <div className="font-semibold">Batch delivery selection</div>
+            <div className="font-semibold">Zgjedhje për dërgim në grup</div>
             <div className="mt-1 text-muted">
-              {selectedClient ? `Ready to prepare ${selectedRows.length} report${selectedRows.length === 1 ? "" : "s"} for ${selectedClient.clientName} (${selectedClient.email || "no email saved"}).` : "Select reports from one client to prepare a clean client batch."}
+              {selectedClient ? `Gati për përgatitjen e ${selectedRows.length} raport${selectedRows.length === 1 ? "" : "e"} për ${selectedClient.clientName} (${selectedClient.email || "nuk ka email të ruajtur"}).` : "Zgjidh raporte nga i njëjti klient për të përgatitur një grup të rregullt dërgimi."}
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
               {selectedRows.map(({ report }) => <Link key={report.id} href={`/reports/${report.id}`} className="rounded-md bg-white px-2 py-1 text-xs font-semibold text-lab-burgundy ring-1 ring-line">{report.reportNumber}</Link>)}
@@ -148,24 +156,24 @@ export default function ReportsPage() {
           <thead className="table-head">
             <tr>
               <th className="px-4 py-3">
-                <input type="checkbox" checked={filteredRows.length > 0 && filteredRows.every(({ report }) => selectedReportIds.includes(report.id))} onChange={toggleVisibleReports} aria-label="Select visible reports" />
+                <input type="checkbox" checked={filteredRows.length > 0 && filteredRows.every(({ report }) => selectedReportIds.includes(report.id))} onChange={toggleVisibleReports} aria-label="Zgjidh raportet e dukshme" />
               </th>
-              <th className="px-4 py-3">Report number</th>
-              <th className="px-4 py-3">Part</th>
-              <th className="px-4 py-3">Sample</th>
-              <th className="px-4 py-3">Test</th>
-              <th className="px-4 py-3">Specimens</th>
-              <th className="px-4 py-3">Client</th>
-              <th className="px-4 py-3">Project</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Actions</th>
+              <th className="px-4 py-3">Numri i raportit</th>
+              <th className="px-4 py-3">Pjesa</th>
+              <th className="px-4 py-3">Kampioni</th>
+              <th className="px-4 py-3">Testi</th>
+              <th className="px-4 py-3">Mostrat</th>
+              <th className="px-4 py-3">Klienti</th>
+              <th className="px-4 py-3">Projekti</th>
+              <th className="px-4 py-3">Statusi</th>
+              <th className="px-4 py-3">Veprime</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
             {filteredRows.map(({ report, sample, test, client, project }) => (
               <tr key={report.id} className="hover:bg-lab-mist/60">
                 <td className="px-4 py-3">
-                  <input type="checkbox" checked={selectedReportIds.includes(report.id)} onChange={() => toggleReport(report.id)} aria-label={`Select ${report.reportNumber}`} />
+                  <input type="checkbox" checked={selectedReportIds.includes(report.id)} onChange={() => toggleReport(report.id)} aria-label={`Zgjidh ${report.reportNumber}`} />
                 </td>
                 <td className="px-4 py-3 font-semibold text-ink">{report.reportNumber}</td>
                 <td className="px-4 py-3">{report.reportSequence} / {report.totalReports}</td>
@@ -175,13 +183,13 @@ export default function ReportsPage() {
                 <td className="px-4 py-3">{client?.clientName}</td>
                 <td className="px-4 py-3">{project?.projectName}</td>
                 <td className="px-4 py-3"><StatusBadge status={report.reportStatus} /></td>
-                <td className="px-4 py-3"><Link href={`/reports/${report.id}`} className="font-semibold text-lab-burgundy hover:text-lab-purple">Open</Link></td>
+                <td className="px-4 py-3"><Link href={`/reports/${report.id}`} className="font-semibold text-lab-burgundy hover:text-lab-purple">Hap</Link></td>
               </tr>
             ))}
           </tbody>
         </table>
-        {!store.reports.length ? <div className="p-6 text-sm text-muted">No reports drafted yet. Complete a test, then generate a report.</div> : null}
-        {store.reports.length > 0 && !filteredRows.length ? <div className="p-6 text-sm text-muted">No reports match the selected filters.</div> : null}
+        {!store.reports.length ? <div className="p-6 text-sm text-muted">Nuk ka ende raporte të përgatitura. Përfundoni një test dhe më pas gjeneroni raportin.</div> : null}
+        {store.reports.length > 0 && !filteredRows.length ? <div className="p-6 text-sm text-muted">Asnjë raport nuk përputhet me filtrat e zgjedhur.</div> : null}
       </div>
     </>
   );
