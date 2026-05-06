@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { SimpleTable } from "@/components/ui/simple-table";
 import { useI18n } from "@/lib/i18n";
 import { useLabStore } from "@/lib/lab-store";
+import { canManageEmployees } from "@/lib/permissions";
 import type { LabUser, Role } from "@/lib/types";
 
 const roles: Role[] = [
@@ -34,14 +35,18 @@ export default function EmployeesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<LabUser | null>(null);
   const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
+  const currentUser = store.users.find((user) => user.id === store.currentUserId);
+  const canEditEmployees = canManageEmployees(currentUser?.role);
 
   function openCreate() {
+    if (!canEditEmployees) return;
     setEditing(null);
     setSelectedAreas(["Sample retrieval", "Concrete testing"]);
     setShowForm(true);
   }
 
   function openEdit(employee: LabUser) {
+    if (!canEditEmployees) return;
     setEditing(employee);
     setSelectedAreas(employee.workAreas ?? []);
     setShowForm(true);
@@ -81,17 +86,25 @@ export default function EmployeesPage() {
         title={t("employees.title")}
         description={t("employees.description")}
         action={
-          <button
-            type="button"
-            onClick={openCreate}
-            className="btn-primary"
-          >
-            {t("employees.add")}
-          </button>
+          canEditEmployees ? (
+            <button
+              type="button"
+              onClick={openCreate}
+              className="btn-primary"
+            >
+              {t("employees.add")}
+            </button>
+          ) : null
         }
       />
 
-      {showForm ? (
+      {!canEditEmployees ? (
+        <div className="mb-4 rounded-md border border-line bg-lab-porcelain px-4 py-3 text-sm text-muted">
+          Employee role management is restricted to the Admin / Managing Director account.
+        </div>
+      ) : null}
+
+      {canEditEmployees && showForm ? (
         <form onSubmit={submit} className="surface-card mb-5 grid gap-4 p-5 lg:grid-cols-2">
           <Field label={t("employees.fullName")}>
             <input name="fullName" required defaultValue={editing?.fullName ?? ""} className="input" placeholder="Technician or engineer name" />
@@ -160,7 +173,7 @@ export default function EmployeesPage() {
               <th className="px-4 py-3">{t("employees.email")}</th>
               <th className="px-4 py-3">{t("employees.workAreas")}</th>
               <th className="px-4 py-3">{t("employees.status")}</th>
-              <th className="px-4 py-3">{t("employees.actions")}</th>
+              {canEditEmployees ? <th className="px-4 py-3">{t("employees.actions")}</th> : null}
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -177,25 +190,27 @@ export default function EmployeesPage() {
                     {employee.isActive === false ? t("employees.inactiveStatus") : t("employees.activeStatus")}
                   </span>
                 </td>
-                <td className="px-3 py-2">
-                  <div className="flex w-24 flex-col gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => openEdit(employee)}
-                      className="rounded-md border border-line bg-lab-mist px-2 py-1 text-[11px] font-semibold leading-tight text-lab-navy hover:border-lab-steel"
-                    >
-                      {t("employees.edit")}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => store.removeEmployee(employee.id)}
-                      disabled={employee.id === store.currentUserId}
-                      className="rounded-md border border-red-100 bg-red-50 px-2 py-1 text-[11px] font-semibold leading-tight text-lab-red hover:bg-red-100 disabled:cursor-not-allowed disabled:border-line disabled:bg-slate-100 disabled:text-slate-400"
-                    >
-                      {t("employees.remove")}
-                    </button>
-                  </div>
-                </td>
+                {canEditEmployees ? (
+                  <td className="px-3 py-2">
+                    <div className="flex w-24 flex-col gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => openEdit(employee)}
+                        className="rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-[11px] font-semibold leading-tight text-blue-700 hover:bg-blue-100"
+                      >
+                        {t("employees.edit")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => store.removeEmployee(employee.id)}
+                        disabled={employee.id === store.currentUserId}
+                        className="rounded-md border border-red-100 bg-red-50 px-2 py-1 text-[11px] font-semibold leading-tight text-lab-red hover:bg-red-100 disabled:cursor-not-allowed disabled:border-line disabled:bg-slate-100 disabled:text-slate-400"
+                      >
+                        {t("employees.remove")}
+                      </button>
+                    </div>
+                  </td>
+                ) : null}
               </tr>
             ))}
           </tbody>
