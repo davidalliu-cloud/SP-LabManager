@@ -4,6 +4,7 @@ type Tone = "gray" | "blue" | "amber" | "green" | "purple" | "red" | "darkGreen"
 
 const statusTone: Record<TestStatus | SampleStatus | ReportStatus, Tone> = {
   Registered: "gray",
+  "Pending Acceptance": "purple",
   "Pending Testing": "blue",
   Pending: "blue",
   Scheduled: "blue",

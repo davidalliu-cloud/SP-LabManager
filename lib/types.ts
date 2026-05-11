@@ -8,7 +8,7 @@ export type Role =
 
 export type SampleType = string;
 
-export type SampleStatus = "Registered" | "Pending Testing" | "In Progress" | "Partially Tested" | "Completed" | "Delayed";
+export type SampleStatus = "Registered" | "Pending Acceptance" | "Pending Testing" | "In Progress" | "Partially Tested" | "Completed" | "Delayed";
 
 export type TestStatus =
   | "Pending"
@@ -76,6 +76,12 @@ export interface Sample {
   requiredTestDate: string;
   reportDueDate: string;
   status: SampleStatus;
+  testSchedules?: Array<{
+    cubeCount: number;
+    ageDays: number;
+    requiredTestDate: string;
+    reportDueDate: string;
+  }>;
   notes?: string;
   createdBy: string;
   createdAt: string;

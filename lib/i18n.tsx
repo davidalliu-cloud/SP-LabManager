@@ -29,6 +29,7 @@ const translations = {
     "nav.settings": "Settings",
 
     "status.Registered": "Registered",
+    "status.Pending Acceptance": "Pending Acceptance",
     "status.Pending Testing": "Pending Testing",
     "status.In Progress": "In Progress",
     "status.Partially Tested": "Partially Tested",
@@ -133,6 +134,7 @@ const translations = {
     "nav.settings": "Cilësimet",
 
     "status.Registered": "Regjistruar",
+    "status.Pending Acceptance": "Në pritje pranimi",
     "status.Pending Testing": "Në pritje të testimit",
     "status.In Progress": "Në proces",
     "status.Partially Tested": "Testuar pjesërisht",

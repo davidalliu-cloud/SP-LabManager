@@ -69,13 +69,13 @@ export default function SamplesPage() {
                 const report = store.reports.find((item) => item.sampleId === sample.id);
                 const schedule = sampleTests
                   .map((item) => `${item.scheduledAgeDays}d: ${item.cubeCount} cubes (${item.requiredTestDate})`)
-                  .join("; ");
+                  .join("; ") || sample.testSchedules?.map((item) => `${item.ageDays || "-"}d: ${item.cubeCount} mostra (${item.requiredTestDate})`).join("; ");
                 return (
                   <tr key={sample.id} className="hover:bg-lab-mist/60">
                     <td className="px-4 py-3 font-semibold text-ink">{sample.sampleCode}</td>
                     <td className="px-4 py-3">{sample.dateReceived}</td>
-                    <td className="px-4 py-3 font-semibold text-ink">{store.clients.find((item) => item.id === sample.clientId)?.clientCode ?? "Pending"}</td>
-                    <td className="px-4 py-3">{showClientIdentity ? store.projects.find((item) => item.id === sample.projectId)?.projectName ?? "Pending assignment" : "Restricted"}</td>
+                    <td className="px-4 py-3 font-semibold text-ink">{store.clients.find((item) => item.id === sample.clientId)?.clientCode ?? "Në pritje"}</td>
+                    <td className="px-4 py-3">{showClientIdentity ? store.projects.find((item) => item.id === sample.projectId)?.projectName ?? "Në pritje caktimi" : "I kufizuar"}</td>
                     <td className="px-4 py-3">{sample.sampleType}</td>
                     <td className="px-4 py-3" title={schedule}>{sample.quantity}</td>
                     <td className="px-4 py-3">{sample.requestedTestType}</td>
@@ -91,7 +91,7 @@ export default function SamplesPage() {
                         </Link>
                         {nextTest ? (
                           <Link href={`/tests/${nextTest.id}`} className="rounded-md border border-fuchsia-100 bg-fuchsia-50 px-2 py-1 text-center text-[11px] font-semibold leading-tight text-lab-purple hover:bg-fuchsia-100">
-                            {t("samples.openTest")}
+                            Nis testin
                           </Link>
                         ) : null}
                         {report ? (

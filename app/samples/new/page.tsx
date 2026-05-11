@@ -72,10 +72,10 @@ export default function NewSamplePage() {
 
   return (
     <>
-      <PageHeader title="Kampion i ri" description="Regjistroni kampionin e pranuar pa identitet klienti. Kryelaboranti cakton më pas klientin dhe projektin për të ruajtur paanshmërinë." />
+      <PageHeader title="Kampion i ri" description="Regjistroni kampionin e pranuar pa krijuar test. Kryelaboranti cakton kodin e klientit, pranon kampionin dhe pastaj testi mund të niset." />
       <form onSubmit={submit} className="surface-card grid gap-4 p-5 lg:grid-cols-2">
         <div className="soft-panel p-4 text-sm text-muted lg:col-span-2">
-          Zgjedhja e klientit është e fshehur gjatë regjistrimit të kampionit. Pas ruajtjes, kampioni kalon në pritje për caktimin e klientit nga Kryelaboranti.
+          Zgjedhja e klientit është e fshehur gjatë regjistrimit. Pas ruajtjes, Kryelaboranti merr njoftim për të caktuar kodin e klientit dhe për të pranuar kampionin.
         </div>
         <Field label="Tipi i kampionit">
           <select value={sampleType} onChange={(event) => changeSampleType(event.target.value)} className="input">
@@ -113,7 +113,7 @@ export default function NewSamplePage() {
           <div className="mb-3 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
             <div>
               <h2 className="text-base font-semibold text-ink">Plani i testimit</h2>
-              <p className="mt-1 text-sm text-muted">Ndani kubet e pranuara sipas moshës dhe datës së kërkuar të testimit. Çdo rresht krijon një grup testi dhe njoftim të veçantë.</p>
+            <p className="mt-1 text-sm text-muted">Ndani kubet e pranuara sipas moshës dhe datës së kërkuar të testimit. Plani ruhet me kampionin dhe testet krijohen vetëm pasi kampioni të pranohet nga Kryelaboranti.</p>
             </div>
             <button
               type="button"
@@ -160,7 +160,7 @@ export default function NewSamplePage() {
         </div>
         ) : (
           <div className="soft-panel p-4 text-sm text-muted lg:col-span-2">
-            Ky test i akredituar krijon një test në pritje sipas datës së kërkuar më sipër. Testet e çelikut hapin fletën e punës me rreshta për diametra të ndryshëm.
+            Ky plan ruhet me kampionin. Testi krijohet vetëm pasi Kryelaboranti të caktojë klientin dhe të pranojë kampionin.
           </div>
         )}
         <div className="lg:col-span-2">
@@ -168,7 +168,7 @@ export default function NewSamplePage() {
           <textarea name="notes" rows={4} className="input mt-1" placeholder="Shënime trajtimi, referenca dokumentesh ose udhëzime të klientit" />
         </div>
         <div className="lg:col-span-2">
-          <button className="btn-primary">Regjistro kampionin dhe krijo testin</button>
+          <button className="btn-primary">Regjistro kampionin</button>
         </div>
       </form>
     </>

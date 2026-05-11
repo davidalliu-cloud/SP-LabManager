@@ -672,6 +672,7 @@ interface LabStoreValue extends LabState {
   updateClient: (id: string, input: ClientInput) => void;
   removeClient: (id: string) => { ok: boolean; message?: string };
   assignSampleClient: (sampleId: string, clientId: string, projectId: string) => void;
+  acceptSample: (sampleId: string) => void;
   createSample: (input: NewSampleInput) => string;
   saveConcreteTest: (testId: string, input: ConcreteInput) => void;
   saveConcreteWaterPenetrationTest: (testId: string, input: ConcreteWaterPenetrationInput) => void;
@@ -973,6 +974,20 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       draft.notifications = [notification, ...draft.notifications];
     }
 
+    function addRoleNotification(
+      draft: LabState,
+      users: LabUser[],
+      roles: Role[],
+      title: string,
+      message: string,
+      relatedTestId?: string,
+      relatedReportId?: string
+    ) {
+      users
+        .filter((user) => roles.includes(user.role) && user.isActive !== false)
+        .forEach((user) => addNotification(draft, user.id, title, message, relatedTestId, relatedReportId));
+    }
+
     function nextNumber(prefix: string, count: number) {
       return `${prefix}-2026-${String(count + 1).padStart(4, "0")}`;
     }
@@ -1225,6 +1240,61 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           return draft;
         });
       },
+      acceptSample(sampleId) {
+        setState((previous) => {
+          const sample = previous.samples.find((row) => row.id === sampleId);
+          if (!sample || !sample.clientId || !sample.projectId) return previous;
+          const existingTests = previous.tests.filter((test) => test.sampleId === sampleId);
+          if (existingTests.length) {
+            return {
+              ...previous,
+              samples: previous.samples.map((row) => (row.id === sampleId ? { ...row, status: "Pending Testing" } : row))
+            };
+          }
+          const schedules =
+            sample.testSchedules && sample.testSchedules.length > 0
+              ? sample.testSchedules
+              : [{ cubeCount: sample.quantity, ageDays: 0, requiredTestDate: sample.requiredTestDate, reportDueDate: sample.reportDueDate }];
+          const tests: LabTest[] = schedules.map((schedule, index) => ({
+            id: crypto.randomUUID(),
+            testCode: nextNumber("TEST", previous.tests.length + index),
+            sampleId,
+            clientId: sample.clientId,
+            projectId: sample.projectId,
+            testType: schedules.length > 1 && schedule.ageDays ? `${sample.requestedTestType} - ${schedule.ageDays} ditë` : sample.requestedTestType,
+            standard: sample.standard,
+            assignedTechnician: sample.createdBy || currentUserId,
+            cubeCount: schedule.cubeCount,
+            scheduledAgeDays: schedule.ageDays,
+            requiredTestDate: schedule.requiredTestDate,
+            dueDate: schedule.reportDueDate,
+            status: "Pending",
+            priority: "Normal",
+            notes: schedule.ageDays
+              ? `${schedule.cubeCount} mostra të planifikuara në ${schedule.ageDays} ditë.`
+              : `${schedule.cubeCount} mostra të planifikuara.`,
+            createdAt: new Date().toISOString()
+          }));
+          const draft: LabState = {
+            ...previous,
+            samples: previous.samples.map((row) => (row.id === sampleId ? { ...row, status: "Pending Testing" } : row)),
+            tests: [...tests, ...previous.tests],
+            auditLog: [...previous.auditLog],
+            notifications: [...previous.notifications]
+          };
+          tests.forEach((test) => {
+            addNotification(
+              draft,
+              test.assignedTechnician,
+              "Test gati për nisje",
+              `${test.testCode}: kampioni ${sample.sampleCode} është pranuar dhe testi mund të niset.`,
+              test.id
+            );
+          });
+          addAudit(draft, "sample_accepted", "sample", sampleId, `Sample ${sample.sampleCode} accepted and ${tests.length} test batch${tests.length === 1 ? "" : "es"} created.`);
+          return draft;
+        });
+      },
       createSample(input) {
         const sampleId = crypto.randomUUID();
         const sampleCode = nextMonthlySampleCode(input.dateReceived, state.samples);
@@ -1232,7 +1302,6 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           input.schedules.length > 0
             ? input.schedules
             : [{ cubeCount: input.quantity, ageDays: 0, requiredTestDate: input.requiredTestDate, reportDueDate: input.reportDueDate }];
-        const firstTestId = crypto.randomUUID();
         setState((previous) => {
           const sample: Sample = {
             id: sampleId,
@@ -1251,57 +1320,26 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             standard: input.standard,
             requiredTestDate: input.requiredTestDate,
             reportDueDate: input.reportDueDate,
-            status: "Registered",
+            status: "Pending Acceptance",
+            testSchedules: schedules,
             notes: input.notes,
             createdBy: currentUserId,
             createdAt: new Date().toISOString()
           };
-          const tests: LabTest[] = schedules.map((schedule, index) => ({
-            id: index === 0 ? firstTestId : crypto.randomUUID(),
-            testCode: nextNumber("TEST", previous.tests.length + index),
-            sampleId,
-            clientId: input.clientId,
-            projectId: input.projectId,
-            testType: schedules.length > 1 && schedule.ageDays ? `${input.requestedTestType} - ${schedule.ageDays} days` : input.requestedTestType,
-            standard: input.standard,
-            assignedTechnician: "u-tech",
-            cubeCount: schedule.cubeCount,
-            scheduledAgeDays: schedule.ageDays,
-            requiredTestDate: schedule.requiredTestDate,
-            dueDate: schedule.reportDueDate,
-            status: "Pending",
-            priority: "Normal",
-            notes: schedule.ageDays
-              ? `${schedule.cubeCount} specimen${schedule.cubeCount === 1 ? "" : "s"} scheduled at ${schedule.ageDays} days.`
-              : `${schedule.cubeCount} specimen${schedule.cubeCount === 1 ? "" : "s"} scheduled.`,
-            createdAt: new Date().toISOString()
-          }));
           const draft: LabState = {
             ...previous,
             samples: [sample, ...previous.samples],
-            tests: [...tests, ...previous.tests],
             auditLog: [...previous.auditLog],
             notifications: [...previous.notifications]
           };
-          tests.forEach((test) => {
-            addNotification(
-              draft,
-              "u-tech",
-              "New test batch assigned",
-              test.scheduledAgeDays
-                ? `${test.testCode}: ${test.cubeCount} specimen${test.cubeCount === 1 ? "" : "s"} at ${test.scheduledAgeDays} days.`
-                : `${test.testCode}: ${test.cubeCount} specimen${test.cubeCount === 1 ? "" : "s"} assigned.`,
-              test.id
-            );
-          });
-          addNotification(
+          addRoleNotification(
             draft,
-            "u-chief",
-            "Client assignment required",
-            `${sampleCode} has been registered and needs client/project assignment by the Chief of Lab.`,
-            firstTestId
+            previous.users,
+            ["Admin / Managing Director", "Chief of Lab"],
+            "Kërkohet pranimi i kampionit",
+            `${sampleCode} është regjistruar dhe pret caktimin e kodit të klientit/projektit nga Kryelaboranti.`
           );
-          addAudit(draft, "sample_created", "sample", sampleId, `Sample ${sampleCode} created with ${tests.length} scheduled test batch${tests.length === 1 ? "" : "es"}.`);
+          addAudit(draft, "sample_created", "sample", sampleId, `Sample ${sampleCode} registered and waiting for Chief of Lab acceptance.`);
           return draft;
         });
         return sampleId;

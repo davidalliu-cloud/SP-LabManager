@@ -6,7 +6,8 @@ import { useLabStore } from "@/lib/lab-store";
 
 export function NotificationDropdown() {
   const [open, setOpen] = useState(false);
-  const { notifications } = useLabStore();
+  const store = useLabStore();
+  const notifications = store.notifications.filter((item) => item.userId === store.currentUserId);
   const { t } = useI18n();
   const unread = notifications.filter((item) => !item.isRead).length;
 

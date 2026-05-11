@@ -44,6 +44,11 @@ export default function SampleDetailPage() {
     store.assignSampleClient(sample.id, String(form.get("clientId")), String(form.get("projectId")));
   }
 
+  function acceptSample() {
+    if (!sample) return;
+    store.acceptSample(sample.id);
+  }
+
   return (
     <>
       <PageHeader
@@ -90,7 +95,7 @@ export default function SampleDetailPage() {
               <h2 className="text-base font-semibold text-ink">Plani i testimit</h2>
               {nextTest ? (
                 <Link href={`/tests/${nextTest.id}`} className="btn-primary px-3">
-                  Hap testin e radhës
+                  Nis testin e radhës
                 </Link>
               ) : null}
             </div>
@@ -108,7 +113,7 @@ export default function SampleDetailPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
-                  {tests.map((test) => (
+                  {tests.length ? tests.map((test) => (
                     <tr key={test.id}>
                       <td className="px-4 py-3 font-semibold text-ink">{test.testCode}</td>
                       <td className="px-4 py-3">{test.cubeCount} kube</td>
@@ -118,7 +123,13 @@ export default function SampleDetailPage() {
                       <td className="px-4 py-3"><StatusBadge status={test.status} /></td>
                       <td className="px-4 py-3"><Link href={`/tests/${test.id}`} className="font-semibold text-lab-burgundy hover:text-lab-purple">Hap</Link></td>
                     </tr>
-                  ))}
+                  )) : (
+                    <tr>
+                      <td colSpan={7} className="px-4 py-6 text-center text-sm text-muted">
+                        Testet do të krijohen pasi Kryelaboranti të caktojë klientin/projektin dhe të pranojë kampionin.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -164,6 +175,22 @@ export default function SampleDetailPage() {
                 </label>
                 <button className="btn-primary w-full">Ruaj caktimin e klientit</button>
               </form>
+            ) : null}
+            {canAssignClient && !tests.length ? (
+              <div className="mt-4 rounded-md border border-fuchsia-100 bg-fuchsia-50 p-3">
+                <div className="text-sm font-semibold text-lab-purple">Pranimi i kampionit</div>
+                <p className="mt-1 text-sm text-muted">
+                  Pasi të jetë caktuar kodi i klientit dhe projekti, prano kampionin për të krijuar testet e planifikuara.
+                </p>
+                <button
+                  type="button"
+                  onClick={acceptSample}
+                  disabled={!sample.clientId || !sample.projectId}
+                  className="btn-success mt-3 w-full disabled:cursor-not-allowed disabled:bg-slate-300"
+                >
+                  Prano kampionin dhe krijo testet
+                </button>
+              </div>
             ) : null}
             {showClientIdentity ? (
               <div className="mt-4 space-y-3 text-sm">
