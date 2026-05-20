@@ -76,6 +76,7 @@ export interface Sample {
   requiredTestDate: string;
   reportDueDate: string;
   status: SampleStatus;
+  assignedTechnician?: string;
   testSchedules?: Array<{
     cubeCount: number;
     ageDays: number;

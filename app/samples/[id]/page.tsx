@@ -78,6 +78,7 @@ export default function SampleDetailPage() {
               <Info label="Mënyra e dorëzimit" value={sample.collectionMethod} />
               <Info label="Dorëzuar nga" value={sample.deliveredBy} />
               <Info label="Marrë nga" value={sample.collectedBy} />
+              <Info label="Personi që do të kryejë testin" value={store.users.find((user) => user.id === sample.assignedTechnician)?.fullName ?? "-"} />
               <Info label="Testi i kërkuar" value={sample.requestedTestType} />
               <Info label="Standardi" value={sample.standard} />
               <Info label="Afati i raportit" value={sample.reportDueDate} />

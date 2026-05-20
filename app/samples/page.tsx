@@ -94,7 +94,7 @@ export default function SamplesPage() {
                     <td className="px-4 py-3">{nextTest?.requiredTestDate ?? sample.requiredTestDate}</td>
                     <td className="px-4 py-3">{nextTest?.dueDate ?? sample.reportDueDate}</td>
                     <td className="px-4 py-3"><StatusBadge status={sample.status} /></td>
-                    <td className="px-4 py-3">{store.users.find((item) => item.id === nextTest?.assignedTechnician)?.fullName ?? "-"}</td>
+                    <td className="px-4 py-3">{store.users.find((item) => item.id === (nextTest?.assignedTechnician ?? sample.assignedTechnician))?.fullName ?? "-"}</td>
                     <td className="px-4 py-3">{report ? <StatusBadge status={report.reportStatus} /> : "-"}</td>
                     <td className="px-3 py-2">
                       <div className="flex w-28 flex-col gap-1.5">

@@ -25,6 +25,12 @@ export default function NewSamplePage() {
   const selectedTest = getAccreditedTestById(accreditedTestId) ?? testOptions[0];
   const showConcreteSchedule = isConcreteCompressiveAccreditedTest(selectedTest);
   const showSteelWorksheet = isSteelSampleType(sampleType);
+  const activeEmployees = store.users.filter((user) => user.isActive !== false);
+  const defaultTechnicianId =
+    activeEmployees.find((user) => user.fullName.toLowerCase().includes("astrit"))?.id ??
+    activeEmployees.find((user) => user.role === "Technician")?.id ??
+    activeEmployees[0]?.id ??
+    "";
 
   function changeSampleType(nextSampleType: string) {
     const nextTests = getAccreditedTestsForSampleType(nextSampleType);
@@ -46,7 +52,7 @@ export default function NewSamplePage() {
       clientId: "",
       projectId: "",
       sampleType,
-      sampleDescription: String(form.get("sampleDescription")),
+      sampleDescription: "",
       quantity: Number(form.get("quantity")),
       dateReceived: String(form.get("dateReceived")),
       timeReceived: String(form.get("timeReceived")),
@@ -57,6 +63,7 @@ export default function NewSamplePage() {
       standard: selectedTest?.standard || "Standardi nuk është përcaktuar në listën e akreditimit",
       requiredTestDate: String(form.get("requiredTestDate")),
       reportDueDate: String(form.get("reportDueDate")),
+      assignedTechnician: String(form.get("assignedTechnician") || ""),
       schedules: showConcreteSchedule
         ? Array.from({ length: scheduleRows }, (_, index) => ({
             cubeCount: Number(form.get(`scheduleCubeCount-${index}`) || 0),
@@ -91,7 +98,6 @@ export default function NewSamplePage() {
             ))}
           </select>
         </Field>
-        <Field label="Përshkrimi i kampionit"><input name="sampleDescription" required className="input" placeholder="Kube 150 mm nga betonimi i soletës" /></Field>
         <Field label={showConcreteSchedule ? "Numri total i kubeve të pranuara" : showSteelWorksheet ? "Numri total i mostrave të çelikut të pranuara" : "Sasia e pranuar"}><input name="quantity" required type="number" min="1" defaultValue={showConcreteSchedule ? "60" : showSteelWorksheet ? "6" : "1"} className="input" /></Field>
         <Field label="Data e pranimit"><input name="dateReceived" required type="date" defaultValue="2026-04-29" className="input" /></Field>
         <Field label="Ora e pranimit"><input name="timeReceived" required type="time" defaultValue="09:00" className="input" /></Field>
@@ -102,7 +108,17 @@ export default function NewSamplePage() {
           </select>
         </Field>
         <Field label="Dorëzuar nga"><input name="deliveredBy" className="input" placeholder="Personi që dorëzoi kampionin" /></Field>
-        <Field label="Marrë nga"><input name="collectedBy" className="input" placeholder="Emri i teknikut të laboratorit" /></Field>
+        <Field label="Marrë nga"><input name="collectedBy" className="input" defaultValue="Violeta Biba" placeholder="Emri i personit që regjistron ose merr kampionin" /></Field>
+        <Field label="Personi që do të kryejë testin">
+          <select name="assignedTechnician" required defaultValue={defaultTechnicianId} className="input">
+            <option value="" disabled>Zgjidh teknikun ose inxhinierin</option>
+            {activeEmployees.map((employee) => (
+              <option key={employee.id} value={employee.id}>
+                {employee.fullName}{employee.position ? ` - ${employee.position}` : ""}
+              </option>
+            ))}
+          </select>
+        </Field>
         <Field label="Standardi përkatës"><input name="standard" value={selectedTest?.standard || "Standardi nuk është përcaktuar në listën e akreditimit"} readOnly className="input bg-lab-porcelain" /></Field>
         <Field label="Intervali i akredituar i matjes"><input value={selectedTest?.measurementRange || "-"} readOnly className="input bg-lab-porcelain" /></Field>
         <Field label="Standardi i kampionimit"><input value={selectedTest?.samplingStandard || "-"} readOnly className="input bg-lab-porcelain" /></Field>

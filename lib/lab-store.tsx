@@ -74,6 +74,7 @@ interface NewSampleInput {
   standard: string;
   requiredTestDate: string;
   reportDueDate: string;
+  assignedTechnician?: string;
   schedules: Array<{
     cubeCount: number;
     ageDays: number;
@@ -1314,7 +1315,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             projectId: sample.projectId,
             testType: schedules.length > 1 && schedule.ageDays ? `${sample.requestedTestType} - ${schedule.ageDays} ditë` : sample.requestedTestType,
             standard: sample.standard,
-            assignedTechnician: sample.createdBy || currentUserId,
+            assignedTechnician: sample.assignedTechnician || sample.createdBy || currentUserId,
             cubeCount: schedule.cubeCount,
             scheduledAgeDays: schedule.ageDays,
             requiredTestDate: schedule.requiredTestDate,
@@ -1372,6 +1373,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             requiredTestDate: input.requiredTestDate,
             reportDueDate: input.reportDueDate,
             status: "Pending Acceptance",
+            assignedTechnician: input.assignedTechnician,
             testSchedules: schedules,
             notes: input.notes,
             createdBy: currentUserId,
