@@ -58,7 +58,7 @@ export default function NewSamplePage() {
       timeReceived: String(form.get("timeReceived")),
       collectionMethod: String(form.get("collectionMethod")) as "Delivered by client" | "Collected by lab technician",
       deliveredBy: String(form.get("deliveredBy")),
-      collectedBy: String(form.get("collectedBy")),
+      collectedBy: String(form.get("collectedBy") || "").trim() || "Violeta Biba",
       requestedTestType: selectedTest?.testName ?? String(form.get("requestedTestType")),
       standard: selectedTest?.standard || "Standardi nuk është përcaktuar në listën e akreditimit",
       requiredTestDate: String(form.get("requiredTestDate")),
