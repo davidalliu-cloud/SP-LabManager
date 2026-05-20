@@ -15,3 +15,7 @@ export function canRegisterSamples(role?: Role) {
 export function canManageEmployees(role?: Role) {
   return role === "Admin / Managing Director";
 }
+
+export function canDeleteSamples(role?: Role) {
+  return role === "Admin / Managing Director";
+}

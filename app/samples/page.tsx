@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useI18n } from "@/lib/i18n";
 import { useLabStore } from "@/lib/lab-store";
-import { canViewClientIdentity } from "@/lib/permissions";
+import { canDeleteSamples, canViewClientIdentity } from "@/lib/permissions";
 
 export default function SamplesPage() {
   const store = useLabStore();
@@ -14,6 +14,18 @@ export default function SamplesPage() {
   const [query, setQuery] = useState("");
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
   const showClientIdentity = canViewClientIdentity(currentUser?.role);
+  const canDelete = canDeleteSamples(currentUser?.role);
+  function deleteSample(sampleId: string) {
+    const sample = store.samples.find((item) => item.id === sampleId);
+    if (!sample) return;
+    const linkedTests = store.tests.filter((test) => test.sampleId === sampleId).length;
+    const linkedReports = store.reports.filter((report) => report.sampleId === sampleId).length;
+    const confirmed = window.confirm(
+      `Të fshihet kampioni ${sample.sampleCode}? Do të fshihen edhe ${linkedTests} teste dhe ${linkedReports} raporte të lidhura. Ky veprim përdoret vetëm për provat/testimet fillestare.`
+    );
+    if (!confirmed) return;
+    store.removeSample(sampleId);
+  }
   const rows = useMemo(() => {
     return store.samples.filter((sample) => {
       const clientCode = store.clients.find((item) => item.id === sample.clientId)?.clientCode ?? "";
@@ -98,6 +110,15 @@ export default function SamplesPage() {
                           <Link href={`/reports/${report.id}`} className="rounded-md border border-green-100 bg-green-50 px-2 py-1 text-center text-[11px] font-semibold leading-tight text-lab-green hover:bg-green-100">
                             {t("samples.report")}
                           </Link>
+                        ) : null}
+                        {canDelete ? (
+                          <button
+                            type="button"
+                            onClick={() => deleteSample(sample.id)}
+                            className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-center text-[11px] font-semibold leading-tight text-lab-red hover:bg-red-100"
+                          >
+                            Fshi
+                          </button>
                         ) : null}
                       </div>
                     </td>

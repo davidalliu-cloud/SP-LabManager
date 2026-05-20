@@ -671,6 +671,7 @@ interface LabStoreValue extends LabState {
   createClient: (input: NewClientInput) => string;
   updateClient: (id: string, input: ClientInput) => void;
   removeClient: (id: string) => { ok: boolean; message?: string };
+  removeSample: (id: string) => void;
   assignSampleClient: (sampleId: string, clientId: string, projectId: string) => void;
   acceptSample: (sampleId: string) => void;
   createSample: (input: NewSampleInput) => string;
@@ -1216,6 +1217,56 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
         });
 
         return { ok: true };
+      },
+      removeSample(id) {
+        setState((previous) => {
+          const sample = previous.samples.find((row) => row.id === id);
+          const linkedTestIds = new Set(previous.tests.filter((test) => test.sampleId === id).map((test) => test.id));
+          const linkedReportIds = new Set(previous.reports.filter((report) => report.sampleId === id).map((report) => report.id));
+          const draft: LabState = {
+            ...previous,
+            samples: previous.samples.filter((row) => row.id !== id),
+            tests: previous.tests.filter((test) => test.sampleId !== id),
+            concreteTests: previous.concreteTests.filter((row) => !linkedTestIds.has(row.testId)),
+            concreteWaterPenetrationTests: previous.concreteWaterPenetrationTests.filter((row) => !linkedTestIds.has(row.testId)),
+            concreteFlexuralTests: previous.concreteFlexuralTests.filter((row) => !linkedTestIds.has(row.testId)),
+            concreteDensityTests: previous.concreteDensityTests.filter((row) => !linkedTestIds.has(row.testId)),
+            concreteIndirectTensileTests: previous.concreteIndirectTensileTests.filter((row) => !linkedTestIds.has(row.testId)),
+            thermalInsulationTests: previous.thermalInsulationTests.filter((row) => !linkedTestIds.has(row.testId)),
+            cementConsistencyTests: previous.cementConsistencyTests.filter((row) => !linkedTestIds.has(row.testId)),
+            cementStrengthTests: previous.cementStrengthTests.filter((row) => !linkedTestIds.has(row.testId)),
+            cementBlaineTests: previous.cementBlaineTests.filter((row) => !linkedTestIds.has(row.testId)),
+            steelTests: previous.steelTests.filter((row) => !linkedTestIds.has(row.testId)),
+            aggregateTests: previous.aggregateTests.filter((row) => !linkedTestIds.has(row.testId)),
+            aggregateChemicalTests: previous.aggregateChemicalTests.filter((row) => !linkedTestIds.has(row.testId)),
+            aggregateLosAngelesTests: previous.aggregateLosAngelesTests.filter((row) => !linkedTestIds.has(row.testId)),
+            aggregateFreezeThawTests: previous.aggregateFreezeThawTests.filter((row) => !linkedTestIds.has(row.testId)),
+            aggregateAcvTests: previous.aggregateAcvTests.filter((row) => !linkedTestIds.has(row.testId)),
+            aggregateDensityAbsorptionTests: previous.aggregateDensityAbsorptionTests.filter((row) => !linkedTestIds.has(row.testId)),
+            aggregateFillerDensityTests: previous.aggregateFillerDensityTests.filter((row) => !linkedTestIds.has(row.testId)),
+            aggregateShapeIndexTests: previous.aggregateShapeIndexTests.filter((row) => !linkedTestIds.has(row.testId)),
+            aggregateFlakinessIndexTests: previous.aggregateFlakinessIndexTests.filter((row) => !linkedTestIds.has(row.testId)),
+            aggregateElongationIndexTests: previous.aggregateElongationIndexTests.filter((row) => !linkedTestIds.has(row.testId)),
+            aggregateBulkDensityTests: previous.aggregateBulkDensityTests.filter((row) => !linkedTestIds.has(row.testId)),
+            aggregateSandEquivalentTests: previous.aggregateSandEquivalentTests.filter((row) => !linkedTestIds.has(row.testId)),
+            aggregateSoundnessTests: previous.aggregateSoundnessTests.filter((row) => !linkedTestIds.has(row.testId)),
+            reports: previous.reports.filter((report) => report.sampleId !== id),
+            notifications: previous.notifications.filter((notification) => {
+              const relatedTestRemoved = notification.relatedTestId ? linkedTestIds.has(notification.relatedTestId) : false;
+              const relatedReportRemoved = notification.relatedReportId ? linkedReportIds.has(notification.relatedReportId) : false;
+              return !relatedTestRemoved && !relatedReportRemoved;
+            }),
+            auditLog: [...previous.auditLog]
+          };
+          addAudit(
+            draft,
+            "sample_removed",
+            "sample",
+            id,
+            `Sample ${sample?.sampleCode ?? id} removed with ${linkedTestIds.size} linked test${linkedTestIds.size === 1 ? "" : "s"} and ${linkedReportIds.size} linked report${linkedReportIds.size === 1 ? "" : "s"}.`
+          );
+          return draft;
+        });
       },
       assignSampleClient(sampleId, clientId, projectId) {
         setState((previous) => {
