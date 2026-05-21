@@ -75,6 +75,7 @@ export default function SampleDetailPage() {
               <Info label="Tipi i kampionit" value={sample.sampleType} />
               <Info label="Data e pranimit" value={sample.dateReceived} />
               <Info label="Ora e pranimit" value={sample.timeReceived} />
+              <Info label="Data e betonimit" value={sample.concretingDate} />
               <Info label="Mënyra e dorëzimit" value={sample.collectionMethod} />
               <Info label="Dorëzuar nga" value={sample.deliveredBy} />
               <Info label="Marrë nga" value={sample.collectedBy} />

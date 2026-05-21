@@ -71,6 +71,7 @@ export interface Sample {
   collectionMethod: "Delivered by client" | "Collected by lab technician";
   deliveredBy?: string;
   collectedBy?: string;
+  concretingDate?: string;
   requestedTestType: string;
   standard: string;
   requiredTestDate: string;

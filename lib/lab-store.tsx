@@ -70,6 +70,7 @@ interface NewSampleInput {
   collectionMethod: Sample["collectionMethod"];
   deliveredBy?: string;
   collectedBy?: string;
+  concretingDate?: string;
   requestedTestType: string;
   standard: string;
   requiredTestDate: string;
@@ -1368,6 +1369,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             collectionMethod: input.collectionMethod,
             deliveredBy: input.deliveredBy,
             collectedBy: input.collectedBy,
+            concretingDate: input.concretingDate,
             requestedTestType: input.requestedTestType,
             standard: input.standard,
             requiredTestDate: input.requiredTestDate,

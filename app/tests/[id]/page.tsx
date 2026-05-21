@@ -2610,7 +2610,7 @@ export default function TestDetailPage() {
           <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
             <Field label="Register number"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
             <Field label="Samples received in lab"><input className="input bg-lab-porcelain" value={sample?.dateReceived ?? ""} readOnly /></Field>
-            <Field label="Casting date"><input name="castingDate" type="date" required defaultValue={concrete?.castingDate ?? "2026-04-03"} className="input" /></Field>
+            <Field label="Casting date"><input name="castingDate" type="date" required defaultValue={concrete?.castingDate ?? sample?.concretingDate ?? sample?.dateReceived ?? ""} className="input" /></Field>
             <Field label="Testing start date"><input name="testStartDate" type="date" defaultValue={concrete?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
             <Field label="Testing end date"><input name="testEndDate" type="date" defaultValue={concrete?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
             <Field label="Test date for report"><input name="testDate" type="date" required defaultValue={concrete?.testDate ?? activeTest.requiredTestDate} className="input" /></Field>
