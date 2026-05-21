@@ -6,8 +6,16 @@ import { SummaryCard } from "@/components/ui/summary-card";
 import { averageDays } from "@/lib/calculations";
 import { useLabStore } from "@/lib/lab-store";
 
+const albanianMonths = ["Janar", "Shkurt", "Mars", "Prill", "Maj", "Qershor", "Korrik", "Gusht", "Shtator", "Tetor", "Nëntor", "Dhjetor"];
+
+function currentMonthLabel() {
+  const today = new Date();
+  return `${albanianMonths[today.getMonth()]} ${today.getFullYear()}`;
+}
+
 export default function MonthlySummaryPage() {
   const store = useLabStore();
+  const monthLabel = currentMonthLabel();
   const samplesReceived = store.samples.length;
   const completed = store.tests.filter((test) => test.completedAt).length;
   const issued = store.reports.filter((report) => report.reportStatus === "Issued").length;
@@ -43,7 +51,7 @@ export default function MonthlySummaryPage() {
             {label}
             <select className="input mt-1">
               <option>Të gjitha</option>
-              <option>Prill 2026</option>
+              <option>{monthLabel}</option>
             </select>
           </label>
         ))}

@@ -13,6 +13,19 @@ import {
 } from "@/lib/accredited-tests";
 import { useLabStore } from "@/lib/lab-store";
 
+function formatDateInput(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function addDays(date: Date, days: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
 export default function NewSamplePage() {
   const router = useRouter();
   const store = useLabStore();
@@ -31,6 +44,14 @@ export default function NewSamplePage() {
     activeEmployees.find((user) => user.role === "Technician")?.id ??
     activeEmployees[0]?.id ??
     "";
+  const today = new Date();
+  const defaultReceivedDate = formatDateInput(today);
+  const defaultRequiredDate = formatDateInput(today);
+  const defaultReportDueDate = formatDateInput(addDays(today, 2));
+  const defaultSevenDayTestDate = formatDateInput(addDays(today, 7));
+  const defaultSevenDayReportDate = formatDateInput(addDays(today, 8));
+  const defaultTwentyEightDayTestDate = formatDateInput(addDays(today, 28));
+  const defaultTwentyEightDayReportDate = formatDateInput(addDays(today, 29));
 
   function changeSampleType(nextSampleType: string) {
     const nextTests = getAccreditedTestsForSampleType(nextSampleType);
@@ -99,7 +120,7 @@ export default function NewSamplePage() {
           </select>
         </Field>
         <Field label={showConcreteSchedule ? "Numri total i kubeve të pranuara" : showSteelWorksheet ? "Numri total i mostrave të çelikut të pranuara" : "Sasia e pranuar"}><input name="quantity" required type="number" min="1" defaultValue={showConcreteSchedule ? "60" : showSteelWorksheet ? "6" : "1"} className="input" /></Field>
-        <Field label="Data e pranimit"><input name="dateReceived" required type="date" defaultValue="2026-04-29" className="input" /></Field>
+        <Field label="Data e pranimit"><input name="dateReceived" required type="date" defaultValue={defaultReceivedDate} className="input" /></Field>
         <Field label="Ora e pranimit"><input name="timeReceived" required type="time" defaultValue="09:00" className="input" /></Field>
         <Field label="Mënyra e dorëzimit">
           <select name="collectionMethod" className="input">
@@ -122,8 +143,8 @@ export default function NewSamplePage() {
         <Field label="Standardi përkatës"><input name="standard" value={selectedTest?.standard || "Standardi nuk është përcaktuar në listën e akreditimit"} readOnly className="input bg-lab-porcelain" /></Field>
         <Field label="Intervali i akredituar i matjes"><input value={selectedTest?.measurementRange || "-"} readOnly className="input bg-lab-porcelain" /></Field>
         <Field label="Standardi i kampionimit"><input value={selectedTest?.samplingStandard || "-"} readOnly className="input bg-lab-porcelain" /></Field>
-        <Field label="Data e parë e kërkuar për testim"><input name="requiredTestDate" required type="date" defaultValue="2026-05-01" className="input" /></Field>
-        <Field label="Afati final i raportit"><input name="reportDueDate" required type="date" defaultValue="2026-05-03" className="input" /></Field>
+        <Field label="Data e parë e kërkuar për testim"><input name="requiredTestDate" required type="date" defaultValue={defaultRequiredDate} className="input" /></Field>
+        <Field label="Afati final i raportit"><input name="reportDueDate" required type="date" defaultValue={defaultReportDueDate} className="input" /></Field>
         {showConcreteSchedule ? (
         <div className="lg:col-span-2">
           <div className="mb-3 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
@@ -166,8 +187,8 @@ export default function NewSamplePage() {
                         <option value="56">56 ditë</option>
                       </select>
                     </td>
-                    <td className="px-3 py-2"><input name={`scheduleRequiredDate-${index}`} type="date" defaultValue={index === 0 ? "2026-05-06" : index === 1 ? "2026-05-27" : ""} className="input" /></td>
-                    <td className="px-3 py-2"><input name={`scheduleReportDueDate-${index}`} type="date" defaultValue={index === 0 ? "2026-05-07" : index === 1 ? "2026-05-28" : ""} className="input" /></td>
+                    <td className="px-3 py-2"><input name={`scheduleRequiredDate-${index}`} type="date" defaultValue={index === 0 ? defaultSevenDayTestDate : index === 1 ? defaultTwentyEightDayTestDate : ""} className="input" /></td>
+                    <td className="px-3 py-2"><input name={`scheduleReportDueDate-${index}`} type="date" defaultValue={index === 0 ? defaultSevenDayReportDate : index === 1 ? defaultTwentyEightDayReportDate : ""} className="input" /></td>
                   </tr>
                 ))}
               </tbody>

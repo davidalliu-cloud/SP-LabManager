@@ -10,12 +10,37 @@ import { canViewClientIdentity } from "@/lib/permissions";
 import { isApproaching, isOverdue } from "@/lib/status";
 import type { LabTest, Sample } from "@/lib/types";
 
+const albanianMonths = [
+  "Janar",
+  "Shkurt",
+  "Mars",
+  "Prill",
+  "Maj",
+  "Qershor",
+  "Korrik",
+  "Gusht",
+  "Shtator",
+  "Tetor",
+  "Nëntor",
+  "Dhjetor"
+];
+
+function currentMonthContext() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth();
+  return {
+    key: `${year}-${String(month + 1).padStart(2, "0")}`,
+    label: `${albanianMonths[month]} ${year}`
+  };
+}
+
 export default function DashboardPage() {
   const store = useLabStore();
   const { t } = useI18n();
-  const month = "2026-04";
-  const samplesThisMonth = store.samples.filter((sample) => sample.dateReceived.startsWith(month)).length;
-  const completedThisMonth = store.tests.filter((test) => test.completedAt?.startsWith(month)).length;
+  const month = currentMonthContext();
+  const samplesThisMonth = store.samples.filter((sample) => sample.dateReceived.startsWith(month.key)).length;
+  const completedThisMonth = store.tests.filter((test) => test.completedAt?.startsWith(month.key)).length;
   const pendingPreparation = store.tests.filter((test) => test.status === "Completed").length;
   const pendingApproval = store.reports.filter((report) => report.reportStatus === "Pending Approval").length;
   const approvedNotIssued = store.reports.filter((report) => report.reportStatus === "Approved").length;
@@ -50,8 +75,8 @@ export default function DashboardPage() {
         }
       />
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
-        <SummaryCard label={t("dashboard.samplesThisMonth")} value={samplesThisMonth} detail="Prill 2026" href="/samples" />
-        <SummaryCard label={t("dashboard.testsCompleted")} value={completedThisMonth} tone="green" detail="Prill 2026" href="/tests" />
+        <SummaryCard label={t("dashboard.samplesThisMonth")} value={samplesThisMonth} detail={month.label} href="/samples" />
+        <SummaryCard label={t("dashboard.testsCompleted")} value={completedThisMonth} tone="green" detail={month.label} href="/tests" />
         <SummaryCard label={t("dashboard.reportsToPrepare")} value={pendingPreparation} tone="purple" href="/reports" />
         <SummaryCard label={t("dashboard.pendingApproval")} value={pendingApproval} tone="purple" href="/reports" />
         <SummaryCard label={t("dashboard.approvedNotIssued")} value={approvedNotIssued} tone="green" href="/reports" />
