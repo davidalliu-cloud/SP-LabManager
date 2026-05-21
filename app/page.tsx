@@ -2,22 +2,13 @@
 
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { SummaryCard } from "@/components/ui/summary-card";
-import { TestCard } from "@/components/workflow/test-card";
 import { useI18n } from "@/lib/i18n";
 import { useLabStore } from "@/lib/lab-store";
-import type { TestStatus } from "@/lib/types";
-
-const workflow: Array<{ label: string; statuses: TestStatus[] }> = [
-  { label: "Pending Testing", statuses: ["Pending", "Scheduled"] },
-  { label: "In Progress", statuses: ["In Progress"] },
-  { label: "Completed", statuses: ["Completed"] },
-  { label: "Report Drafted", statuses: ["Report Drafted"] },
-  { label: "Pending Approval", statuses: ["Pending Approval"] },
-  { label: "Approved", statuses: ["Approved"] },
-  { label: "Issued", statuses: ["Issued"] },
-  { label: "Delayed", statuses: ["Delayed"] }
-];
+import { canViewClientIdentity } from "@/lib/permissions";
+import { isApproaching, isOverdue } from "@/lib/status";
+import type { LabTest, Sample } from "@/lib/types";
 
 export default function DashboardPage() {
   const store = useLabStore();
@@ -30,6 +21,22 @@ export default function DashboardPage() {
   const approvedNotIssued = store.reports.filter((report) => report.reportStatus === "Approved").length;
   const delayed = store.tests.filter((test) => test.status === "Delayed").length;
   const procedureDrafts = store.procedureRevisions.filter((revision) => revision.status === "Draft" || revision.status === "In Review").length;
+  const currentUser = store.users.find((user) => user.id === store.currentUserId);
+  const showClientIdentity = canViewClientIdentity(currentUser?.role);
+  const workflowRows = [
+    ...store.samples
+      .filter((sample) => !store.tests.some((test) => test.sampleId === sample.id))
+      .map((sample) => ({ kind: "sample" as const, sample, test: undefined })),
+    ...store.tests.map((test) => ({
+      kind: "test" as const,
+      test,
+      sample: store.samples.find((sample) => sample.id === test.sampleId)
+    }))
+  ].sort((left, right) => {
+    const leftDate = left.test?.requiredTestDate ?? left.sample?.requiredTestDate ?? "";
+    const rightDate = right.test?.requiredTestDate ?? right.sample?.requiredTestDate ?? "";
+    return leftDate.localeCompare(rightDate);
+  });
 
   return (
     <>
@@ -66,53 +73,103 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      <section className="mt-6 grid gap-4 lg:grid-cols-3">
-        <div className="surface-card p-4 lg:col-span-2">
+      <section className="mt-6 surface-card p-4">
+        <div>
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-ink">{t("dashboard.workflowColumns")}</h2>
+            <div>
+              <h2 className="text-base font-semibold text-ink">Procesi i kampionëve dhe testeve</h2>
+              <p className="mt-1 text-sm text-muted">Pamje në rreshta për çdo kampion ose test, nga regjistrimi deri te lëshimi i raportit.</p>
+            </div>
             <Link href="/tests" className="text-sm font-semibold text-lab-burgundy hover:text-lab-purple">{t("dashboard.openAllTests")}</Link>
           </div>
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            {workflow.map((column) => {
-              const tests = store.tests.filter((test) => column.statuses.includes(test.status));
-              return (
-                <div key={column.label} className="soft-panel min-h-40 p-3">
-                  <div className="mb-3 flex items-center justify-between">
-                    <div className="text-sm font-semibold text-ink">{t(`status.${column.label}` as never)}</div>
-                    <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-lab-burgundy ring-1 ring-line">{tests.length}</span>
-                  </div>
-                  <div className="space-y-3">
-                    {tests.length ? (
-                      tests.map((test) => (
-                        <TestCard
-                          key={test.id}
-                          test={test}
-                          sample={store.samples.find((sample) => sample.id === test.sampleId)}
-                          client={store.clients.find((client) => client.id === test.clientId)}
-                          project={store.projects.find((project) => project.id === test.projectId)}
-                          technician={store.users.find((user) => user.id === test.assignedTechnician)}
-                        />
-                      ))
-                    ) : (
-                      <div className="rounded-md border border-dashed border-line bg-white p-3 text-sm text-muted">{t("dashboard.noTests")}</div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-        <div className="surface-card p-4">
-          <h2 className="text-base font-semibold text-ink">{t("dashboard.managementSnapshot")}</h2>
-          <div className="mt-4 space-y-4">
-            <Metric label={t("dashboard.topClient")} value="-" />
-            <Metric label={t("dashboard.commonSample")} value="Kubike Betoni / Concrete Cubes" />
-            <Metric label={t("dashboard.reportsToPrepare")} value={String(pendingPreparation)} />
-            <Metric label={t("dashboard.nextApproval")} value={`${pendingApproval} raporte`} />
+          <div className="overflow-x-auto rounded-md border border-line">
+            <table className="w-full min-w-[1180px] text-left text-sm">
+              <thead className="table-head">
+                <tr>
+                  <th className="px-4 py-3">Faza</th>
+                  <th className="px-4 py-3">Kampioni</th>
+                  <th className="px-4 py-3">Kodi i klientit</th>
+                  <th className="px-4 py-3">Projekti</th>
+                  <th className="px-4 py-3">Testi</th>
+                  <th className="px-4 py-3">Sasia / grupi</th>
+                  <th className="px-4 py-3">Data e testimit</th>
+                  <th className="px-4 py-3">Afati i raportit</th>
+                  <th className="px-4 py-3">Tekniku</th>
+                  <th className="px-4 py-3">Raporti</th>
+                  <th className="px-4 py-3">Veprim</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {workflowRows.length ? (
+                  workflowRows.map((row) => (
+                    <WorkflowRow
+                      key={row.test?.id ?? row.sample?.id}
+                      row={row}
+                      showClientIdentity={showClientIdentity}
+                    />
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={11} className="px-4 py-6 text-center text-sm text-muted">{t("dashboard.noTests")}</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </section>
+
+      <section className="mt-6 surface-card p-4">
+        <h2 className="text-base font-semibold text-ink">{t("dashboard.managementSnapshot")}</h2>
+        <div className="mt-4 grid gap-3 md:grid-cols-4">
+          <Metric label={t("dashboard.topClient")} value="-" />
+          <Metric label={t("dashboard.commonSample")} value="Kubike Betoni / Concrete Cubes" />
+          <Metric label={t("dashboard.reportsToPrepare")} value={String(pendingPreparation)} />
+          <Metric label={t("dashboard.nextApproval")} value={`${pendingApproval} raporte`} />
+        </div>
+      </section>
     </>
+  );
+}
+
+function WorkflowRow({
+  row,
+  showClientIdentity
+}: {
+  row: { kind: "sample"; sample?: Sample; test?: undefined } | { kind: "test"; sample?: Sample; test: LabTest };
+  showClientIdentity: boolean;
+}) {
+  const store = useLabStore();
+  const sample = row.sample;
+  const test = row.test;
+  const client = store.clients.find((item) => item.id === (test?.clientId ?? sample?.clientId));
+  const project = store.projects.find((item) => item.id === (test?.projectId ?? sample?.projectId));
+  const technician = store.users.find((item) => item.id === (test?.assignedTechnician ?? sample?.assignedTechnician));
+  const report = test ? store.reports.find((item) => item.testId === test.id) : undefined;
+  const overdue = test ? isOverdue(test.requiredTestDate, test.status) : false;
+  const approaching = test ? isApproaching(test.requiredTestDate) : false;
+  const status = test ? (overdue ? "Delayed" : test.status) : sample?.status ?? "Registered";
+  const unit = sample?.sampleType.includes("Rebar") || sample?.sampleType.includes("Shufër Çeliku") ? "mostra" : "mostra";
+  const quantity = test ? `${test.cubeCount} ${unit}${test.scheduledAgeDays ? ` / ${test.scheduledAgeDays} ditë` : ""}` : `${sample?.quantity ?? "-"} ${unit}`;
+
+  return (
+    <tr className={`${overdue ? "bg-red-50/70" : approaching ? "bg-amber-50/60" : "hover:bg-lab-mist/60"}`}>
+      <td className="px-4 py-3"><StatusBadge status={status} /></td>
+      <td className="px-4 py-3 font-semibold text-ink">{sample?.sampleCode ?? test?.testCode}</td>
+      <td className="px-4 py-3 font-semibold text-ink">{client?.clientCode ?? "Në pritje"}</td>
+      <td className="px-4 py-3">{showClientIdentity ? project?.projectName ?? "Në pritje" : "I kufizuar"}</td>
+      <td className="px-4 py-3">{test?.testType ?? sample?.requestedTestType ?? "-"}</td>
+      <td className="px-4 py-3">{quantity}</td>
+      <td className="px-4 py-3">{test?.requiredTestDate ?? sample?.requiredTestDate ?? "-"}</td>
+      <td className="px-4 py-3">{test?.dueDate ?? sample?.reportDueDate ?? "-"}</td>
+      <td className="px-4 py-3">{technician?.fullName ?? "-"}</td>
+      <td className="px-4 py-3">{report ? <StatusBadge status={report.reportStatus} /> : "-"}</td>
+      <td className="px-4 py-3">
+        <Link href={test ? `/tests/${test.id}` : `/samples/${sample?.id}`} className="font-semibold text-lab-burgundy hover:text-lab-purple">
+          {test ? "Hap testin" : "Hap kampionin"}
+        </Link>
+      </td>
+    </tr>
   );
 }
 
