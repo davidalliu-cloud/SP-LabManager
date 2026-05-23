@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
+import { formatEuropeanDate } from "@/lib/date-format";
 import { isApproaching, isOverdue } from "@/lib/status";
 import type { Client, LabTest, Project, Sample, LabUser } from "@/lib/types";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -47,7 +48,7 @@ export function TestCard({
         </div>
         <div>
           <span className="text-muted">{t("test.required")}</span>
-          <div className="font-medium text-ink">{test.requiredTestDate}</div>
+          <div className="font-medium text-ink">{formatEuropeanDate(test.requiredTestDate)}</div>
         </div>
         <div className="col-span-2">
           <span className="text-muted">{t("test.technician")}</span>

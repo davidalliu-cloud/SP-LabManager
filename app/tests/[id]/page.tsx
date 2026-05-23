@@ -6,6 +6,7 @@ import { FormEvent, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { isAggregateAcvAccreditedTest, isAggregateBulkDensityAccreditedTest, isAggregateChemicalAccreditedTest, isAggregateDensityAbsorptionAccreditedTest, isAggregateElongationIndexAccreditedTest, isAggregateFillerDensityAccreditedTest, isAggregateFlakinessIndexAccreditedTest, isAggregateFreezeThawAccreditedTest, isAggregateGranulometrySampleType, isAggregateLosAngelesAccreditedTest, isAggregateSandEquivalentAccreditedTest, isAggregateShapeIndexAccreditedTest, isAggregateSoundnessAccreditedTest, isCementBlaineAstmAccreditedTest, isCementBlaineBsEnAccreditedTest, isCementConsistencyAccreditedTest, isCementStrengthAccreditedTest, isConcreteDensityAccreditedTest, isConcreteFlexuralAccreditedTest, isConcreteIndirectTensileAccreditedTest, isConcreteWaterPenetrationAccreditedTest, isSteelSampleType, isThermalInsulationAccreditedTest } from "@/lib/accredited-tests";
+import { formatEuropeanDate } from "@/lib/date-format";
 import { useLabStore } from "@/lib/lab-store";
 import { canViewClientIdentity } from "@/lib/permissions";
 import type { LabUser } from "@/lib/types";
@@ -780,7 +781,7 @@ export default function TestDetailPage() {
             <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
               <Field label="Register number"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
               <Field label="Sample type"><input name="productType" defaultValue={thermalInsulation?.productType ?? sample?.sampleType ?? ""} className="input" /></Field>
-              <Field label="Date received"><input className="input bg-lab-porcelain" value={sample?.dateReceived ?? ""} readOnly /></Field>
+              <Field label="Date received"><input className="input bg-lab-porcelain" value={formatEuropeanDate(sample?.dateReceived)} readOnly /></Field>
               <Field label="Testing start date"><input name="testStartDate" type="date" defaultValue={thermalInsulation?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Testing end date"><input name="testEndDate" type="date" defaultValue={thermalInsulation?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Surface treatment"><input name="surfaceTreatment" defaultValue={thermalInsulation?.surfaceTreatment ?? ""} className="input" /></Field>
@@ -1079,7 +1080,7 @@ export default function TestDetailPage() {
             <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
               <Field label="Register number"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
               <Field label="Sample type"><input className="input bg-lab-porcelain" value={sample?.sampleType ?? ""} readOnly /></Field>
-              <Field label="Date received"><input className="input bg-lab-porcelain" value={sample?.dateReceived ?? ""} readOnly /></Field>
+              <Field label="Date received"><input className="input bg-lab-porcelain" value={formatEuropeanDate(sample?.dateReceived)} readOnly /></Field>
               <Field label="Testing start date"><input name="testStartDate" type="date" defaultValue={concreteDensity?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Testing end date"><input name="testEndDate" type="date" defaultValue={concreteDensity?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Specimen condition"><input name="specimenCondition" defaultValue={concreteDensity?.specimenCondition ?? "Treated / oven dried regular shape"} className="input" /></Field>
@@ -1119,7 +1120,7 @@ export default function TestDetailPage() {
             <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
               <Field label="Register number"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
               <Field label="Sample type"><input className="input bg-lab-porcelain" value={sample?.sampleType ?? ""} readOnly /></Field>
-              <Field label="Date received"><input className="input bg-lab-porcelain" value={sample?.dateReceived ?? ""} readOnly /></Field>
+              <Field label="Date received"><input className="input bg-lab-porcelain" value={formatEuropeanDate(sample?.dateReceived)} readOnly /></Field>
               <Field label="Casting date"><input name="castingDate" type="date" defaultValue={concreteIndirectTensile?.castingDate ?? ""} className="input" /></Field>
               <Field label="Testing start date"><input name="testStartDate" type="date" defaultValue={concreteIndirectTensile?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Testing end date"><input name="testEndDate" type="date" defaultValue={concreteIndirectTensile?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
@@ -1160,7 +1161,7 @@ export default function TestDetailPage() {
             <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
               <Field label="Register number"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
               <Field label="Sample type"><input className="input bg-lab-porcelain" value={sample?.sampleType ?? ""} readOnly /></Field>
-              <Field label="Date received"><input className="input bg-lab-porcelain" value={sample?.dateReceived ?? ""} readOnly /></Field>
+              <Field label="Date received"><input className="input bg-lab-porcelain" value={formatEuropeanDate(sample?.dateReceived)} readOnly /></Field>
               <Field label="Casting date"><input name="castingDate" type="date" defaultValue={concreteWater?.castingDate ?? ""} className="input" /></Field>
               <Field label="Testing start date"><input name="testStartDate" type="date" defaultValue={concreteWater?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Testing end date"><input name="testEndDate" type="date" defaultValue={concreteWater?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
@@ -1206,7 +1207,7 @@ export default function TestDetailPage() {
             <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
               <Field label="Register number"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
               <Field label="Sample type"><input className="input bg-lab-porcelain" value={sample?.sampleType ?? ""} readOnly /></Field>
-              <Field label="Date received"><input className="input bg-lab-porcelain" value={sample?.dateReceived ?? ""} readOnly /></Field>
+              <Field label="Date received"><input className="input bg-lab-porcelain" value={formatEuropeanDate(sample?.dateReceived)} readOnly /></Field>
               <Field label="Casting date"><input name="castingDate" type="date" defaultValue={concreteFlexural?.castingDate ?? ""} className="input" /></Field>
               <Field label="Testing start date"><input name="testStartDate" type="date" defaultValue={concreteFlexural?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Testing end date"><input name="testEndDate" type="date" defaultValue={concreteFlexural?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
@@ -1250,7 +1251,7 @@ export default function TestDetailPage() {
             <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
               <Field label="Register number"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
               <Field label="Sample type"><input className="input bg-lab-porcelain" value={sample?.sampleType ?? ""} readOnly /></Field>
-              <Field label="Sample received in lab"><input className="input bg-lab-porcelain" value={sample?.dateReceived ?? ""} readOnly /></Field>
+              <Field label="Sample received in lab"><input className="input bg-lab-porcelain" value={formatEuropeanDate(sample?.dateReceived)} readOnly /></Field>
               <Field label="Testing start date"><input name="testStartDate" type="date" defaultValue={aggregateSoundness?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Testing end date"><input name="testEndDate" type="date" defaultValue={aggregateSoundness?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Applied standard"><input className="input bg-lab-porcelain" value={activeTest.standard} readOnly /></Field>
@@ -1320,7 +1321,7 @@ export default function TestDetailPage() {
             <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
               <Field label="Register number"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
               <Field label="Sample type"><input className="input bg-lab-porcelain" value={sample?.sampleType ?? ""} readOnly /></Field>
-              <Field label="Sample received in lab"><input className="input bg-lab-porcelain" value={sample?.dateReceived ?? ""} readOnly /></Field>
+              <Field label="Sample received in lab"><input className="input bg-lab-porcelain" value={formatEuropeanDate(sample?.dateReceived)} readOnly /></Field>
               <Field label="Testing start date"><input name="testStartDate" type="date" defaultValue={aggregateSandEquivalent?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Testing end date"><input name="testEndDate" type="date" defaultValue={aggregateSandEquivalent?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Applied standard"><input className="input bg-lab-porcelain" value={activeTest.standard} readOnly /></Field>
@@ -1375,7 +1376,7 @@ export default function TestDetailPage() {
             <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
               <Field label="Register number"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
               <Field label="Sample type"><input className="input bg-lab-porcelain" value={sample?.sampleType ?? ""} readOnly /></Field>
-              <Field label="Sample received in lab"><input className="input bg-lab-porcelain" value={sample?.dateReceived ?? ""} readOnly /></Field>
+              <Field label="Sample received in lab"><input className="input bg-lab-porcelain" value={formatEuropeanDate(sample?.dateReceived)} readOnly /></Field>
               <Field label="Testing start date"><input name="testStartDate" type="date" defaultValue={aggregateBulkDensity?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Testing end date"><input name="testEndDate" type="date" defaultValue={aggregateBulkDensity?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Applied standard"><input className="input bg-lab-porcelain" value={activeTest.standard} readOnly /></Field>
@@ -1414,7 +1415,7 @@ export default function TestDetailPage() {
             <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
               <Field label="Register number"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
               <Field label="Sample type"><input className="input bg-lab-porcelain" value={sample?.sampleType ?? ""} readOnly /></Field>
-              <Field label="Sample received in lab"><input className="input bg-lab-porcelain" value={sample?.dateReceived ?? ""} readOnly /></Field>
+              <Field label="Sample received in lab"><input className="input bg-lab-porcelain" value={formatEuropeanDate(sample?.dateReceived)} readOnly /></Field>
               <Field label="Testing start date"><input name="testStartDate" type="date" defaultValue={aggregateElongation?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Testing end date"><input name="testEndDate" type="date" defaultValue={aggregateElongation?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Applied standard"><input className="input bg-lab-porcelain" value={activeTest.standard} readOnly /></Field>
@@ -1478,7 +1479,7 @@ export default function TestDetailPage() {
             <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
               <Field label="Register number"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
               <Field label="Sample type"><input className="input bg-lab-porcelain" value={sample?.sampleType ?? ""} readOnly /></Field>
-              <Field label="Sample received in lab"><input className="input bg-lab-porcelain" value={sample?.dateReceived ?? ""} readOnly /></Field>
+              <Field label="Sample received in lab"><input className="input bg-lab-porcelain" value={formatEuropeanDate(sample?.dateReceived)} readOnly /></Field>
               <Field label="Testing start date"><input name="testStartDate" type="date" defaultValue={aggregateFlakiness?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Testing end date"><input name="testEndDate" type="date" defaultValue={aggregateFlakiness?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Applied standard"><input className="input bg-lab-porcelain" value={activeTest.standard} readOnly /></Field>
@@ -1595,7 +1596,7 @@ export default function TestDetailPage() {
             <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
               <Field label="Register number"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
               <Field label="Sample type"><input className="input bg-lab-porcelain" value={sample?.sampleType ?? ""} readOnly /></Field>
-              <Field label="Sample received in lab"><input className="input bg-lab-porcelain" value={sample?.dateReceived ?? ""} readOnly /></Field>
+              <Field label="Sample received in lab"><input className="input bg-lab-porcelain" value={formatEuropeanDate(sample?.dateReceived)} readOnly /></Field>
               <Field label="Testing start date"><input name="testStartDate" type="date" defaultValue={aggregateShapeIndex?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Testing end date"><input name="testEndDate" type="date" defaultValue={aggregateShapeIndex?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Applied standard"><input className="input bg-lab-porcelain" value={activeTest.standard} readOnly /></Field>
@@ -1700,7 +1701,7 @@ export default function TestDetailPage() {
             <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
               <Field label="Register number"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
               <Field label="Sample type"><input className="input bg-lab-porcelain" value={sample?.sampleType ?? ""} readOnly /></Field>
-              <Field label="Sample received in lab"><input className="input bg-lab-porcelain" value={sample?.dateReceived ?? ""} readOnly /></Field>
+              <Field label="Sample received in lab"><input className="input bg-lab-porcelain" value={formatEuropeanDate(sample?.dateReceived)} readOnly /></Field>
               <Field label="Testing start date"><input name="testStartDate" type="date" defaultValue={aggregateFillerDensity?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Testing end date"><input name="testEndDate" type="date" defaultValue={aggregateFillerDensity?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Applied standard"><input className="input bg-lab-porcelain" value={activeTest.standard} readOnly /></Field>
@@ -1807,7 +1808,7 @@ export default function TestDetailPage() {
             <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
               <Field label="Register number"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
               <Field label="Sample type"><input className="input bg-lab-porcelain" value={sample?.sampleType ?? ""} readOnly /></Field>
-              <Field label="Sample received in lab"><input className="input bg-lab-porcelain" value={sample?.dateReceived ?? ""} readOnly /></Field>
+              <Field label="Sample received in lab"><input className="input bg-lab-porcelain" value={formatEuropeanDate(sample?.dateReceived)} readOnly /></Field>
               <Field label="Testing start date"><input name="testStartDate" type="date" defaultValue={aggregateDensity?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Testing end date"><input name="testEndDate" type="date" defaultValue={aggregateDensity?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Applied standard"><input className="input bg-lab-porcelain" value={activeTest.standard} readOnly /></Field>
@@ -1923,7 +1924,7 @@ export default function TestDetailPage() {
             <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
               <Field label="Register number"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
               <Field label="Sample type"><input className="input bg-lab-porcelain" value={sample?.sampleType ?? ""} readOnly /></Field>
-              <Field label="Sample received in lab"><input className="input bg-lab-porcelain" value={sample?.dateReceived ?? ""} readOnly /></Field>
+              <Field label="Sample received in lab"><input className="input bg-lab-porcelain" value={formatEuropeanDate(sample?.dateReceived)} readOnly /></Field>
               <Field label="Testing start date"><input name="testStartDate" type="date" defaultValue={aggregateAcv?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Testing end date"><input name="testEndDate" type="date" defaultValue={aggregateAcv?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Applied standard"><input className="input bg-lab-porcelain" value={activeTest.standard} readOnly /></Field>
@@ -2020,7 +2021,7 @@ export default function TestDetailPage() {
             <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
               <Field label="Register number"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
               <Field label="Sample type"><input className="input bg-lab-porcelain" value={sample?.sampleType ?? ""} readOnly /></Field>
-              <Field label="Sample received in lab"><input className="input bg-lab-porcelain" value={sample?.dateReceived ?? ""} readOnly /></Field>
+              <Field label="Sample received in lab"><input className="input bg-lab-porcelain" value={formatEuropeanDate(sample?.dateReceived)} readOnly /></Field>
               <Field label="Testing start date"><input name="testStartDate" type="date" defaultValue={aggregateFreezeThaw?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Testing end date"><input name="testEndDate" type="date" defaultValue={aggregateFreezeThaw?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Total freeze-thaw cycles"><input name="totalCycles" type="number" defaultValue={aggregateFreezeThaw?.totalCycles ?? ""} className="input" /></Field>
@@ -2140,7 +2141,7 @@ export default function TestDetailPage() {
             <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
               <Field label="Register number"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
               <Field label="Sample type"><input className="input bg-lab-porcelain" value={sample?.sampleType ?? ""} readOnly /></Field>
-              <Field label="Sample received in lab"><input className="input bg-lab-porcelain" value={sample?.dateReceived ?? ""} readOnly /></Field>
+              <Field label="Sample received in lab"><input className="input bg-lab-porcelain" value={formatEuropeanDate(sample?.dateReceived)} readOnly /></Field>
               <Field label="Testing start date"><input name="testStartDate" type="date" defaultValue={aggregateLosAngeles?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Testing end date"><input name="testEndDate" type="date" defaultValue={aggregateLosAngeles?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Applied standard"><input className="input bg-lab-porcelain" value={activeTest.standard} readOnly /></Field>
@@ -2252,7 +2253,7 @@ export default function TestDetailPage() {
             <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
               <Field label="Register number"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
               <Field label="Sample type"><input className="input bg-lab-porcelain" value={sample?.sampleType ?? ""} readOnly /></Field>
-              <Field label="Sample received in lab"><input className="input bg-lab-porcelain" value={sample?.dateReceived ?? ""} readOnly /></Field>
+              <Field label="Sample received in lab"><input className="input bg-lab-porcelain" value={formatEuropeanDate(sample?.dateReceived)} readOnly /></Field>
               <Field label="Testing start date"><input name="testStartDate" type="date" defaultValue={aggregateChemical?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Testing end date"><input name="testEndDate" type="date" defaultValue={aggregateChemical?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Applied standard"><input className="input bg-lab-porcelain" value={activeTest.standard} readOnly /></Field>
@@ -2347,7 +2348,7 @@ export default function TestDetailPage() {
             <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
               <Field label="Register number"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
               <Field label="Sample type"><input className="input bg-lab-porcelain" value={sample?.sampleType ?? ""} readOnly /></Field>
-              <Field label="Sample received in lab"><input className="input bg-lab-porcelain" value={sample?.dateReceived ?? ""} readOnly /></Field>
+              <Field label="Sample received in lab"><input className="input bg-lab-porcelain" value={formatEuropeanDate(sample?.dateReceived)} readOnly /></Field>
               <Field label="Testing start date"><input name="testStartDate" type="date" defaultValue={aggregate?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Testing end date"><input name="testEndDate" type="date" defaultValue={aggregate?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Sample mass before testing [g]"><input name="sampleMassG" type="number" step="0.01" required defaultValue={aggregate?.sampleMassG ?? ""} className="input" /></Field>
@@ -2451,7 +2452,7 @@ export default function TestDetailPage() {
             <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
               <Field label="Register number"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
               <Field label="Sample name"><input className="input bg-lab-porcelain" value={sample?.sampleDescription ?? ""} readOnly /></Field>
-              <Field label="Sample received in lab"><input className="input bg-lab-porcelain" value={sample?.dateReceived ?? ""} readOnly /></Field>
+              <Field label="Sample received in lab"><input className="input bg-lab-porcelain" value={formatEuropeanDate(sample?.dateReceived)} readOnly /></Field>
               <Field label="Supply date"><input name="supplyDate" type="date" defaultValue={steel?.supplyDate ?? sample?.dateReceived} className="input" /></Field>
               <Field label="Testing start date"><input name="testStartDate" type="date" defaultValue={steel?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Testing end date"><input name="testEndDate" type="date" defaultValue={steel?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
@@ -2609,7 +2610,7 @@ export default function TestDetailPage() {
 
           <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
             <Field label="Register number"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
-            <Field label="Samples received in lab"><input className="input bg-lab-porcelain" value={sample?.dateReceived ?? ""} readOnly /></Field>
+            <Field label="Samples received in lab"><input className="input bg-lab-porcelain" value={formatEuropeanDate(sample?.dateReceived)} readOnly /></Field>
             <Field label="Casting date"><input name="castingDate" type="date" required defaultValue={concrete?.castingDate ?? sample?.concretingDate ?? sample?.dateReceived ?? ""} className="input" /></Field>
             <Field label="Testing start date"><input name="testStartDate" type="date" defaultValue={concrete?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
             <Field label="Testing end date"><input name="testEndDate" type="date" defaultValue={concrete?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
@@ -2908,7 +2909,7 @@ function InfoInline({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <div className="text-xs font-medium uppercase tracking-wide text-muted">{testUiLabel(label)}</div>
-      <div className="mt-1 font-semibold text-ink">{value}</div>
+      <div className="mt-1 font-semibold text-ink">{formatEuropeanDate(value)}</div>
     </div>
   );
 }
@@ -2917,7 +2918,7 @@ function Info({ label, value }: { label: string; value?: string }) {
   return (
     <div className="mt-3 border-t border-line pt-3">
       <div className="text-xs font-medium uppercase tracking-wide text-muted">{testUiLabel(label)}</div>
-      <div className="mt-1 font-semibold text-ink">{value ?? "-"}</div>
+      <div className="mt-1 font-semibold text-ink">{formatEuropeanDate(value)}</div>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { formatEuropeanDate } from "@/lib/date-format";
 import { useI18n } from "@/lib/i18n";
 import { useLabStore } from "@/lib/lab-store";
 import { canDeleteSamples, canViewClientIdentity } from "@/lib/permissions";
@@ -80,19 +81,19 @@ export default function SamplesPage() {
                 const nextTest = sampleTests.find((item) => ["Pending", "Scheduled", "In Progress"].includes(item.status)) ?? test;
                 const report = store.reports.find((item) => item.sampleId === sample.id);
                 const schedule = sampleTests
-                  .map((item) => `${item.scheduledAgeDays}d: ${item.cubeCount} cubes (${item.requiredTestDate})`)
-                  .join("; ") || sample.testSchedules?.map((item) => `${item.ageDays || "-"}d: ${item.cubeCount} mostra (${item.requiredTestDate})`).join("; ");
+                  .map((item) => `${item.scheduledAgeDays}d: ${item.cubeCount} mostra (${formatEuropeanDate(item.requiredTestDate)})`)
+                  .join("; ") || sample.testSchedules?.map((item) => `${item.ageDays || "-"}d: ${item.cubeCount} mostra (${formatEuropeanDate(item.requiredTestDate)})`).join("; ");
                 return (
                   <tr key={sample.id} className="hover:bg-lab-mist/60">
                     <td className="px-4 py-3 font-semibold text-ink">{sample.sampleCode}</td>
-                    <td className="px-4 py-3">{sample.dateReceived}</td>
+                    <td className="px-4 py-3">{formatEuropeanDate(sample.dateReceived)}</td>
                     <td className="px-4 py-3 font-semibold text-ink">{store.clients.find((item) => item.id === sample.clientId)?.clientCode ?? "Në pritje"}</td>
                     <td className="px-4 py-3">{showClientIdentity ? store.projects.find((item) => item.id === sample.projectId)?.projectName ?? "Në pritje caktimi" : "I kufizuar"}</td>
                     <td className="px-4 py-3">{sample.sampleType}</td>
                     <td className="px-4 py-3" title={schedule}>{sample.quantity}</td>
                     <td className="px-4 py-3">{sample.requestedTestType}</td>
-                    <td className="px-4 py-3">{nextTest?.requiredTestDate ?? sample.requiredTestDate}</td>
-                    <td className="px-4 py-3">{nextTest?.dueDate ?? sample.reportDueDate}</td>
+                    <td className="px-4 py-3">{formatEuropeanDate(nextTest?.requiredTestDate ?? sample.requiredTestDate)}</td>
+                    <td className="px-4 py-3">{formatEuropeanDate(nextTest?.dueDate ?? sample.reportDueDate)}</td>
                     <td className="px-4 py-3"><StatusBadge status={sample.status} /></td>
                     <td className="px-4 py-3">{store.users.find((item) => item.id === (nextTest?.assignedTechnician ?? sample.assignedTechnician))?.fullName ?? "-"}</td>
                     <td className="px-4 py-3">{report ? <StatusBadge status={report.reportStatus} /> : "-"}</td>

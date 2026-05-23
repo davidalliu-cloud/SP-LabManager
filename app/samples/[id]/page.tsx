@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { SummaryCard } from "@/components/ui/summary-card";
+import { formatEuropeanDate } from "@/lib/date-format";
 import { useLabStore } from "@/lib/lab-store";
 import { canAssignSampleClient, canViewClientIdentity } from "@/lib/permissions";
 
@@ -120,8 +121,8 @@ export default function SampleDetailPage() {
                       <td className="px-4 py-3 font-semibold text-ink">{test.testCode}</td>
                       <td className="px-4 py-3">{test.cubeCount} kube</td>
                       <td className="px-4 py-3">{test.scheduledAgeDays} ditë</td>
-                      <td className="px-4 py-3">{test.requiredTestDate}</td>
-                      <td className="px-4 py-3">{test.dueDate}</td>
+                      <td className="px-4 py-3">{formatEuropeanDate(test.requiredTestDate)}</td>
+                      <td className="px-4 py-3">{formatEuropeanDate(test.dueDate)}</td>
                       <td className="px-4 py-3"><StatusBadge status={test.status} /></td>
                       <td className="px-4 py-3"><Link href={`/tests/${test.id}`} className="font-semibold text-lab-burgundy hover:text-lab-purple">Hap</Link></td>
                     </tr>
@@ -241,7 +242,7 @@ function Info({ label, value }: { label: string; value?: string | number }) {
   return (
     <div>
       <div className="text-xs font-medium uppercase tracking-wide text-muted">{label}</div>
-      <div className="mt-1 font-semibold text-ink">{value || "-"}</div>
+      <div className="mt-1 font-semibold text-ink">{typeof value === "string" ? formatEuropeanDate(value) : value || "-"}</div>
     </div>
   );
 }

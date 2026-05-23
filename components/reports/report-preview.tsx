@@ -3,6 +3,7 @@
 import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabTest, Project, Report, Sample, SteelTensileTest, ThermalInsulationTest } from "@/lib/types";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
+import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
 
 export function ReportPreview({
   report,
@@ -200,8 +201,8 @@ export function ReportPreview({
         <div className="grid border-b border-line md:grid-cols-[280px_1fr]">
           <div className="bg-lab-porcelain px-3 py-2 font-semibold text-ink">DATA E TESTIMIT / TESTING DATE</div>
           <div className="grid md:grid-cols-2">
-            <div className="px-3 py-2">FILLIMI / STARTING: <span className="font-semibold text-ink">{concrete?.testStartDate || concrete?.testDate || "-"}</span></div>
-            <div className="border-t border-line px-3 py-2 md:border-t-0 md:border-l">MBARIMI / ENDING: <span className="font-semibold text-ink">{concrete?.testEndDate || concrete?.testDate || "-"}</span></div>
+            <div className="px-3 py-2">FILLIMI / STARTING: <span className="font-semibold text-ink">{formatEuropeanDate(concrete?.testStartDate || concrete?.testDate)}</span></div>
+            <div className="border-t border-line px-3 py-2 md:border-t-0 md:border-l">MBARIMI / ENDING: <span className="font-semibold text-ink">{formatEuropeanDate(concrete?.testEndDate || concrete?.testDate)}</span></div>
           </div>
         </div>
         <ReportInfoRow label="OPERATORI I MARRJES SË KAMPIONIT / SAMPLING OPERATOR" value={sample?.collectionMethod === "Delivered by client" ? "KLIENTI / CLIENT" : sample?.collectedBy} />
@@ -268,8 +269,8 @@ export function ReportPreview({
               {reportSpecimens.map((specimen, index) => (
                 <tr key={`${specimen.specimenCode}-result-${index}`}>
                   <td className="border-r border-line px-3 py-2 font-semibold text-ink">{index + 1}</td>
-                  <td className="border-r border-line px-3 py-2">{concrete?.castingDate || "-"}</td>
-                  <td className="border-r border-line px-3 py-2">{concrete?.testDate || concrete?.testEndDate || "-"}</td>
+                  <td className="border-r border-line px-3 py-2">{formatEuropeanDate(concrete?.castingDate)}</td>
+                  <td className="border-r border-line px-3 py-2">{formatEuropeanDate(concrete?.testDate || concrete?.testEndDate)}</td>
                   <td className="border-r border-line px-3 py-2">{specimen.ageDays}</td>
                   <td className="border-r border-line px-3 py-2">{specimen.visualInspection || "Normale / Normal"}</td>
                   <td className="border-r border-line px-3 py-2">{specimen.maximumLoadKn}</td>
@@ -309,7 +310,7 @@ export function ReportPreview({
         <p>Ky raport testimi nuk mund të riprodhohet në mënyrë të pjesshme pa aprovimin me shkrim të laboratorit. / The test report shall not be reproduced except in full without written approval of the laboratory.</p>
         <p>Laboratori nuk është përgjegjës për fazën e kampionmarrjes. / The laboratory is not responsible for the sampling phase.</p>
         <p>Deklaroj që testi është kryer në përputhje me standardin. / I declare that the test was performed in accordance with the standard.</p>
-        <p className="pt-3 font-semibold text-ink">Data e lëshimit të Raportit të Testimit / Test Report Issue Date: {report.issuedAt ? new Date(report.issuedAt).toLocaleDateString() : "-"}</p>
+        <p className="pt-3 font-semibold text-ink">Data e lëshimit të Raportit të Testimit / Test Report Issue Date: {formatEuropeanDate(report.issuedAt)}</p>
       </div>
     </section>
   );
@@ -373,7 +374,7 @@ function Info({ label, value }: { label: string; value?: string }) {
       <div className="text-xs font-medium uppercase tracking-wide text-muted">
         {bilingual ? <Bilingual sq={bilingual.sq} en={bilingual.en} /> : label}
       </div>
-      <div className="mt-1 font-medium text-ink">{value ?? "-"}</div>
+      <div className="mt-1 font-medium text-ink">{formatEuropeanDateRange(value)}</div>
     </div>
   );
 }
@@ -393,7 +394,7 @@ function BilingualInfo({ sq, en, value }: { sq: string; en: string; value?: stri
       <div className="text-[10px] uppercase text-muted">
         <Bilingual sq={sq} en={en} />
       </div>
-      <div className="mt-1 font-medium text-ink">{value ?? "-"}</div>
+      <div className="mt-1 font-medium text-ink">{formatEuropeanDateRange(value)}</div>
     </div>
   );
 }
@@ -406,7 +407,7 @@ function ReportInfoRow({ label, value }: { label: string; value?: string }) {
       <div className="bg-lab-porcelain px-3 py-2 font-semibold text-ink">
         {bilingual ? <Bilingual sq={bilingual.sq} en={bilingual.en} /> : `${cleanLabel}:`}
       </div>
-      <div className="px-3 py-2 font-medium text-ink">{value || "-"}</div>
+      <div className="px-3 py-2 font-medium text-ink">{formatEuropeanDateRange(value)}</div>
     </div>
   );
 }

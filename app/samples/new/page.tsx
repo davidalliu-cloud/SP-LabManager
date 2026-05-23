@@ -11,6 +11,7 @@ import {
   isConcreteCompressiveAccreditedTest,
   isSteelSampleType
 } from "@/lib/accredited-tests";
+import { formatEuropeanDate } from "@/lib/date-format";
 import { useLabStore } from "@/lib/lab-store";
 
 function formatDateInput(date: Date) {
@@ -228,8 +229,8 @@ export default function NewSamplePage() {
                           <option value="56">56 ditë</option>
                         </select>
                       </td>
-                      <td className="px-3 py-2"><input readOnly value={calculatedTestDate(selectedAge)} className="input bg-lab-porcelain" /></td>
-                      <td className="px-3 py-2"><input readOnly value={calculatedReportDate(selectedAge)} className="input bg-lab-porcelain" /></td>
+                      <td className="px-3 py-2"><input readOnly value={formatEuropeanDate(calculatedTestDate(selectedAge))} className="input bg-lab-porcelain" /></td>
+                      <td className="px-3 py-2"><input readOnly value={formatEuropeanDate(calculatedReportDate(selectedAge))} className="input bg-lab-porcelain" /></td>
                     </tr>
                   );
                 })}

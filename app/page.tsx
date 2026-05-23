@@ -4,6 +4,7 @@ import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { SummaryCard } from "@/components/ui/summary-card";
+import { formatEuropeanDate } from "@/lib/date-format";
 import { useI18n } from "@/lib/i18n";
 import { useLabStore } from "@/lib/lab-store";
 import { canViewClientIdentity } from "@/lib/permissions";
@@ -185,8 +186,8 @@ function WorkflowRow({
       <td className="px-4 py-3">{showClientIdentity ? project?.projectName ?? "Në pritje" : "I kufizuar"}</td>
       <td className="px-4 py-3">{test?.testType ?? sample?.requestedTestType ?? "-"}</td>
       <td className="px-4 py-3">{quantity}</td>
-      <td className="px-4 py-3">{test?.requiredTestDate ?? sample?.requiredTestDate ?? "-"}</td>
-      <td className="px-4 py-3">{test?.dueDate ?? sample?.reportDueDate ?? "-"}</td>
+      <td className="px-4 py-3">{formatEuropeanDate(test?.requiredTestDate ?? sample?.requiredTestDate)}</td>
+      <td className="px-4 py-3">{formatEuropeanDate(test?.dueDate ?? sample?.reportDueDate)}</td>
       <td className="px-4 py-3">{technician?.fullName ?? "-"}</td>
       <td className="px-4 py-3">{report ? <StatusBadge status={report.reportStatus} /> : "-"}</td>
       <td className="px-4 py-3">

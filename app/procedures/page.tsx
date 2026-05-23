@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
+import { formatEuropeanDate } from "@/lib/date-format";
 import { useLabStore } from "@/lib/lab-store";
 import type { ProcedureRevisionStatus } from "@/lib/types";
 
@@ -201,7 +202,7 @@ export default function ProceduresPage() {
                           <td className="px-4 py-3"><ProcedureStatus status={revision.status} /></td>
                           <td className="px-4 py-3">{store.users.find((user) => user.id === revision.assignedTo)?.fullName ?? "-"}</td>
                           <td className="px-4 py-3">{revision.changeSummary ?? "-"}</td>
-                          <td className="px-4 py-3">{revision.approvedAt ? new Date(revision.approvedAt).toLocaleDateString() : "-"}</td>
+                          <td className="px-4 py-3">{formatEuropeanDate(revision.approvedAt)}</td>
                           <td className="px-4 py-3">
                             <div className="flex flex-col gap-1">
                               {revision.pdfUrl ? <button type="button" onClick={() => setPreviewRevisionId(revision.id)} className="text-left font-semibold text-lab-burgundy hover:text-lab-purple">Preview PDF</button> : null}
