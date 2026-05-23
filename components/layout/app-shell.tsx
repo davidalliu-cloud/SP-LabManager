@@ -16,6 +16,7 @@ const navItems = [
   ["nav.newSample", "/samples/new"],
   ["nav.tests", "/tests"],
   ["nav.reports", "/reports"],
+  ["nav.clientQuery", "/client-query"],
   ["nav.procedures", "/procedures"],
   ["nav.clients", "/clients"],
   ["nav.projects", "/projects"],
@@ -64,7 +65,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="mt-1 text-xs text-muted">{t("brand.domain")}</div>
         </div>
         <nav className="px-3 py-4">
-          {navItems.filter(([, href]) => showClientIdentityNav || !["/clients", "/projects"].includes(href)).map(([label, href]) => {
+          {navItems.filter(([, href]) => showClientIdentityNav || !["/clients", "/projects", "/client-query"].includes(href)).map(([label, href]) => {
             const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
             return (
               <Link
