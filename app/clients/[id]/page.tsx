@@ -1,16 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { SummaryCard } from "@/components/ui/summary-card";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { useLabStore } from "@/lib/lab-store";
 import { canViewClientIdentity } from "@/lib/permissions";
 import { getTestResultSummary } from "@/lib/test-result-summary";
 import type { ReportStatus, TestStatus } from "@/lib/types";
 
-const completedStatuses: TestStatus[] = ["Completed", "Report Drafted", "Pending Approval", "Approved", "Rejected", "Issued", "Sent to Client"];
+const waitingStatuses: TestStatus[] = ["Pending", "Scheduled", "In Progress"];
 const reportStatuses: Array<ReportStatus | "No Report"> = ["Report Drafted", "Pending Approval", "Approved", "Rejected", "Issued", "Sent to Client", "No Report"];
 const reportStatusLabels: Record<ReportStatus | "No Report", string> = {
   Draft: "Draft",
@@ -23,22 +25,17 @@ const reportStatusLabels: Record<ReportStatus | "No Report", string> = {
   "No Report": "Pa raport"
 };
 
-function csvCell(value: string | number | undefined | null) {
-  const text = value === undefined || value === null ? "" : String(value);
-  return `"${text.replace(/"/g, '""')}"`;
-}
-
 function dateInRange(value: string | undefined, from: string, to: string) {
   if (!value) return false;
   const date = value.slice(0, 10);
   return (!from || date >= from) && (!to || date <= to);
 }
 
-export default function ClientQueryPage() {
+export default function ClientDetailPage() {
+  const params = useParams<{ id: string }>();
   const store = useLabStore();
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
   const canSeeClients = canViewClientIdentity(currentUser?.role);
-  const [clientId, setClientId] = useState("all");
   const [projectId, setProjectId] = useState("all");
   const [testType, setTestType] = useState("all");
   const [reportStatus, setReportStatus] = useState<ReportStatus | "No Report" | "all">("all");
@@ -46,24 +43,39 @@ export default function ClientQueryPage() {
   const [toDate, setToDate] = useState("");
   const [search, setSearch] = useState("");
 
-  const rows = useMemo(() => store.tests.map((test) => {
-    const sample = store.samples.find((item) => item.id === test.sampleId);
-    const client = store.clients.find((item) => item.id === test.clientId);
-    const project = store.projects.find((item) => item.id === test.projectId);
-    const reports = store.reports.filter((item) => item.testId === test.id);
-    const result = getTestResultSummary(store, test);
-    const conductedDate = result.testEndDate || test.completedAt?.slice(0, 10) || test.requiredTestDate;
-    return { test, sample, client, project, reports, result, conductedDate };
-  }), [store]);
+  const client = store.clients.find((item) => item.id === params.id);
+  const projects = store.projects.filter((project) => project.clientId === params.id);
 
-  const projectsForClient = clientId === "all" ? store.projects : store.projects.filter((project) => project.clientId === clientId);
-  const testTypes = Array.from(new Set(store.tests.map((test) => test.testType))).sort();
-  const filteredRows = rows.filter(({ test, sample, client, project, reports, result, conductedDate }) => {
+  const rows = useMemo(() => store.tests
+    .filter((test) => test.clientId === params.id)
+    .map((test) => {
+      const sample = store.samples.find((item) => item.id === test.sampleId);
+      const project = store.projects.find((item) => item.id === test.projectId);
+      const reports = store.reports.filter((item) => item.testId === test.id);
+      const result = getTestResultSummary(store, test);
+      const conductedDate = result.testEndDate || test.completedAt?.slice(0, 10) || test.requiredTestDate;
+      return { test, sample, project, reports, result, conductedDate };
+    })
+    .sort((a, b) => a.conductedDate.localeCompare(b.conductedDate) || a.test.testCode.localeCompare(b.test.testCode)), [store, params.id]);
+
+  const clientReports = store.reports.filter((report) => report.clientId === params.id);
+  const testTypes = Array.from(new Set(rows.map(({ test }) => test.testType))).sort();
+  const totalReports = clientReports.length;
+  const reportTypeBreakdown = Array.from(
+    clientReports.reduce((map, report) => {
+      const test = store.tests.find((item) => item.id === report.testId);
+      const label = test?.testType ?? "Pa test";
+      map.set(label, (map.get(label) ?? 0) + 1);
+      return map;
+    }, new Map<string, number>())
+  )
+    .map(([label, count]) => ({ label, count, percent: totalReports ? Math.round((count / totalReports) * 100) : 0 }))
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+
+  const filteredRows = rows.filter(({ test, sample, project, reports, result, conductedDate }) => {
     const reportStatusMatch = reportStatus === "all"
       || (reportStatus === "No Report" ? reports.length === 0 : reports.some((report) => report.reportStatus === reportStatus));
     const haystack = [
-      client?.clientCode,
-      client?.clientName,
       project?.projectName,
       sample?.sampleCode,
       sample?.sampleType,
@@ -74,8 +86,6 @@ export default function ClientQueryPage() {
     ].filter(Boolean).join(" ").toLowerCase();
 
     return (
-      completedStatuses.includes(test.status) &&
-      (clientId === "all" || test.clientId === clientId) &&
       (projectId === "all" || test.projectId === projectId) &&
       (testType === "all" || test.testType === testType) &&
       reportStatusMatch &&
@@ -84,12 +94,11 @@ export default function ClientQueryPage() {
     );
   });
 
-  const selectedClient = clientId !== "all" ? store.clients.find((client) => client.id === clientId) : undefined;
-  const reportCount = filteredRows.reduce((sum, row) => sum + row.reports.length, 0);
-  const sentCount = filteredRows.reduce((sum, row) => sum + row.reports.filter((report) => report.reportStatus === "Sent to Client" || report.reportStatus === "Issued").length, 0);
+  const waitingTests = rows.filter(({ test }) => waitingStatuses.includes(test.status)).length;
+  const completedTests = rows.filter(({ test }) => ["Completed", "Report Drafted", "Pending Approval", "Approved", "Rejected", "Issued", "Sent to Client"].includes(test.status)).length;
+  const sentReports = clientReports.filter((report) => ["Sent to Client", "Issued"].includes(report.reportStatus)).length;
 
   function clearFilters() {
-    setClientId("all");
     setProjectId("all");
     setTestType("all");
     setReportStatus("all");
@@ -98,87 +107,70 @@ export default function ClientQueryPage() {
     setSearch("");
   }
 
-  function exportCsv() {
-    const header = [
-      "Kodi i klientit",
-      "Klienti",
-      "Projekti",
-      "Kodi i kampionit",
-      "Tipi i kampionit",
-      "Kodi i testit",
-      "Testi",
-      "Data e pranimit",
-      "Data e testimit",
-      "Afati i raportit",
-      "Statusi i testit",
-      "Raportet",
-      "Statusi i raportit",
-      "Data e leshimit",
-      "Rezultati",
-      "Tekniku",
-      "Kontrolluar nga"
-    ];
-    const body = filteredRows.map(({ test, sample, client, project, reports, result, conductedDate }) => [
-      client?.clientCode,
-      client?.clientName,
-      project?.projectName,
-      sample?.sampleCode,
-      sample?.sampleType,
-      test.testCode,
-      test.testType,
-      formatEuropeanDate(sample?.dateReceived),
-      formatEuropeanDate(conductedDate),
-      formatEuropeanDate(test.dueDate),
-      test.status,
-      reports.map((report) => report.reportNumber).join("; "),
-      reports.length ? reports.map((report) => report.reportStatus).join("; ") : "No Report",
-      reports.map((report) => formatEuropeanDate(report.issuedAt)).join("; "),
-      result.result,
-      result.technicianName || store.users.find((user) => user.id === test.assignedTechnician)?.fullName,
-      result.checkedBy
-    ]);
-    const csv = [header, ...body].map((row) => row.map(csvCell).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    const clientPart = selectedClient?.clientCode ?? "te-gjithe-klientet";
-    anchor.href = url;
-    anchor.download = `raport-klienti-${clientPart}-${new Date().toISOString().slice(0, 10)}.csv`;
-    anchor.click();
-    URL.revokeObjectURL(url);
+  if (!canSeeClients) {
+    return <PageHeader title="Klienti" description="Kjo faqe është e kufizuar për role që kanë të drejtë të shohin identitetin e klientëve." />;
   }
 
-  if (!canSeeClients) {
-    return (
-      <PageHeader
-        title="Kërkimi i klientit"
-        description="Kjo faqe është e kufizuar për role që kanë të drejtë të shohin identitetin e klientëve."
-      />
-    );
+  if (!client) {
+    return <PageHeader title="Klienti nuk u gjet" description="Kodi i klientit nuk ekziston në regjistër." />;
   }
 
   return (
     <>
-      <PageHeader title="Kërkimi i klientit" description="Nxirrni testet e kryera, datat, rezultatet dhe raportet për një klient të caktuar." />
+      <PageHeader
+        title={`${client.clientCode} - ${client.clientName}`}
+        description="Pasqyra e testeve, kampionëve dhe raporteve për këtë klient."
+        action={<Link href="/clients" className="btn-secondary">Kthehu te klientët</Link>}
+      />
+
+      <section className="mb-5 grid gap-4 md:grid-cols-4">
+        <SummaryCard label="Teste të kryera" value={completedTests} tone="green" />
+        <SummaryCard label="Teste në pritje/proces" value={waitingTests} tone="amber" />
+        <SummaryCard label="Raporte të gjeneruara" value={totalReports} tone="purple" />
+        <SummaryCard label="Raporte dërguar klientit" value={sentReports} tone="green" />
+      </section>
+
+      <section className="mb-5 grid gap-4 xl:grid-cols-[1fr_1.2fr]">
+        <div className="surface-card p-4">
+          <h2 className="text-base font-semibold text-ink">Informacioni i klientit</h2>
+          <div className="mt-3 grid gap-3 text-sm md:grid-cols-2">
+            <Info label="Kodi" value={client.clientCode} />
+            <Info label="Email" value={client.email || "-"} />
+            <Info label="Kontakt" value={client.contactPerson || "-"} />
+            <Info label="Telefon" value={client.phone || "-"} />
+            <Info label="Adresë" value={client.address || "-"} />
+            <Info label="Projekte" value={projects.length || "-"} />
+          </div>
+        </div>
+        <div className="surface-card p-4">
+          <h2 className="text-base font-semibold text-ink">Përqindja e raporteve sipas tipit të testit</h2>
+          <div className="mt-4 space-y-3">
+            {reportTypeBreakdown.length ? reportTypeBreakdown.map((item) => (
+              <div key={item.label}>
+                <div className="mb-1 flex items-center justify-between gap-3 text-sm">
+                  <span className="font-medium text-ink">{item.label}</span>
+                  <span className="text-muted">{item.count} raporte · {item.percent}%</span>
+                </div>
+                <div className="h-2 rounded-full bg-lab-mist">
+                  <div className="h-2 rounded-full bg-lab-burgundy" style={{ width: `${item.percent}%` }} />
+                </div>
+              </div>
+            )) : <div className="text-sm text-muted">Nuk ka ende raporte të gjeneruara për këtë klient.</div>}
+          </div>
+        </div>
+      </section>
 
       <section className="surface-card mb-5 p-4">
-        <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-7">
-          <label className="text-sm font-medium text-ink">
-            Klienti
-            <select value={clientId} onChange={(event) => { setClientId(event.target.value); setProjectId("all"); }} className="input mt-1">
-              <option value="all">Të gjithë klientët</option>
-              {store.clients.map((client) => <option key={client.id} value={client.id}>{client.clientCode} - {client.clientName}</option>)}
-            </select>
-          </label>
+        <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
           <label className="text-sm font-medium text-ink">
             Projekti
             <select value={projectId} onChange={(event) => setProjectId(event.target.value)} className="input mt-1">
               <option value="all">Të gjitha projektet</option>
-              {projectsForClient.map((project) => <option key={project.id} value={project.id}>{project.projectName}</option>)}
+              {projects.map((project) => <option key={project.id} value={project.id}>{project.projectName}</option>)}
             </select>
           </label>
           <label className="text-sm font-medium text-ink">
-            Testi
+            Tipi i testit
             <select value={testType} onChange={(event) => setTestType(event.target.value)} className="input mt-1">
               <option value="all">Të gjitha testet</option>
               {testTypes.map((type) => <option key={type} value={type}>{type}</option>)}
@@ -204,46 +196,21 @@ export default function ClientQueryPage() {
             <input value={search} onChange={(event) => setSearch(event.target.value)} className="input mt-1" placeholder="Kod, raport, rezultat..." />
           </label>
         </div>
-        <div className="mt-4 flex flex-col gap-3 border-t border-line pt-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="text-sm text-muted">
-            <span className="font-semibold text-ink">{filteredRows.length}</span> teste të kryera, <span className="font-semibold text-ink">{reportCount}</span> raporte, <span className="font-semibold text-ink">{sentCount}</span> të dërguara klientit.
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={exportCsv} disabled={!filteredRows.length} className="btn-primary px-3 py-2 disabled:cursor-not-allowed disabled:bg-slate-300">Eksporto CSV</button>
-            <button type="button" onClick={clearFilters} className="btn-secondary px-3 py-2">Pastro filtrat</button>
-          </div>
+        <div className="mt-4 flex items-center justify-between border-t border-line pt-4 text-sm text-muted">
+          <span><span className="font-semibold text-ink">{filteredRows.length}</span> rreshta nga <span className="font-semibold text-ink">{rows.length}</span> teste.</span>
+          <button type="button" onClick={clearFilters} className="btn-secondary px-3 py-2">Pastro filtrat</button>
         </div>
       </section>
 
-      {selectedClient ? (
-        <section className="mb-5 grid gap-3 md:grid-cols-3">
-          <div className="surface-card p-4">
-            <div className="text-xs font-semibold uppercase tracking-wide text-muted">Klienti</div>
-            <div className="mt-1 text-lg font-semibold text-ink">{selectedClient.clientCode} - {selectedClient.clientName}</div>
-            <div className="mt-1 text-sm text-muted">{selectedClient.email || "Pa email"} · {selectedClient.phone || "Pa telefon"}</div>
-          </div>
-          <div className="surface-card p-4">
-            <div className="text-xs font-semibold uppercase tracking-wide text-muted">Adresa</div>
-            <div className="mt-1 text-sm font-medium text-ink">{selectedClient.address || "-"}</div>
-          </div>
-          <div className="surface-card p-4">
-            <div className="text-xs font-semibold uppercase tracking-wide text-muted">Kontakt</div>
-            <div className="mt-1 text-sm font-medium text-ink">{selectedClient.contactPerson || "-"}</div>
-          </div>
-        </section>
-      ) : null}
-
       <div className="surface-card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1280px] text-left text-sm">
+          <table className="w-full min-w-[1180px] text-left text-sm">
             <thead className="table-head">
               <tr>
-                <th className="px-4 py-3">Klienti</th>
+                <th className="px-4 py-3">Data</th>
                 <th className="px-4 py-3">Projekti</th>
                 <th className="px-4 py-3">Kampioni</th>
                 <th className="px-4 py-3">Testi</th>
-                <th className="px-4 py-3">Data e pranimit</th>
-                <th className="px-4 py-3">Data e testimit</th>
                 <th className="px-4 py-3">Rezultati</th>
                 <th className="px-4 py-3">Raportet</th>
                 <th className="px-4 py-3">Statusi</th>
@@ -251,11 +218,12 @@ export default function ClientQueryPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
-              {filteredRows.map(({ test, sample, client, project, reports, result, conductedDate }) => (
+              {filteredRows.map(({ test, sample, project, reports, result, conductedDate }) => (
                 <tr key={test.id} className="align-top hover:bg-lab-mist/60">
                   <td className="px-4 py-3">
-                    <div className="font-semibold text-ink">{client?.clientCode ?? "-"}</div>
-                    <div className="text-xs text-muted">{client?.clientName ?? "-"}</div>
+                    <div className="font-semibold text-ink">{formatEuropeanDate(conductedDate)}</div>
+                    <div className="text-xs text-muted">Pranuar: {formatEuropeanDate(sample?.dateReceived)}</div>
+                    <div className="text-xs text-muted">Afati: {formatEuropeanDate(test.dueDate)}</div>
                   </td>
                   <td className="px-4 py-3">{project?.projectName ?? "-"}</td>
                   <td className="px-4 py-3">
@@ -265,11 +233,6 @@ export default function ClientQueryPage() {
                   <td className="px-4 py-3">
                     <div className="font-semibold text-ink">{test.testType}</div>
                     <div className="text-xs text-muted">{test.testCode}</div>
-                  </td>
-                  <td className="px-4 py-3">{formatEuropeanDate(sample?.dateReceived)}</td>
-                  <td className="px-4 py-3">
-                    <div>{formatEuropeanDate(conductedDate)}</div>
-                    <div className="text-xs text-muted">Afati: {formatEuropeanDate(test.dueDate)}</div>
                   </td>
                   <td className="px-4 py-3">
                     <div className="max-w-md font-medium text-ink">{result.result}</div>
@@ -303,8 +266,17 @@ export default function ClientQueryPage() {
             </tbody>
           </table>
         </div>
-        {!filteredRows.length ? <div className="p-6 text-sm text-muted">Nuk u gjetën teste të kryera për filtrat e zgjedhur.</div> : null}
+        {!filteredRows.length ? <div className="p-6 text-sm text-muted">Nuk u gjetën teste ose raporte për filtrat e zgjedhur.</div> : null}
       </div>
     </>
+  );
+}
+
+function Info({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div>
+      <div className="text-xs font-semibold uppercase tracking-wide text-muted">{label}</div>
+      <div className="mt-1 font-medium text-ink">{value}</div>
+    </div>
   );
 }

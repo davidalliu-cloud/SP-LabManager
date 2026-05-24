@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { SimpleTable } from "@/components/ui/simple-table";
@@ -262,7 +263,11 @@ export default function ClientsPage() {
               const project = store.projects.find((item) => item.clientId === client.id);
               return (
                 <tr key={client.id}>
-                  <td className="px-4 py-3 font-semibold">{client.clientCode}</td>
+                  <td className="px-4 py-3 font-semibold">
+                    <Link href={`/clients/${client.id}`} className="text-lab-burgundy hover:text-lab-purple hover:underline">
+                      {client.clientCode}
+                    </Link>
+                  </td>
                   <td className="px-4 py-3">{client.clientName}</td>
                   <td className="px-4 py-3">{project?.projectName ?? "-"}</td>
                   <td className="px-4 py-3">{client.address || project?.location || "-"}</td>
