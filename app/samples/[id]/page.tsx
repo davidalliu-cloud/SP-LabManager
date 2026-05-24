@@ -31,7 +31,7 @@ export default function SampleDetailPage() {
   const selectedAssignmentProjectId = assignmentProjectId || sample.projectId || assignmentProjects[0]?.id || "";
   const tests = store.tests.filter((item) => item.sampleId === sample.id);
   const reports = store.reports.filter((item) => item.sampleId === sample.id);
-  const finishedStatuses = ["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"];
+  const finishedStatuses = ["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"];
   const completedCubes = tests
     .filter((test) => finishedStatuses.includes(test.status))
     .reduce((sum, test) => sum + test.cubeCount, 0);

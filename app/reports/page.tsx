@@ -12,7 +12,8 @@ const reportStatusLabels: Record<Exclude<ReportStatus, "Draft">, string> = {
   "Pending Approval": "Në pritje miratimi",
   Approved: "Miratuar",
   Rejected: "Refuzuar",
-  Issued: "Lëshuar"
+  Issued: "Lëshuar",
+  "Sent to Client": "Dërguar Klientit"
 };
 
 export default function ReportsPage() {
@@ -24,6 +25,8 @@ export default function ReportsPage() {
   const [sampleType, setSampleType] = useState("all");
   const [testType, setTestType] = useState("all");
   const [selectedReportIds, setSelectedReportIds] = useState<string[]>([]);
+  const [batchEmail, setBatchEmail] = useState("");
+  const [sendMessage, setSendMessage] = useState("");
   const completedWithoutReport = store.tests.filter((test) => test.status === "Completed" && !store.reports.some((report) => report.testId === test.id));
   const reportRows = useMemo(() => store.reports.map((report) => {
     const sample = store.samples.find((item) => item.id === report.sampleId);
@@ -52,6 +55,10 @@ export default function ReportsPage() {
   const selectedRows = filteredRows.filter(({ report }) => selectedReportIds.includes(report.id));
   const selectedClientIds = Array.from(new Set(selectedRows.map(({ report }) => report.clientId)));
   const selectedClient = selectedClientIds.length === 1 ? store.clients.find((client) => client.id === selectedClientIds[0]) : undefined;
+  const selectedApprovedRows = selectedRows.filter(({ report }) => report.reportStatus === "Approved");
+  const selectedHasOnlyApproved = selectedRows.length > 0 && selectedRows.every(({ report }) => report.reportStatus === "Approved");
+  const selectedEmail = batchEmail.trim() || selectedClient?.email || "";
+  const canSendSelected = selectedRows.length > 0 && selectedHasOnlyApproved && selectedClientIds.length === 1 && Boolean(selectedEmail);
 
   function toggleReport(reportId: string) {
     setSelectedReportIds((selected) => selected.includes(reportId) ? selected.filter((id) => id !== reportId) : [...selected, reportId]);
@@ -70,6 +77,27 @@ export default function ReportsPage() {
     setStatus("all");
     setSampleType("all");
     setTestType("all");
+  }
+
+  function sendSelectedReports() {
+    if (!canSendSelected) return;
+    const reportIds = selectedApprovedRows.map(({ report }) => report.id);
+    const reportNumbers = selectedApprovedRows.map(({ report }) => report.reportNumber);
+    const reportLinks = selectedApprovedRows.map(({ report }) => `${window.location.origin}/reports/${report.id}`);
+    const subject = `Raportet laboratorike SARP LAB - ${selectedClient?.clientCode ?? ""}`;
+    const body = [
+      "Pershendetje,",
+      "",
+      "Ju lutemi gjeni raportet laboratorike te miratuara:",
+      ...reportNumbers.map((number, index) => `- ${number}: ${reportLinks[index]}`),
+      "",
+      "Me respekt,",
+      "SARP LAB"
+    ].join("\n");
+    window.location.href = `mailto:${encodeURIComponent(selectedEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    store.sendReportsToClient(reportIds, selectedEmail, `Dërguar me email: ${reportNumbers.join(", ")}`);
+    setSendMessage(`${reportNumbers.length} raport${reportNumbers.length === 1 ? "" : "e"} u shënuan si Dërguar Klientit për ${selectedEmail}.`);
+    setSelectedReportIds([]);
   }
 
   return (
@@ -143,13 +171,32 @@ export default function ReportsPage() {
           <div className="mt-4 rounded-md border border-lab-steel bg-lab-mist p-3 text-sm text-ink">
             <div className="font-semibold">Zgjedhje për dërgim në grup</div>
             <div className="mt-1 text-muted">
-              {selectedClient ? `Gati për përgatitjen e ${selectedRows.length} raport${selectedRows.length === 1 ? "" : "e"} për ${selectedClient.clientName} (${selectedClient.email || "nuk ka email të ruajtur"}).` : "Zgjidh raporte nga i njëjti klient për të përgatitur një grup të rregullt dërgimi."}
+              {selectedClient ? `Zgjidhni vetëm raporte me status Miratuar për t'i dërguar klientit ${selectedClient.clientName}.` : "Zgjidh raporte nga i njëjti klient për të përgatitur një grup të rregullt dërgimi."}
             </div>
+            <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_auto]">
+              <input
+                value={batchEmail}
+                onChange={(event) => setBatchEmail(event.target.value)}
+                placeholder={selectedClient?.email || "Email i klientit"}
+                className="input bg-white"
+              />
+              <button
+                type="button"
+                onClick={sendSelectedReports}
+                disabled={!canSendSelected}
+                className="btn-primary px-4 py-2 disabled:cursor-not-allowed disabled:bg-slate-300"
+              >
+                Dërgo te klienti
+              </button>
+            </div>
+            {!selectedHasOnlyApproved ? <div className="mt-2 text-xs font-medium text-lab-red">Dërgimi lejohet vetëm pasi raportet të jenë Miratuar.</div> : null}
+            {selectedClientIds.length > 1 ? <div className="mt-2 text-xs font-medium text-lab-red">Zgjidhni raporte nga një klient i vetëm për dërgim në grup.</div> : null}
             <div className="mt-3 flex flex-wrap gap-2">
               {selectedRows.map(({ report }) => <Link key={report.id} href={`/reports/${report.id}`} className="rounded-md bg-white px-2 py-1 text-xs font-semibold text-lab-burgundy ring-1 ring-line">{report.reportNumber}</Link>)}
             </div>
           </div>
         ) : null}
+        {sendMessage ? <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-900">{sendMessage}</div> : null}
       </section>
       <div className="surface-card overflow-hidden">
         <table className="w-full text-left text-sm">

@@ -1557,7 +1557,7 @@ export default function TestDetailPage() {
               <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
                 <button onClick={complete} disabled={!aggregateFlakiness} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
-                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
+                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
                 <div className="soft-panel p-3 text-xs text-muted">
                   {aggregateFlakiness ? `Flakiness index calculated as ${aggregateFlakiness.totals.finalFlakinessIndexPercent}%.` : "Save worksheet data first to calculate flakiness index."}
                 </div>
@@ -1662,7 +1662,7 @@ export default function TestDetailPage() {
               <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
                 <button onClick={complete} disabled={!aggregateShapeIndex} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
-                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
+                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
                 <div className="soft-panel p-3 text-xs text-muted">
                   {aggregateShapeIndex ? `Shape index calculated as ${aggregateShapeIndex.shapeIndexPercent}%.` : "Save worksheet data first to calculate shape index."}
                 </div>
@@ -1769,7 +1769,7 @@ export default function TestDetailPage() {
               <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
                 <button onClick={complete} disabled={!aggregateFillerDensity} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
-                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
+                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
                 <div className="soft-panel p-3 text-xs text-muted">
                   {aggregateFillerDensity ? `Average filler density ${aggregateFillerDensity.averageParticleDensity} Mg/m3.` : "Save worksheet data first to calculate filler density."}
                 </div>
@@ -1885,7 +1885,7 @@ export default function TestDetailPage() {
               <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
                 <button onClick={complete} disabled={!aggregateDensity} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
-                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
+                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
                 <div className="soft-panel p-3 text-xs text-muted">
                   {aggregateDensity ? `Average absorption ${aggregateDensity.averageAbsorptionPercent}%, apparent density ${aggregateDensity.averageApparentDensity}.` : "Save the worksheet data first to calculate density and absorption."}
                 </div>
@@ -1982,7 +1982,7 @@ export default function TestDetailPage() {
               <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
                 <button onClick={complete} disabled={!aggregateAcv} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
-                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
+                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
                 <div className="soft-panel p-3 text-xs text-muted">
                   {aggregateAcv ? `Mean ACV calculated as ${aggregateAcv.averageAcvPercent}%.` : "Save the worksheet data first to calculate ACV."}
                 </div>
@@ -2102,7 +2102,7 @@ export default function TestDetailPage() {
               <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
                 <button onClick={complete} disabled={!aggregateFreezeThaw} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
-                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
+                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
                 <div className="soft-panel p-3 text-xs text-muted">
                   {aggregateFreezeThaw ? `Average freeze-thaw mass loss calculated as ${aggregateFreezeThaw.averageMassLossPercent}%.` : "Save the worksheet data first to calculate freeze-thaw mass loss."}
                 </div>
@@ -2214,7 +2214,7 @@ export default function TestDetailPage() {
               <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
                 <button onClick={complete} disabled={!aggregateLosAngeles} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
-                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
+                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
                 <div className="soft-panel p-3 text-xs text-muted">
                   {aggregateLosAngeles ? `Fragmentation loss calculated as ${aggregateLosAngeles.fragmentationLossPercent}%.` : "Save the worksheet data first to calculate Los Angeles fragmentation loss."}
                 </div>
@@ -2309,7 +2309,7 @@ export default function TestDetailPage() {
               <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
                 <button onClick={complete} disabled={!aggregateChemical} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
-                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
+                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
                 <div className="soft-panel p-3 text-xs text-muted">
                   {aggregateChemical ? "Calculated chloride and sulfate results are ready for the chemical report." : "Save the worksheet data first to calculate report results."}
                 </div>
@@ -2415,7 +2415,7 @@ export default function TestDetailPage() {
               <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
                 <button onClick={complete} disabled={!aggregate} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
-                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
+                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
                 <div className="soft-panel p-3 text-xs text-muted">{aggregate?.rows.length ?? 0} sieve row{(aggregate?.rows.length ?? 0) === 1 ? "" : "s"} saved. The report uses BS EN cumulative passing calculations.</div>
                 {report ? <Link className="btn-secondary block text-center" href={`/reports/${report.id}`}>Hap raportin</Link> : null}
               </div>
@@ -2568,7 +2568,7 @@ export default function TestDetailPage() {
                 </button>
                 <button
                   onClick={generateReport}
-                  disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)}
+                  disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"].includes(activeTest.status)}
                   className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
                   Gjenero {steelReportCount} raport{steelReportCount === 1 ? "" : "e"}
@@ -2714,7 +2714,7 @@ export default function TestDetailPage() {
               </button>
               <button
                 onClick={generateReport}
-                disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)}
+                disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"].includes(activeTest.status)}
                 className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300"
               >
                 Gjenero {expectedReportCount} raport{expectedReportCount === 1 ? "" : "e"}
@@ -2828,7 +2828,7 @@ function TestActionsSidebar({
         <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
         <div className="mt-4 space-y-3">
           <button onClick={complete} disabled={!ready} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
-          <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
+          <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
           <div className="soft-panel p-3 text-xs text-muted">{message}</div>
           {reportId ? <Link className="btn-secondary block text-center" href={`/reports/${reportId}`}>Hap raportin</Link> : null}
         </div>

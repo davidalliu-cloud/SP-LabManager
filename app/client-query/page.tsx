@@ -10,8 +10,18 @@ import { canViewClientIdentity } from "@/lib/permissions";
 import { getTestResultSummary } from "@/lib/test-result-summary";
 import type { ReportStatus, TestStatus } from "@/lib/types";
 
-const completedStatuses: TestStatus[] = ["Completed", "Report Drafted", "Pending Approval", "Approved", "Rejected", "Issued"];
-const reportStatuses: Array<ReportStatus | "No Report"> = ["Report Drafted", "Pending Approval", "Approved", "Rejected", "Issued", "No Report"];
+const completedStatuses: TestStatus[] = ["Completed", "Report Drafted", "Pending Approval", "Approved", "Rejected", "Issued", "Sent to Client"];
+const reportStatuses: Array<ReportStatus | "No Report"> = ["Report Drafted", "Pending Approval", "Approved", "Rejected", "Issued", "Sent to Client", "No Report"];
+const reportStatusLabels: Record<ReportStatus | "No Report", string> = {
+  Draft: "Draft",
+  "Report Drafted": "Raport i përgatitur",
+  "Pending Approval": "Në pritje miratimi",
+  Approved: "Miratuar",
+  Rejected: "Refuzuar",
+  Issued: "Lëshuar",
+  "Sent to Client": "Dërguar Klientit",
+  "No Report": "Pa raport"
+};
 
 function csvCell(value: string | number | undefined | null) {
   const text = value === undefined || value === null ? "" : String(value);
@@ -76,7 +86,7 @@ export default function ClientQueryPage() {
 
   const selectedClient = clientId !== "all" ? store.clients.find((client) => client.id === clientId) : undefined;
   const reportCount = filteredRows.reduce((sum, row) => sum + row.reports.length, 0);
-  const issuedCount = filteredRows.reduce((sum, row) => sum + row.reports.filter((report) => report.reportStatus === "Issued").length, 0);
+  const sentCount = filteredRows.reduce((sum, row) => sum + row.reports.filter((report) => report.reportStatus === "Sent to Client" || report.reportStatus === "Issued").length, 0);
 
   function clearFilters() {
     setClientId("all");
@@ -178,7 +188,7 @@ export default function ClientQueryPage() {
             Statusi i raportit
             <select value={reportStatus} onChange={(event) => setReportStatus(event.target.value as ReportStatus | "No Report" | "all")} className="input mt-1">
               <option value="all">Të gjitha</option>
-              {reportStatuses.map((status) => <option key={status} value={status}>{status === "No Report" ? "Pa raport" : status}</option>)}
+              {reportStatuses.map((status) => <option key={status} value={status}>{reportStatusLabels[status]}</option>)}
             </select>
           </label>
           <label className="text-sm font-medium text-ink">
@@ -196,7 +206,7 @@ export default function ClientQueryPage() {
         </div>
         <div className="mt-4 flex flex-col gap-3 border-t border-line pt-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="text-sm text-muted">
-            <span className="font-semibold text-ink">{filteredRows.length}</span> teste të kryera, <span className="font-semibold text-ink">{reportCount}</span> raporte, <span className="font-semibold text-ink">{issuedCount}</span> të lëshuara.
+            <span className="font-semibold text-ink">{filteredRows.length}</span> teste të kryera, <span className="font-semibold text-ink">{reportCount}</span> raporte, <span className="font-semibold text-ink">{sentCount}</span> të dërguara klientit.
           </div>
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={exportCsv} disabled={!filteredRows.length} className="btn-primary px-3 py-2 disabled:cursor-not-allowed disabled:bg-slate-300">Eksporto CSV</button>

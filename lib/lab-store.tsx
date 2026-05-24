@@ -706,6 +706,7 @@ interface LabStoreValue extends LabState {
   approveReport: (reportId: string) => void;
   rejectReport: (reportId: string, comments: string) => void;
   issueReport: (reportId: string, clientEmail: string, notes?: string) => void;
+  sendReportsToClient: (reportIds: string[], clientEmail: string, notes?: string) => void;
   createProcedureRevision: (input: ProcedureRevisionInput) => string;
   submitProcedureRevision: (revisionId: string) => void;
   approveProcedureRevision: (revisionId: string) => void;
@@ -1041,7 +1042,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
     }
 
     function isTestingFinished(status: LabTest["status"]) {
-      return ["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued"].includes(status);
+      return ["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"].includes(status);
     }
 
     return {
@@ -2537,20 +2538,45 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       issueReport(reportId, clientEmail, notes) {
         setState((previous) => {
-          const report = previous.reports.find((row) => row.id === reportId);
+          const report = previous.reports.find((row) => row.id === reportId && row.reportStatus === "Approved");
           if (!report) return previous;
+          const sentAt = new Date().toISOString();
           const draft: LabState = {
             ...previous,
             reports: previous.reports.map((row) =>
               row.id === reportId
-                ? { ...row, reportStatus: "Issued", issuedBy: currentUserId, issuedAt: new Date().toISOString(), clientEmail }
+                ? { ...row, reportStatus: "Sent to Client", issuedBy: currentUserId, issuedAt: sentAt, clientEmail }
                 : row
             ),
-            tests: previous.tests.map((row) => (row.id === report.testId ? { ...row, status: "Issued", notes } : row)),
+            tests: previous.tests.map((row) => (row.id === report.testId ? { ...row, status: "Sent to Client", notes } : row)),
             notifications: [...previous.notifications],
             auditLog: [...previous.auditLog]
           };
-          addAudit(draft, "report_issued", "report", reportId, `${report.reportNumber} issued to ${clientEmail}.`);
+          addAudit(draft, "report_sent_to_client", "report", reportId, `${report.reportNumber} sent to ${clientEmail}.`);
+          return draft;
+        });
+      },
+      sendReportsToClient(reportIds, clientEmail, notes) {
+        setState((previous) => {
+          const approvedReports = previous.reports.filter((row) => reportIds.includes(row.id) && row.reportStatus === "Approved");
+          if (!approvedReports.length) return previous;
+          const sentAt = new Date().toISOString();
+          const sentReportIds = new Set(approvedReports.map((report) => report.id));
+          const sentTestIds = new Set(approvedReports.map((report) => report.testId));
+          const draft: LabState = {
+            ...previous,
+            reports: previous.reports.map((row) =>
+              sentReportIds.has(row.id)
+                ? { ...row, reportStatus: "Sent to Client", issuedBy: currentUserId, issuedAt: sentAt, clientEmail }
+                : row
+            ),
+            tests: previous.tests.map((row) => (sentTestIds.has(row.id) ? { ...row, status: "Sent to Client", notes } : row)),
+            notifications: [...previous.notifications],
+            auditLog: [...previous.auditLog]
+          };
+          for (const report of approvedReports) {
+            addAudit(draft, "report_sent_to_client", "report", report.id, `${report.reportNumber} sent to ${clientEmail}.`);
+          }
           return draft;
         });
       },

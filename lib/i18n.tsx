@@ -43,6 +43,7 @@ const translations = {
     "status.Approved": "Approved",
     "status.Rejected": "Rejected",
     "status.Issued": "Issued",
+    "status.Sent to Client": "Sent to Client",
     "status.Draft": "Draft",
 
     "dashboard.title": "Dashboard",
@@ -52,7 +53,7 @@ const translations = {
     "dashboard.testsCompleted": "Tests completed",
     "dashboard.reportsToPrepare": "Reports to prepare",
     "dashboard.pendingApproval": "Pending approval",
-    "dashboard.approvedNotIssued": "Approved not issued",
+    "dashboard.approvedNotIssued": "Approved not sent",
     "dashboard.delayedTests": "Delayed tests",
     "dashboard.workflowColumns": "Workflow Table",
     "dashboard.openAllTests": "Open all tests",
@@ -149,6 +150,7 @@ const translations = {
     "status.Approved": "Miratuar",
     "status.Rejected": "Refuzuar",
     "status.Issued": "Lëshuar",
+    "status.Sent to Client": "Dërguar Klientit",
     "status.Draft": "Draft",
 
     "dashboard.title": "Paneli",
@@ -158,7 +160,7 @@ const translations = {
     "dashboard.testsCompleted": "Teste të përfunduara",
     "dashboard.reportsToPrepare": "Raporte për përgatitje",
     "dashboard.pendingApproval": "Në pritje miratimi",
-    "dashboard.approvedNotIssued": "Miratuar pa u lëshuar",
+    "dashboard.approvedNotIssued": "Miratuar pa u dërguar",
     "dashboard.delayedTests": "Teste me vonesë",
     "dashboard.workflowColumns": "Tabela e procesit",
     "dashboard.openAllTests": "Hap të gjitha testet",

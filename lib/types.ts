@@ -20,9 +20,10 @@ export type TestStatus =
   | "Pending Approval"
   | "Approved"
   | "Rejected"
-  | "Issued";
+  | "Issued"
+  | "Sent to Client";
 
-export type ReportStatus = "Draft" | "Report Drafted" | "Pending Approval" | "Approved" | "Rejected" | "Issued";
+export type ReportStatus = "Draft" | "Report Drafted" | "Pending Approval" | "Approved" | "Rejected" | "Issued" | "Sent to Client";
 
 export type Priority = "Normal" | "High" | "Urgent";
 

@@ -310,7 +310,7 @@ export function ReportPreview({
         <p>Ky raport testimi nuk mund të riprodhohet në mënyrë të pjesshme pa aprovimin me shkrim të laboratorit. / The test report shall not be reproduced except in full without written approval of the laboratory.</p>
         <p>Laboratori nuk është përgjegjës për fazën e kampionmarrjes. / The laboratory is not responsible for the sampling phase.</p>
         <p>Deklaroj që testi është kryer në përputhje me standardin. / I declare that the test was performed in accordance with the standard.</p>
-        <p className="pt-3 font-semibold text-ink">Data e lëshimit të Raportit të Testimit / Test Report Issue Date: {formatEuropeanDate(report.issuedAt)}</p>
+        <p className="pt-3 font-semibold text-ink">Data e dërgimit të Raportit të Testimit / Test Report Sent Date: {formatEuropeanDate(report.issuedAt)}</p>
       </div>
     </section>
   );

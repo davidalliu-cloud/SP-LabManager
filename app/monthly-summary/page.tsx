@@ -18,7 +18,7 @@ export default function MonthlySummaryPage() {
   const monthLabel = currentMonthLabel();
   const samplesReceived = store.samples.length;
   const completed = store.tests.filter((test) => test.completedAt).length;
-  const issued = store.reports.filter((report) => report.reportStatus === "Issued").length;
+  const sent = store.reports.filter((report) => report.reportStatus === "Sent to Client" || report.reportStatus === "Issued").length;
   const delayed = store.tests.filter((test) => test.status === "Delayed").length;
   const avgRegistrationToComplete = averageDays(
     store.tests.map((test) => ({
@@ -35,10 +35,10 @@ export default function MonthlySummaryPage() {
     { value: "Report Drafted", label: "Raport i përgatitur" },
     { value: "Pending Approval", label: "Në pritje miratimi" },
     { value: "Approved", label: "Miratuar" },
-    { value: "Issued", label: "Lëshuar" }
+    { value: "Sent to Client", label: "Dërguar Klientit" }
   ].map((status) => ({
     name: status.label,
-    reports: store.reports.filter((report) => report.reportStatus === status.value).length
+    reports: store.reports.filter((report) => status.value === "Sent to Client" ? ["Sent to Client", "Issued"].includes(report.reportStatus) : report.reportStatus === status.value).length
   }));
   const filters = ["Muaji", "Klienti", "Projekti", "Tipi i kampionit", "Tipi i testit", "Tekniku"];
 
@@ -59,7 +59,7 @@ export default function MonthlySummaryPage() {
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <SummaryCard label="Kampionë të pranuar" value={samplesReceived} />
         <SummaryCard label="Teste të përfunduara" value={completed} tone="green" />
-        <SummaryCard label="Raporte të lëshuara" value={issued} tone="green" />
+        <SummaryCard label="Raporte të dërguara klientit" value={sent} tone="green" />
         <SummaryCard label="Teste me vonesë" value={delayed} tone="red" />
         <SummaryCard label="Vend për të ardhurat" value="$0" tone="gray" detail="Gati për modulin e faturimit" />
       </section>

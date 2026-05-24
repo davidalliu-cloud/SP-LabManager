@@ -13,53 +13,71 @@ export default function ReportDetailPage() {
   const [issueEmail, setIssueEmail] = useState("");
   const report = store.reports.find((item) => item.id === params.id);
   if (!report) return <PageHeader title="Raporti nuk u gjet" />;
-  const test = store.tests.find((item) => item.id === report.testId);
-  const sample = store.samples.find((item) => item.id === report.sampleId);
-  const client = store.clients.find((item) => item.id === report.clientId);
-  const project = store.projects.find((item) => item.id === report.projectId);
-  const concrete = store.concreteTests.find((item) => item.testId === report.testId);
-  const concreteWater = store.concreteWaterPenetrationTests.find((item) => item.testId === report.testId);
-  const concreteFlexural = store.concreteFlexuralTests.find((item) => item.testId === report.testId);
-  const concreteDensity = store.concreteDensityTests.find((item) => item.testId === report.testId);
-  const concreteIndirectTensile = store.concreteIndirectTensileTests.find((item) => item.testId === report.testId);
-  const thermalInsulation = store.thermalInsulationTests.find((item) => item.testId === report.testId);
-  const cementConsistency = store.cementConsistencyTests.find((item) => item.testId === report.testId);
-  const cementStrength = store.cementStrengthTests.find((item) => item.testId === report.testId);
-  const cementBlaine = store.cementBlaineTests.find((item) => item.testId === report.testId);
-  const steel = store.steelTests.find((item) => item.testId === report.testId);
-  const aggregate = store.aggregateTests.find((item) => item.testId === report.testId);
-  const aggregateChemical = store.aggregateChemicalTests.find((item) => item.testId === report.testId);
-  const aggregateLosAngeles = store.aggregateLosAngelesTests.find((item) => item.testId === report.testId);
-  const aggregateFreezeThaw = store.aggregateFreezeThawTests.find((item) => item.testId === report.testId);
-  const aggregateAcv = store.aggregateAcvTests.find((item) => item.testId === report.testId);
-  const aggregateDensity = store.aggregateDensityAbsorptionTests.find((item) => item.testId === report.testId);
-  const aggregateFillerDensity = store.aggregateFillerDensityTests.find((item) => item.testId === report.testId);
-  const aggregateShapeIndex = store.aggregateShapeIndexTests.find((item) => item.testId === report.testId);
-  const aggregateFlakiness = store.aggregateFlakinessIndexTests.find((item) => item.testId === report.testId);
-  const aggregateElongation = store.aggregateElongationIndexTests.find((item) => item.testId === report.testId);
-  const aggregateBulkDensity = store.aggregateBulkDensityTests.find((item) => item.testId === report.testId);
-  const aggregateSandEquivalent = store.aggregateSandEquivalentTests.find((item) => item.testId === report.testId);
-  const aggregateSoundness = store.aggregateSoundnessTests.find((item) => item.testId === report.testId);
+  const activeReport = report;
+  const test = store.tests.find((item) => item.id === activeReport.testId);
+  const sample = store.samples.find((item) => item.id === activeReport.sampleId);
+  const client = store.clients.find((item) => item.id === activeReport.clientId);
+  const project = store.projects.find((item) => item.id === activeReport.projectId);
+  const concrete = store.concreteTests.find((item) => item.testId === activeReport.testId);
+  const concreteWater = store.concreteWaterPenetrationTests.find((item) => item.testId === activeReport.testId);
+  const concreteFlexural = store.concreteFlexuralTests.find((item) => item.testId === activeReport.testId);
+  const concreteDensity = store.concreteDensityTests.find((item) => item.testId === activeReport.testId);
+  const concreteIndirectTensile = store.concreteIndirectTensileTests.find((item) => item.testId === activeReport.testId);
+  const thermalInsulation = store.thermalInsulationTests.find((item) => item.testId === activeReport.testId);
+  const cementConsistency = store.cementConsistencyTests.find((item) => item.testId === activeReport.testId);
+  const cementStrength = store.cementStrengthTests.find((item) => item.testId === activeReport.testId);
+  const cementBlaine = store.cementBlaineTests.find((item) => item.testId === activeReport.testId);
+  const steel = store.steelTests.find((item) => item.testId === activeReport.testId);
+  const aggregate = store.aggregateTests.find((item) => item.testId === activeReport.testId);
+  const aggregateChemical = store.aggregateChemicalTests.find((item) => item.testId === activeReport.testId);
+  const aggregateLosAngeles = store.aggregateLosAngelesTests.find((item) => item.testId === activeReport.testId);
+  const aggregateFreezeThaw = store.aggregateFreezeThawTests.find((item) => item.testId === activeReport.testId);
+  const aggregateAcv = store.aggregateAcvTests.find((item) => item.testId === activeReport.testId);
+  const aggregateDensity = store.aggregateDensityAbsorptionTests.find((item) => item.testId === activeReport.testId);
+  const aggregateFillerDensity = store.aggregateFillerDensityTests.find((item) => item.testId === activeReport.testId);
+  const aggregateShapeIndex = store.aggregateShapeIndexTests.find((item) => item.testId === activeReport.testId);
+  const aggregateFlakiness = store.aggregateFlakinessIndexTests.find((item) => item.testId === activeReport.testId);
+  const aggregateElongation = store.aggregateElongationIndexTests.find((item) => item.testId === activeReport.testId);
+  const aggregateBulkDensity = store.aggregateBulkDensityTests.find((item) => item.testId === activeReport.testId);
+  const aggregateSandEquivalent = store.aggregateSandEquivalentTests.find((item) => item.testId === activeReport.testId);
+  const aggregateSoundness = store.aggregateSoundnessTests.find((item) => item.testId === activeReport.testId);
+  const recipientEmail = issueEmail || client?.email || "";
+
+  function sendReportToClient() {
+    if (!recipientEmail || activeReport.reportStatus !== "Approved") return;
+    const subject = `Raporti laboratorik SARP LAB - ${activeReport.reportNumber}`;
+    const body = [
+      "Pershendetje,",
+      "",
+      `Raporti ${activeReport.reportNumber} eshte miratuar dhe gati per shqyrtim:`,
+      `${window.location.origin}/reports/${activeReport.id}`,
+      "",
+      "Me respekt,",
+      "SARP LAB"
+    ].join("\n");
+    window.location.href = `mailto:${encodeURIComponent(recipientEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    store.issueReport(activeReport.id, recipientEmail, `Dërguar me email: ${activeReport.reportNumber}`);
+  }
 
   return (
     <>
-      <PageHeader title={report.reportNumber} description="Përgatitja, miratimi, shkarkimi PDF dhe lëshimi i raportit." />
+      <PageHeader title={activeReport.reportNumber} description="Përgatitja, miratimi, shkarkimi PDF dhe dërgimi i raportit te klienti." />
       <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-        <ReportPreview report={report} test={test} sample={sample} client={client} project={project} concrete={concrete} concreteWater={concreteWater} concreteFlexural={concreteFlexural} concreteDensity={concreteDensity} concreteIndirectTensile={concreteIndirectTensile} thermalInsulation={thermalInsulation} cementConsistency={cementConsistency} cementStrength={cementStrength} cementBlaine={cementBlaine} steel={steel} aggregate={aggregate} aggregateChemical={aggregateChemical} aggregateLosAngeles={aggregateLosAngeles} aggregateFreezeThaw={aggregateFreezeThaw} aggregateAcv={aggregateAcv} aggregateDensity={aggregateDensity} aggregateFillerDensity={aggregateFillerDensity} aggregateShapeIndex={aggregateShapeIndex} aggregateFlakiness={aggregateFlakiness} aggregateElongation={aggregateElongation} aggregateBulkDensity={aggregateBulkDensity} aggregateSandEquivalent={aggregateSandEquivalent} aggregateSoundness={aggregateSoundness} />
+        <ReportPreview report={activeReport} test={test} sample={sample} client={client} project={project} concrete={concrete} concreteWater={concreteWater} concreteFlexural={concreteFlexural} concreteDensity={concreteDensity} concreteIndirectTensile={concreteIndirectTensile} thermalInsulation={thermalInsulation} cementConsistency={cementConsistency} cementStrength={cementStrength} cementBlaine={cementBlaine} steel={steel} aggregate={aggregate} aggregateChemical={aggregateChemical} aggregateLosAngeles={aggregateLosAngeles} aggregateFreezeThaw={aggregateFreezeThaw} aggregateAcv={aggregateAcv} aggregateDensity={aggregateDensity} aggregateFillerDensity={aggregateFillerDensity} aggregateShapeIndex={aggregateShapeIndex} aggregateFlakiness={aggregateFlakiness} aggregateElongation={aggregateElongation} aggregateBulkDensity={aggregateBulkDensity} aggregateSandEquivalent={aggregateSandEquivalent} aggregateSoundness={aggregateSoundness} />
         <aside className="no-print space-y-4">
           <div className="surface-card p-4">
             <h2 className="text-base font-semibold text-ink">Veprimet e miratimit</h2>
             <div className="mt-4 space-y-3">
               <button
-                onClick={() => store.submitReport(report.id)}
-                disabled={!["Report Drafted", "Rejected"].includes(report.reportStatus)}
+                onClick={() => store.submitReport(activeReport.id)}
+                disabled={!["Report Drafted", "Rejected"].includes(activeReport.reportStatus)}
                 className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300"
               >
                 Dërgo për miratim
               </button>
               <button
-                onClick={() => store.approveReport(report.id)}
-                disabled={report.reportStatus !== "Pending Approval"}
+                onClick={() => store.approveReport(activeReport.id)}
+                disabled={activeReport.reportStatus !== "Pending Approval"}
                 className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300"
               >
                 Mirato raportin
@@ -72,8 +90,8 @@ export default function ReportDetailPage() {
                 className="input"
               />
               <button
-                onClick={() => store.rejectReport(report.id, comments || "Ju lutemi korrigjoni të dhënat e raportit dhe dërgojeni përsëri për miratim.")}
-                disabled={report.reportStatus !== "Pending Approval"}
+                onClick={() => store.rejectReport(activeReport.id, comments || "Ju lutemi korrigjoni të dhënat e raportit dhe dërgojeni përsëri për miratim.")}
+                disabled={activeReport.reportStatus !== "Pending Approval"}
                 className="w-full rounded-md border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-lab-red transition hover:bg-red-50 disabled:cursor-not-allowed disabled:border-line disabled:text-slate-400"
               >
                 Refuzo raportin
@@ -82,11 +100,11 @@ export default function ReportDetailPage() {
           </div>
 
           <div className="surface-card p-4">
-            <h2 className="text-base font-semibold text-ink">Lëshimi i raportit</h2>
+            <h2 className="text-base font-semibold text-ink">Dërgimi te klienti</h2>
             <div className="mt-4 space-y-3">
               <button
                 onClick={() => window.print()}
-                disabled={report.reportStatus !== "Approved" && report.reportStatus !== "Issued"}
+                disabled={!["Approved", "Issued", "Sent to Client"].includes(activeReport.reportStatus)}
                 className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300"
               >
                 Shkarko PDF-në e miratuar
@@ -98,18 +116,19 @@ export default function ReportDetailPage() {
                 className="input"
               />
               <button
-                onClick={() => store.issueReport(report.id, issueEmail || client?.email || "")}
-                disabled={report.reportStatus !== "Approved"}
+                onClick={sendReportToClient}
+                disabled={activeReport.reportStatus !== "Approved" || !recipientEmail}
                 className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300"
               >
-                Shëno si të lëshuar
+                Dërgo te klienti
               </button>
+              <p className="text-xs text-muted">Ky veprim lejohet vetëm pas statusit Miratuar dhe e ndryshon statusin në Dërguar Klientit.</p>
             </div>
           </div>
-          {report.rejectionComments ? (
+          {activeReport.rejectionComments ? (
             <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-lab-red">
               <div className="font-semibold">Komentet e refuzimit</div>
-              <div className="mt-1">{report.rejectionComments}</div>
+              <div className="mt-1">{activeReport.rejectionComments}</div>
             </div>
           ) : null}
         </aside>
