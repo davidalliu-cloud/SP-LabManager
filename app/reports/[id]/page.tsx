@@ -28,6 +28,7 @@ export default function ReportDetailPage() {
   const cementConsistency = store.cementConsistencyTests.find((item) => item.testId === activeReport.testId);
   const cementStrength = store.cementStrengthTests.find((item) => item.testId === activeReport.testId);
   const cementBlaine = store.cementBlaineTests.find((item) => item.testId === activeReport.testId);
+  const mortar = store.mortarTests.find((item) => item.testId === activeReport.testId);
   const steel = store.steelTests.find((item) => item.testId === activeReport.testId);
   const aggregate = store.aggregateTests.find((item) => item.testId === activeReport.testId);
   const aggregateChemical = store.aggregateChemicalTests.find((item) => item.testId === activeReport.testId);
@@ -66,7 +67,7 @@ export default function ReportDetailPage() {
     <>
       <PageHeader title={activeReport.reportNumber} description="Përgatitja, miratimi, shkarkimi PDF dhe dërgimi i raportit te klienti." />
       <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-        <ReportPreview report={activeReport} test={test} sample={sample} client={client} project={project} concrete={concrete} concreteWater={concreteWater} concreteFlexural={concreteFlexural} concreteDensity={concreteDensity} concreteIndirectTensile={concreteIndirectTensile} thermalInsulation={thermalInsulation} cementConsistency={cementConsistency} cementStrength={cementStrength} cementBlaine={cementBlaine} steel={steel} aggregate={aggregate} aggregateChemical={aggregateChemical} aggregateLosAngeles={aggregateLosAngeles} aggregateFreezeThaw={aggregateFreezeThaw} aggregateAcv={aggregateAcv} aggregateDensity={aggregateDensity} aggregateFillerDensity={aggregateFillerDensity} aggregateShapeIndex={aggregateShapeIndex} aggregateFlakiness={aggregateFlakiness} aggregateElongation={aggregateElongation} aggregateBulkDensity={aggregateBulkDensity} aggregateSandEquivalent={aggregateSandEquivalent} aggregateSoundness={aggregateSoundness} />
+        <ReportPreview report={activeReport} test={test} sample={sample} client={client} project={project} concrete={concrete} concreteWater={concreteWater} concreteFlexural={concreteFlexural} concreteDensity={concreteDensity} concreteIndirectTensile={concreteIndirectTensile} thermalInsulation={thermalInsulation} cementConsistency={cementConsistency} cementStrength={cementStrength} cementBlaine={cementBlaine} mortar={mortar} steel={steel} aggregate={aggregate} aggregateChemical={aggregateChemical} aggregateLosAngeles={aggregateLosAngeles} aggregateFreezeThaw={aggregateFreezeThaw} aggregateAcv={aggregateAcv} aggregateDensity={aggregateDensity} aggregateFillerDensity={aggregateFillerDensity} aggregateShapeIndex={aggregateShapeIndex} aggregateFlakiness={aggregateFlakiness} aggregateElongation={aggregateElongation} aggregateBulkDensity={aggregateBulkDensity} aggregateSandEquivalent={aggregateSandEquivalent} aggregateSoundness={aggregateSoundness} />
         <aside className="no-print space-y-4">
           <div className="surface-card p-4">
             <h2 className="text-base font-semibold text-ink">Veprimet e miratimit</h2>

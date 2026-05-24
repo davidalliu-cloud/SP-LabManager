@@ -278,6 +278,27 @@ export function calculateSulfateSo4FromSo3(so3Percent: number) {
   return round(so3Percent * 1.2, 3);
 }
 
+export function calculateMortarFlexuralStrengthMpa(loadKn: number, spanMm: number, widthMm: number, heightMm: number) {
+  if (!spanMm || !widthMm || !heightMm) return 0;
+  return round((1.5 * loadKn * 1000 * spanMm) / (widthMm * heightMm ** 2), 2);
+}
+
+export function calculateMortarFreshDensityKgM3(emptyContainerMassG: number, filledContainerMassG: number, containerVolumeL: number) {
+  if (!containerVolumeL) return 0;
+  return round((filledContainerMassG - emptyContainerMassG) / containerVolumeL, 0);
+}
+
+export function calculateMortarDryDensityKgM3(dryMassG: number, lengthMm: number, widthMm: number, heightMm: number) {
+  const volumeM3 = (lengthMm * widthMm * heightMm) / 1_000_000_000;
+  if (!volumeM3) return 0;
+  return round((dryMassG / 1000) / volumeM3, 0);
+}
+
+export function calculateMortarAdhesionStrengthMpa(forceN: number, areaMm2: number) {
+  if (!areaMm2) return 0;
+  return round(forceN / areaMm2, 2);
+}
+
 export function averageNumbers(values: number[], decimals = 3) {
   const valid = values.filter((value) => Number.isFinite(value));
   if (!valid.length) return 0;

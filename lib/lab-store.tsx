@@ -33,6 +33,10 @@ import {
   calculateIndirectTensileStrengthMpa,
   calculateIrregularVolumeM3,
   calculateLosAngelesResults,
+  calculateMortarAdhesionStrengthMpa,
+  calculateMortarDryDensityKgM3,
+  calculateMortarFlexuralStrengthMpa,
+  calculateMortarFreshDensityKgM3,
   calculateMoisturePercent,
   calculateExpansionMm,
   calculateMinutesBetweenTimes,
@@ -58,7 +62,7 @@ import { officialClientCodes2026 } from "./client-directory";
 import { canDeleteSamples, canEditTestData, canReviewTests, canGenerateReportForTest, canManageEmployees } from "./permissions";
 import { initialState } from "./seed-data";
 import { createSupabaseBrowserClient } from "./supabase/client";
-import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabState, LabTest, LabUser, Notification, Project, Report, Role, Sample, SteelTensileTest, ThermalInsulationTest } from "./types";
+import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabState, LabTest, LabUser, MortarTest, MortarTestKind, Notification, Project, Report, Role, Sample, SteelTensileTest, ThermalInsulationTest } from "./types";
 
 interface NewSampleInput {
   clientId: string;
@@ -350,6 +354,72 @@ interface SteelInput {
     fractureType: string;
     notes?: string;
   }>;
+}
+
+interface MortarInput {
+  testKind: MortarTestKind;
+  testStartDate?: string;
+  testEndDate?: string;
+  preparationDate?: string;
+  curingConditions?: string;
+  mortarType?: string;
+  flowValue?: string;
+  temperature?: string;
+  humidity?: string;
+  testingLocation?: string;
+  equipmentUsed?: string;
+  technicianName: string;
+  checkedBy?: string;
+  notes?: string;
+  granulometry?: {
+    sampleMassG: number;
+    rows: Array<{ sieveSizeMm: number; retainedMassG: number }>;
+  };
+  adhesion?: Array<{
+    specimenCode: string;
+    diameterMm: number;
+    ageDays: number;
+    loadingRateNmm2s: number;
+    failureForceN: number;
+    failureMode?: string;
+  }>;
+  strength?: Array<{
+    specimenCode: string;
+    testType: "Compressive" | "Flexural";
+    ageDays: number;
+    preparationDate?: string;
+    testDate?: string;
+    lengthMm: number;
+    widthMm: number;
+    heightMm: number;
+    spanMm: number;
+    surfaceAreaMm2: number;
+    loadKn: number;
+  }>;
+  dryDensity?: Array<{
+    specimenCode: string;
+    dryMassG: number;
+    lengthMm: number;
+    widthMm: number;
+    heightMm: number;
+  }>;
+  freshDensity?: Array<{
+    specimenCode: string;
+    emptyContainerMassG: number;
+    filledContainerMassG: number;
+    containerVolumeL: number;
+  }>;
+  chemical?: {
+    sampleMassG: number;
+    silicaCrucibleBeforeG: number;
+    silicaCrucibleAfterG: number;
+    caoEdtaVolumeMl: number;
+    caoEquivalent: number;
+    mgoCombinedEdtaMl: number;
+    magnesiumEquivalent: number;
+    so3CrucibleBeforeG: number;
+    so3CrucibleAfterG: number;
+  };
 }
 
 interface AggregateInput {
@@ -687,6 +757,7 @@ interface LabStoreValue extends LabState {
   saveCementConsistencyTest: (testId: string, input: CementConsistencyInput) => void;
   saveCementStrengthTest: (testId: string, input: CementStrengthInput) => void;
   saveCementBlaineTest: (testId: string, input: CementBlaineInput) => void;
+  saveMortarTest: (testId: string, input: MortarInput) => void;
   saveSteelTest: (testId: string, input: SteelInput) => void;
   saveAggregateTest: (testId: string, input: AggregateInput) => void;
   saveAggregateChemicalTest: (testId: string, input: AggregateChemicalInput) => void;
@@ -813,6 +884,7 @@ function mergeWithInitialState(saved: Partial<LabState>): LabState {
     cementConsistencyTests: saved.cementConsistencyTests ?? initialState.cementConsistencyTests,
     cementStrengthTests: saved.cementStrengthTests ?? initialState.cementStrengthTests,
     cementBlaineTests: saved.cementBlaineTests ?? initialState.cementBlaineTests,
+    mortarTests: saved.mortarTests ?? initialState.mortarTests,
     steelTests: saved.steelTests ?? initialState.steelTests,
     aggregateTests: saved.aggregateTests ?? initialState.aggregateTests,
     aggregateChemicalTests: saved.aggregateChemicalTests ?? initialState.aggregateChemicalTests,
@@ -1266,6 +1338,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             cementConsistencyTests: previous.cementConsistencyTests.filter((row) => !linkedTestIds.has(row.testId)),
             cementStrengthTests: previous.cementStrengthTests.filter((row) => !linkedTestIds.has(row.testId)),
             cementBlaineTests: previous.cementBlaineTests.filter((row) => !linkedTestIds.has(row.testId)),
+            mortarTests: previous.mortarTests.filter((row) => !linkedTestIds.has(row.testId)),
             steelTests: previous.steelTests.filter((row) => !linkedTestIds.has(row.testId)),
             aggregateTests: previous.aggregateTests.filter((row) => !linkedTestIds.has(row.testId)),
             aggregateChemicalTests: previous.aggregateChemicalTests.filter((row) => !linkedTestIds.has(row.testId)),
@@ -1805,6 +1878,126 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             auditLog: [...previous.auditLog]
           };
           addAudit(draft, "test_data_saved", "test", testId, `Cement Blaine ${input.method} data saved.`);
+          return draft;
+        });
+      },
+      saveMortarTest(testId, input) {
+        setState((previous) => {
+          if (!canCurrentUserEditTest(previous, testId)) return previous;
+          const granulometry = input.granulometry
+            ? {
+                sampleMassG: input.granulometry.sampleMassG,
+                rows: calculateAggregateGradation(
+                  input.granulometry.rows.filter((row) => row.sieveSizeMm || row.retainedMassG),
+                  input.granulometry.sampleMassG
+                ).map((row) => ({
+                  sieveSizeMm: row.sieveSizeMm,
+                  retainedMassG: row.retainedMassG,
+                  retainedPercent: input.granulometry?.sampleMassG ? Math.round((row.retainedMassG / input.granulometry.sampleMassG) * 10000) / 100 : 0,
+                  cumulativeRetainedPercent: row.cumulativeRetainedPercent,
+                  passingPercent: row.cumulativePassingPercent
+                }))
+              }
+            : undefined;
+          const adhesion = input.adhesion
+            ?.filter((row) => row.diameterMm || row.failureForceN)
+            .map((row) => {
+              const areaMm2 = calculateCircularArea(row.diameterMm);
+              return {
+                ...row,
+                areaMm2,
+                adhesionStrengthMpa: calculateMortarAdhesionStrengthMpa(row.failureForceN, areaMm2)
+              };
+            });
+          const strength = input.strength
+            ?.filter((row) => row.loadKn || row.lengthMm || row.widthMm || row.heightMm)
+            .map((row) => {
+              const surfaceAreaMm2 = row.surfaceAreaMm2 || calculateArea(row.lengthMm, row.widthMm);
+              return {
+                ...row,
+                surfaceAreaMm2,
+                strengthMpa:
+                  row.testType === "Flexural"
+                    ? calculateMortarFlexuralStrengthMpa(row.loadKn, row.spanMm || 100, row.widthMm, row.heightMm)
+                    : calculateCompressiveStrength(row.loadKn, surfaceAreaMm2)
+              };
+            });
+          const dryDensity = input.dryDensity
+            ?.filter((row) => row.dryMassG || row.lengthMm || row.widthMm || row.heightMm)
+            .map((row) => ({
+              ...row,
+              volumeM3: calculateSpecimenVolumeM3(row.lengthMm, row.widthMm, row.heightMm),
+              densityKgM3: calculateMortarDryDensityKgM3(row.dryMassG, row.lengthMm, row.widthMm, row.heightMm)
+            }));
+          const freshDensity = input.freshDensity
+            ?.filter((row) => row.filledContainerMassG || row.containerVolumeL)
+            .map((row) => ({
+              ...row,
+              densityKgM3: calculateMortarFreshDensityKgM3(row.emptyContainerMassG, row.filledContainerMassG, row.containerVolumeL)
+            }));
+          const chemical = input.chemical
+            ? {
+                ...input.chemical,
+                silicaPercent: input.chemical.sampleMassG ? ((input.chemical.silicaCrucibleAfterG - input.chemical.silicaCrucibleBeforeG) / input.chemical.sampleMassG) * 100 : 0,
+                calciumOxidePercent: input.chemical.sampleMassG ? (input.chemical.caoEdtaVolumeMl * input.chemical.caoEquivalent * 10) / input.chemical.sampleMassG : 0,
+                magnesiumOxidePercent: input.chemical.sampleMassG ? ((input.chemical.mgoCombinedEdtaMl - input.chemical.caoEdtaVolumeMl) * input.chemical.magnesiumEquivalent) / input.chemical.sampleMassG : 0,
+                sulfateSo3Percent: input.chemical.sampleMassG ? ((input.chemical.so3CrucibleAfterG - input.chemical.so3CrucibleBeforeG) * 34.3 * 5) / input.chemical.sampleMassG : 0,
+                limeContentPercent: input.chemical.sampleMassG ? input.chemical.caoEquivalent * (74.1 / 56.08) * ((5 * input.chemical.caoEdtaVolumeMl) / input.chemical.sampleMassG) : 0
+              }
+            : undefined;
+          if (chemical) {
+            chemical.silicaPercent = Math.round(chemical.silicaPercent * 1000) / 1000;
+            chemical.calciumOxidePercent = Math.round(chemical.calciumOxidePercent * 1000) / 1000;
+            chemical.magnesiumOxidePercent = Math.round(chemical.magnesiumOxidePercent * 1000) / 1000;
+            chemical.sulfateSo3Percent = Math.round(chemical.sulfateSo3Percent * 1000) / 1000;
+            chemical.limeContentPercent = Math.round(chemical.limeContentPercent * 1000) / 1000;
+          }
+          const summary =
+            input.testKind === "granulometry"
+              ? `Kalimi final: ${granulometry?.rows.at(-1)?.passingPercent ?? 0}%`
+              : input.testKind === "adhesion"
+                ? `Rezistenca mesatare në ngjitje: ${averageNumbers((adhesion ?? []).map((row) => row.adhesionStrengthMpa), 2)} MPa`
+                : input.testKind === "dry-density"
+                  ? `Densiteti mesatar në të thatë: ${averageNumbers((dryDensity ?? []).map((row) => row.densityKgM3), 0)} kg/m3`
+                  : input.testKind === "fresh-density"
+                    ? `Densiteti mesatar i freskët: ${averageNumbers((freshDensity ?? []).map((row) => row.densityKgM3), 0)} kg/m3`
+                    : input.testKind === "chemical"
+                      ? `CaO: ${chemical?.calciumOxidePercent ?? 0}%; MgO: ${chemical?.magnesiumOxidePercent ?? 0}%; SO3: ${chemical?.sulfateSo3Percent ?? 0}%`
+                      : `Rezistenca mesatare: ${averageNumbers((strength ?? []).map((row) => row.strengthMpa), 2)} MPa`;
+          const mortarTest: MortarTest = {
+            id: previous.mortarTests.find((row) => row.testId === testId)?.id ?? crypto.randomUUID(),
+            testId,
+            testKind: input.testKind,
+            testStartDate: input.testStartDate,
+            testEndDate: input.testEndDate,
+            preparationDate: input.preparationDate,
+            curingConditions: input.curingConditions,
+            mortarType: input.mortarType,
+            flowValue: input.flowValue,
+            temperature: input.temperature,
+            humidity: input.humidity,
+            testingLocation: input.testingLocation,
+            equipmentUsed: input.equipmentUsed,
+            technicianName: input.technicianName,
+            checkedBy: input.checkedBy,
+            notes: input.notes,
+            granulometry,
+            adhesion,
+            strength,
+            dryDensity,
+            freshDensity,
+            chemical,
+            summary,
+            createdAt: new Date().toISOString()
+          };
+          const existing = previous.mortarTests.some((row) => row.testId === testId);
+          const draft: LabState = {
+            ...previous,
+            mortarTests: existing ? previous.mortarTests.map((row) => (row.testId === testId ? mortarTest : row)) : [mortarTest, ...previous.mortarTests],
+            tests: previous.tests.map((test) => (test.id === testId ? { ...test, status: "In Progress" } : test)),
+            auditLog: [...previous.auditLog]
+          };
+          addAudit(draft, "test_data_saved", "test", testId, "Mortar/Llaç test data saved.");
           return draft;
         });
       },
@@ -2526,6 +2719,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           const cementConsistency = previous.cementConsistencyTests.find((row) => row.testId === testId);
           const cementStrength = previous.cementStrengthTests.find((row) => row.testId === testId);
           const cementBlaine = previous.cementBlaineTests.find((row) => row.testId === testId);
+          const mortar = previous.mortarTests.find((row) => row.testId === testId);
           const steel = previous.steelTests.find((row) => row.testId === testId);
           const aggregate = previous.aggregateTests.find((row) => row.testId === testId);
           const aggregateChemical = previous.aggregateChemicalTests.find((row) => row.testId === testId);
@@ -2542,7 +2736,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           const aggregateSoundness = previous.aggregateSoundnessTests.find((row) => row.testId === testId);
           const reportGroups = steel?.specimens.length
             ? groupSteelSpecimensByDiameter(steel)
-            : concreteWater || concreteFlexural || concreteDensity || concreteIndirectTensile || thermalInsulation || cementConsistency || cementStrength || cementBlaine || aggregate || aggregateChemical || aggregateLosAngeles || aggregateFreezeThaw || aggregateAcv || aggregateDensity || aggregateFillerDensity || aggregateShapeIndex || aggregateFlakiness || aggregateElongation || aggregateBulkDensity || aggregateSandEquivalent || aggregateSoundness
+            : concreteWater || concreteFlexural || concreteDensity || concreteIndirectTensile || thermalInsulation || cementConsistency || cementStrength || cementBlaine || mortar || aggregate || aggregateChemical || aggregateLosAngeles || aggregateFreezeThaw || aggregateAcv || aggregateDensity || aggregateFillerDensity || aggregateShapeIndex || aggregateFlakiness || aggregateElongation || aggregateBulkDensity || aggregateSandEquivalent || aggregateSoundness
               ? [[previous.samples.find((sample) => sample.id === test.sampleId)?.sampleCode ?? test.testCode]]
               : concrete?.specimens?.length
                 ? chunk(concrete.specimens.map((specimen) => specimen.specimenCode), 3)

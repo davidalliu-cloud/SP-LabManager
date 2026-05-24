@@ -404,6 +404,114 @@ export interface CementBlaineTest {
   createdAt: string;
 }
 
+export type MortarTestKind =
+  | "granulometry"
+  | "adhesion"
+  | "compression-flexural"
+  | "compression"
+  | "dry-density"
+  | "fresh-density"
+  | "chemical";
+
+export interface MortarTest {
+  id: string;
+  testId: string;
+  testKind: MortarTestKind;
+  testStartDate?: string;
+  testEndDate?: string;
+  preparationDate?: string;
+  curingConditions?: string;
+  mortarType?: string;
+  flowValue?: string;
+  temperature?: string;
+  humidity?: string;
+  testingLocation?: string;
+  equipmentUsed?: string;
+  technicianName: string;
+  checkedBy?: string;
+  notes?: string;
+  granulometry?: {
+    sampleMassG: number;
+    rows: MortarGranulometryRow[];
+  };
+  adhesion?: MortarAdhesionSpecimen[];
+  strength?: MortarStrengthSpecimen[];
+  dryDensity?: MortarDryDensitySpecimen[];
+  freshDensity?: MortarFreshDensitySpecimen[];
+  chemical?: MortarChemicalValues;
+  summary: string;
+  createdAt: string;
+}
+
+export interface MortarGranulometryRow {
+  sieveSizeMm: number;
+  retainedMassG: number;
+  retainedPercent: number;
+  cumulativeRetainedPercent: number;
+  passingPercent: number;
+}
+
+export interface MortarAdhesionSpecimen {
+  specimenCode: string;
+  diameterMm: number;
+  ageDays: number;
+  loadingRateNmm2s: number;
+  areaMm2: number;
+  failureForceN: number;
+  adhesionStrengthMpa: number;
+  failureMode?: string;
+}
+
+export interface MortarStrengthSpecimen {
+  specimenCode: string;
+  testType: "Compressive" | "Flexural";
+  ageDays: number;
+  preparationDate?: string;
+  testDate?: string;
+  lengthMm: number;
+  widthMm: number;
+  heightMm: number;
+  spanMm: number;
+  surfaceAreaMm2: number;
+  loadKn: number;
+  strengthMpa: number;
+}
+
+export interface MortarDryDensitySpecimen {
+  specimenCode: string;
+  dryMassG: number;
+  lengthMm: number;
+  widthMm: number;
+  heightMm: number;
+  volumeM3: number;
+  densityKgM3: number;
+}
+
+export interface MortarFreshDensitySpecimen {
+  specimenCode: string;
+  emptyContainerMassG: number;
+  filledContainerMassG: number;
+  containerVolumeL: number;
+  densityKgM3: number;
+}
+
+export interface MortarChemicalValues {
+  sampleMassG: number;
+  silicaCrucibleBeforeG: number;
+  silicaCrucibleAfterG: number;
+  silicaPercent: number;
+  caoEdtaVolumeMl: number;
+  caoEquivalent: number;
+  calciumOxidePercent: number;
+  mgoCombinedEdtaMl: number;
+  magnesiumEquivalent: number;
+  magnesiumOxidePercent: number;
+  so3CrucibleBeforeG: number;
+  so3CrucibleAfterG: number;
+  sulfateSo3Percent: number;
+  limeContentPercent: number;
+}
+
 export interface CementBlaineDensityValues {
   sampleMassG: number;
   initialReadingMl: number;
@@ -994,6 +1102,7 @@ export interface LabState {
   cementConsistencyTests: CementConsistencyTest[];
   cementStrengthTests: CementStrengthTest[];
   cementBlaineTests: CementBlaineTest[];
+  mortarTests: MortarTest[];
   steelTests: SteelTensileTest[];
   aggregateTests: AggregateGradationTest[];
   aggregateChemicalTests: AggregateChemicalTest[];

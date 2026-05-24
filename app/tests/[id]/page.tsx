@@ -2,16 +2,17 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { Dispatch, FormEvent, SetStateAction, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { isAggregateAcvAccreditedTest, isAggregateBulkDensityAccreditedTest, isAggregateChemicalAccreditedTest, isAggregateDensityAbsorptionAccreditedTest, isAggregateElongationIndexAccreditedTest, isAggregateFillerDensityAccreditedTest, isAggregateFlakinessIndexAccreditedTest, isAggregateFreezeThawAccreditedTest, isAggregateGranulometrySampleType, isAggregateLosAngelesAccreditedTest, isAggregateSandEquivalentAccreditedTest, isAggregateShapeIndexAccreditedTest, isAggregateSoundnessAccreditedTest, isCementBlaineAstmAccreditedTest, isCementBlaineBsEnAccreditedTest, isCementConsistencyAccreditedTest, isCementStrengthAccreditedTest, isConcreteDensityAccreditedTest, isConcreteFlexuralAccreditedTest, isConcreteIndirectTensileAccreditedTest, isConcreteWaterPenetrationAccreditedTest, isSteelSampleType, isThermalInsulationAccreditedTest } from "@/lib/accredited-tests";
+import { getMortarTestKind, isAggregateAcvAccreditedTest, isAggregateBulkDensityAccreditedTest, isAggregateChemicalAccreditedTest, isAggregateDensityAbsorptionAccreditedTest, isAggregateElongationIndexAccreditedTest, isAggregateFillerDensityAccreditedTest, isAggregateFlakinessIndexAccreditedTest, isAggregateFreezeThawAccreditedTest, isAggregateGranulometrySampleType, isAggregateLosAngelesAccreditedTest, isAggregateSandEquivalentAccreditedTest, isAggregateShapeIndexAccreditedTest, isAggregateSoundnessAccreditedTest, isCementBlaineAstmAccreditedTest, isCementBlaineBsEnAccreditedTest, isCementConsistencyAccreditedTest, isCementStrengthAccreditedTest, isConcreteDensityAccreditedTest, isConcreteFlexuralAccreditedTest, isConcreteIndirectTensileAccreditedTest, isConcreteWaterPenetrationAccreditedTest, isMortarAccreditedTest, isSteelSampleType, isThermalInsulationAccreditedTest } from "@/lib/accredited-tests";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { useLabStore } from "@/lib/lab-store";
 import { canEditTestData, canGenerateReportForTest, canReviewTests, canViewClientIdentity } from "@/lib/permissions";
-import type { LabUser } from "@/lib/types";
+import type { LabTest, LabUser, MortarTest, MortarTestKind, Sample } from "@/lib/types";
 
 const aggregateSieveSizes = [125, 80, 63, 37.5, 31.5, 25, 20, 16, 12.5, 8, 4, 2, 1, 0.5, 0.25, 0.125, 0.063, 0];
+const mortarSieveSizes = [8, 4, 2, 1, 0.5, 0.25, 0.125, 0.063, 0.0001];
 
 export default function TestDetailPage() {
   const params = useParams<{ id: string }>();
@@ -37,6 +38,7 @@ export default function TestDetailPage() {
   const cementConsistency = store.cementConsistencyTests.find((item) => item.testId === activeTest.id);
   const cementStrength = store.cementStrengthTests.find((item) => item.testId === activeTest.id);
   const cementBlaine = store.cementBlaineTests.find((item) => item.testId === activeTest.id);
+  const mortar = store.mortarTests.find((item) => item.testId === activeTest.id);
   const steel = store.steelTests.find((item) => item.testId === activeTest.id);
   const aggregate = store.aggregateTests.find((item) => item.testId === activeTest.id);
   const aggregateChemical = store.aggregateChemicalTests.find((item) => item.testId === activeTest.id);
@@ -82,6 +84,7 @@ export default function TestDetailPage() {
   const [shapeRowCount, setShapeRowCount] = useState(Math.max(aggregateShapeIndex?.rows.length ?? 4, 4));
   const [flakinessRowCount, setFlakinessRowCount] = useState(Math.max(aggregateFlakiness?.rows.length ?? 14, 14));
   const [elongationRowCount, setElongationRowCount] = useState(Math.max(aggregateElongation?.rows.length ?? 4, 4));
+  const [mortarRowCount, setMortarRowCount] = useState(Math.max(mortar?.strength?.length ?? mortar?.adhesion?.length ?? 3, 3));
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -161,6 +164,83 @@ export default function TestDetailPage() {
         fractureType: String(form.get(`fractureType-${index}`) ?? ""),
         notes: String(form.get(`specimenNotes-${index}`) ?? "")
       }))
+    });
+  }
+
+  function submitMortar(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const testKind = getMortarTestKind(activeTest.testType);
+    store.saveMortarTest(activeTest.id, {
+      testKind,
+      testStartDate: String(form.get("testStartDate") ?? ""),
+      testEndDate: String(form.get("testEndDate") ?? ""),
+      preparationDate: String(form.get("preparationDate") ?? ""),
+      curingConditions: String(form.get("curingConditions") ?? ""),
+      mortarType: String(form.get("mortarType") ?? ""),
+      flowValue: String(form.get("flowValue") ?? ""),
+      temperature: String(form.get("temperature") ?? ""),
+      humidity: String(form.get("humidity") ?? ""),
+      testingLocation: String(form.get("testingLocation") ?? ""),
+      equipmentUsed: String(form.get("equipmentUsed") ?? ""),
+      technicianName: String(form.get("technicianName") ?? ""),
+      checkedBy: String(form.get("checkedBy") ?? ""),
+      notes: String(form.get("notes") ?? ""),
+      granulometry: testKind === "granulometry" ? {
+        sampleMassG: Number(form.get("sampleMassG") || 0),
+        rows: mortarSieveSizes.map((sieveSizeMm, index) => ({
+          sieveSizeMm,
+          retainedMassG: Number(form.get(`mortarRetained-${index}`) || 0)
+        }))
+      } : undefined,
+      adhesion: testKind === "adhesion" ? Array.from({ length: mortarRowCount }, (_, index) => ({
+        specimenCode: String(form.get(`adhSpecimenCode-${index}`) ?? `${sample?.sampleCode ?? "Sample"}/${index + 1}`),
+        diameterMm: Number(form.get(`adhDiameter-${index}`) || 50),
+        ageDays: Number(form.get(`adhAge-${index}`) || 0),
+        loadingRateNmm2s: Number(form.get(`adhRate-${index}`) || 0),
+        failureForceN: Number(form.get(`adhForce-${index}`) || 0),
+        failureMode: String(form.get(`adhFailure-${index}`) ?? "")
+      })) : undefined,
+      strength: testKind === "compression" || testKind === "compression-flexural" ? Array.from({ length: mortarRowCount }, (_, index) => {
+        const isFlexuralDefault = testKind === "compression-flexural" && [2, 5, 8].includes(index);
+        return {
+          specimenCode: String(form.get(`strengthSpecimenCode-${index}`) ?? `${sample?.sampleCode ?? "Sample"}/${index + 1}`),
+          testType: String(form.get(`strengthType-${index}`) || (isFlexuralDefault ? "Flexural" : "Compressive")) as "Compressive" | "Flexural",
+          ageDays: Number(form.get(`strengthAge-${index}`) || 0),
+          preparationDate: String(form.get(`strengthPreparationDate-${index}`) ?? ""),
+          testDate: String(form.get(`strengthTestDate-${index}`) ?? ""),
+          lengthMm: Number(form.get(`strengthLength-${index}`) || 40),
+          widthMm: Number(form.get(`strengthWidth-${index}`) || 40),
+          heightMm: Number(form.get(`strengthHeight-${index}`) || 40),
+          spanMm: Number(form.get(`strengthSpan-${index}`) || 100),
+          surfaceAreaMm2: Number(form.get(`strengthArea-${index}`) || (isFlexuralDefault ? 426.7 : 1600)),
+          loadKn: Number(form.get(`strengthLoad-${index}`) || 0)
+        };
+      }) : undefined,
+      dryDensity: testKind === "dry-density" ? Array.from({ length: 3 }, (_, index) => ({
+        specimenCode: String(form.get(`drySpecimenCode-${index}`) ?? `${sample?.sampleCode ?? "Sample"}/${index + 1}`),
+        dryMassG: Number(form.get(`dryMass-${index}`) || 0),
+        lengthMm: Number(form.get(`dryLength-${index}`) || 40),
+        widthMm: Number(form.get(`dryWidth-${index}`) || 40),
+        heightMm: Number(form.get(`dryHeight-${index}`) || 160)
+      })) : undefined,
+      freshDensity: testKind === "fresh-density" ? Array.from({ length: 3 }, (_, index) => ({
+        specimenCode: `Prova ${index + 1}`,
+        emptyContainerMassG: Number(form.get(`freshEmpty-${index}`) || 0),
+        filledContainerMassG: Number(form.get(`freshFilled-${index}`) || 0),
+        containerVolumeL: Number(form.get(`freshVolume-${index}`) || 1.15)
+      })) : undefined,
+      chemical: testKind === "chemical" ? {
+        sampleMassG: Number(form.get("chemSampleMass") || 1),
+        silicaCrucibleBeforeG: Number(form.get("silicaBefore") || 0),
+        silicaCrucibleAfterG: Number(form.get("silicaAfter") || 0),
+        caoEdtaVolumeMl: Number(form.get("caoEdta") || 0),
+        caoEquivalent: Number(form.get("caoEquivalent") || 1.0001),
+        mgoCombinedEdtaMl: Number(form.get("mgoCombinedEdta") || 0),
+        magnesiumEquivalent: Number(form.get("magnesiumEquivalent") || 1.0001),
+        so3CrucibleBeforeG: Number(form.get("so3Before") || 0),
+        so3CrucibleAfterG: Number(form.get("so3After") || 0)
+      } : undefined
     });
   }
 
@@ -759,6 +839,8 @@ export default function TestDetailPage() {
   const isCementStrengthTest = isCementStrengthAccreditedTest(activeTest.testType);
   const isCementBlaineBsEnTest = isCementBlaineBsEnAccreditedTest(activeTest.testType);
   const isCementBlaineAstmTest = isCementBlaineAstmAccreditedTest(activeTest.testType);
+  const isMortarTest = isMortarAccreditedTest(activeTest.testType);
+  const mortarKind = getMortarTestKind(activeTest.testType);
   const isAggregateChemicalTest = isAggregateChemicalAccreditedTest(activeTest.testType);
   const isLosAngelesTest = isAggregateLosAngelesAccreditedTest(activeTest.testType);
   const isFreezeThawTest = isAggregateFreezeThawAccreditedTest(activeTest.testType);
@@ -1080,6 +1162,47 @@ export default function TestDetailPage() {
             )}
           </form>
           <TestActionsSidebar ready={Boolean(cementBlaine)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={cementBlaine ? `Specific surface ${cementBlaine.specificSurfaceCm2G} cm2/g.` : "Save worksheet data first to calculate Blaine specific surface."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+        </div>
+      </>
+    );
+  }
+
+  if (isMortarTest) {
+    return (
+      <>
+        <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / ${activeTest.testType}`} action={<StatusBadge status={activeTest.status} />} />
+        <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
+          <form onSubmit={submitMortar} className="surface-card">
+            <div className="border-b border-line bg-lab-porcelain px-5 py-4">
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Fletë pune / Worksheet</div>
+              <h2 className="mt-1 text-lg font-semibold text-ink">Llaç / Mortar</h2>
+              <p className="mt-1 text-sm text-muted">Fleta përshtatet sipas testit të zgjedhur dhe ruan të dhënat në format të strukturuar.</p>
+            </div>
+            <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
+              <Field label="Kodi i kampionit"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
+              <Field label="Kampioni"><input className="input bg-lab-porcelain" value={sample?.sampleType ?? "Llaç / Mortar"} readOnly /></Field>
+              <Field label="Data e pranimit"><input className="input bg-lab-porcelain" value={formatEuropeanDate(sample?.dateReceived)} readOnly /></Field>
+              <Field label="Data e fillimit"><input name="testStartDate" type="date" defaultValue={mortar?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
+              <Field label="Data e mbarimit"><input name="testEndDate" type="date" defaultValue={mortar?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
+              <Field label="Data e përgatitjes"><input name="preparationDate" type="date" defaultValue={mortar?.preparationDate ?? ""} className="input" /></Field>
+              <Field label="Tipi i llaçit"><input name="mortarType" defaultValue={mortar?.mortarType ?? ""} className="input" /></Field>
+              <Field label="Kushtet e maturimit"><input name="curingConditions" defaultValue={mortar?.curingConditions ?? ""} className="input" /></Field>
+              <Field label="Rrjedhshmëria"><input name="flowValue" defaultValue={mortar?.flowValue ?? ""} className="input" /></Field>
+              <Field label="Standardi"><input className="input bg-lab-porcelain" value={activeTest.standard} readOnly /></Field>
+              <Field label="Testuesi"><EmployeeSelect name="technicianName" employees={activeEmployees} required value={mortar?.technicianName ?? "Ing./Eng."} /></Field>
+              <Field label="Kontrolluar nga"><EmployeeSelect name="checkedBy" employees={activeEmployees} value={mortar?.checkedBy ?? "Ing./Eng. Besiana ALLIU"} /></Field>
+              <Field label="Vendi i testimit"><input name="testingLocation" defaultValue={mortar?.testingLocation ?? "01/A Laboratori Fiziko-Mekanik / Physical-Mechanical Laboratory"} className="input" /></Field>
+              <Field label="Temperatura"><input name="temperature" defaultValue={mortar?.temperature ?? ""} className="input" /></Field>
+              <Field label="Lagështia"><input name="humidity" defaultValue={mortar?.humidity ?? ""} className="input" /></Field>
+            </div>
+            <MortarWorksheetSection mortarKind={mortarKind} mortar={mortar} sample={sample} activeTest={activeTest} rowCount={mortarRowCount} setRowCount={setMortarRowCount} />
+            <div className="border-t border-line p-5">
+              <label className="text-sm font-medium text-ink">Shënime</label>
+              <textarea name="notes" rows={4} defaultValue={mortar?.notes} className="input mt-1" />
+              <div className="mt-5 flex justify-end"><button className="btn-secondary">Ruaj të dhënat e llaçit</button></div>
+            </div>
+          </form>
+          <TestActionsSidebar ready={Boolean(mortar)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={mortar ? mortar.summary : "Ruani fillimisht të dhënat e fletës së punës."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
     );
@@ -2799,6 +2922,131 @@ function EmployeeSelect({
         </option>
       ))}
     </select>
+  );
+}
+
+function MortarWorksheetSection({
+  mortarKind,
+  mortar,
+  sample,
+  activeTest,
+  rowCount,
+  setRowCount
+}: {
+  mortarKind: MortarTestKind;
+  mortar?: MortarTest;
+  sample?: Sample;
+  activeTest: LabTest;
+  rowCount: number;
+  setRowCount: Dispatch<SetStateAction<number>>;
+}) {
+  if (mortarKind === "granulometry") {
+    return (
+      <div className="p-5">
+        <Field label="Pesha e mostrës për testim [g]"><input name="sampleMassG" type="number" step="0.01" defaultValue={mortar?.granulometry?.sampleMassG ?? ""} className="input max-w-xs" /></Field>
+        <div className="mt-4 overflow-x-auto rounded-md border border-line">
+          <table className="w-full min-w-[760px] text-left text-sm">
+            <thead className="table-head"><tr><th className="px-3 py-2">Sita [mm]</th><th className="px-3 py-2">Pesha e mbetur [g]</th><th className="px-3 py-2">% mbetur</th><th className="px-3 py-2">% kumulative</th><th className="px-3 py-2">% kalon</th></tr></thead>
+            <tbody className="divide-y divide-line">
+              {mortarSieveSizes.map((sieve, index) => {
+                const row = mortar?.granulometry?.rows[index];
+                return <tr key={sieve}><td className="px-3 py-2 font-semibold text-ink">{sieve}</td><td className="px-3 py-2"><input name={`mortarRetained-${index}`} type="number" step="0.01" defaultValue={row?.retainedMassG ?? ""} className="input min-w-28" /></td><td className="px-3 py-2">{row?.retainedPercent ?? "Ruaj"}</td><td className="px-3 py-2">{row?.cumulativeRetainedPercent ?? "Ruaj"}</td><td className="px-3 py-2 font-semibold text-ink">{row?.passingPercent ?? "Ruaj"}</td></tr>;
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
+  if (mortarKind === "adhesion") {
+    return (
+      <div className="p-5">
+        <MortarRowsToolbar title="Rezistenca në ngjitje" rowCount={rowCount} setRowCount={setRowCount} />
+        <div className="overflow-x-auto rounded-md border border-line">
+          <table className="w-full min-w-[980px] text-left text-sm">
+            <thead className="table-head"><tr><th className="px-3 py-2">Prova</th><th className="px-3 py-2">Kodi</th><th className="px-3 py-2">Diametri [mm]</th><th className="px-3 py-2">Maturimi [ditë]</th><th className="px-3 py-2">Gradienti</th><th className="px-3 py-2">Forca [N]</th><th className="px-3 py-2">Rezistenca [MPa]</th><th className="px-3 py-2">Tipi i thyerjes</th></tr></thead>
+            <tbody className="divide-y divide-line">
+              {Array.from({ length: rowCount }, (_, index) => {
+                const row = mortar?.adhesion?.[index];
+                return <tr key={index}><td className="px-3 py-2 font-semibold">{index + 1}</td><td className="px-3 py-2"><input name={`adhSpecimenCode-${index}`} defaultValue={row?.specimenCode ?? `${sample?.sampleCode ?? "Sample"}/${index + 1}`} className="input min-w-32" /></td><td className="px-3 py-2"><input name={`adhDiameter-${index}`} type="number" step="0.1" defaultValue={row?.diameterMm ?? 50} className="input min-w-24" /></td><td className="px-3 py-2"><input name={`adhAge-${index}`} type="number" defaultValue={row?.ageDays ?? ""} className="input min-w-24" /></td><td className="px-3 py-2"><input name={`adhRate-${index}`} type="number" step="0.001" defaultValue={row?.loadingRateNmm2s ?? ""} className="input min-w-24" /></td><td className="px-3 py-2"><input name={`adhForce-${index}`} type="number" step="1" defaultValue={row?.failureForceN ?? ""} className="input min-w-28" /></td><td className="px-3 py-2 font-semibold text-ink">{row?.adhesionStrengthMpa ?? "Ruaj"}</td><td className="px-3 py-2"><input name={`adhFailure-${index}`} defaultValue={row?.failureMode ?? ""} className="input min-w-36" /></td></tr>;
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
+  if (mortarKind === "dry-density" || mortarKind === "fresh-density") {
+    return (
+      <div className="p-5">
+        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink">{mortarKind === "dry-density" ? "Densiteti në të thatë" : "Densiteti i llaçit të freskët"}</h3>
+        <div className="overflow-x-auto rounded-md border border-line">
+          <table className="w-full min-w-[820px] text-left text-sm">
+            <thead className="table-head"><tr>{mortarKind === "dry-density" ? ["Mostra", "Masa e thatë [g]", "Gjatësia [mm]", "Gjerësia [mm]", "Lartësia [mm]", "Densiteti [kg/m3]"].map((head) => <th key={head} className="px-3 py-2">{head}</th>) : ["Prova", "Masa enës bosh [g]", "Masa enës me llaç [g]", "Vëllimi [L]", "Densiteti [kg/m3]"].map((head) => <th key={head} className="px-3 py-2">{head}</th>)}</tr></thead>
+            <tbody className="divide-y divide-line">
+              {[0, 1, 2].map((index) => {
+                const dry = mortar?.dryDensity?.[index];
+                const fresh = mortar?.freshDensity?.[index];
+                return mortarKind === "dry-density"
+                  ? <tr key={index}><td className="px-3 py-2"><input name={`drySpecimenCode-${index}`} defaultValue={dry?.specimenCode ?? `${sample?.sampleCode ?? "Sample"}/${index + 1}`} className="input min-w-32" /></td><td className="px-3 py-2"><input name={`dryMass-${index}`} type="number" step="0.01" defaultValue={dry?.dryMassG ?? ""} className="input min-w-24" /></td><td className="px-3 py-2"><input name={`dryLength-${index}`} type="number" step="0.1" defaultValue={dry?.lengthMm ?? 40} className="input min-w-24" /></td><td className="px-3 py-2"><input name={`dryWidth-${index}`} type="number" step="0.1" defaultValue={dry?.widthMm ?? 40} className="input min-w-24" /></td><td className="px-3 py-2"><input name={`dryHeight-${index}`} type="number" step="0.1" defaultValue={dry?.heightMm ?? 160} className="input min-w-24" /></td><td className="px-3 py-2 font-semibold text-ink">{dry?.densityKgM3 ?? "Ruaj"}</td></tr>
+                  : <tr key={index}><td className="px-3 py-2 font-semibold">{index + 1}</td><td className="px-3 py-2"><input name={`freshEmpty-${index}`} type="number" step="0.01" defaultValue={fresh?.emptyContainerMassG ?? ""} className="input min-w-28" /></td><td className="px-3 py-2"><input name={`freshFilled-${index}`} type="number" step="0.01" defaultValue={fresh?.filledContainerMassG ?? ""} className="input min-w-28" /></td><td className="px-3 py-2"><input name={`freshVolume-${index}`} type="number" step="0.01" defaultValue={fresh?.containerVolumeL ?? 1.15} className="input min-w-24" /></td><td className="px-3 py-2 font-semibold text-ink">{fresh?.densityKgM3 ?? "Ruaj"}</td></tr>;
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
+  if (mortarKind === "chemical") {
+    return (
+      <div className="grid gap-4 p-5 md:grid-cols-3">
+        <Field label="Masa e kampionit [g]"><input name="chemSampleMass" type="number" step="0.001" defaultValue={mortar?.chemical?.sampleMassG ?? 1} className="input" /></Field>
+        <Field label="SiO2: kroxholi para [g]"><input name="silicaBefore" type="number" step="0.0001" defaultValue={mortar?.chemical?.silicaCrucibleBeforeG ?? ""} className="input" /></Field>
+        <Field label="SiO2: pas kalcinimit [g]"><input name="silicaAfter" type="number" step="0.0001" defaultValue={mortar?.chemical?.silicaCrucibleAfterG ?? ""} className="input" /></Field>
+        <Field label="CaO: EDTA [ml]"><input name="caoEdta" type="number" step="0.001" defaultValue={mortar?.chemical?.caoEdtaVolumeMl ?? ""} className="input" /></Field>
+        <Field label="Ekuivalenti CaO"><input name="caoEquivalent" type="number" step="0.0001" defaultValue={mortar?.chemical?.caoEquivalent ?? 1.0001} className="input" /></Field>
+        <Field label="MgO: EDTA total [ml]"><input name="mgoCombinedEdta" type="number" step="0.001" defaultValue={mortar?.chemical?.mgoCombinedEdtaMl ?? ""} className="input" /></Field>
+        <Field label="Ekuivalenti MgO"><input name="magnesiumEquivalent" type="number" step="0.0001" defaultValue={mortar?.chemical?.magnesiumEquivalent ?? 1.0001} className="input" /></Field>
+        <Field label="SO3: kroxholi para [g]"><input name="so3Before" type="number" step="0.0001" defaultValue={mortar?.chemical?.so3CrucibleBeforeG ?? ""} className="input" /></Field>
+        <Field label="SO3: pas kalcinimit [g]"><input name="so3After" type="number" step="0.0001" defaultValue={mortar?.chemical?.so3CrucibleAfterG ?? ""} className="input" /></Field>
+        <InfoInline label="SiO2" value={mortar?.chemical ? `${mortar.chemical.silicaPercent}%` : "Ruaj"} />
+        <InfoInline label="CaO" value={mortar?.chemical ? `${mortar.chemical.calciumOxidePercent}%` : "Ruaj"} />
+        <InfoInline label="MgO / SO3" value={mortar?.chemical ? `${mortar.chemical.magnesiumOxidePercent}% / ${mortar.chemical.sulfateSo3Percent}%` : "Ruaj"} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-5">
+      <MortarRowsToolbar title={mortarKind === "compression-flexural" ? "Rezistenca në shtypje dhe përkulje" : "Rezistenca në shtypje"} rowCount={rowCount} setRowCount={setRowCount} />
+      <div className="overflow-x-auto rounded-md border border-line">
+        <table className="w-full min-w-[1100px] text-left text-sm">
+          <thead className="table-head"><tr><th className="px-3 py-2">Nr.</th><th className="px-3 py-2">Kodi</th><th className="px-3 py-2">Testi</th><th className="px-3 py-2">Maturimi</th><th className="px-3 py-2">Përgatitja</th><th className="px-3 py-2">Testimi</th><th className="px-3 py-2">Gjatësia</th><th className="px-3 py-2">Gjerësia</th><th className="px-3 py-2">Lartësia</th><th className="px-3 py-2">Sipërfaqja</th><th className="px-3 py-2">Ngarkesa [kN]</th><th className="px-3 py-2">Rezistenca [MPa]</th></tr></thead>
+          <tbody className="divide-y divide-line">
+            {Array.from({ length: rowCount }, (_, index) => {
+              const row = mortar?.strength?.[index];
+              const isFlexuralDefault = mortarKind === "compression-flexural" && [2, 5, 8].includes(index);
+              return <tr key={index}><td className="px-3 py-2 font-semibold">{index + 1}</td><td className="px-3 py-2"><input name={`strengthSpecimenCode-${index}`} defaultValue={row?.specimenCode ?? `${sample?.sampleCode ?? "Sample"}/${index + 1}`} className="input min-w-32" /></td><td className="px-3 py-2"><select name={`strengthType-${index}`} defaultValue={row?.testType ?? (isFlexuralDefault ? "Flexural" : "Compressive")} className="input min-w-36"><option value="Compressive">Shtypje</option><option value="Flexural">Përkulje</option></select></td><td className="px-3 py-2"><input name={`strengthAge-${index}`} type="number" defaultValue={row?.ageDays ?? activeTest.scheduledAgeDays ?? ""} className="input min-w-20" /></td><td className="px-3 py-2"><input name={`strengthPreparationDate-${index}`} type="date" defaultValue={row?.preparationDate ?? ""} className="input min-w-36" /></td><td className="px-3 py-2"><input name={`strengthTestDate-${index}`} type="date" defaultValue={row?.testDate ?? activeTest.requiredTestDate} className="input min-w-36" /></td><td className="px-3 py-2"><input name={`strengthLength-${index}`} type="number" step="0.1" defaultValue={row?.lengthMm ?? 40} className="input min-w-24" /></td><td className="px-3 py-2"><input name={`strengthWidth-${index}`} type="number" step="0.1" defaultValue={row?.widthMm ?? 40} className="input min-w-24" /></td><td className="px-3 py-2"><input name={`strengthHeight-${index}`} type="number" step="0.1" defaultValue={row?.heightMm ?? 40} className="input min-w-24" /></td><td className="px-3 py-2"><input name={`strengthArea-${index}`} type="number" step="0.1" defaultValue={row?.surfaceAreaMm2 ?? (isFlexuralDefault ? 426.7 : 1600)} className="input min-w-24" /></td><td className="px-3 py-2"><input name={`strengthLoad-${index}`} type="number" step="0.01" defaultValue={row?.loadKn ?? ""} className="input min-w-24" /></td><td className="px-3 py-2 font-semibold text-ink">{row?.strengthMpa ?? "Ruaj"}</td></tr>;
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function MortarRowsToolbar({ title, rowCount, setRowCount }: { title: string; rowCount: number; setRowCount: Dispatch<SetStateAction<number>> }) {
+  return (
+    <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">{title}</h3>
+      <div className="flex gap-2">
+        <button type="button" onClick={() => setRowCount((count) => count + 1)} className="btn-secondary px-3">Shto rresht</button>
+        <button type="button" onClick={() => setRowCount((count) => Math.max(1, count - 1))} className="btn-secondary px-3">Hiq rresht</button>
+      </div>
+    </div>
   );
 }
 

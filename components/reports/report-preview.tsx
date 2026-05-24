@@ -1,6 +1,6 @@
 "use client";
 
-import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabTest, Project, Report, Sample, SteelTensileTest, ThermalInsulationTest } from "@/lib/types";
+import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabTest, MortarTest, Project, Report, Sample, SteelTensileTest, ThermalInsulationTest } from "@/lib/types";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
@@ -20,6 +20,7 @@ export function ReportPreview({
   cementConsistency,
   cementStrength,
   cementBlaine,
+  mortar,
   steel,
   aggregate,
   aggregateChemical,
@@ -49,6 +50,7 @@ export function ReportPreview({
   cementConsistency?: CementConsistencyTest;
   cementStrength?: CementStrengthTest;
   cementBlaine?: CementBlaineTest;
+  mortar?: MortarTest;
   steel?: SteelTensileTest;
   aggregate?: AggregateGradationTest;
   aggregateChemical?: AggregateChemicalTest;
@@ -78,6 +80,10 @@ export function ReportPreview({
 
   if (cementBlaine) {
     return <CementBlaineReportPreview report={report} test={test} sample={sample} client={client} project={project} cementBlaine={cementBlaine} />;
+  }
+
+  if (mortar) {
+    return <MortarReportPreview report={report} test={test} sample={sample} client={client} project={project} mortar={mortar} />;
   }
 
   if (concreteIndirectTensile) {
@@ -547,6 +553,91 @@ function CementBlaineReportPreview({
       </div>
       <div className="mt-8 soft-panel p-4 text-sm text-ink"><div className="font-semibold">Notes / Shënime</div><p className="mt-1">{cementBlaine.notes || "Results relate only to the submitted sample."}</p></div>
       <div className="mt-10 grid gap-6 sm:grid-cols-2"><Signature label="TESTUAR NGA / TESTED BY" value={cementBlaine.technicianName || report.draftedBy} /><Signature label="PËRGJEGJËSI I LABORATORIT / HEAD OF LABORATORY" value={cementBlaine.checkedBy || report.approvedBy} /></div>
+    </section>
+  );
+}
+
+function MortarReportPreview({
+  report,
+  test,
+  sample,
+  client,
+  project,
+  mortar
+}: {
+  report: Report;
+  test?: LabTest;
+  sample?: Sample;
+  client?: Client;
+  project?: Project;
+  mortar: MortarTest;
+}) {
+  const codeByKind: Record<MortarTest["testKind"], string> = {
+    granulometry: "SL-RA-LL-7.8/1.1",
+    adhesion: "SL-RA-EM-LL-7.8/1.3",
+    "compression-flexural": "SL-RA-EM-LL-7.8/1.2a",
+    compression: "SL-RA-EM-LL-7.8/1.2b",
+    "dry-density": "SL-RA-EM-LL-7.8/1.2",
+    "fresh-density": "SL-RA-EM-LL-7.8/1.2",
+    chemical: "SL-RA-EM-LL-7.8/1.4a"
+  };
+  const resultRows =
+    mortar.testKind === "granulometry"
+      ? mortar.granulometry?.rows.map((row) => [String(row.sieveSizeMm), `${row.retainedMassG}`, `${row.retainedPercent}`, `${row.cumulativeRetainedPercent}`, `${row.passingPercent}`]) ?? []
+      : mortar.testKind === "adhesion"
+        ? mortar.adhesion?.map((row) => [row.specimenCode, `${row.diameterMm}`, `${row.areaMm2}`, `${row.failureForceN}`, `${row.adhesionStrengthMpa}`, row.failureMode ?? ""]) ?? []
+        : mortar.testKind === "dry-density"
+          ? mortar.dryDensity?.map((row) => [row.specimenCode, `${row.dryMassG}`, `${row.volumeM3}`, `${row.densityKgM3}`]) ?? []
+          : mortar.testKind === "fresh-density"
+            ? mortar.freshDensity?.map((row) => [row.specimenCode, `${row.emptyContainerMassG}`, `${row.filledContainerMassG}`, `${row.containerVolumeL}`, `${row.densityKgM3}`]) ?? []
+            : mortar.testKind === "chemical"
+              ? [
+                  ["SiO2", "%", `${mortar.chemical?.silicaPercent ?? 0}`],
+                  ["CaO", "%", `${mortar.chemical?.calciumOxidePercent ?? 0}`],
+                  ["MgO", "%", `${mortar.chemical?.magnesiumOxidePercent ?? 0}`],
+                  ["SO3", "%", `${mortar.chemical?.sulfateSo3Percent ?? 0}`],
+                  ["Përmbajtja totale e gëlqeres / Total lime content", "%", `${mortar.chemical?.limeContentPercent ?? 0}`]
+                ]
+              : mortar.strength?.map((row) => [row.specimenCode, row.testType === "Flexural" ? "Përkulje / Flexural" : "Shtypje / Compressive", `${row.ageDays}`, row.testDate ?? "", `${row.surfaceAreaMm2}`, `${row.loadKn}`, `${row.strengthMpa}`]) ?? [];
+  const headers =
+    mortar.testKind === "granulometry"
+      ? ["Sita [mm]", "Mbetur [g]", "% mbetur", "% kumulative", "% kalon"]
+      : mortar.testKind === "adhesion"
+        ? ["Mostra", "Diametri [mm]", "Sipërfaqja [mm2]", "Forca [N]", "Rezistenca [MPa]", "Thyerja"]
+        : mortar.testKind === "dry-density"
+          ? ["Mostra", "Masa [g]", "Vëllimi [m3]", "Densiteti [kg/m3]"]
+          : mortar.testKind === "fresh-density"
+            ? ["Prova", "Ena bosh [g]", "Ena me llaç [g]", "Vëllimi [L]", "Densiteti [kg/m3]"]
+            : mortar.testKind === "chemical"
+              ? ["Parametri", "Njësia", "Rezultati"]
+              : ["Mostra", "Testi", "Ditë", "Data", "Sipërfaqja [mm2]", "Ngarkesa [kN]", "Rezistenca [MPa]"];
+
+  return (
+    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+      <ReportHeader report={report} code={codeByKind[mortar.testKind]} title="RAPORT TESTIMI / TEST REPORT" subtitle="Llaç / Mortar" />
+      <div className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
+        <Info label="Nr. REGJISTRI / REGISTER No." value={sample?.sampleCode} />
+        <Info label="KLIENTI / PURCHASER" value={client?.clientName} />
+        <Info label="ADRESA / ADDRESS" value={client?.address} />
+        <Info label="OBJEKTI / OBJECT" value={project?.projectName} />
+        <Info label="KAMPIONI / SAMPLE" value={sample?.sampleType || "Llaç / Mortar"} />
+        <Info label="DATA E PRANIMIT / DATE RECEIVED" value={sample?.dateReceived} />
+        <Info label="DATA E TESTIMIT / TESTING DATE" value={`${mortar.testStartDate || "-"} / ${mortar.testEndDate || "-"}`} />
+        <Info label="STANDARDI I TESTIMIT / TEST STANDARD" value={test?.standard} />
+        <Info label="LLOJI I LLAÇIT / MORTAR TYPE" value={mortar.mortarType} />
+        <Info label="KUSHTET E MATURIMIT / CURING CONDITIONS" value={mortar.curingConditions} />
+        <Info label="RRJEDHSHMËRIA / FLOW VALUE" value={mortar.flowValue} />
+        <Info label="VENDI I TESTIMIT / LAB LOCATION" value={mortar.testingLocation} />
+      </div>
+      <div className="mt-8 overflow-x-auto rounded-md border border-line">
+        <table className="w-full min-w-[760px] text-left text-sm">
+          <thead className="table-head"><tr>{headers.map((header) => <th key={header} className="px-3 py-2">{header}</th>)}</tr></thead>
+          <tbody className="divide-y divide-line">{resultRows.map((row, index) => <tr key={index}>{row.map((cell, cellIndex) => <td key={cellIndex} className={`px-3 py-2 ${cellIndex === row.length - 1 ? "font-semibold text-ink" : ""}`}>{cell}</td>)}</tr>)}</tbody>
+        </table>
+      </div>
+      <div className="mt-6 soft-panel p-4 text-sm text-ink"><div className="font-semibold">Përmbledhje / Summary</div><p className="mt-1">{mortar.summary}</p></div>
+      <div className="mt-6 soft-panel p-4 text-sm text-ink"><div className="font-semibold">Shënime / Notes</div><p className="mt-1">{mortar.notes || "Rezultatet i përkasin vetëm kampionit të testuar. / Results relate only to the tested sample."}</p></div>
+      <div className="mt-10 grid gap-6 sm:grid-cols-2"><Signature label="TESTUAR NGA / TESTED BY" value={mortar.technicianName || report.draftedBy} /><Signature label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={mortar.checkedBy || report.approvedBy || "Ing./Eng. Besiana ALLIU"} /></div>
     </section>
   );
 }

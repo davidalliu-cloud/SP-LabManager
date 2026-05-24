@@ -18,7 +18,10 @@ const sampleTypeDisplayNames: Record<string, string> = {
   "XPS": "XPS / Extruded Polystyrene",
   "EPS": "EPS / Expanded Polystyrene",
   "Çimento": "Çimento / Cement",
-  "Rebar / Shufër Çeliku": "Shufër Çeliku / Rebar"
+  "Rebar / Shufër Çeliku": "Shufër Çeliku / Rebar",
+  "Llac": "Llaç / Mortar",
+  "Llaç": "Llaç / Mortar",
+  "Mortar": "Llaç / Mortar"
 };
 
 const sampleTypeAliases: Record<string, string> = {
@@ -36,7 +39,11 @@ const sampleTypeAliases: Record<string, string> = {
   "XPS": "XPS / Extruded Polystyrene",
   "EPS": "EPS / Expanded Polystyrene",
   "Rebar / Shufër Çeliku": "Shufër Çeliku / Rebar",
-  "Shufër Çeliku / Rebar": "Shufër Çeliku / Rebar"
+  "Shufër Çeliku / Rebar": "Shufër Çeliku / Rebar",
+  "Llac": "Llaç / Mortar",
+  "Llaç": "Llaç / Mortar",
+  "Mortar": "Llaç / Mortar",
+  "Llaç / Mortar": "Llaç / Mortar"
 };
 
 function displaySampleType(sampleType: string) {
@@ -101,6 +108,13 @@ const accreditedTestRows: Array<[string, string, string, string, string?, string
   ["AT-CEM-STRENGTH", "Çimento", "Rezistenca në shtypje dhe përkulje e çimentos", "BS EN 196-1:2016", "Flexural and compressive strength"],
   ["AT-CEM-BLAINE-BSEN", "Çimento", "Sipërfaqja specifike Blaine sipas BS EN", "BS EN 196-6:2018", "Specific surface up to 5000 cm2/g"],
   ["AT-CEM-BLAINE-ASTM", "Çimento", "Sipërfaqja specifike Blaine sipas ASTM", "ASTM C204 - 18e1", "Specific surface up to 5000 cm2/g"],
+  ["AT-MORT-GRA", "Llaç", "Përcaktimi i madhësisë së grimcës së llaçeve", "BS EN 1015-1:1999", "< 4.75 mm"],
+  ["AT-MORT-ADH", "Llaç", "Përcaktimi i rezistencës në ngjitje të llaçeve të ngurtësuar mbi nënshtresa", "BS EN 1015-12:2016", "≤ 4 MPa"],
+  ["AT-MORT-COMP-FLEX", "Llaç", "Përcaktimi i rezistencës në shtypje dhe përkulje të llaçit të ngurtësuar", "BS EN 1015-11:2019", "2.5÷25 MPa"],
+  ["AT-MORT-COMP", "Llaç", "Përcaktimi i rezistencës në shtypje të llaçit të ngurtësuar", "BS EN 1015-11:2019", "2.5÷25 MPa"],
+  ["AT-MORT-DRY-DENS", "Llaç", "Përcaktimi i densitetit specifik në të thatë të llaçit të ngurtësuar", "BS EN 1015-10:1999", "< 3000 kg/m3"],
+  ["AT-MORT-FRESH-DENS", "Llaç", "Përcaktimi i densitetit specifik i llaçit të freskët", "BS EN 1015-6:1999", "< 3000 kg/m3"],
+  ["AT-MORT-CHEM", "Llaç", "Analizat kimike të llaçeve. Përcaktimi i oksideve në llaçe", "BS 4551:2005 + A2:2013", "SiO2, CaO, MgO, SO3, lime content"],
   ["AT-ELONG-SAND", "Sand", "Përcaktimi i indeksit të zgjatimit", "BS 812-105.2:1980", "0÷100 %"],
   ["AT-ELONG-GRAVEL-1", "Gravel 1", "Përcaktimi i indeksit të zgjatimit", "BS 812-105.2:1980", "0÷100 %"],
   ["AT-ELONG-GRAVEL-2", "Gravel 2", "Përcaktimi i indeksit të zgjatimit", "BS 812-105.2:1980", "0÷100 %"],
@@ -273,6 +287,25 @@ export function isCementBlaineBsEnAccreditedTest(testIdOrType?: string) {
 
 export function isCementBlaineAstmAccreditedTest(testIdOrType?: string) {
   return Boolean(testIdOrType === "AT-CEM-BLAINE-ASTM" || testIdOrType === "Sipërfaqja specifike Blaine sipas ASTM");
+}
+
+export function isMortarSampleType(sampleType: string) {
+  return normalizeSampleType(sampleType) === "Llaç / Mortar";
+}
+
+export function isMortarAccreditedTest(testIdOrType?: string) {
+  return Boolean(testIdOrType?.startsWith("AT-MORT-") || testIdOrType?.toLocaleLowerCase("sq-AL").includes("llaç"));
+}
+
+export function getMortarTestKind(testIdOrType?: string) {
+  if (testIdOrType === "AT-MORT-GRA" || testIdOrType?.includes("madhësisë së grimcës")) return "granulometry" as const;
+  if (testIdOrType === "AT-MORT-ADH" || testIdOrType?.includes("ngjitje")) return "adhesion" as const;
+  if (testIdOrType === "AT-MORT-COMP-FLEX" || testIdOrType?.includes("shtypje dhe përkulje")) return "compression-flexural" as const;
+  if (testIdOrType === "AT-MORT-COMP" || testIdOrType?.includes("rezistencës në shtypje të llaçit")) return "compression" as const;
+  if (testIdOrType === "AT-MORT-DRY-DENS" || testIdOrType?.includes("të thatë")) return "dry-density" as const;
+  if (testIdOrType === "AT-MORT-FRESH-DENS" || testIdOrType?.includes("llaçit të freskët")) return "fresh-density" as const;
+  if (testIdOrType === "AT-MORT-CHEM" || testIdOrType?.includes("Analizat kimike")) return "chemical" as const;
+  return "granulometry" as const;
 }
 
 export function isSteelTensileAccreditedTest(test?: AccreditedTest) {

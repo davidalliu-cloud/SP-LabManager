@@ -101,6 +101,15 @@ export function getTestResultSummary(store: LabState, test: LabTest): TestResult
     result: `Sipërfaqja specifike ${cementBlaine.method}: ${formatNumber(cementBlaine.specificSurfaceCm2G, 0)} cm2/g`
   };
 
+  const mortar = store.mortarTests.find((item) => item.testId === test.id);
+  if (mortar) return {
+    testStartDate: mortar.testStartDate,
+    testEndDate: mortar.testEndDate,
+    technicianName: mortar.technicianName,
+    checkedBy: mortar.checkedBy,
+    result: mortar.summary
+  };
+
   const steel = store.steelTests.find((item) => item.testId === test.id);
   if (steel) {
     const count = steel.specimens.length || 1;
