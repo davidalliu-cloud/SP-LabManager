@@ -1,4 +1,12 @@
-import type { Role } from "./types";
+import type { Role, TestStatus } from "./types";
+
+export function isSuperAdmin(role?: Role) {
+  return role === "Admin / Managing Director";
+}
+
+export function canReviewTests(role?: Role) {
+  return isSuperAdmin(role) || role === "Chief of Lab";
+}
 
 export function canViewClientIdentity(role?: Role) {
   return role === "Admin / Managing Director" || role === "Chief of Lab" || role === "Document Controller";
@@ -18,4 +26,18 @@ export function canManageEmployees(role?: Role) {
 
 export function canDeleteSamples(role?: Role) {
   return role === "Admin / Managing Director";
+}
+
+export function canEditSampleAfterRegistration(role?: Role) {
+  return isSuperAdmin(role) || role === "Chief of Lab";
+}
+
+export function canEditTestData(role?: Role, status?: TestStatus) {
+  if (isSuperAdmin(role)) return true;
+  return Boolean(status && ["Pending", "Scheduled", "In Progress", "Delayed", "Rejected"].includes(status));
+}
+
+export function canGenerateReportForTest(role?: Role, status?: TestStatus, hasReport = false) {
+  if (isSuperAdmin(role) || hasReport) return true;
+  return status === "Approved";
 }

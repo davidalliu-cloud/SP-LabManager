@@ -42,7 +42,7 @@ export default function DashboardPage() {
   const month = currentMonthContext();
   const samplesThisMonth = store.samples.filter((sample) => sample.dateReceived.startsWith(month.key)).length;
   const completedThisMonth = store.tests.filter((test) => test.completedAt?.startsWith(month.key)).length;
-  const pendingPreparation = store.tests.filter((test) => test.status === "Completed").length;
+  const pendingPreparation = store.tests.filter((test) => test.status === "Approved" && !store.reports.some((report) => report.testId === test.id)).length;
   const pendingApproval = store.reports.filter((report) => report.reportStatus === "Pending Approval").length;
   const approvedNotIssued = store.reports.filter((report) => report.reportStatus === "Approved").length;
   const delayed = store.tests.filter((test) => test.status === "Delayed").length;

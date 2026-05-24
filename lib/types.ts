@@ -15,6 +15,7 @@ export type TestStatus =
   | "Scheduled"
   | "In Progress"
   | "Completed"
+  | "Pending Technical Review"
   | "Delayed"
   | "Report Drafted"
   | "Pending Approval"

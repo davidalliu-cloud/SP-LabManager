@@ -55,6 +55,7 @@ import {
 } from "./calculations";
 import { useAuth } from "./auth";
 import { officialClientCodes2026 } from "./client-directory";
+import { canDeleteSamples, canEditTestData, canReviewTests, canGenerateReportForTest, canManageEmployees } from "./permissions";
 import { initialState } from "./seed-data";
 import { createSupabaseBrowserClient } from "./supabase/client";
 import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabState, LabTest, LabUser, Notification, Project, Report, Role, Sample, SteelTensileTest, ThermalInsulationTest } from "./types";
@@ -701,6 +702,8 @@ interface LabStoreValue extends LabState {
   saveAggregateSandEquivalentTest: (testId: string, input: AggregateSandEquivalentInput) => void;
   saveAggregateSoundnessTest: (testId: string, input: AggregateSoundnessInput) => void;
   markTestCompleted: (testId: string) => void;
+  approveTestResult: (testId: string) => void;
+  rejectTestResult: (testId: string, comments: string) => void;
   generateReport: (testId: string) => string;
   submitReport: (reportId: string) => void;
   approveReport: (reportId: string) => void;
@@ -845,6 +848,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
     state.users.find((user) => user.role === "Technician") ??
     state.users[0];
   const currentUserId = currentUser?.id ?? "u-admin";
+  const currentRole = currentUser?.role;
 
   useEffect(() => {
     try {
@@ -1045,12 +1049,27 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       return ["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"].includes(status);
     }
 
+    function canCurrentUserEditTest(previous: LabState, testId: string) {
+      const test = previous.tests.find((row) => row.id === testId);
+      return canEditTestData(currentRole, test?.status);
+    }
+
+    function sampleStatusAfterTestChange(previous: LabState, changedTest: LabTest, nextStatus: LabTest["status"]): Sample["status"] {
+      const sampleTests = previous.tests
+        .map((row) => (row.id === changedTest.id ? { ...row, status: nextStatus } : row))
+        .filter((row) => row.sampleId === changedTest.sampleId);
+      const finishedCount = sampleTests.filter((row) => isTestingFinished(row.status)).length;
+      if (!finishedCount) return "In Progress";
+      return finishedCount === sampleTests.length ? "Completed" : "Partially Tested";
+    }
+
     return {
       ...state,
       currentUserId,
       createEmployee(input) {
         const employeeId = crypto.randomUUID();
         setState((previous) => {
+          if (!canManageEmployees(currentRole)) return previous;
           const employee: LabUser = {
             id: employeeId,
             fullName: input.fullName,
@@ -1073,6 +1092,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       updateEmployee(id, input) {
         setState((previous) => {
+          if (!canManageEmployees(currentRole)) return previous;
           const draft: LabState = {
             ...previous,
             users: previous.users.map((user) =>
@@ -1097,6 +1117,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       removeEmployee(id) {
         setState((previous) => {
+          if (!canManageEmployees(currentRole)) return previous;
           const employee = previous.users.find((user) => user.id === id);
           const assignedTestCount = previous.tests.filter((test) => test.assignedTechnician === id).length;
           const draft: LabState = {
@@ -1119,6 +1140,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
         const clientId = crypto.randomUUID();
         const projectId = crypto.randomUUID();
         setState((previous) => {
+          if (!canReviewTests(currentRole)) return previous;
           const client: Client = {
             id: clientId,
             clientCode: input.clientCode || nextClientCode(previous.clients),
@@ -1149,6 +1171,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       updateClient(id, input) {
         setState((previous) => {
+          if (!canReviewTests(currentRole)) return previous;
           const client = previous.clients.find((row) => row.id === id);
           const projectId = input.projectId ?? previous.projects.find((project) => project.clientId === id)?.id;
           const draft: LabState = {
@@ -1195,6 +1218,9 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
         });
       },
       removeClient(id) {
+        if (!canReviewTests(currentRole)) {
+          return { ok: false, message: "Only the Chief of Lab or Superadmin can delete clients." };
+        }
         const client = state.clients.find((row) => row.id === id);
         const linkedSampleCount = state.samples.filter((sample) => sample.clientId === id).length;
         const linkedTestCount = state.tests.filter((test) => test.clientId === id).length;
@@ -1223,6 +1249,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       removeSample(id) {
         setState((previous) => {
+          if (!canDeleteSamples(currentRole)) return previous;
           const sample = previous.samples.find((row) => row.id === id);
           const linkedTestIds = new Set(previous.tests.filter((test) => test.sampleId === id).map((test) => test.id));
           const linkedReportIds = new Set(previous.reports.filter((report) => report.sampleId === id).map((report) => report.id));
@@ -1273,6 +1300,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       assignSampleClient(sampleId, clientId, projectId) {
         setState((previous) => {
+          if (!canReviewTests(currentRole)) return previous;
           const sample = previous.samples.find((row) => row.id === sampleId);
           const client = previous.clients.find((row) => row.id === clientId);
           const project = previous.projects.find((row) => row.id === projectId);
@@ -1296,6 +1324,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       acceptSample(sampleId) {
         setState((previous) => {
+          if (!canReviewTests(currentRole)) return previous;
           const sample = previous.samples.find((row) => row.id === sampleId);
           if (!sample || !sample.clientId || !sample.projectId) return previous;
           const existingTests = previous.tests.filter((test) => test.sampleId === sampleId);
@@ -1402,6 +1431,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       saveConcreteTest(testId, input) {
         setState((previous) => {
+          if (!canCurrentUserEditTest(previous, testId)) return previous;
           const specimens = input.specimens
             .filter((row) => row.maximumLoadKn || row.weightKg)
             .map((row) => {
@@ -1445,6 +1475,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       saveConcreteWaterPenetrationTest(testId, input) {
         setState((previous) => {
+          if (!canCurrentUserEditTest(previous, testId)) return previous;
           const specimens = input.specimens.filter((row) => row.specimenCode || row.maxPenetrationMm || row.lengthMm || row.widthMm || row.heightMm);
           const waterTest: ConcreteWaterPenetrationTest = {
             id: previous.concreteWaterPenetrationTests.find((row) => row.testId === testId)?.id ?? crypto.randomUUID(),
@@ -1469,6 +1500,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       saveConcreteFlexuralTest(testId, input) {
         setState((previous) => {
+          if (!canCurrentUserEditTest(previous, testId)) return previous;
           const specimens = input.specimens
             .filter((row) => row.specimenCode || row.maximumLoadKn || row.weightKg)
             .map((row) => {
@@ -1503,6 +1535,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       saveConcreteDensityTest(testId, input) {
         setState((previous) => {
+          if (!canCurrentUserEditTest(previous, testId)) return previous;
           const specimens = input.specimens
             .filter((row) => row.specimenCode || row.massKg || row.volumeM3 || row.airMassKg || row.waterMassKg || row.dryMassKg)
             .map((row) => {
@@ -1537,6 +1570,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       saveConcreteIndirectTensileTest(testId, input) {
         setState((previous) => {
+          if (!canCurrentUserEditTest(previous, testId)) return previous;
           const specimens = input.specimens
             .filter((row) => row.specimenCode || row.maximumLoadN || row.contactLengthMm || row.crossSectionMm)
             .map((row) => ({
@@ -1566,6 +1600,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       saveThermalInsulationTest(testId, input) {
         setState((previous) => {
+          if (!canCurrentUserEditTest(previous, testId)) return previous;
           const specimens = input.specimens
             .filter((row) => row.specimenCode || row.lengthMm || row.widthMm || row.thicknessMm || row.massKg || row.maximumForceN)
             .map((row) => {
@@ -1621,6 +1656,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       saveCementConsistencyTest(testId, input) {
         setState((previous) => {
+          if (!canCurrentUserEditTest(previous, testId)) return previous;
           const cementTest: CementConsistencyTest = {
             id: previous.cementConsistencyTests.find((row) => row.testId === testId)?.id ?? crypto.randomUUID(),
             testId,
@@ -1662,6 +1698,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       saveCementStrengthTest(testId, input) {
         setState((previous) => {
+          if (!canCurrentUserEditTest(previous, testId)) return previous;
           const specimens = input.specimens
             .filter((row) => row.loadKn || row.testDate)
             .map((row) => ({
@@ -1708,6 +1745,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       saveCementBlaineTest(testId, input) {
         setState((previous) => {
+          if (!canCurrentUserEditTest(previous, testId)) return previous;
           const displacedMassG = input.density ? input.density.initialReadingMl - input.density.finalReadingMl : 0;
           const density = input.density
             ? {
@@ -1772,6 +1810,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       saveSteelTest(testId, input) {
         setState((previous) => {
+          if (!canCurrentUserEditTest(previous, testId)) return previous;
           const specimens = input.specimens
             .filter((row) => row.actualDiameterMm || row.yieldLoadKn || row.ultimateLoadKn || row.weightG)
             .map((row) => {
@@ -1810,6 +1849,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       saveAggregateTest(testId, input) {
         setState((previous) => {
+          if (!canCurrentUserEditTest(previous, testId)) return previous;
           const calculatedRows = calculateAggregateGradation(
             input.rows.filter((row) => row.sieveSizeMm || row.retainedMassG),
             input.sampleMassG
@@ -1836,6 +1876,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       saveAggregateChemicalTest(testId, input) {
         setState((previous) => {
+          if (!canCurrentUserEditTest(previous, testId)) return previous;
           const chlorideRun = (run: AggregateChemicalInput["chlorideTest1"]) => ({
             ...run,
             chloridePercent: calculateChloridePercent(run.silverNitrateVolumeMl, run.waterAggregateRatio)
@@ -1918,6 +1959,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       saveAggregateLosAngelesTest(testId, input) {
         setState((previous) => {
+          if (!canCurrentUserEditTest(previous, testId)) return previous;
           const rows = input.rows.filter((row) => row.passingSieveMm || row.retainingSieveMm || row.fractionMassG || row.sphereCount);
           const results = calculateLosAngelesResults(rows, input.retainedOnOnePointSixMmG);
           const losAngelesTest: AggregateLosAngelesTest = {
@@ -1951,6 +1993,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       saveAggregateFreezeThawTest(testId, input) {
         setState((previous) => {
+          if (!canCurrentUserEditTest(previous, testId)) return previous;
           const specimens = input.specimens
             .filter((row) => row.specimenCode || row.initialDryMassG || row.finalDryMassG)
             .map((row) => ({
@@ -1989,6 +2032,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       saveAggregateAcvTest(testId, input) {
         setState((previous) => {
+          if (!canCurrentUserEditTest(previous, testId)) return previous;
           const acvRun = (run: AggregateAcvInput["test1"]) => ({
             ...run,
             acvPercent: calculateAcvPercent(run.totalDrySampleMassG, run.passingTwoPointThirtySixMmMassG)
@@ -2029,6 +2073,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       saveAggregateDensityAbsorptionTest(testId, input) {
         setState((previous) => {
+          if (!canCurrentUserEditTest(previous, testId)) return previous;
           const specimens = input.specimens
             .filter((row) => row.specimenCode || row.ovenDryMassG || row.ssdMassG || row.pycnometerWaterMassG || row.pycnometerWaterSampleMassG)
             .map((row) => ({
@@ -2069,6 +2114,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       saveAggregateFillerDensityTest(testId, input) {
         setState((previous) => {
+          if (!canCurrentUserEditTest(previous, testId)) return previous;
           const runs = input.runs
             .filter((row) => row.emptyPycnometerMassG || row.pycnometerSampleMassG || row.pycnometerSampleLiquidMassG || row.pycnometerVolumeMl)
             .map((row) => ({
@@ -2106,6 +2152,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       saveAggregateShapeIndexTest(testId, input) {
         setState((previous) => {
+          if (!canCurrentUserEditTest(previous, testId)) return previous;
           const rows = input.rows
             .filter((row) => row.fractionLabel || row.testPortionMassG || row.nonCubicalMassG)
             .map((row) => ({
@@ -2146,6 +2193,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       saveAggregateFlakinessIndexTest(testId, input) {
         setState((previous) => {
+          if (!canCurrentUserEditTest(previous, testId)) return previous;
           const rows = input.rows
             .filter((row) => row.fractionLabel || row.retainedMassesG.some(Boolean) || row.passingBarSieveMassesG.some(Boolean))
             .map((row) => ({
@@ -2200,6 +2248,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       saveAggregateElongationIndexTest(testId, input) {
         setState((previous) => {
+          if (!canCurrentUserEditTest(previous, testId)) return previous;
           const rows = input.rows
             .filter((row) => row.fractionLabel || row.retainedMassG || row.elongatedMassG)
             .map((row) => ({
@@ -2240,6 +2289,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       saveAggregateBulkDensityTest(testId, input) {
         setState((previous) => {
+          if (!canCurrentUserEditTest(previous, testId)) return previous;
           const runs = input.runs
             .filter((row) => row.containerCapacityM3 || row.emptyContainerMassKg || row.containerSampleMassKg)
             .map((row) => {
@@ -2282,6 +2332,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       saveAggregateSandEquivalentTest(testId, input) {
         setState((previous) => {
+          if (!canCurrentUserEditTest(previous, testId)) return previous;
           const moistureRuns = input.moistureRuns
             .filter((row) => row.emptyDishMassG || row.dishWetSampleMassG || row.dishDrySampleMassG)
             .map((row) => ({
@@ -2340,6 +2391,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       saveAggregateSoundnessTest(testId, input) {
         setState((previous) => {
+          if (!canCurrentUserEditTest(previous, testId)) return previous;
           const runs = input.runs
             .filter((row) => row.sampleNo || row.initialMassG || row.finalRetainedMassG)
             .map((row) => ({
@@ -2383,29 +2435,77 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       markTestCompleted(testId) {
         setState((previous) => {
+          if (!canCurrentUserEditTest(previous, testId)) return previous;
           const test = previous.tests.find((row) => row.id === testId);
           if (!test) return previous;
           const draft: LabState = {
             ...previous,
             tests: previous.tests.map((row) =>
               row.id === testId
-                ? { ...row, status: "Completed", completedAt: new Date().toISOString(), completedBy: currentUserId }
+                ? { ...row, status: "Pending Technical Review", completedAt: new Date().toISOString(), completedBy: currentUserId }
                 : row
             ),
             samples: previous.samples.map((sample) => {
               if (sample.id !== test.sampleId) return sample;
-              const sampleTests = previous.tests.map((row) =>
-                row.id === testId ? { ...row, status: "Completed" as const } : row
-              ).filter((row) => row.sampleId === test.sampleId);
-              const finishedCount = sampleTests.filter((row) => isTestingFinished(row.status)).length;
-              const status = finishedCount === sampleTests.length ? "Completed" : "Partially Tested";
-              return { ...sample, status };
+              return { ...sample, status: "In Progress" };
             }),
             notifications: [...previous.notifications],
             auditLog: [...previous.auditLog]
           };
-          addNotification(draft, "u-doc", "Report ready to prepare", `${test.testCode} has been completed.`, testId);
-          addAudit(draft, "test_completed", "test", testId, `${test.testCode} marked as completed.`);
+          addRoleNotification(
+            draft,
+            previous.users,
+            ["Admin / Managing Director", "Chief of Lab"],
+            "Test në pritje të verifikimit",
+            `${test.testCode} është përfunduar nga tekniku dhe pret miratimin teknik.`
+          );
+          addAudit(draft, "test_submitted_for_review", "test", testId, `${test.testCode} submitted for Chief of Lab technical review.`);
+          return draft;
+        });
+      },
+      approveTestResult(testId) {
+        setState((previous) => {
+          if (!canReviewTests(currentRole)) return previous;
+          const test = previous.tests.find((row) => row.id === testId);
+          if (!test || !["Pending Technical Review", "Completed"].includes(test.status)) return previous;
+          const draft: LabState = {
+            ...previous,
+            tests: previous.tests.map((row) => (row.id === testId ? { ...row, status: "Approved" } : row)),
+            samples: previous.samples.map((sample) =>
+              sample.id === test.sampleId ? { ...sample, status: sampleStatusAfterTestChange(previous, test, "Approved") } : sample
+            ),
+            notifications: [...previous.notifications],
+            auditLog: [...previous.auditLog]
+          };
+          addRoleNotification(
+            draft,
+            previous.users,
+            ["Admin / Managing Director", "Document Controller"],
+            "Test i miratuar për raport",
+            `${test.testCode} është miratuar teknikisht dhe mund të përgatitet raporti.`,
+            testId
+          );
+          addAudit(draft, "test_result_approved", "test", testId, `${test.testCode} approved after technical review.`);
+          return draft;
+        });
+      },
+      rejectTestResult(testId, comments) {
+        setState((previous) => {
+          if (!canReviewTests(currentRole)) return previous;
+          const test = previous.tests.find((row) => row.id === testId);
+          if (!test || !["Pending Technical Review", "Completed"].includes(test.status)) return previous;
+          const rejectionNote = comments || "Testi duhet të përsëritet pas verifikimit teknik.";
+          const draft: LabState = {
+            ...previous,
+            tests: previous.tests.map((row) =>
+              row.id === testId ? { ...row, status: "Rejected", notes: rejectionNote, completedAt: undefined, completedBy: undefined } : row
+            ),
+            samples: previous.samples.map((sample) => (sample.id === test.sampleId ? { ...sample, status: "In Progress" } : sample)),
+            notifications: [...previous.notifications],
+            auditLog: [...previous.auditLog]
+          };
+          addNotification(draft, test.assignedTechnician, "Testi u refuzua", rejectionNote, testId);
+          addAudit(draft, "test_result_rejected", "test", testId, `${test.testCode} rejected after technical review: ${rejectionNote}`);
           return draft;
         });
       },
@@ -2416,6 +2516,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           if (!test) return previous;
           const existing = previous.reports.find((row) => row.testId === testId);
           if (existing) return previous;
+          if (!canGenerateReportForTest(currentRole, test.status)) return previous;
           const concrete = previous.concreteTests.find((row) => row.testId === testId);
           const concreteWater = previous.concreteWaterPenetrationTests.find((row) => row.testId === testId);
           const concreteFlexural = previous.concreteFlexuralTests.find((row) => row.testId === testId);
@@ -2498,6 +2599,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       approveReport(reportId) {
         setState((previous) => {
+          if (!canReviewTests(currentRole)) return previous;
           const report = previous.reports.find((row) => row.id === reportId);
           if (!report) return previous;
           const draft: LabState = {
@@ -2518,6 +2620,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       rejectReport(reportId, comments) {
         setState((previous) => {
+          if (!canReviewTests(currentRole)) return previous;
           const report = previous.reports.find((row) => row.id === reportId);
           if (!report) return previous;
           const draft: LabState = {
@@ -2674,7 +2777,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
         });
       }
     };
-  }, [state]);
+  }, [state, currentUserId, currentRole]);
 
   return <LabStoreContext.Provider value={value}>{children}</LabStoreContext.Provider>;
 }

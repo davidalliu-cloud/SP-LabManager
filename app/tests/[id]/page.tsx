@@ -8,7 +8,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { isAggregateAcvAccreditedTest, isAggregateBulkDensityAccreditedTest, isAggregateChemicalAccreditedTest, isAggregateDensityAbsorptionAccreditedTest, isAggregateElongationIndexAccreditedTest, isAggregateFillerDensityAccreditedTest, isAggregateFlakinessIndexAccreditedTest, isAggregateFreezeThawAccreditedTest, isAggregateGranulometrySampleType, isAggregateLosAngelesAccreditedTest, isAggregateSandEquivalentAccreditedTest, isAggregateShapeIndexAccreditedTest, isAggregateSoundnessAccreditedTest, isCementBlaineAstmAccreditedTest, isCementBlaineBsEnAccreditedTest, isCementConsistencyAccreditedTest, isCementStrengthAccreditedTest, isConcreteDensityAccreditedTest, isConcreteFlexuralAccreditedTest, isConcreteIndirectTensileAccreditedTest, isConcreteWaterPenetrationAccreditedTest, isSteelSampleType, isThermalInsulationAccreditedTest } from "@/lib/accredited-tests";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { useLabStore } from "@/lib/lab-store";
-import { canViewClientIdentity } from "@/lib/permissions";
+import { canEditTestData, canGenerateReportForTest, canReviewTests, canViewClientIdentity } from "@/lib/permissions";
 import type { LabUser } from "@/lib/types";
 
 const aggregateSieveSizes = [125, 80, 63, 37.5, 31.5, 25, 20, 16, 12.5, 8, 4, 2, 1, 0.5, 0.25, 0.125, 0.063, 0];
@@ -23,6 +23,9 @@ export default function TestDetailPage() {
   const sample = store.samples.find((item) => item.id === activeTest.sampleId);
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
   const showClientIdentity = canViewClientIdentity(currentUser?.role);
+  const canEditWorksheet = canEditTestData(currentUser?.role, activeTest.status);
+  const canReviewTest = canReviewTests(currentUser?.role);
+  const isAwaitingTechnicalReview = ["Pending Technical Review", "Completed"].includes(activeTest.status);
   const client = showClientIdentity ? store.clients.find((item) => item.id === activeTest.clientId) : undefined;
   const project = showClientIdentity ? store.projects.find((item) => item.id === activeTest.projectId) : undefined;
   const concrete = store.concreteTests.find((item) => item.testId === activeTest.id);
@@ -49,6 +52,7 @@ export default function TestDetailPage() {
   const aggregateSandEquivalent = store.aggregateSandEquivalentTests.find((item) => item.testId === activeTest.id);
   const aggregateSoundness = store.aggregateSoundnessTests.find((item) => item.testId === activeTest.id);
   const report = store.reports.find((item) => item.testId === activeTest.id);
+  const canGenerateReport = canGenerateReportForTest(currentUser?.role, activeTest.status, Boolean(report));
   const activeEmployees = store.users.filter((user) => user.isActive !== false);
   const existingSpecimens =
     concrete?.specimens && concrete.specimens.length
@@ -116,7 +120,17 @@ export default function TestDetailPage() {
   }
 
   function complete() {
+    if (!canEditWorksheet) return;
     store.markTestCompleted(activeTest.id);
+  }
+
+  function approveTechnicalResult() {
+    store.approveTestResult(activeTest.id);
+  }
+
+  function rejectTechnicalResult() {
+    const comments = window.prompt("Shkruani arsyen e refuzimit ose udhëzimin për përsëritje të testit.");
+    store.rejectTestResult(activeTest.id, comments || "Testi duhet të përsëritet pas verifikimit teknik.");
   }
 
   function submitSteel(event: FormEvent<HTMLFormElement>) {
@@ -728,6 +742,7 @@ export default function TestDetailPage() {
   }
 
   function generateReport() {
+    if (!canGenerateReport) return;
     const reportId = report?.id ?? store.generateReport(activeTest.id);
     window.setTimeout(() => router.push(`/reports/${reportId}`), 0);
   }
@@ -838,7 +853,7 @@ export default function TestDetailPage() {
               <div className="flex justify-end"><button className="btn-secondary">Save thermal insulation data</button></div>
             </div>
           </form>
-          <TestActionsSidebar ready={Boolean(thermalInsulation)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={thermalInsulation ? `Thermal report data saved with density ${thermalInsulation.averages.apparentDensityKgM3} kg/m3.` : "Save worksheet data first to calculate the report values."} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+          <TestActionsSidebar ready={Boolean(thermalInsulation)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={thermalInsulation ? `Thermal report data saved with density ${thermalInsulation.averages.apparentDensityKgM3} kg/m3.` : "Save worksheet data first to calculate the report values."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
     );
@@ -905,7 +920,7 @@ export default function TestDetailPage() {
               <div className="lg:col-span-3 flex justify-end"><button className="btn-secondary">Save cement data</button></div>
             </div>
           </form>
-          <TestActionsSidebar ready={Boolean(cementConsistency)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={cementConsistency ? `Water demand ${cementConsistency.consistency.waterDemandPercent}%, initial setting ${cementConsistency.setting.initialSettingMinutes} min.` : "Save worksheet data first to calculate cement consistency results."} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+          <TestActionsSidebar ready={Boolean(cementConsistency)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={cementConsistency ? `Water demand ${cementConsistency.consistency.waterDemandPercent}%, initial setting ${cementConsistency.setting.initialSettingMinutes} min.` : "Save worksheet data first to calculate cement consistency results."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
     );
@@ -975,7 +990,7 @@ export default function TestDetailPage() {
               <div className="mt-5 flex justify-end"><button className="btn-secondary">Save cement strength data</button></div>
             </div>
           </form>
-          <TestActionsSidebar ready={Boolean(cementStrength)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={cementStrength ? `28-day compression average ${cementStrength.averages.compressive28DayMpa} MPa.` : "Save worksheet data first to calculate cement strength."} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+          <TestActionsSidebar ready={Boolean(cementStrength)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={cementStrength ? `28-day compression average ${cementStrength.averages.compressive28DayMpa} MPa.` : "Save worksheet data first to calculate cement strength."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
     );
@@ -1064,7 +1079,7 @@ export default function TestDetailPage() {
               </div>
             )}
           </form>
-          <TestActionsSidebar ready={Boolean(cementBlaine)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={cementBlaine ? `Specific surface ${cementBlaine.specificSurfaceCm2G} cm2/g.` : "Save worksheet data first to calculate Blaine specific surface."} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+          <TestActionsSidebar ready={Boolean(cementBlaine)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={cementBlaine ? `Specific surface ${cementBlaine.specificSurfaceCm2G} cm2/g.` : "Save worksheet data first to calculate Blaine specific surface."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
     );
@@ -1104,7 +1119,7 @@ export default function TestDetailPage() {
               <div className="mt-5 flex justify-end"><button className="btn-secondary">Save density data</button></div>
             </div>
           </form>
-          <TestActionsSidebar ready={Boolean(concreteDensity)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={concreteDensity ? `Average density is ${concreteDensity.averageDensityKgM3} kg/m3.` : "Save worksheet data first to calculate density."} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+          <TestActionsSidebar ready={Boolean(concreteDensity)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={concreteDensity ? `Average density is ${concreteDensity.averageDensityKgM3} kg/m3.` : "Save worksheet data first to calculate density."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
     );
@@ -1145,7 +1160,7 @@ export default function TestDetailPage() {
               <div className="mt-5 flex justify-end"><button className="btn-secondary">Save indirect tensile data</button></div>
             </div>
           </form>
-          <TestActionsSidebar ready={Boolean(concreteIndirectTensile)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={concreteIndirectTensile ? `Average indirect tensile strength is ${concreteIndirectTensile.averageTensileStrengthMpa} MPa.` : "Save worksheet data first to calculate indirect tensile strength."} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+          <TestActionsSidebar ready={Boolean(concreteIndirectTensile)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={concreteIndirectTensile ? `Average indirect tensile strength is ${concreteIndirectTensile.averageTensileStrengthMpa} MPa.` : "Save worksheet data first to calculate indirect tensile strength."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
     );
@@ -1191,7 +1206,7 @@ export default function TestDetailPage() {
               <div className="mt-5 flex justify-end"><button className="btn-secondary">Save water penetration data</button></div>
             </div>
           </form>
-          <TestActionsSidebar ready={Boolean(concreteWater)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={concreteWater ? `Average water penetration is ${concreteWater.averagePenetrationMm} mm.` : "Save worksheet data first to calculate average penetration."} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+          <TestActionsSidebar ready={Boolean(concreteWater)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={concreteWater ? `Average water penetration is ${concreteWater.averagePenetrationMm} mm.` : "Save worksheet data first to calculate average penetration."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
     );
@@ -1231,7 +1246,7 @@ export default function TestDetailPage() {
               <div className="mt-5 flex justify-end"><button className="btn-secondary">Save flexural data</button></div>
             </div>
           </form>
-          <TestActionsSidebar ready={Boolean(concreteFlexural)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={concreteFlexural ? `Average flexural strength is ${concreteFlexural.averageFlexuralStrengthMpa} MPa.` : "Save worksheet data first to calculate flexural strength."} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+          <TestActionsSidebar ready={Boolean(concreteFlexural)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={concreteFlexural ? `Average flexural strength is ${concreteFlexural.averageFlexuralStrengthMpa} MPa.` : "Save worksheet data first to calculate flexural strength."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
     );
@@ -1301,7 +1316,7 @@ export default function TestDetailPage() {
               <div className="flex justify-end"><button className="btn-secondary">Save soundness data</button></div>
             </div>
           </form>
-          <TestActionsSidebar ready={Boolean(aggregateSoundness)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={aggregateSoundness ? `Soundness loss calculated as ${aggregateSoundness.averageSoundnessLossPercent}%.` : "Save worksheet data first to calculate soundness."} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+          <TestActionsSidebar ready={Boolean(aggregateSoundness)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={aggregateSoundness ? `Soundness loss calculated as ${aggregateSoundness.averageSoundnessLossPercent}%.` : "Save worksheet data first to calculate soundness."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
     );
@@ -1360,7 +1375,7 @@ export default function TestDetailPage() {
               <div className="flex justify-end"><button className="btn-secondary">Save sand equivalent data</button></div>
             </div>
           </form>
-          <TestActionsSidebar ready={Boolean(aggregateSandEquivalent)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={aggregateSandEquivalent ? `Sand equivalent calculated as ${aggregateSandEquivalent.sandEquivalentValue}.` : "Save worksheet data first to calculate sand equivalent."} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+          <TestActionsSidebar ready={Boolean(aggregateSandEquivalent)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={aggregateSandEquivalent ? `Sand equivalent calculated as ${aggregateSandEquivalent.sandEquivalentValue}.` : "Save worksheet data first to calculate sand equivalent."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
     );
@@ -1398,7 +1413,7 @@ export default function TestDetailPage() {
               <div className="mt-5 flex justify-end"><button className="btn-secondary">Save bulk density data</button></div>
             </div>
           </form>
-          <TestActionsSidebar ready={Boolean(aggregateBulkDensity)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={aggregateBulkDensity ? `Bulk density calculated as ${aggregateBulkDensity.averageBulkDensityMgM3} Mg/m3.` : "Save worksheet data first to calculate bulk density."} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+          <TestActionsSidebar ready={Boolean(aggregateBulkDensity)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={aggregateBulkDensity ? `Bulk density calculated as ${aggregateBulkDensity.averageBulkDensityMgM3} Mg/m3.` : "Save worksheet data first to calculate bulk density."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
     );
@@ -1437,7 +1452,7 @@ export default function TestDetailPage() {
               <div className="mt-5 flex justify-end"><button className="btn-secondary">Save elongation index data</button></div>
             </div>
           </form>
-          <TestActionsSidebar ready={Boolean(aggregateElongation)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={aggregateElongation ? `Elongation index calculated as ${aggregateElongation.elongationIndexPercent}%.` : "Save worksheet data first to calculate elongation index."} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+          <TestActionsSidebar ready={Boolean(aggregateElongation)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={aggregateElongation ? `Elongation index calculated as ${aggregateElongation.elongationIndexPercent}%.` : "Save worksheet data first to calculate elongation index."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
     );
@@ -1556,8 +1571,9 @@ export default function TestDetailPage() {
             <div className="surface-card p-4">
               <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
-                <button onClick={complete} disabled={!aggregateFlakiness} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
-                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
+                <button onClick={complete} disabled={!aggregateFlakiness || !canEditWorksheet} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
+                <TechnicalReviewControls canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} />
+                <button onClick={generateReport} disabled={!canGenerateReport} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
                 <div className="soft-panel p-3 text-xs text-muted">
                   {aggregateFlakiness ? `Flakiness index calculated as ${aggregateFlakiness.totals.finalFlakinessIndexPercent}%.` : "Save worksheet data first to calculate flakiness index."}
                 </div>
@@ -1661,8 +1677,9 @@ export default function TestDetailPage() {
             <div className="surface-card p-4">
               <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
-                <button onClick={complete} disabled={!aggregateShapeIndex} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
-                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
+                <button onClick={complete} disabled={!aggregateShapeIndex || !canEditWorksheet} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
+                <TechnicalReviewControls canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} />
+                <button onClick={generateReport} disabled={!canGenerateReport} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
                 <div className="soft-panel p-3 text-xs text-muted">
                   {aggregateShapeIndex ? `Shape index calculated as ${aggregateShapeIndex.shapeIndexPercent}%.` : "Save worksheet data first to calculate shape index."}
                 </div>
@@ -1768,8 +1785,9 @@ export default function TestDetailPage() {
             <div className="surface-card p-4">
               <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
-                <button onClick={complete} disabled={!aggregateFillerDensity} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
-                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
+                <button onClick={complete} disabled={!aggregateFillerDensity || !canEditWorksheet} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
+                <TechnicalReviewControls canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} />
+                <button onClick={generateReport} disabled={!canGenerateReport} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
                 <div className="soft-panel p-3 text-xs text-muted">
                   {aggregateFillerDensity ? `Average filler density ${aggregateFillerDensity.averageParticleDensity} Mg/m3.` : "Save worksheet data first to calculate filler density."}
                 </div>
@@ -1884,8 +1902,9 @@ export default function TestDetailPage() {
             <div className="surface-card p-4">
               <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
-                <button onClick={complete} disabled={!aggregateDensity} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
-                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
+                <button onClick={complete} disabled={!aggregateDensity || !canEditWorksheet} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
+                <TechnicalReviewControls canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} />
+                <button onClick={generateReport} disabled={!canGenerateReport} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
                 <div className="soft-panel p-3 text-xs text-muted">
                   {aggregateDensity ? `Average absorption ${aggregateDensity.averageAbsorptionPercent}%, apparent density ${aggregateDensity.averageApparentDensity}.` : "Save the worksheet data first to calculate density and absorption."}
                 </div>
@@ -1981,8 +2000,9 @@ export default function TestDetailPage() {
             <div className="surface-card p-4">
               <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
-                <button onClick={complete} disabled={!aggregateAcv} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
-                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
+                <button onClick={complete} disabled={!aggregateAcv || !canEditWorksheet} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
+                <TechnicalReviewControls canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} />
+                <button onClick={generateReport} disabled={!canGenerateReport} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
                 <div className="soft-panel p-3 text-xs text-muted">
                   {aggregateAcv ? `Mean ACV calculated as ${aggregateAcv.averageAcvPercent}%.` : "Save the worksheet data first to calculate ACV."}
                 </div>
@@ -2101,8 +2121,9 @@ export default function TestDetailPage() {
             <div className="surface-card p-4">
               <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
-                <button onClick={complete} disabled={!aggregateFreezeThaw} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
-                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
+                <button onClick={complete} disabled={!aggregateFreezeThaw || !canEditWorksheet} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
+                <TechnicalReviewControls canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} />
+                <button onClick={generateReport} disabled={!canGenerateReport} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
                 <div className="soft-panel p-3 text-xs text-muted">
                   {aggregateFreezeThaw ? `Average freeze-thaw mass loss calculated as ${aggregateFreezeThaw.averageMassLossPercent}%.` : "Save the worksheet data first to calculate freeze-thaw mass loss."}
                 </div>
@@ -2213,8 +2234,9 @@ export default function TestDetailPage() {
             <div className="surface-card p-4">
               <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
-                <button onClick={complete} disabled={!aggregateLosAngeles} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
-                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
+                <button onClick={complete} disabled={!aggregateLosAngeles || !canEditWorksheet} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
+                <TechnicalReviewControls canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} />
+                <button onClick={generateReport} disabled={!canGenerateReport} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
                 <div className="soft-panel p-3 text-xs text-muted">
                   {aggregateLosAngeles ? `Fragmentation loss calculated as ${aggregateLosAngeles.fragmentationLossPercent}%.` : "Save the worksheet data first to calculate Los Angeles fragmentation loss."}
                 </div>
@@ -2308,8 +2330,9 @@ export default function TestDetailPage() {
             <div className="surface-card p-4">
               <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
-                <button onClick={complete} disabled={!aggregateChemical} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
-                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
+                <button onClick={complete} disabled={!aggregateChemical || !canEditWorksheet} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
+                <TechnicalReviewControls canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} />
+                <button onClick={generateReport} disabled={!canGenerateReport} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
                 <div className="soft-panel p-3 text-xs text-muted">
                   {aggregateChemical ? "Calculated chloride and sulfate results are ready for the chemical report." : "Save the worksheet data first to calculate report results."}
                 </div>
@@ -2414,8 +2437,9 @@ export default function TestDetailPage() {
             <div className="surface-card p-4">
               <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
-                <button onClick={complete} disabled={!aggregate} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
-                <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
+                <button onClick={complete} disabled={!aggregate || !canEditWorksheet} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
+                <TechnicalReviewControls canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} />
+                <button onClick={generateReport} disabled={!canGenerateReport} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
                 <div className="soft-panel p-3 text-xs text-muted">{aggregate?.rows.length ?? 0} sieve row{(aggregate?.rows.length ?? 0) === 1 ? "" : "s"} saved. The report uses BS EN cumulative passing calculations.</div>
                 {report ? <Link className="btn-secondary block text-center" href={`/reports/${report.id}`}>Hap raportin</Link> : null}
               </div>
@@ -2561,14 +2585,15 @@ export default function TestDetailPage() {
               <div className="mt-4 space-y-3">
                 <button
                   onClick={complete}
-                  disabled={!steel}
+                  disabled={!steel || !canEditWorksheet}
                   className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
                   Shëno testin si të përfunduar
                 </button>
+                <TechnicalReviewControls canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} />
                 <button
                   onClick={generateReport}
-                  disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"].includes(activeTest.status)}
+                  disabled={!canGenerateReport}
                   className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
                   Gjenero {steelReportCount} raport{steelReportCount === 1 ? "" : "e"}
@@ -2707,14 +2732,15 @@ export default function TestDetailPage() {
             <div className="mt-4 space-y-3">
               <button
                 onClick={complete}
-                disabled={!concrete}
+                disabled={!concrete || !canEditWorksheet}
                 className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300"
               >
                 Shëno testin si të përfunduar
               </button>
+              <TechnicalReviewControls canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} />
               <button
                 onClick={generateReport}
-                disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"].includes(activeTest.status)}
+                disabled={!canGenerateReport}
                 className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300"
               >
                 Gjenero {expectedReportCount} raport{expectedReportCount === 1 ? "" : "e"}
@@ -2812,6 +2838,12 @@ function TestActionsSidebar({
   complete,
   generateReport,
   message,
+  canEdit,
+  canGenerateReport,
+  canReview,
+  reviewPending,
+  approveTest,
+  rejectTest,
   technicianName
 }: {
   ready: boolean;
@@ -2820,6 +2852,12 @@ function TestActionsSidebar({
   complete: () => void;
   generateReport: () => void;
   message: string;
+  canEdit: boolean;
+  canGenerateReport: boolean;
+  canReview: boolean;
+  reviewPending: boolean;
+  approveTest: () => void;
+  rejectTest: () => void;
   technicianName?: string;
 }) {
   return (
@@ -2827,8 +2865,18 @@ function TestActionsSidebar({
       <div className="surface-card p-4">
         <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
         <div className="mt-4 space-y-3">
-          <button onClick={complete} disabled={!ready} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Shëno testin si të përfunduar</button>
-          <button onClick={generateReport} disabled={!["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"].includes(activeTest.status)} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
+          <button onClick={complete} disabled={!ready || !canEdit} className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300">Dërgo testin për verifikim</button>
+          {reviewPending && canReview ? (
+            <div className="rounded-md border border-purple-200 bg-purple-50 p-3 text-sm">
+              <p className="font-semibold text-ink">Verifikimi teknik nga Kryelaboranti</p>
+              <div className="mt-3 grid gap-2">
+                <button onClick={approveTest} className="btn-success w-full">Mirato rezultatet</button>
+                <button onClick={rejectTest} className="w-full rounded-md border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-lab-red transition hover:bg-red-50">Refuzo / përsërit testin</button>
+              </div>
+            </div>
+          ) : null}
+          <button onClick={generateReport} disabled={!canGenerateReport} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
+          {!canEdit ? <div className="soft-panel p-3 text-xs text-muted">Të dhënat e testit janë të kyçura. Ndryshime lejohen vetëm për Superadmin, ose pas refuzimit nga Kryelaboranti për përsëritje.</div> : null}
           <div className="soft-panel p-3 text-xs text-muted">{message}</div>
           {reportId ? <Link className="btn-secondary block text-center" href={`/reports/${reportId}`}>Hap raportin</Link> : null}
         </div>
@@ -2841,6 +2889,30 @@ function TestActionsSidebar({
         <Info label="Assigned technician" value={technicianName} />
       </div>
     </aside>
+  );
+}
+
+function TechnicalReviewControls({
+  canReview,
+  reviewPending,
+  approveTest,
+  rejectTest
+}: {
+  canReview: boolean;
+  reviewPending: boolean;
+  approveTest: () => void;
+  rejectTest: () => void;
+}) {
+  if (!canReview || !reviewPending) return null;
+
+  return (
+    <div className="rounded-md border border-purple-200 bg-purple-50 p-3 text-sm">
+      <p className="font-semibold text-ink">Verifikimi teknik nga Kryelaboranti</p>
+      <div className="mt-3 grid gap-2">
+        <button onClick={approveTest} className="btn-success w-full">Mirato rezultatet</button>
+        <button onClick={rejectTest} className="w-full rounded-md border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-lab-red transition hover:bg-red-50">Refuzo / përsërit testin</button>
+      </div>
+    </div>
   );
 }
 

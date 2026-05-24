@@ -5,6 +5,7 @@ import { useState } from "react";
 import { ReportPreview } from "@/components/reports/report-preview";
 import { PageHeader } from "@/components/ui/page-header";
 import { useLabStore } from "@/lib/lab-store";
+import { canReviewTests } from "@/lib/permissions";
 
 export default function ReportDetailPage() {
   const params = useParams<{ id: string }>();
@@ -41,6 +42,8 @@ export default function ReportDetailPage() {
   const aggregateBulkDensity = store.aggregateBulkDensityTests.find((item) => item.testId === activeReport.testId);
   const aggregateSandEquivalent = store.aggregateSandEquivalentTests.find((item) => item.testId === activeReport.testId);
   const aggregateSoundness = store.aggregateSoundnessTests.find((item) => item.testId === activeReport.testId);
+  const currentUser = store.users.find((user) => user.id === store.currentUserId);
+  const canReviewReport = canReviewTests(currentUser?.role);
   const recipientEmail = issueEmail || client?.email || "";
 
   function sendReportToClient() {
@@ -77,7 +80,7 @@ export default function ReportDetailPage() {
               </button>
               <button
                 onClick={() => store.approveReport(activeReport.id)}
-                disabled={activeReport.reportStatus !== "Pending Approval"}
+                disabled={activeReport.reportStatus !== "Pending Approval" || !canReviewReport}
                 className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300"
               >
                 Mirato raportin
@@ -91,7 +94,7 @@ export default function ReportDetailPage() {
               />
               <button
                 onClick={() => store.rejectReport(activeReport.id, comments || "Ju lutemi korrigjoni të dhënat e raportit dhe dërgojeni përsëri për miratim.")}
-                disabled={activeReport.reportStatus !== "Pending Approval"}
+                disabled={activeReport.reportStatus !== "Pending Approval" || !canReviewReport}
                 className="w-full rounded-md border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-lab-red transition hover:bg-red-50 disabled:cursor-not-allowed disabled:border-line disabled:text-slate-400"
               >
                 Refuzo raportin

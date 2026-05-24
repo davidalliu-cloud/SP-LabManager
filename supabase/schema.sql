@@ -337,6 +337,6 @@ create policy "own notification update" on public.notifications for update to au
 create policy "audit visible to managers" on public.audit_log for select to authenticated using (public.current_user_role() in ('Admin / Managing Director', 'Chief of Lab', 'Quality Manager'));
 create policy "staff insert audit" on public.audit_log for insert to authenticated with check (true);
 
-create policy "public shared state read" on public.app_state for select to anon, authenticated using (id = 'shared-lab-state');
-create policy "public shared state insert" on public.app_state for insert to anon, authenticated with check (id = 'shared-lab-state');
-create policy "public shared state update" on public.app_state for update to anon, authenticated using (id = 'shared-lab-state') with check (id = 'shared-lab-state');
+create policy "authenticated shared state read" on public.app_state for select to authenticated using (id = 'shared-lab-state');
+create policy "authenticated shared state insert" on public.app_state for insert to authenticated with check (id = 'shared-lab-state');
+create policy "authenticated shared state update" on public.app_state for update to authenticated using (id = 'shared-lab-state') with check (id = 'shared-lab-state');

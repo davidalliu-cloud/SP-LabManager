@@ -11,6 +11,7 @@ const statusTone: Record<TestStatus | SampleStatus | ReportStatus, Tone> = {
   "In Progress": "amber",
   "Partially Tested": "amber",
   Completed: "green",
+  "Pending Technical Review": "purple",
   Delayed: "red",
   "Report Drafted": "purple",
   "Pending Approval": "purple",
