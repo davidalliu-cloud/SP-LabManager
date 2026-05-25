@@ -245,6 +245,57 @@ export interface ConcreteIndirectTensileTest {
   createdAt: string;
 }
 
+export interface ConcreteCoreTest {
+  id: string;
+  testId: string;
+  samplingDate?: string;
+  castingDate?: string;
+  testStartDate?: string;
+  testEndDate?: string;
+  element?: string;
+  maximumAggregateSize?: string;
+  visualInspection?: string;
+  reinforcement?: string;
+  preparationMethod?: string;
+  resistanceClass?: string;
+  samplingOperator?: string;
+  equipmentUsed?: string;
+  temperature?: string;
+  humidity?: string;
+  testingLocation?: string;
+  technicianName: string;
+  checkedBy?: string;
+  notes?: string;
+  specimens: ConcreteCoreSpecimen[];
+  averageDiameterCm: number;
+  averageHeightCm: number;
+  averageWeightKg: number;
+  averageDensityKgM3: number;
+  averageContactAreaCm2: number;
+  averageLoadKn: number;
+  averageCylindricalStrengthMpa: number;
+  averageCubicStrengthMpa: number;
+  reportRatioType: "1:1" | "1:2" | "Mixed";
+  createdAt: string;
+}
+
+export interface ConcreteCoreSpecimen {
+  specimenCode: string;
+  ageDays: number;
+  diameterMm: number;
+  heightMm: number;
+  weightKg: number;
+  loadKn: number;
+  diameterCm: number;
+  heightCm: number;
+  heightDiameterRatio: number;
+  contactAreaCm2: number;
+  densityKgM3: number;
+  cylindricalStrengthMpa: number;
+  conversionFactor: number;
+  cubicStrengthMpa: number;
+}
+
 export interface IndirectTensileSpecimen {
   specimenCode: string;
   contactLengthMm: number;
@@ -1098,6 +1149,7 @@ export interface LabState {
   concreteFlexuralTests: ConcreteFlexuralTest[];
   concreteDensityTests: ConcreteDensityTest[];
   concreteIndirectTensileTests: ConcreteIndirectTensileTest[];
+  concreteCoreTests: ConcreteCoreTest[];
   thermalInsulationTests: ThermalInsulationTest[];
   cementConsistencyTests: CementConsistencyTest[];
   cementStrengthTests: CementStrengthTest[];

@@ -14,6 +14,7 @@ const sampleTypeDisplayNames: Record<string, string> = {
   "Filler": "Filer / Filler",
   "Soil": "Dhe / Soil",
   "Kubike Betoni": "Kubike Betoni / Concrete Cubes",
+  "Karrote Betoni": "Karrota Betoni / Concrete Cores",
   "Lesh Guri": "Lesh Guri / Rock Wool",
   "XPS": "XPS / Extruded Polystyrene",
   "EPS": "EPS / Expanded Polystyrene",
@@ -33,6 +34,11 @@ const sampleTypeAliases: Record<string, string> = {
   "Kubike Betoni": "Kubike Betoni / Concrete Cubes",
   "Concrete cube": "Kubike Betoni / Concrete Cubes",
   "Concrete Cubes": "Kubike Betoni / Concrete Cubes",
+  "Karrote Betoni": "Karrota Betoni / Concrete Cores",
+  "Karrota Betoni": "Karrota Betoni / Concrete Cores",
+  "Concrete Core": "Karrota Betoni / Concrete Cores",
+  "Concrete Cores": "Karrota Betoni / Concrete Cores",
+  "Karrota Betoni / Concrete Cores": "Karrota Betoni / Concrete Cores",
   "Cement": "Çimento / Cement",
   "Çimento": "Çimento / Cement",
   "Lesh Guri": "Lesh Guri / Rock Wool",
@@ -101,6 +107,7 @@ const accreditedTestRows: Array<[string, string, string, string, string?, string
   ["AT-CONC-WATER-KUBIKE", "Kubike Betoni", "Përcaktimi i nivelit të depërtimit të ujit në betonin e ngurtësuar", "BS EN 12390-8:2019", "0.5÷60 mm", "BS EN 12390-1:2021; BS EN 12390-2:2019"],
   ["AT-CONC-DENS-KUBIKE", "Kubike Betoni", "Përcaktimi i densitetit (pesha volumore), në betonin e ngurtësuar", "BS EN 12390-7:2019", "800÷2600 kg/m3", "BS EN 12390-1:2021; BS EN 12390-2:2019"],
   ["AT-CONC-SPLIT-KUBIKE", "Kubike Betoni", "Përcaktimi i rezistencës në tërheqje indirekte", "BS EN 12390-6:2009", "< 15 MPa", "BS EN 12390-1:2021; BS EN 12390-2:2019"],
+  ["AT-CONC-CORE-COMP", "Karrote Betoni", "Mostrat e marra nga struktura - Marrja, ekzaminimi dhe testimi në shtypje", "BS EN 12504-1:2019", "< 2000 kN", "BS EN 12504-1:2019"],
   ["AT-THERM-LESH-GURI", "Lesh Guri", "Përcaktimi i karakteristikave fiziko-mekanike të produkteve termoizoluese", "BS EN ISO 29465:2022; BS EN ISO 29466:2022; BS EN 826:2013; BS EN 1602:2013; BS EN ISO 29767:2019", "Dimensions, density, absorption, compression"],
   ["AT-THERM-XPS", "XPS", "Përcaktimi i karakteristikave fiziko-mekanike të produkteve termoizoluese", "BS EN ISO 29465:2022; BS EN ISO 29466:2022; BS EN 826:2013; BS EN 1602:2013; BS EN ISO 29767:2019", "Dimensions, density, absorption, compression"],
   ["AT-THERM-EPS", "EPS", "Përcaktimi i karakteristikave fiziko-mekanike të produkteve termoizoluese", "BS EN ISO 29465:2022; BS EN ISO 29466:2022; BS EN 826:2013; BS EN 1602:2013; BS EN ISO 29767:2019", "Dimensions, density, absorption, compression"],
@@ -267,6 +274,14 @@ export function isConcreteDensityAccreditedTest(testIdOrType?: string) {
 
 export function isConcreteIndirectTensileAccreditedTest(testIdOrType?: string) {
   return Boolean(testIdOrType === "AT-CONC-SPLIT-KUBIKE" || testIdOrType === "AT-024" || testIdOrType === "Përcaktimi i rezistencës në tërheqje indirekte");
+}
+
+export function isConcreteCoreAccreditedTest(testIdOrType?: string) {
+  return Boolean(
+    testIdOrType === "AT-CONC-CORE-COMP" ||
+    testIdOrType === "AT-085" ||
+    testIdOrType === "Mostrat e marra nga struktura - Marrja, ekzaminimi dhe testimi në shtypje"
+  );
 }
 
 export function isThermalInsulationAccreditedTest(testIdOrType?: string) {

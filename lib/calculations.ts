@@ -7,6 +7,30 @@ export function calculateCompressiveStrength(maximumLoadKn: number, areaMm2: num
   return round((maximumLoadKn * 1000) / areaMm2, 2);
 }
 
+export function calculateConcreteCoreResults(input: { diameterMm: number; heightMm: number; weightKg: number; loadKn: number }) {
+  const diameterCm = round(input.diameterMm / 10, 2);
+  const heightCm = round(input.heightMm / 10, 2);
+  const contactAreaCm2 = diameterCm ? round((Math.PI * diameterCm ** 2) / 4, 2) : 0;
+  const heightDiameterRatio = diameterCm ? round(heightCm / diameterCm, 2) : 0;
+  const volumeM3 = input.diameterMm && input.heightMm ? (Math.PI * input.diameterMm ** 2 / 4) * input.heightMm / 1_000_000_000 : 0;
+  const densityKgM3 = volumeM3 ? round(input.weightKg / volumeM3, 0) : 0;
+  const cylindricalStrengthMpa = contactAreaCm2 ? round(input.loadKn / contactAreaCm2 * 10, 2) : 0;
+  const conversionFactor = cylindricalStrengthMpa < 25 ? 0.8 : 0.83;
+  const ratioType: "1:1" | "1:2" = Math.abs(heightDiameterRatio - 2) < Math.abs(heightDiameterRatio - 1) ? "1:2" : "1:1";
+  const cubicStrengthMpa = ratioType === "1:2" ? round(cylindricalStrengthMpa / conversionFactor, 2) : round(cylindricalStrengthMpa * conversionFactor, 2);
+  return {
+    diameterCm,
+    heightCm,
+    heightDiameterRatio,
+    contactAreaCm2,
+    densityKgM3,
+    cylindricalStrengthMpa,
+    conversionFactor,
+    cubicStrengthMpa,
+    ratioType
+  };
+}
+
 export function calculateAgeDays(castingDate: string, testDate: string) {
   const cast = new Date(castingDate);
   const test = new Date(testDate);

@@ -21,6 +21,7 @@ import {
   calculateChloridePercent,
   calculateCircularArea,
   calculateCompressiveStrength,
+  calculateConcreteCoreResults,
   calculateBulkDensity,
   calculateConcreteDensityKgM3,
   calculateDensityAbsorption,
@@ -62,7 +63,7 @@ import { officialClientCodes2026 } from "./client-directory";
 import { canDeleteSamples, canEditTestData, canReviewTests, canGenerateReportForTest, canManageEmployees } from "./permissions";
 import { initialState } from "./seed-data";
 import { createSupabaseBrowserClient } from "./supabase/client";
-import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabState, LabTest, LabUser, MortarTest, MortarTestKind, Notification, Project, Report, Role, Sample, SteelTensileTest, ThermalInsulationTest } from "./types";
+import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabState, LabTest, LabUser, MortarTest, MortarTestKind, Notification, Project, Report, Role, Sample, SteelTensileTest, ThermalInsulationTest } from "./types";
 
 interface NewSampleInput {
   clientId: string;
@@ -203,6 +204,35 @@ interface ConcreteIndirectTensileInput {
     crossSectionMm: number;
     maximumLoadN: number;
     failureType: string;
+  }>;
+}
+
+interface ConcreteCoreInput {
+  samplingDate?: string;
+  castingDate?: string;
+  testStartDate?: string;
+  testEndDate?: string;
+  element?: string;
+  maximumAggregateSize?: string;
+  visualInspection?: string;
+  reinforcement?: string;
+  preparationMethod?: string;
+  resistanceClass?: string;
+  samplingOperator?: string;
+  equipmentUsed?: string;
+  temperature?: string;
+  humidity?: string;
+  testingLocation?: string;
+  technicianName: string;
+  checkedBy?: string;
+  notes?: string;
+  specimens: Array<{
+    specimenCode: string;
+    ageDays: number;
+    diameterMm: number;
+    heightMm: number;
+    weightKg: number;
+    loadKn: number;
   }>;
 }
 
@@ -753,6 +783,7 @@ interface LabStoreValue extends LabState {
   saveConcreteFlexuralTest: (testId: string, input: ConcreteFlexuralInput) => void;
   saveConcreteDensityTest: (testId: string, input: ConcreteDensityInput) => void;
   saveConcreteIndirectTensileTest: (testId: string, input: ConcreteIndirectTensileInput) => void;
+  saveConcreteCoreTest: (testId: string, input: ConcreteCoreInput) => void;
   saveThermalInsulationTest: (testId: string, input: ThermalInsulationInput) => void;
   saveCementConsistencyTest: (testId: string, input: CementConsistencyInput) => void;
   saveCementStrengthTest: (testId: string, input: CementStrengthInput) => void;
@@ -880,6 +911,7 @@ function mergeWithInitialState(saved: Partial<LabState>): LabState {
     concreteFlexuralTests: saved.concreteFlexuralTests ?? initialState.concreteFlexuralTests,
     concreteDensityTests: saved.concreteDensityTests ?? initialState.concreteDensityTests,
     concreteIndirectTensileTests: saved.concreteIndirectTensileTests ?? initialState.concreteIndirectTensileTests,
+    concreteCoreTests: saved.concreteCoreTests ?? initialState.concreteCoreTests,
     thermalInsulationTests: saved.thermalInsulationTests ?? initialState.thermalInsulationTests,
     cementConsistencyTests: saved.cementConsistencyTests ?? initialState.cementConsistencyTests,
     cementStrengthTests: saved.cementStrengthTests ?? initialState.cementStrengthTests,
@@ -1334,6 +1366,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             concreteFlexuralTests: previous.concreteFlexuralTests.filter((row) => !linkedTestIds.has(row.testId)),
             concreteDensityTests: previous.concreteDensityTests.filter((row) => !linkedTestIds.has(row.testId)),
             concreteIndirectTensileTests: previous.concreteIndirectTensileTests.filter((row) => !linkedTestIds.has(row.testId)),
+            concreteCoreTests: previous.concreteCoreTests.filter((row) => !linkedTestIds.has(row.testId)),
             thermalInsulationTests: previous.thermalInsulationTests.filter((row) => !linkedTestIds.has(row.testId)),
             cementConsistencyTests: previous.cementConsistencyTests.filter((row) => !linkedTestIds.has(row.testId)),
             cementStrengthTests: previous.cementStrengthTests.filter((row) => !linkedTestIds.has(row.testId)),
@@ -1668,6 +1701,45 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             auditLog: [...previous.auditLog]
           };
           addAudit(draft, "test_data_saved", "test", testId, "Concrete indirect tensile data saved.");
+          return draft;
+        });
+      },
+      saveConcreteCoreTest(testId, input) {
+        setState((previous) => {
+          if (!canCurrentUserEditTest(previous, testId)) return previous;
+          const specimens = input.specimens
+            .filter((row) => row.specimenCode || row.diameterMm || row.heightMm || row.weightKg || row.loadKn)
+            .map((row) => ({
+              ...row,
+              ...calculateConcreteCoreResults(row)
+            }));
+          const ratioTypes = new Set(specimens.map((row) => row.ratioType));
+          const coreTest: ConcreteCoreTest = {
+            id: previous.concreteCoreTests.find((row) => row.testId === testId)?.id ?? crypto.randomUUID(),
+            testId,
+            ...input,
+            specimens,
+            averageDiameterCm: averageNumbers(specimens.map((row) => row.diameterCm), 1),
+            averageHeightCm: averageNumbers(specimens.map((row) => row.heightCm), 1),
+            averageWeightKg: averageNumbers(specimens.map((row) => row.weightKg), 3),
+            averageDensityKgM3: averageNumbers(specimens.map((row) => row.densityKgM3), 0),
+            averageContactAreaCm2: averageNumbers(specimens.map((row) => row.contactAreaCm2), 1),
+            averageLoadKn: averageNumbers(specimens.map((row) => row.loadKn), 1),
+            averageCylindricalStrengthMpa: averageNumbers(specimens.map((row) => row.cylindricalStrengthMpa), 1),
+            averageCubicStrengthMpa: averageNumbers(specimens.map((row) => row.cubicStrengthMpa), 1),
+            reportRatioType: ratioTypes.size > 1 ? "Mixed" : specimens[0]?.ratioType ?? "1:1",
+            createdAt: new Date().toISOString()
+          };
+          const existing = previous.concreteCoreTests.some((row) => row.testId === testId);
+          const draft: LabState = {
+            ...previous,
+            concreteCoreTests: existing
+              ? previous.concreteCoreTests.map((row) => (row.testId === testId ? coreTest : row))
+              : [coreTest, ...previous.concreteCoreTests],
+            tests: previous.tests.map((test) => (test.id === testId ? { ...test, status: "In Progress" } : test)),
+            auditLog: [...previous.auditLog]
+          };
+          addAudit(draft, "test_data_saved", "test", testId, "Concrete core compressive strength data saved.");
           return draft;
         });
       },
@@ -2715,6 +2787,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           const concreteFlexural = previous.concreteFlexuralTests.find((row) => row.testId === testId);
           const concreteDensity = previous.concreteDensityTests.find((row) => row.testId === testId);
           const concreteIndirectTensile = previous.concreteIndirectTensileTests.find((row) => row.testId === testId);
+          const concreteCore = previous.concreteCoreTests.find((row) => row.testId === testId);
           const thermalInsulation = previous.thermalInsulationTests.find((row) => row.testId === testId);
           const cementConsistency = previous.cementConsistencyTests.find((row) => row.testId === testId);
           const cementStrength = previous.cementStrengthTests.find((row) => row.testId === testId);
@@ -2734,9 +2807,20 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           const aggregateBulkDensity = previous.aggregateBulkDensityTests.find((row) => row.testId === testId);
           const aggregateSandEquivalent = previous.aggregateSandEquivalentTests.find((row) => row.testId === testId);
           const aggregateSoundness = previous.aggregateSoundnessTests.find((row) => row.testId === testId);
+          const coreReportGroups = concreteCore?.specimens.length
+            ? Array.from(
+                concreteCore.specimens.reduce((groups, specimen) => {
+                  const key = specimen.heightDiameterRatio >= 1.5 ? "1:2" : "1:1";
+                  groups.set(key, [...(groups.get(key) ?? []), specimen.specimenCode]);
+                  return groups;
+                }, new Map<string, string[]>()).values()
+              ).flatMap((codes) => chunk(codes, 2))
+            : undefined;
           const reportGroups = steel?.specimens.length
             ? groupSteelSpecimensByDiameter(steel)
-            : concreteWater || concreteFlexural || concreteDensity || concreteIndirectTensile || thermalInsulation || cementConsistency || cementStrength || cementBlaine || mortar || aggregate || aggregateChemical || aggregateLosAngeles || aggregateFreezeThaw || aggregateAcv || aggregateDensity || aggregateFillerDensity || aggregateShapeIndex || aggregateFlakiness || aggregateElongation || aggregateBulkDensity || aggregateSandEquivalent || aggregateSoundness
+            : coreReportGroups?.length
+              ? coreReportGroups
+            : concreteWater || concreteFlexural || concreteDensity || concreteIndirectTensile || concreteCore || thermalInsulation || cementConsistency || cementStrength || cementBlaine || mortar || aggregate || aggregateChemical || aggregateLosAngeles || aggregateFreezeThaw || aggregateAcv || aggregateDensity || aggregateFillerDensity || aggregateShapeIndex || aggregateFlakiness || aggregateElongation || aggregateBulkDensity || aggregateSandEquivalent || aggregateSoundness
               ? [[previous.samples.find((sample) => sample.id === test.sampleId)?.sampleCode ?? test.testCode]]
               : concrete?.specimens?.length
                 ? chunk(concrete.specimens.map((specimen) => specimen.specimenCode), 3)

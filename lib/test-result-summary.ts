@@ -65,6 +65,15 @@ export function getTestResultSummary(store: LabState, test: LabTest): TestResult
     result: `Rezistenca mesatare në tërheqje indirekte: ${formatNumber(concreteIndirect.averageTensileStrengthMpa)} MPa`
   };
 
+  const concreteCore = store.concreteCoreTests.find((item) => item.testId === test.id);
+  if (concreteCore) return {
+    testStartDate: concreteCore.testStartDate,
+    testEndDate: concreteCore.testEndDate,
+    technicianName: concreteCore.technicianName,
+    checkedBy: concreteCore.checkedBy,
+    result: `Karrota betoni: ${formatNumber(concreteCore.averageCylindricalStrengthMpa, 1)} MPa cilindrike; ${formatNumber(concreteCore.averageCubicStrengthMpa, 1)} MPa kubike (${concreteCore.reportRatioType})`
+  };
+
   const thermal = store.thermalInsulationTests.find((item) => item.testId === test.id);
   if (thermal) return {
     testStartDate: thermal.testStartDate,

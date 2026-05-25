@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Dispatch, FormEvent, SetStateAction, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { getMortarTestKind, isAggregateAcvAccreditedTest, isAggregateBulkDensityAccreditedTest, isAggregateChemicalAccreditedTest, isAggregateDensityAbsorptionAccreditedTest, isAggregateElongationIndexAccreditedTest, isAggregateFillerDensityAccreditedTest, isAggregateFlakinessIndexAccreditedTest, isAggregateFreezeThawAccreditedTest, isAggregateGranulometrySampleType, isAggregateLosAngelesAccreditedTest, isAggregateSandEquivalentAccreditedTest, isAggregateShapeIndexAccreditedTest, isAggregateSoundnessAccreditedTest, isCementBlaineAstmAccreditedTest, isCementBlaineBsEnAccreditedTest, isCementConsistencyAccreditedTest, isCementStrengthAccreditedTest, isConcreteDensityAccreditedTest, isConcreteFlexuralAccreditedTest, isConcreteIndirectTensileAccreditedTest, isConcreteWaterPenetrationAccreditedTest, isMortarAccreditedTest, isSteelSampleType, isThermalInsulationAccreditedTest } from "@/lib/accredited-tests";
+import { getMortarTestKind, isAggregateAcvAccreditedTest, isAggregateBulkDensityAccreditedTest, isAggregateChemicalAccreditedTest, isAggregateDensityAbsorptionAccreditedTest, isAggregateElongationIndexAccreditedTest, isAggregateFillerDensityAccreditedTest, isAggregateFlakinessIndexAccreditedTest, isAggregateFreezeThawAccreditedTest, isAggregateGranulometrySampleType, isAggregateLosAngelesAccreditedTest, isAggregateSandEquivalentAccreditedTest, isAggregateShapeIndexAccreditedTest, isAggregateSoundnessAccreditedTest, isCementBlaineAstmAccreditedTest, isCementBlaineBsEnAccreditedTest, isCementConsistencyAccreditedTest, isCementStrengthAccreditedTest, isConcreteCoreAccreditedTest, isConcreteDensityAccreditedTest, isConcreteFlexuralAccreditedTest, isConcreteIndirectTensileAccreditedTest, isConcreteWaterPenetrationAccreditedTest, isMortarAccreditedTest, isSteelSampleType, isThermalInsulationAccreditedTest } from "@/lib/accredited-tests";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { useLabStore } from "@/lib/lab-store";
 import { canEditTestData, canGenerateReportForTest, canReviewTests, canViewClientIdentity } from "@/lib/permissions";
@@ -34,6 +34,7 @@ export default function TestDetailPage() {
   const concreteFlexural = store.concreteFlexuralTests.find((item) => item.testId === activeTest.id);
   const concreteDensity = store.concreteDensityTests.find((item) => item.testId === activeTest.id);
   const concreteIndirectTensile = store.concreteIndirectTensileTests.find((item) => item.testId === activeTest.id);
+  const concreteCore = store.concreteCoreTests.find((item) => item.testId === activeTest.id);
   const thermalInsulation = store.thermalInsulationTests.find((item) => item.testId === activeTest.id);
   const cementConsistency = store.cementConsistencyTests.find((item) => item.testId === activeTest.id);
   const cementStrength = store.cementStrengthTests.find((item) => item.testId === activeTest.id);
@@ -85,6 +86,7 @@ export default function TestDetailPage() {
   const [flakinessRowCount, setFlakinessRowCount] = useState(Math.max(aggregateFlakiness?.rows.length ?? 14, 14));
   const [elongationRowCount, setElongationRowCount] = useState(Math.max(aggregateElongation?.rows.length ?? 4, 4));
   const [mortarRowCount, setMortarRowCount] = useState(Math.max(mortar?.strength?.length ?? mortar?.adhesion?.length ?? 3, 3));
+  const [coreRowCount, setCoreRowCount] = useState(Math.max(sample?.quantity ?? concreteCore?.specimens.length ?? 2, 2));
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -342,6 +344,39 @@ export default function TestDetailPage() {
         crossSectionMm: Number(form.get(`splitCross-${index}`) || 0),
         maximumLoadN: Number(form.get(`splitLoad-${index}`) || 0),
         failureType: String(form.get(`splitFailure-${index}`) ?? "")
+      }))
+    });
+  }
+
+  function submitConcreteCore(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    store.saveConcreteCoreTest(activeTest.id, {
+      samplingDate: String(form.get("samplingDate") ?? ""),
+      castingDate: String(form.get("castingDate") ?? ""),
+      testStartDate: String(form.get("testStartDate") ?? ""),
+      testEndDate: String(form.get("testEndDate") ?? ""),
+      element: String(form.get("element") ?? ""),
+      maximumAggregateSize: String(form.get("maximumAggregateSize") ?? ""),
+      visualInspection: String(form.get("visualInspection") ?? ""),
+      reinforcement: String(form.get("reinforcement") ?? ""),
+      preparationMethod: String(form.get("preparationMethod") ?? ""),
+      resistanceClass: String(form.get("resistanceClass") ?? ""),
+      samplingOperator: String(form.get("samplingOperator") ?? ""),
+      equipmentUsed: String(form.get("equipmentUsed") ?? ""),
+      temperature: String(form.get("temperature") ?? ""),
+      humidity: String(form.get("humidity") ?? ""),
+      testingLocation: String(form.get("testingLocation") ?? ""),
+      technicianName: String(form.get("technicianName") ?? ""),
+      checkedBy: String(form.get("checkedBy") ?? ""),
+      notes: String(form.get("notes") ?? ""),
+      specimens: Array.from({ length: coreRowCount }, (_, index) => ({
+        specimenCode: String(form.get(`coreCode-${index}`) ?? ""),
+        ageDays: Number(form.get(`coreAge-${index}`) || 0),
+        diameterMm: Number(form.get(`coreDiameter-${index}`) || 0),
+        heightMm: Number(form.get(`coreHeight-${index}`) || 0),
+        weightKg: Number(form.get(`coreWeight-${index}`) || 0),
+        loadKn: Number(form.get(`coreLoad-${index}`) || 0)
       }))
     });
   }
@@ -834,6 +869,7 @@ export default function TestDetailPage() {
   const isFlexuralTest = isConcreteFlexuralAccreditedTest(activeTest.testType);
   const isConcreteDensityTest = isConcreteDensityAccreditedTest(activeTest.testType);
   const isIndirectTensileTest = isConcreteIndirectTensileAccreditedTest(activeTest.testType);
+  const isConcreteCoreTest = isConcreteCoreAccreditedTest(activeTest.testType);
   const isThermalInsulationTest = isThermalInsulationAccreditedTest(activeTest.testType);
   const isCementConsistencyTest = isCementConsistencyAccreditedTest(activeTest.testType);
   const isCementStrengthTest = isCementStrengthAccreditedTest(activeTest.testType);
@@ -1243,6 +1279,96 @@ export default function TestDetailPage() {
             </div>
           </form>
           <TestActionsSidebar ready={Boolean(concreteDensity)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={concreteDensity ? `Average density is ${concreteDensity.averageDensityKgM3} kg/m3.` : "Save worksheet data first to calculate density."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+        </div>
+      </>
+    );
+  }
+
+  if (isConcreteCoreTest) {
+    return (
+      <>
+        <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Karrota betoni`} action={<StatusBadge status={activeTest.status} />} />
+        <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
+          <form onSubmit={submitConcreteCore} className="surface-card">
+            <div className="border-b border-line bg-lab-porcelain px-5 py-4">
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Fletë Pune</div>
+              <h2 className="mt-1 text-lg font-semibold text-ink">Përcaktimi i qëndrueshmërisë në shtypje të karrotave të betonit</h2>
+              <p className="mt-1 text-sm text-muted">BS EN 12504-1:2019. Raporti zgjidhet automatikisht sipas raportit L/D të dimensioneve të futura.</p>
+            </div>
+            <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
+              <Field label="Nr. regjistrimi"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
+              <Field label="Kampioni"><input className="input bg-lab-porcelain" value={sample?.sampleType ?? ""} readOnly /></Field>
+              <Field label="Data e pranimit"><input className="input bg-lab-porcelain" value={formatEuropeanDate(sample?.dateReceived)} readOnly /></Field>
+              <Field label="Elementi"><input name="element" defaultValue={concreteCore?.element ?? sample?.sampleDescription ?? ""} className="input" /></Field>
+              <Field label="Data e marrjes në objekt"><input name="samplingDate" type="date" defaultValue={concreteCore?.samplingDate ?? sample?.dateReceived ?? ""} className="input" /></Field>
+              <Field label="Data e betonimit"><input name="castingDate" type="date" defaultValue={concreteCore?.castingDate ?? sample?.concretingDate ?? ""} className="input" /></Field>
+              <Field label="Fillimi i testimit"><input name="testStartDate" type="date" defaultValue={concreteCore?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
+              <Field label="Mbarimi i testimit"><input name="testEndDate" type="date" defaultValue={concreteCore?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
+              <Field label="Madhësia max e grimcës"><input name="maximumAggregateSize" defaultValue={concreteCore?.maximumAggregateSize ?? ""} className="input" placeholder="p.sh. > 20 mm" /></Field>
+              <Field label="Inspektimi vizual"><input name="visualInspection" defaultValue={concreteCore?.visualInspection ?? "OK"} className="input" /></Field>
+              <Field label="Prani hekuri"><input name="reinforcement" defaultValue={concreteCore?.reinforcement ?? "PO - NË QENDËR / YES - IN THE MIDDLE"} className="input" /></Field>
+              <Field label="Përgatitja e kampionit"><input name="preparationMethod" defaultValue={concreteCore?.preparationMethod ?? "ME PRERJE / CUTTING"} className="input" /></Field>
+              <Field label="Klasa e rezistencës"><input name="resistanceClass" defaultValue={concreteCore?.resistanceClass ?? "-"} className="input" /></Field>
+              <Field label="Operatori i marrjes së kampionit"><input name="samplingOperator" defaultValue={concreteCore?.samplingOperator ?? "LABORATORI / LABORATORY"} className="input" /></Field>
+              <Field label="Standardi"><input className="input bg-lab-porcelain" value={activeTest.standard} readOnly /></Field>
+              <Field label="Tekniku"><EmployeeSelect name="technicianName" employees={activeEmployees} required value={concreteCore?.technicianName ?? "Ing./Eng."} /></Field>
+              <Field label="Kontrolluar nga"><EmployeeSelect name="checkedBy" employees={activeEmployees} value={concreteCore?.checkedBy ?? "Ing./Eng. Besiana ALLIU"} /></Field>
+              <Field label="Vendi i testimit"><input name="testingLocation" defaultValue={concreteCore?.testingLocation ?? "01/A Laboratori Fiziko-Mekanik / Physical-Mechanical Laboratory"} className="input" /></Field>
+              <Field label="Temperatura"><input name="temperature" defaultValue={concreteCore?.temperature ?? ""} className="input" /></Field>
+              <Field label="Lagështia"><input name="humidity" defaultValue={concreteCore?.humidity ?? ""} className="input" /></Field>
+              <div className="md:col-span-3">
+                <label className="text-sm font-medium text-ink">Pajisjet e përdorura</label>
+                <input name="equipmentUsed" defaultValue={concreteCore?.equipmentUsed ?? "Peshore elektronike; Vizore metalike; Presë betoni Controls 2000 kN"} className="input mt-1" />
+              </div>
+            </div>
+            <div className="p-5">
+              <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                <div>
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">Të dhënat e karrotave</h3>
+                  <p className="mt-1 text-sm text-muted">Forca cilindrike llogaritet nga ngarkesa dhe sipërfaqja rrethore. Forca kubike konvertohet me koeficient 0.80 ose 0.83 sipas rezultatit.</p>
+                </div>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => setCoreRowCount((count) => count + 1)} className="btn-secondary px-3">Shto karrotë</button>
+                  <button type="button" onClick={() => setCoreRowCount((count) => Math.max(1, count - 1))} className="btn-secondary px-3">Hiq rresht</button>
+                </div>
+              </div>
+              <div className="overflow-x-auto rounded-md border border-line">
+                <table className="w-full min-w-[1160px] text-left text-sm">
+                  <thead className="table-head">
+                    <tr><th className="px-3 py-2">Nr.</th><th className="px-3 py-2">Kodi</th><th className="px-3 py-2">Maturimi [ditë]</th><th className="px-3 py-2">Diametri [mm]</th><th className="px-3 py-2">Lartësia [mm]</th><th className="px-3 py-2">Pesha [kg]</th><th className="px-3 py-2">Ngarkesa [kN]</th><th className="px-3 py-2">L/D</th><th className="px-3 py-2">Densiteti [kg/m3]</th><th className="px-3 py-2">Shtypje cilindrike [MPa]</th><th className="px-3 py-2">Shtypje kubike [MPa]</th></tr>
+                  </thead>
+                  <tbody className="divide-y divide-line">
+                    {Array.from({ length: coreRowCount }, (_, index) => {
+                      const row = concreteCore?.specimens[index];
+                      return (
+                        <tr key={index}>
+                          <td className="px-3 py-2 font-semibold text-ink">{index + 1}</td>
+                          <td className="px-3 py-2"><input name={`coreCode-${index}`} defaultValue={row?.specimenCode ?? `${sample?.sampleCode ?? "Sample"}/${index + 1}`} className="input min-w-32" /></td>
+                          <td className="px-3 py-2"><input name={`coreAge-${index}`} type="number" defaultValue={row?.ageDays ?? ""} className="input min-w-24" /></td>
+                          <td className="px-3 py-2"><input name={`coreDiameter-${index}`} type="number" step="0.1" defaultValue={row?.diameterMm ?? ""} className="input min-w-24" /></td>
+                          <td className="px-3 py-2"><input name={`coreHeight-${index}`} type="number" step="0.1" defaultValue={row?.heightMm ?? ""} className="input min-w-24" /></td>
+                          <td className="px-3 py-2"><input name={`coreWeight-${index}`} type="number" step="0.0001" defaultValue={row?.weightKg ?? ""} className="input min-w-24" /></td>
+                          <td className="px-3 py-2"><input name={`coreLoad-${index}`} type="number" step="0.1" defaultValue={row?.loadKn ?? ""} className="input min-w-24" /></td>
+                          <td className="px-3 py-2 font-semibold text-ink">{row?.heightDiameterRatio ?? "Ruaj"}</td>
+                          <td className="px-3 py-2 font-semibold text-ink">{row?.densityKgM3 ?? "Ruaj"}</td>
+                          <td className="px-3 py-2 font-semibold text-ink">{row?.cylindricalStrengthMpa ?? "Ruaj"}</td>
+                          <td className="px-3 py-2 font-semibold text-ink">{row?.cubicStrengthMpa ?? "Ruaj"}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-4 grid gap-3 text-sm md:grid-cols-3">
+                <Info label="Lloji i raportit" value={concreteCore ? `Raporti ${concreteCore.reportRatioType}` : "Ruaj dimensionet"} />
+                <Info label="Mesatarja cilindrike" value={concreteCore ? `${concreteCore.averageCylindricalStrengthMpa} MPa` : "Ruaj"} />
+                <Info label="Mesatarja kubike" value={concreteCore ? `${concreteCore.averageCubicStrengthMpa} MPa` : "Ruaj"} />
+              </div>
+              <div className="mt-5"><label className="text-sm font-medium text-ink">Shënime</label><textarea name="notes" rows={4} defaultValue={concreteCore?.notes} className="input mt-1" /></div>
+              <div className="mt-5 flex justify-end"><button className="btn-secondary">Ruaj të dhënat e karrotave</button></div>
+            </div>
+          </form>
+          <TestActionsSidebar ready={Boolean(concreteCore)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={concreteCore ? `Raporti do të përdorë formatin ${concreteCore.reportRatioType === "1:2" ? "1 me 2" : concreteCore.reportRatioType === "1:1" ? "1 me 1" : "të përzier"}.` : "Ruaj të dhënat për të zgjedhur automatikisht raportin."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
     );
