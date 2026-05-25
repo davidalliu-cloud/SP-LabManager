@@ -1097,107 +1097,227 @@ function AggregateReportPreview({
   aggregate: AggregateGradationTest;
 }) {
   const rows = aggregate.rows;
-  const chartPoints = rows
+  const sortedChartRows = rows
     .filter((row) => row.sieveSizeMm > 0)
-    .map((row, index, visibleRows) => {
-      const x = visibleRows.length <= 1 ? 40 : 40 + (index / (visibleRows.length - 1)) * 520;
-      const y = 220 - (row.cumulativePassingPercent / 100) * 170;
-      return `${round(x, 1)},${round(y, 1)}`;
-    })
-    .join(" ");
+    .sort((a, b) => a.sieveSizeMm - b.sieveSizeMm);
+  const chart = {
+    left: 52,
+    right: 548,
+    top: 20,
+    bottom: 246,
+    min: 0.01,
+    max: 125
+  };
+  const logMin = Math.log10(chart.min);
+  const logMax = Math.log10(chart.max);
+  const chartX = (sieveSizeMm: number) => {
+    const clamped = Math.min(Math.max(sieveSizeMm, chart.min), chart.max);
+    return chart.left + ((Math.log10(clamped) - logMin) / (logMax - logMin)) * (chart.right - chart.left);
+  };
+  const chartY = (passingPercent: number) => chart.bottom - (Math.min(Math.max(passingPercent, 0), 100) / 100) * (chart.bottom - chart.top);
+  const passingPoints = sortedChartRows.map((row) => `${round(chartX(row.sieveSizeMm), 1)},${round(chartY(row.cumulativePassingPercent), 1)}`).join(" ");
+  const retainedPoints = sortedChartRows.map((row) => `${round(chartX(row.sieveSizeMm), 1)},${round(chartY(100 - row.cumulativePassingPercent), 1)}`).join(" ");
+  const issueDate = report.issuedAt || report.approvedAt || aggregate.testEndDate || sample?.reportDueDate;
+  const sampleLabel = sample?.sampleDescription || sample?.sampleType;
+  const samplingOperator = sample?.collectionMethod === "Delivered by client" ? "KLIENTI / CLIENT" : sample?.collectedBy;
 
   return (
-    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
-      <ReportHeader
-        report={report}
-        code="SL-RA-AG-7.8/1.1.a"
-        title="RAPORT TESTIMI / TEST REPORT"
-        subtitle="Granulometri sipas BS EN"
-      />
+    <section className="report-a4 aggregate-gradation-report print-surface relative rounded-md border border-line bg-white p-6 text-[#111] shadow-sm">
+      <header className="border-b border-black pb-1">
+        <div className="grid grid-cols-[145px_1fr_128px] items-start gap-4">
+          <img src="/brand/sarp-logo.png" alt="SARP" className="mt-1 h-auto w-[125px]" />
+          <div className="pt-3 text-center">
+            <div className="text-[13px] font-bold uppercase leading-tight">RAPORT TESTIM / TEST REPORT</div>
+            <div className="mt-5 text-[8.5px] font-bold">Nr. / No. {report.reportNumber}</div>
+          </div>
+          <img src="/brand/da-accreditation.svg" alt="DA accreditation LT 069 09 06 21" className="ml-auto h-auto w-[104px]" />
+        </div>
+        <div className="mt-1 flex justify-between text-[7.5px] italic leading-tight">
+          <div>
+            <div>Kodi / Code: SL-RA-AG-7.8/1.1.a</div>
+            <div>Faqe / Page: 1/1</div>
+          </div>
+        </div>
+      </header>
 
-      <div className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
-        <Info label="Register No." value={sample?.sampleCode} />
-        <Info label="Client / Purchaser" value={client?.clientName} />
-        <Info label="Address" value={client?.address} />
-        <Info label="Contact" value={client?.phone || client?.email} />
-        <Info label="Object / Project" value={project?.projectName} />
-        <Info label="Sample" value={sample?.sampleDescription || sample?.sampleType} />
-        <Info label="Sampling date" value={sample?.dateReceived} />
-        <Info label="Receipt date" value={sample?.dateReceived} />
-        <Info label="Testing start" value={aggregate.testStartDate} />
-        <Info label="Testing end" value={aggregate.testEndDate} />
-        <Info label="Sampling operator" value={sample?.collectionMethod === "Delivered by client" ? "KLIENTI / CLIENT" : sample?.collectedBy} />
-        <Info label="Test standard" value={test?.standard} />
-        <Info label="Test method" value={aggregate.testMethod} />
-        <Info label="Lab location" value={aggregate.testingLocation} />
-        <Info label="Temperature" value={aggregate.temperature} />
-        <Info label="Relative humidity" value={aggregate.humidity} />
-      </div>
-
-      <div className="mt-8">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">Test Results / Rezultatet e Testimit</h3>
-        <div className="mt-3 overflow-x-auto rounded-md border border-line">
-          <table className="w-full min-w-[760px] text-left text-sm">
-            <thead className="table-head">
-              <tr>
-                <th className="px-3 py-2">Sieves [mm]</th>
-                <th className="px-3 py-2">Progressive retaining mass [g]</th>
-                <th className="px-3 py-2">Progressive retaining mass [%]</th>
-                <th className="px-3 py-2">Cumulative passing [%]</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {rows.map((row) => (
-                <tr key={row.sieveSizeMm}>
-                  <td className="px-3 py-2 font-semibold text-ink">{row.sieveSizeMm}</td>
-                  <td className="px-3 py-2">{row.cumulativeRetainedMassG}</td>
-                  <td className="px-3 py-2">{row.cumulativeRetainedPercent}</td>
-                  <td className="px-3 py-2 font-semibold text-ink">{row.cumulativePassingPercent}</td>
-                </tr>
-              ))}
-              <tr className="bg-lab-porcelain">
-                <td className="px-3 py-2 font-semibold text-ink">Sample mass before testing</td>
-                <td className="px-3 py-2 font-semibold text-ink">{aggregate.sampleMassG} g</td>
-                <td className="px-3 py-2">100</td>
-                <td className="px-3 py-2" />
-              </tr>
-            </tbody>
-          </table>
+      <div className="mt-4 grid grid-cols-[210px_1fr] gap-x-10 text-[7.8px] leading-tight">
+        <AggregateMeta label="Nr. REGJISTRI / REGISTER No.:" value={sample?.sampleCode} />
+        <AggregateMeta label="KLIENTI / PURCHASER:" value={client?.clientName} />
+        <AggregateMeta label="ADRESA / ADDRESS:" value={client?.address} />
+        <AggregateMeta label="KONTAKTET / CONTACT:" value={client?.phone || client?.email} />
+        <AggregateMeta label="OBJEKTI / OBJECT:" value={project?.projectName} />
+        <AggregateMeta label="KAMPIONI / SAMPLE:" value={sampleLabel} />
+        <AggregateMeta label="DATA E MARRJES SË KAMPIONIT / SAMPLING DATE:" value={sample?.dateReceived} />
+        <AggregateMeta label="DATA E PRANIMIT TË KAMPIONIT NË LABORATOR / DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY:" value={sample?.dateReceived} />
+        <div className="contents">
+          <div className="font-bold uppercase">DATA E TESTIMIT / <span className="italic">TESTING DATE</span>:</div>
+          <div className="grid grid-cols-[90px_1fr] gap-x-3">
+            <span className="font-bold">FILLIMI / <span className="italic">STARTING</span>:</span>
+            <span>{formatEuropeanDate(aggregate.testStartDate)}</span>
+            <span className="font-bold">MBARIMI / <span className="italic">ENDING</span>:</span>
+            <span>{formatEuropeanDate(aggregate.testEndDate)}</span>
+          </div>
+        </div>
+        <AggregateMeta label="OPERATORI I MARRJES SË KAMPIONIT / SAMPLING OPERATOR:" value={samplingOperator} />
+        <AggregateMeta label="TESTI / TEST:" value="PËRCAKTIMI I SHPËRNDARJES SË MADHËSISË SË GRIMCAVE. METODA ME SITA* / DETERMINATION OF PARTICLE SIZE DISTRIBUTION. SIEVING METHOD*" />
+        <AggregateMeta label="STANDARDI I TESTIMIT / TEST STANDARD:" value={test?.standard || "BS EN 933-1:2012"} />
+        <AggregateMeta label="METODA E TESTIMIT / TEST METHOD:" value={aggregate.testMethod || "Larje dhe sitosje / Washing and sieving"} />
+        <AggregateMeta label="VENDI KU ËSHTË PERFORMUAR TESTI / LAB. LOCATION:" value={aggregate.testingLocation || "01/A Lab. Fiziko-Mekanik / Physical-mechanical laboratory"} />
+        <div className="contents">
+          <div className="font-bold uppercase">KUSHTET AMBJENTALE / <span className="italic">ENVIRONMENTAL CONDITIONS</span>:</div>
+          <div className="grid grid-cols-[170px_1fr] gap-x-3">
+            <span>Temperaturë / <span className="italic">Temperature</span>:</span>
+            <span className="border-b border-black text-center">{aggregate.temperature || "-"}</span>
+            <span>Lagështia relative / <span className="italic">Relative Humidity</span>:</span>
+            <span className="border-b border-black text-center">{aggregate.humidity || "-"}</span>
+          </div>
         </div>
       </div>
 
-      <div className="mt-8">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">Grain Size Distribution Graph</h3>
-        <div className="mt-3 rounded-md border border-line bg-white p-4">
-          <svg viewBox="0 0 600 250" className="h-64 w-full" role="img" aria-label="Particle size distribution chart">
-            <line x1="40" y1="220" x2="560" y2="220" stroke="#DCE3E6" />
-            <line x1="40" y1="50" x2="40" y2="220" stroke="#DCE3E6" />
-            {[0, 25, 50, 75, 100].map((tick) => {
-              const y = 220 - (tick / 100) * 170;
-              return (
-                <g key={tick}>
-                  <line x1="36" y1={y} x2="560" y2={y} stroke="#F1F3F4" />
-                  <text x="8" y={y + 4} fontSize="11" fill="#6F7186">{tick}</text>
-                </g>
-              );
-            })}
-            {chartPoints ? <polyline points={chartPoints} fill="none" stroke="#5B193F" strokeWidth="3" /> : null}
-            <text x="250" y="244" fontSize="12" fill="#373455">Sieve size</text>
-            <text x="0" y="36" fontSize="12" fill="#373455">Passing %</text>
-          </svg>
-        </div>
+      <table className="mt-3 w-full border-collapse text-center text-[7.8px] leading-tight">
+        <thead>
+          <tr>
+            <th className="border border-black py-0.5 font-bold">Sitat<br /><span className="font-normal italic">Sieves</span></th>
+            <th className="border border-black py-0.5 font-bold">Masa mbetëse progresive<br /><span className="font-normal italic">Progressive retaining mass</span></th>
+            <th className="border border-black py-0.5 font-bold">Masa mbetëse progresive<br /><span className="font-normal italic">Progressive retaining mass</span></th>
+            <th className="border border-black py-0.5 font-bold">Kalimi kumulativ<br /><span className="font-normal italic">Cumulative passing</span></th>
+          </tr>
+          <tr>
+            <th className="border border-black py-0.5 font-bold">[mm]</th>
+            <th className="border border-black py-0.5 font-bold">[g]</th>
+            <th className="border border-black py-0.5 font-bold">[%]</th>
+            <th className="border border-black py-0.5 font-bold">[%]</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.sieveSizeMm}>
+              <td className="border border-black py-[1px] font-bold">{formatSieveSize(row.sieveSizeMm)}</td>
+              <td className="border border-black py-[1px]">{formatReportNumber(row.cumulativeRetainedMassG, 1)}</td>
+              <td className="border border-black py-[1px]">{formatReportNumber(row.cumulativeRetainedPercent, 1)}</td>
+              <td className="border border-black py-[1px]">{row.sieveSizeMm === 0 ? formatReportNumber(row.cumulativePassingPercent, 2) : formatReportNumber(row.cumulativePassingPercent, 1)}</td>
+            </tr>
+          ))}
+          <tr>
+            <td className="border border-black py-0.5 font-bold">Masa e mostrës para testimit / <span className="font-normal italic">Sample mass before testing</span></td>
+            <td className="border border-black py-0.5 font-bold">{formatReportNumber(aggregate.sampleMassG, 1)}</td>
+            <td className="border border-black py-0.5 font-bold">100.0</td>
+            <td className="border border-black py-0.5" />
+          </tr>
+        </tbody>
+      </table>
+
+      <div className="mt-2 border border-dashed border-black px-2 pb-2 pt-1">
+        <div className="text-center text-[7px] font-bold uppercase">GRAFIKU I SHPËRNDARJES SË MADHËSISË SË GRIMCËS / <span className="italic">GRAIN SIZE DISTRIBUTION GRAPH</span></div>
+        <svg viewBox="0 0 600 280" className="mt-1 h-[64mm] w-full" role="img" aria-label="Grain size distribution graph">
+          <rect x={chart.left} y={chart.top} width={chart.right - chart.left} height={chart.bottom - chart.top} fill="#fff" stroke="#777" strokeWidth="0.6" />
+          {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((tick) => {
+            const y = chartY(tick);
+            return (
+              <g key={`y-${tick}`}>
+                <line x1={chart.left} y1={y} x2={chart.right} y2={y} stroke="#b8b8b8" strokeWidth="0.45" />
+                <text x={chart.left - 14} y={y + 2.5} textAnchor="end" fontSize="6" fill="#111">{tick}</text>
+                <text x={chart.right + 14} y={y + 2.5} fontSize="6" fill="#111">{100 - tick}</text>
+              </g>
+            );
+          })}
+          {[0.01, 0.1, 1, 10, 100].map((tick) => {
+            const x = chartX(tick);
+            return (
+              <g key={`x-${tick}`}>
+                <line x1={x} y1={chart.top} x2={x} y2={chart.bottom} stroke="#8f8f8f" strokeWidth="0.55" />
+                <text x={x} y={chart.bottom + 13} textAnchor="middle" fontSize="6" fill="#111">{tick.toFixed(3)}</text>
+              </g>
+            );
+          })}
+          {Array.from({ length: 40 }, (_, index) => index).map((index) => {
+            const decade = Math.floor(index / 10) - 2;
+            const multiplier = (index % 10) + 1;
+            const value = multiplier * 10 ** decade;
+            if (value <= chart.min || value >= chart.max) return null;
+            const x = chartX(value);
+            return <line key={`minor-${value}`} x1={x} y1={chart.top} x2={x} y2={chart.bottom} stroke="#d5d5d5" strokeWidth="0.35" />;
+          })}
+          {retainedPoints ? <polyline points={retainedPoints} fill="none" stroke="#9aa0a6" strokeWidth="1.2" /> : null}
+          {passingPoints ? <polyline points={passingPoints} fill="none" stroke="#ff2d20" strokeWidth="1.8" /> : null}
+          {sortedChartRows.map((row) => (
+            <circle key={`point-${row.sieveSizeMm}`} cx={chartX(row.sieveSizeMm)} cy={chartY(row.cumulativePassingPercent)} r="1.8" fill="#b7b7b7" stroke="#555" strokeWidth="0.3" />
+          ))}
+          <text x="15" y="132" fontSize="7" textAnchor="middle" fill="#111">P</text>
+          <text x="15" y="142" fontSize="7" textAnchor="middle" fill="#111">A</text>
+          <text x="15" y="152" fontSize="7" textAnchor="middle" fill="#111">S</text>
+          <text x="15" y="162" fontSize="7" textAnchor="middle" fill="#111">S</text>
+          <text x="15" y="172" fontSize="7" textAnchor="middle" fill="#111">I</text>
+          <text x="15" y="182" fontSize="7" textAnchor="middle" fill="#111">N</text>
+          <text x="15" y="192" fontSize="7" textAnchor="middle" fill="#111">G</text>
+          <text x="15" y="210" fontSize="7" textAnchor="middle" fill="#111">%</text>
+          <text x="584" y="140" fontSize="7" textAnchor="middle" fill="#111">R</text>
+          <text x="584" y="150" fontSize="7" textAnchor="middle" fill="#111">E</text>
+          <text x="584" y="160" fontSize="7" textAnchor="middle" fill="#111">T</text>
+          <text x="584" y="170" fontSize="7" textAnchor="middle" fill="#111">A</text>
+          <text x="584" y="180" fontSize="7" textAnchor="middle" fill="#111">I</text>
+          <text x="584" y="190" fontSize="7" textAnchor="middle" fill="#111">N</text>
+          <text x="584" y="200" fontSize="7" textAnchor="middle" fill="#111">E</text>
+          <text x="584" y="210" fontSize="7" textAnchor="middle" fill="#111">D</text>
+          <text x="584" y="228" fontSize="7" textAnchor="middle" fill="#111">%</text>
+          <text x="300" y="272" fontSize="6.5" textAnchor="middle" fill="#111">SIEVES OPENING (mm)</text>
+        </svg>
       </div>
 
-      <div className="mt-8 soft-panel p-4 text-sm text-ink">
-        <div className="font-semibold">Notes / Shënime</div>
-        <p className="mt-1">{aggregate.notes || "Asterisk (*) means that the laboratory is accredited for this test. Results relate only to the items tested."}</p>
+      <div className="mt-1 text-[7.2px] leading-tight">Yll (*) tregon që testi është i akredituar / <span className="italic">Asterisk (*) means that the laboratory is accredited for this test</span></div>
+      <div className="mt-1 grid grid-cols-[76px_1fr] items-end gap-2 text-[7.5px] leading-tight">
+        <div>Shënime / <span className="italic">Notes</span> :</div>
+        <div className="min-h-4 border-b border-black">{aggregate.notes}</div>
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-16 text-center text-[7.2px] leading-tight">
+        <SignatureCompact label="TESTUAR NGA / TESTED BY" value={aggregate.technicianName} />
+        <SignatureCompact label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={aggregate.checkedBy || report.approvedBy || "Ing./Eng. Besiana ALLIU"} />
       </div>
 
-      <div className="mt-10 grid gap-6 sm:grid-cols-2">
-        <Signature label="TESTUAR NGA / TESTED BY" value={aggregate.technicianName} />
-        <Signature label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={aggregate.checkedBy || report.approvedBy || "Ing./Eng. Besiana ALLIU"} />
+      <div className="mt-4 space-y-0.5 text-[6.4px] leading-tight">
+        <p>Rezultatet në këtë raport testimi i përkasin vetëm mostrës së testuar. / <span className="italic">The results relate only to the items tested.</span></p>
+        <p>Ky raport testimi nuk mund të riprodhohet në mënyrë të pjesshme pa aprovimin me shkrim të laboratorit. / <span className="italic">The test report shall not be reproduced except in full without the written approval of the laboratory.</span></p>
+        <p>Laboratori nuk është përgjegjës për fazën e kampionmarrjes. / <span className="italic">The laboratory is not responsible for the sampling phase.</span></p>
       </div>
+
+      <div className="mt-2 grid grid-cols-[250px_160px] items-end gap-4 text-[7px]">
+        <div>Data e Lëshimit të Raportit të Testimit / <span className="italic">Test Report Issue Date:</span></div>
+        <div className="border-b border-black text-center">{formatEuropeanDate(issueDate)}</div>
+      </div>
+
+      <footer className="absolute bottom-0 left-0 right-0 text-center text-[6.2px] leading-tight text-blue-700">
+        <div className="font-bold text-[#5b193f]">SARP &amp; LAB</div>
+        <div>Adresa: Autostrada Tiranë-Durrës, km 29, Fshati Vrrin-Komuna Rrashbull, Durrës Shqipëri. Mob: +355 67 20 22 609; Web: www.sarpandlab.al; Email: d.alliu@sarpandlab.al; NIPT: L 41526502 B</div>
+      </footer>
     </section>
+  );
+}
+
+function AggregateMeta({ label, value }: { label: string; value?: string }) {
+  return (
+    <div className="contents">
+      <div className="font-bold uppercase">{label}</div>
+      <div className="font-semibold">{formatEuropeanDateRange(value) || "-"}</div>
+    </div>
+  );
+}
+
+function formatReportNumber(value?: number, digits = 1) {
+  return typeof value === "number" && Number.isFinite(value) ? value.toFixed(digits) : "-";
+}
+
+function formatSieveSize(value: number) {
+  if (value === 0) return "0.000";
+  if (value < 1) return value.toFixed(3);
+  return value.toFixed(1);
+}
+
+function SignatureCompact({ label, value }: { label: string; value?: string }) {
+  return (
+    <div>
+      <div className="font-bold">{label}</div>
+      <div className="mt-2 font-bold">{value || "-"}</div>
+    </div>
   );
 }
 

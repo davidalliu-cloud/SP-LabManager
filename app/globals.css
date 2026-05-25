@@ -152,6 +152,12 @@ textarea {
   .thermal-report .table-head {
     font-size: 7px !important;
   }
+
+  .aggregate-gradation-report {
+    height: 267mm !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
 }
 
 @layer components {
