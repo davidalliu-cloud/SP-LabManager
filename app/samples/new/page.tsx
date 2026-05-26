@@ -76,6 +76,14 @@ export default function NewSamplePage() {
     });
   }
 
+  function removeScheduleRow(indexToRemove: number) {
+    setScheduleRows((count) => Math.max(1, count - 1));
+    setScheduleAges((ages) => {
+      const next = ages.filter((_, index) => index !== indexToRemove);
+      return next.length ? next : [7];
+    });
+  }
+
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -209,6 +217,7 @@ export default function NewSamplePage() {
                   <th className="px-3 py-2">Mosha</th>
                   <th className="px-3 py-2">Data e kërkuar e testimit</th>
                   <th className="px-3 py-2">Afati i raportit</th>
+                  <th className="px-3 py-2">Veprim</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
@@ -231,6 +240,16 @@ export default function NewSamplePage() {
                       </td>
                       <td className="px-3 py-2"><input readOnly value={formatEuropeanDate(calculatedTestDate(selectedAge))} className="input bg-lab-porcelain" /></td>
                       <td className="px-3 py-2"><input readOnly value={formatEuropeanDate(calculatedReportDate(selectedAge))} className="input bg-lab-porcelain" /></td>
+                      <td className="px-3 py-2">
+                        <button
+                          type="button"
+                          onClick={() => removeScheduleRow(index)}
+                          disabled={scheduleRows <= 1}
+                          className="rounded-md border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-lab-red transition hover:bg-red-50 disabled:cursor-not-allowed disabled:border-line disabled:text-slate-400"
+                        >
+                          Hiq rresht
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
