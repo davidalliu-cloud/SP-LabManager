@@ -164,8 +164,11 @@ export function ReportPreview({
     return <SteelReportPreview report={report} test={test} sample={sample} client={client} project={project} steel={steel} />;
   }
 
+  const selectedSpecimenCodes = report.specimenCodes ?? [];
   const reportSpecimens = concrete?.specimens?.length
-    ? concrete.specimens.filter((specimen) => report.specimenCodes.includes(specimen.specimenCode))
+    ? selectedSpecimenCodes.length
+      ? concrete.specimens.filter((specimen) => selectedSpecimenCodes.includes(specimen.specimenCode))
+      : concrete.specimens
     : concrete
       ? [
           {
@@ -191,139 +194,160 @@ export function ReportPreview({
   };
   const strengthClass = sample?.notes?.match(new RegExp("C\\d+/\\d+"))?.[0];
 
+  const paddedSpecimens = [reportSpecimens[0], reportSpecimens[1], reportSpecimens[2]];
+  const issueDate = report.issuedAt || report.approvedAt || concrete?.testEndDate || concrete?.testDate || sample?.reportDueDate;
+  const otherData = sample?.notes
+    ?.split("|")
+    .find((note) => !note.includes("Intervali i akredituar") && !note.includes("Standardi i kampionimit") && !note.match(new RegExp("C\\d+/\\d+")))
+    ?.trim();
+
   return (
-    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
-      <ReportHeader
-        report={report}
-        code="SL-RA-B-7.8/1.3"
-        title="RAPORT TESTIM / TEST REPORT"
-        subtitle="Rezistenca në shtypje e betonit të ngurtësuar"
-      />
+    <section className="report-a4 concrete-cube-report print-surface relative rounded-md border border-line bg-white p-4 text-[11pt] leading-[1.05] text-black shadow-sm" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
+      <header className="border-b border-black pb-1">
+        <div className="grid grid-cols-[120px_1fr_105px] items-start gap-3">
+          <img src="/brand/sarp-logo.png" alt="SARP" className="mt-1 h-auto w-[100px]" />
+          <div className="pt-2 text-center">
+            <div className="font-bold uppercase">RAPORT TESTIM / TEST REPORT</div>
+            <div className="mt-3 text-[10pt] font-bold">Nr. / No. {report.reportNumber}</div>
+          </div>
+          <img src="/brand/da-accreditation.svg" alt="DA accreditation LT 069 09 06 21" className="ml-auto h-auto w-[90px]" />
+        </div>
+        <div className="mt-1 text-[9pt] italic leading-tight">
+          <div>Kodi / Code: SL-RA-B-7.8/1.3</div>
+          <div>Faqe / Page: 1/1</div>
+        </div>
+      </header>
 
-      <div className="mt-6 overflow-hidden rounded-md border border-line text-sm">
-        <ReportInfoRow label="Nr. REGJISTRI / REGISTER No." value={sample?.sampleCode} />
-        <ReportInfoRow label="KLIENTI / PURCHASER" value={client?.clientName} />
-        <ReportInfoRow label="ADRESA / ADDRESS" value={client?.address} />
-        <ReportInfoRow label="KONTAKTET / CONTACT" value={client?.phone || client?.email} />
-        <ReportInfoRow label="OBJEKTI / OBJECT" value={project?.projectName} />
-        <ReportInfoRow label="ELEMENTI / ELEMENT" value={sample?.sampleDescription} />
-        <ReportInfoRow label="KAMPIONI / SAMPLE" value={sample?.sampleType} />
-        <ReportInfoRow label="KLASA E REZISTENCËS / STRENGTH CLASS" value={strengthClass} />
-        <ReportInfoRow label="DATA E PRANIMIT TË KAMPIONIT NË LABORATOR / DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY" value={sample?.dateReceived} />
-        <div className="grid border-b border-line md:grid-cols-[280px_1fr]">
-          <div className="bg-lab-porcelain px-3 py-2 font-semibold text-ink">DATA E TESTIMIT / TESTING DATE</div>
-          <div className="grid md:grid-cols-2">
-            <div className="px-3 py-2">FILLIMI / STARTING: <span className="font-semibold text-ink">{formatEuropeanDate(concrete?.testStartDate || concrete?.testDate)}</span></div>
-            <div className="border-t border-line px-3 py-2 md:border-t-0 md:border-l">MBARIMI / ENDING: <span className="font-semibold text-ink">{formatEuropeanDate(concrete?.testEndDate || concrete?.testDate)}</span></div>
+      <div className="mt-2 grid grid-cols-[335px_1fr] gap-x-5 gap-y-0 text-[11pt] leading-[1.05]">
+        <ConcreteCubeMeta label="Nr. REGJISTRI / REGISTER No.:" value={sample?.sampleCode} />
+        <ConcreteCubeMeta label="KLIENTI / PURCHASER:" value={client?.clientName} />
+        <ConcreteCubeMeta label="ADRESA / ADDRESS:" value={client?.address} />
+        <ConcreteCubeMeta label="KONTAKTET / CONTACT:" value={client?.phone || client?.email} />
+        <ConcreteCubeMeta label="OBJEKTI / OBJECT:" value={project?.projectName} />
+        <ConcreteCubeMeta label="ELEMENTI / ELEMENT:" value={sample?.sampleDescription} />
+        <ConcreteCubeMeta label="TË DHËNA TË TJERA / OTHER DATA:" value={otherData} />
+        <ConcreteCubeMeta label="KAMPIONI / SAMPLE:" value="KUBIKË BETONI / CONCRETE CUBE" />
+        <ConcreteCubeMeta label="KLASA E REZISTENCËS / STRENGTH CLASS:" value={strengthClass || "-"} />
+        <ConcreteCubeMeta label="DATA E PRANIMIT TË KAMPIONIT NË LABORATOR / SAMPLE'S RECEIVING DATE:" value={formatEuropeanDate(sample?.dateReceived)} />
+        <div className="contents">
+          <div className="font-bold">DATA E TESTIMIT / <span className="italic">TESTING DATE</span></div>
+          <div className="grid grid-cols-[105px_1fr] gap-x-3">
+            <span className="font-bold">FILLIMI / <span className="italic">STARTING</span>:</span>
+            <span>{formatEuropeanDate(concrete?.testStartDate || concrete?.testDate)}</span>
+            <span className="font-bold">MBARIMI / <span className="italic">ENDING</span>:</span>
+            <span>{formatEuropeanDate(concrete?.testEndDate || concrete?.testDate)}</span>
           </div>
         </div>
-        <ReportInfoRow label="OPERATORI I MARRJES SË KAMPIONIT / SAMPLING OPERATOR" value={sample?.collectionMethod === "Delivered by client" ? "KLIENTI / CLIENT" : sample?.collectedBy} />
-        <ReportInfoRow label="TESTIMI / TEST" value="REZISTENCA NË SHTYPJE E BETONIT TË NGURTËSUAR * / COMPRESSIVE STRENGTH OF TEST SPECIMENS *" />
-        <ReportInfoRow label="STANDARDI I TESTIMIT / TEST STANDARD" value={test?.standard || "BS EN 12390-3:2019"} />
-        <ReportInfoRow label="VENDI KU ËSHTË PERFORMUAR TESTI / LAB. LOCATION" value={concrete?.testingLocation || "01/A Lab. Fiziko-Mekanik / Physical-Mechanical laboratory"} />
-        <div className="grid md:grid-cols-[280px_1fr]">
-          <div className="bg-lab-porcelain px-3 py-2 font-semibold text-ink">KUSHTET AMBJENTALE / ENVIRONMENTAL CONDITIONS</div>
-          <div className="grid md:grid-cols-2">
-            <div className="px-3 py-2">Temperatura / Temperature: <span className="font-semibold text-ink">{concrete?.temperature || "-"}</span></div>
-            <div className="border-t border-line px-3 py-2 md:border-t-0 md:border-l">Lagështia relative / Relative Humidity: <span className="font-semibold text-ink">{concrete?.humidity || "-"}</span></div>
+        <ConcreteCubeMeta label="OPERATORI I MARRJES SË KAMPIONIT / SAMPLING OPERATOR:" value={sample?.collectionMethod === "Delivered by client" ? "KLIENTI / CLIENT" : sample?.collectedBy} />
+        <ConcreteCubeMeta label="TESTIMI / TEST:" value="REZISTENCA NË SHTYPJE E BETONIT TË NGURTËSUAR * / COMPRESSIVE STRENGTH OF TEST SPECIMENS *" />
+        <ConcreteCubeMeta label="STANDARDI I TESTIMIT / TEST STANDARD:" value={test?.standard || "BS EN 12390-3:2019"} />
+        <ConcreteCubeMeta label="VENDI KU ËSHTË PERFORMUAR TESTI / LAB. LOCATION:" value={concrete?.testingLocation || "01/A Lab. Fiziko-Mekanik / Physical-Mechanical laboratory"} />
+        <div className="contents">
+          <div className="font-bold">KUSHTET AMBJENTALE NË TË CILAT ZHVILLOHET TESTI / <span className="italic">ENVIRONMENTAL CONDITIONS</span>:</div>
+          <div className="grid grid-cols-[115px_120px] gap-x-3">
+            <span>Temperatura / <span className="italic">Temperature</span>:</span><span className="border-b border-black text-center">{concrete?.temperature || "-"}</span>
+            <span>Lagështia / <span className="italic">Humidity</span>:</span><span className="border-b border-black text-center">{concrete?.humidity || "-"}</span>
           </div>
         </div>
       </div>
 
-      <div className="mt-8">
-        <h3 className="rounded-t-md border border-b-0 border-line bg-lab-porcelain px-3 py-2 text-sm font-semibold text-ink">Të dhëna të Kampionit / Test specimen characteristics</h3>
-        <div className="overflow-x-auto rounded-b-md border border-line">
-          <table className="w-full min-w-[900px] text-left text-sm">
-            <thead>
-              <tr>
-                <th className="border-b border-r border-line bg-lab-porcelain px-3 py-2">Kampioni<br /><span className="font-normal">Test specimen nº</span></th>
-                <th className="border-b border-r border-line bg-lab-porcelain px-3 py-2">Gjatësia<br /><span className="font-normal">Length (mm)</span></th>
-                <th className="border-b border-r border-line bg-lab-porcelain px-3 py-2">Gjerësia<br /><span className="font-normal">Width (mm)</span></th>
-                <th className="border-b border-r border-line bg-lab-porcelain px-3 py-2">Lartësia<br /><span className="font-normal">Height (mm)</span></th>
-                <th className="border-b border-r border-line bg-lab-porcelain px-3 py-2">Sipërfaqja<br /><span className="font-normal">Compressive area (mm2)</span></th>
-                <th className="border-b border-r border-line bg-lab-porcelain px-3 py-2">Pesha<br /><span className="font-normal">Weight (kg)</span></th>
-                <th className="border-b border-line bg-lab-porcelain px-3 py-2">Densiteti<br /><span className="font-normal">Apparent density (kg/m3)</span></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {reportSpecimens.map((specimen, index) => (
-                <tr key={`${specimen.specimenCode}-${index}`}>
-                  <td className="border-r border-line px-3 py-2 font-semibold text-ink">{index + 1}</td>
-                  <td className="border-r border-line px-3 py-2">{specimen.lengthMm}</td>
-                  <td className="border-r border-line px-3 py-2">{specimen.widthMm}</td>
-                  <td className="border-r border-line px-3 py-2">{specimen.heightMm}</td>
-                  <td className="border-r border-line px-3 py-2">{specimen.lengthMm * specimen.widthMm}</td>
-                  <td className="border-r border-line px-3 py-2">{specimen.weightKg}</td>
-                  <td className="px-3 py-2">{specimenDensity(specimen)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <div className="mt-3 font-bold">Të dhëna të Kampionit / <span className="italic">Test specimen characteristics</span></div>
+      <table className="mt-1 w-full border-collapse text-center text-[9.5pt] leading-[1.05]">
+        <thead>
+          <tr>
+            <th className="border border-black p-0.5">Kampioni<br /><span className="font-normal italic">Test specimen</span></th>
+            <th className="border border-black p-0.5">Gjatësia e kampionit<br /><span className="font-normal italic">Length of specimen</span></th>
+            <th className="border border-black p-0.5">Gjerësia e kampionit<br /><span className="font-normal italic">Width of specimen</span></th>
+            <th className="border border-black p-0.5">Lartësia e kampionit<br /><span className="font-normal italic">Height of specimen</span></th>
+            <th className="border border-black p-0.5">Sipërfaqja e kampionit<br /><span className="font-normal italic">Compressive area</span></th>
+            <th className="border border-black p-0.5">Pesha e kampionit<br /><span className="font-normal italic">Weight of specimen</span></th>
+            <th className="border border-black p-0.5">Densiteti i betonit<br /><span className="font-normal italic">Apparent density</span></th>
+          </tr>
+          <tr>
+            <th className="border border-black p-0.5">nº</th><th className="border border-black p-0.5">(mm)</th><th className="border border-black p-0.5">(mm)</th><th className="border border-black p-0.5">(mm)</th><th className="border border-black p-0.5">(mm²)</th><th className="border border-black p-0.5">(kg)</th><th className="border border-black p-0.5">(kg/m³)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {paddedSpecimens.map((specimen, index) => (
+            <tr key={`cube-characteristic-${index}`}>
+              <td className="border border-black p-0.5">{specimen ? index + 1 : ""}</td>
+              <td className="border border-black p-0.5">{specimen?.lengthMm ?? ""}</td>
+              <td className="border border-black p-0.5">{specimen?.widthMm ?? ""}</td>
+              <td className="border border-black p-0.5">{specimen?.heightMm ?? ""}</td>
+              <td className="border border-black p-0.5">{specimen ? specimen.lengthMm * specimen.widthMm : ""}</td>
+              <td className="border border-black p-0.5">{specimen?.weightKg ?? ""}</td>
+              <td className="border border-black p-0.5">{specimen ? specimenDensity(specimen) : ""}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <div className="mt-2 font-bold">Rezultatet e testimit / <span className="italic">Test results</span></div>
+      <table className="mt-1 w-full border-collapse text-center text-[9.5pt] leading-[1.05]">
+        <thead>
+          <tr>
+            <th className="border border-black p-0.5">Kampioni<br /><span className="font-normal italic">Test specimen</span></th>
+            <th className="border border-black p-0.5">Data e betonimit<br /><span className="font-normal italic">Casting date</span></th>
+            <th className="border border-black p-0.5">Data e testimit<br /><span className="font-normal italic">Testing date</span></th>
+            <th className="border border-black p-0.5">Maturimi<br /><span className="font-normal italic">Curing</span></th>
+            <th className="border border-black p-0.5">Mënyra e shkatërrimit<br /><span className="font-normal italic">Type of failure</span></th>
+            <th className="border border-black p-0.5">Ngarkesa maksimale në shkatërrim<br /><span className="font-normal italic">Maximum load at failure</span></th>
+            <th className="border border-black p-0.5">Rezistenca në shtypje e kubit<br /><span className="font-normal italic">Cubes compressive strength</span></th>
+          </tr>
+          <tr>
+            <th className="border border-black p-0.5">nº</th><th className="border border-black p-0.5">(dd/mm/vv)</th><th className="border border-black p-0.5">(dd/mm/vv)</th><th className="border border-black p-0.5">(ditë / days)</th><th className="border border-black p-0.5"></th><th className="border border-black p-0.5">(kN)</th><th className="border border-black p-0.5">(MPa)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {paddedSpecimens.map((specimen, index) => (
+            <tr key={`cube-result-${index}`}>
+              <td className="border border-black p-0.5">{specimen ? index + 1 : ""}</td>
+              <td className="border border-black p-0.5">{specimen ? formatEuropeanDate(concrete?.castingDate) : ""}</td>
+              <td className="border border-black p-0.5">{specimen ? formatEuropeanDate(concrete?.testDate || concrete?.testEndDate) : ""}</td>
+              <td className="border border-black p-0.5">{specimen?.ageDays ?? ""}</td>
+              <td className="border border-black p-0.5">{specimen ? specimen.visualInspection || "Normale / Normal" : ""}</td>
+              <td className="border border-black p-0.5">{specimen?.maximumLoadKn ?? ""}</td>
+              <td className="border border-black p-0.5">{specimen?.compressiveStrengthMpa ?? ""}</td>
+            </tr>
+          ))}
+          <tr>
+            <td className="border border-black p-0.5 text-left" colSpan={6}>Vlera mesatare e qëndrueshmërisë në shtypje / <span className="italic">Average cubes compressive strength</span> : R<sub>mes</sub> = (R<sub>1</sub>+R<sub>2</sub>+...+R<sub>n</sub>) / n</td>
+            <td className="border border-black p-0.5 font-bold">{averageStrength ?? ""}</td>
+          </tr>
+          <tr>
+            <td className="border border-black p-0.5 text-left" colSpan={6}>Pasiguria në matje / <span className="italic">Measurement uncertainty</span></td>
+            <td className="border border-black p-0.5 font-bold">1.5</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div className="mt-1 text-[10pt]">Yll (*) tregon që testi është i akredituar / <span className="italic">Asterisk (*) means that the laboratory is accredited for this test</span></div>
+      <div className="mt-4 grid grid-cols-[110px_1fr] items-end gap-2">
+        <div className="font-bold">Shënime / <span className="italic font-normal">Notes</span>:</div>
+        <div className="min-h-4 border-b border-black">{concrete?.notes}</div>
+        <div />
+        <div className="min-h-4 border-b border-black" />
       </div>
 
-      <div className="mt-8">
-        <h3 className="rounded-t-md border border-b-0 border-line bg-lab-porcelain px-3 py-2 text-sm font-semibold text-ink">Rezultatet e testimit / Test results</h3>
-        <div className="overflow-x-auto rounded-b-md border border-line">
-          <table className="w-full min-w-[980px] text-left text-sm">
-            <thead>
-              <tr>
-                <th className="border-b border-r border-line bg-lab-porcelain px-3 py-2">Kampioni<br /><span className="font-normal">Test specimen nº</span></th>
-                <th className="border-b border-r border-line bg-lab-porcelain px-3 py-2">Data e betonimit<br /><span className="font-normal">Casting date</span></th>
-                <th className="border-b border-r border-line bg-lab-porcelain px-3 py-2">Data e testimit<br /><span className="font-normal">Testing date</span></th>
-                <th className="border-b border-r border-line bg-lab-porcelain px-3 py-2">Maturimi<br /><span className="font-normal">Curing (days)</span></th>
-                <th className="border-b border-r border-line bg-lab-porcelain px-3 py-2">Mënyra e shkatërrimit<br /><span className="font-normal">Type of failure</span></th>
-                <th className="border-b border-r border-line bg-lab-porcelain px-3 py-2">Ngarkesa maksimale<br /><span className="font-normal">Maximum load (kN)</span></th>
-                <th className="border-b border-line bg-lab-porcelain px-3 py-2">Rezistenca në shtypje<br /><span className="font-normal">Compressive strength (MPa)</span></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {reportSpecimens.map((specimen, index) => (
-                <tr key={`${specimen.specimenCode}-result-${index}`}>
-                  <td className="border-r border-line px-3 py-2 font-semibold text-ink">{index + 1}</td>
-                  <td className="border-r border-line px-3 py-2">{formatEuropeanDate(concrete?.castingDate)}</td>
-                  <td className="border-r border-line px-3 py-2">{formatEuropeanDate(concrete?.testDate || concrete?.testEndDate)}</td>
-                  <td className="border-r border-line px-3 py-2">{specimen.ageDays}</td>
-                  <td className="border-r border-line px-3 py-2">{specimen.visualInspection || "Normale / Normal"}</td>
-                  <td className="border-r border-line px-3 py-2">{specimen.maximumLoadKn}</td>
-                  <td className="px-3 py-2 font-semibold text-ink">{specimen.compressiveStrengthMpa}</td>
-                </tr>
-              ))}
-              {averageStrength !== undefined ? (
-                <>
-                  <tr className="bg-lab-porcelain">
-                    <td className="px-3 py-2 font-semibold text-ink" colSpan={6}>Vlera mesatare e qëndrueshmërisë në shtypje / Average cubes compressive strength</td>
-                    <td className="px-3 py-2 font-semibold text-ink">{averageStrength}</td>
-                  </tr>
-                  <tr>
-                    <td className="px-3 py-2 font-semibold text-ink" colSpan={6}>Pasiguria në matje / Measurement uncertainty</td>
-                    <td className="px-3 py-2 font-semibold text-ink">1.5</td>
-                  </tr>
-                </>
-              ) : null}
-            </tbody>
-          </table>
-        </div>
-        <div className="mt-2 text-xs text-muted">Yll (*) tregon që testi është i akredituar / Asterisk (*) means that the laboratory is accredited for this test.</div>
+      <div className="mt-5 grid grid-cols-2 gap-16 text-center">
+        <div><div className="font-bold">TESTUESI / <span className="italic">TESTED BY</span></div><div className="mt-1 font-bold">{concrete?.technicianName || report.draftedBy}</div></div>
+        <div><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic">LABORATORY RESPONSIBLE</span></div><div className="mt-1 font-bold">{report.approvedBy || "Ing./ Eng. Besiana ALLIU"}</div></div>
       </div>
 
-      <div className="mt-8 rounded-md border border-line p-4 text-sm text-ink">
-        <div className="font-semibold">Shënime / Notes:</div>
-        <p className="mt-2">{concrete?.notes || "Rezultatet në këtë raport testimi i përkasin vetëm mostrës së testuar. / The results relate only to the items tested."}</p>
+      <div className="report-disclaimers mt-6 space-y-0.5 text-[9pt] leading-tight">
+        <p>Rezultatet në këtë raport testimi i përkasin vetëm mostrës së testuar. / <span className="italic">The results relate only to the items tested.</span></p>
+        <p>Ky raport testimi nuk mund të riprodhohet në mënyrë të pjesshme pa aprovimin me shkrim të laboratorit. / <span className="italic">The test report shall not be reproduced except in full without the written approval of the laboratory.</span></p>
+        <p>Laboratori nuk është përgjegjës për fazën e kampionmarrjes. / <span className="italic">The laboratory is not responsible for the sampling phase.</span></p>
+        <p>Deklaroj që testi është kryer në përputhje me standardin. / <span className="italic">I declare that the test was performed in accordance with the standard.</span></p>
       </div>
-
-      <div className="mt-10 grid gap-10 sm:grid-cols-2">
-        <Signature label="TESTUESI / TESTED BY" value={concrete?.technicianName || report.draftedBy} />
-        <Signature label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={report.approvedBy || "Ing./ Eng. Besiana ALLIU"} />
+      <div className="report-issue-date mt-4 grid grid-cols-[300px_150px] items-end gap-4 text-[10pt]">
+        <div>Data e lëshimit të Raportit të Testimit / <span className="italic">Test Report Issue Date:</span></div>
+        <div className="border-b border-black text-center">{formatEuropeanDate(issueDate)}</div>
       </div>
-
-      <div className="mt-8 space-y-1 border-t border-line pt-4 text-xs text-muted">
-        <p>Rezultatet në këtë raport testimi i përkasin vetëm mostrës së testuar. / The results relate only to the items tested.</p>
-        <p>Ky raport testimi nuk mund të riprodhohet në mënyrë të pjesshme pa aprovimin me shkrim të laboratorit. / The test report shall not be reproduced except in full without written approval of the laboratory.</p>
-        <p>Laboratori nuk është përgjegjës për fazën e kampionmarrjes. / The laboratory is not responsible for the sampling phase.</p>
-        <p>Deklaroj që testi është kryer në përputhje me standardin. / I declare that the test was performed in accordance with the standard.</p>
-        <p className="pt-3 font-semibold text-ink">Data e dërgimit të Raportit të Testimit / Test Report Sent Date: {formatEuropeanDate(report.issuedAt)}</p>
-      </div>
+      <footer className="mt-3 text-center text-[8pt] leading-tight">
+        <div className="font-bold">SARP &amp; LAB</div>
+        <div>Adresa: Autostrada Tiranë-Durrës, km 29, Fshati Vrrin-Komuna Rrashbull, Durrës Shqipëri. Mob: +355 67 20 22 609; Web: www.sarpandlab.al; Email: d.alliu@sarpandlab.al; NIPT: L 41526502 B</div>
+      </footer>
     </section>
   );
 }
@@ -359,6 +383,15 @@ function ReportHeader({
         <StatusBadge status={report.reportStatus} />
       </div>
     </header>
+  );
+}
+
+function ConcreteCubeMeta({ label, value }: { label: string; value?: string }) {
+  return (
+    <div className="contents">
+      <div className="font-bold">{label}</div>
+      <div className="font-semibold">{value || "-"}</div>
+    </div>
   );
 }
 
