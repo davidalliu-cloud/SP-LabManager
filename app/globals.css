@@ -236,6 +236,19 @@ textarea {
     font-size: 12pt !important;
   }
 
+  .mortar-report {
+    width: 244mm !important;
+    max-width: 244mm !important;
+    height: 345mm !important;
+    min-height: 0 !important;
+    margin: 0 auto !important;
+    padding: 8mm 14mm 5mm !important;
+    overflow: hidden !important;
+    zoom: 0.86;
+    font-family: "Times New Roman", Times, serif !important;
+    font-size: 12pt !important;
+  }
+
   .official-report {
     width: 255mm !important;
     max-width: 255mm !important;
