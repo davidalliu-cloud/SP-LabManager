@@ -31,6 +31,12 @@ textarea {
     margin: 0;
   }
 
+  html,
+  body {
+    width: 210mm;
+    min-height: 297mm;
+  }
+
   body {
     background: white;
   }
@@ -47,11 +53,19 @@ textarea {
     min-height: 297mm;
     margin: 0 auto !important;
     padding: 0 !important;
+    overflow: hidden !important;
   }
 
   .report-a4 {
     width: 210mm !important;
     max-width: 210mm !important;
+    color: black !important;
+    font-family: "Times New Roman", Times, serif !important;
+    font-size: 12pt;
+  }
+
+  .report-a4 * {
+    font-family: "Times New Roman", Times, serif !important;
   }
 
   .report-table {
@@ -75,6 +89,9 @@ textarea {
   width: min(100%, 210mm);
   margin-left: auto;
   margin-right: auto;
+  font-family: "Times New Roman", Times, serif;
+  font-size: 12pt;
+  color: black;
 }
 
 .report-table {
@@ -154,9 +171,14 @@ textarea {
   }
 
   .aggregate-gradation-report {
-    height: 267mm !important;
+    width: 255mm !important;
+    max-width: 255mm !important;
+    height: 360mm !important;
     min-height: 0 !important;
+    margin: 8mm auto -95mm !important;
     overflow: hidden !important;
+    zoom: 0.76;
+    font-size: 12pt !important;
   }
 
   .concrete-cube-report {
