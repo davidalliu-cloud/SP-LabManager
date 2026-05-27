@@ -133,6 +133,31 @@ textarea {
   line-height: 1.08;
 }
 
+.thermal-official-table th,
+.thermal-official-table td {
+  padding: 3px 4px;
+}
+
+.thermal-official-table th:nth-child(1),
+.thermal-official-table td:nth-child(1) {
+  width: 5%;
+}
+
+.thermal-official-table th:nth-child(2),
+.thermal-official-table td:nth-child(2) {
+  width: 25%;
+}
+
+.thermal-official-table th:nth-child(3),
+.thermal-official-table td:nth-child(3) {
+  width: 13%;
+}
+
+.thermal-official-table th:nth-child(4),
+.thermal-official-table td:nth-child(4) {
+  width: 6%;
+}
+
 .thermal-report header {
   padding-bottom: 10px;
 }
