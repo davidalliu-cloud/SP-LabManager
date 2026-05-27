@@ -105,6 +105,34 @@ textarea {
   vertical-align: top;
 }
 
+.official-report {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 12pt;
+}
+
+.official-table th,
+.official-table td {
+  border: 1px solid #000;
+  padding: 4px 5px;
+  line-height: 1.12;
+  vertical-align: middle;
+}
+
+.official-table th {
+  font-weight: 700;
+}
+
+.official-table span {
+  font-style: italic;
+  font-weight: 400;
+}
+
+.official-classification th,
+.official-classification td {
+  padding: 2px 4px;
+  line-height: 1.08;
+}
+
 .thermal-report header {
   padding-bottom: 10px;
 }
@@ -179,6 +207,38 @@ textarea {
     overflow: hidden !important;
     zoom: 0.76;
     font-size: 12pt !important;
+  }
+
+  .official-report {
+    width: 255mm !important;
+    max-width: 255mm !important;
+    height: 360mm !important;
+    min-height: 0 !important;
+    margin: 8mm auto -95mm !important;
+    overflow: hidden !important;
+    zoom: 0.76;
+    font-family: "Times New Roman", Times, serif !important;
+    font-size: 12pt !important;
+  }
+
+  .official-report .official-disclaimers {
+    position: absolute !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 20mm !important;
+  }
+
+  .official-report .official-issue-date {
+    position: absolute !important;
+    left: 0 !important;
+    bottom: 8mm !important;
+  }
+
+  .official-report .official-footer {
+    position: absolute !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 2mm !important;
   }
 
   .concrete-cube-report {

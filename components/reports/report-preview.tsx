@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabTest, MortarTest, Project, Report, Sample, SteelTensileTest, ThermalInsulationTest } from "@/lib/types";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
@@ -444,6 +445,138 @@ function BilingualInfo({ sq, en, value }: { sq: string; en: string; value?: stri
   );
 }
 
+type OfficialMetaEntry = {
+  sq: string;
+  en: string;
+  value?: string | number;
+  valueClassName?: string;
+};
+
+function OfficialReportShell({
+  report,
+  code,
+  title = "RAPORT TESTIM / TEST REPORT",
+  children
+}: {
+  report: Report;
+  code: string;
+  title?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="report-a4 official-report print-surface relative rounded-md border border-line bg-white p-4 leading-tight text-black shadow-sm">
+      <header className="border-b-2 border-black pb-1">
+        <div className="grid grid-cols-[130px_1fr_115px] items-start gap-4">
+          <img src="/brand/sarp-logo.png" alt="SARP" className="mt-1 h-auto w-[112px]" />
+          <div className="pt-3 text-center">
+            <div className="text-[15pt] font-bold uppercase leading-tight">{title}</div>
+            <div className="mt-5 text-[10pt] font-bold text-red-600">Nr. / No. {report.reportNumber}</div>
+          </div>
+          <img src="/brand/da-accreditation.svg" alt="DA accreditation LT 069 09 06 21" className="ml-auto mt-1 h-auto w-[88px]" />
+        </div>
+        <div className="mt-1 text-[9pt] italic leading-tight">
+          <div>Kodi / Code: {code}</div>
+          <div>Faqe / Page: 1/1</div>
+        </div>
+      </header>
+      {children}
+    </section>
+  );
+}
+
+function OfficialMetaGrid({ entries, className = "mt-6" }: { entries: OfficialMetaEntry[]; className?: string }) {
+  return (
+    <div className={`${className} grid grid-cols-[315px_1fr] gap-x-8 gap-y-1 text-[10pt] leading-[1.15]`}>
+      {entries.map((entry) => (
+        <div className="contents" key={`${entry.sq}-${entry.en}`}>
+          <div className="font-bold uppercase">{entry.sq} / <span className="italic font-normal normal-case">{entry.en}</span>:</div>
+          <div className={`font-semibold ${entry.valueClassName ?? ""}`}>{formatEuropeanDateRange(entry.value?.toString()) || "-"}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function OfficialTestingDates({ start, end }: { start?: string; end?: string }) {
+  return (
+    <div className="contents">
+      <div className="font-bold uppercase">DATA E TESTIMIT / <span className="italic font-normal normal-case">DATE OF TESTING</span>:</div>
+      <div className="grid grid-cols-[105px_1fr] gap-x-4 font-semibold">
+        <span>FILLIMI / <span className="italic font-normal">STARTING</span>:</span>
+        <span>{formatEuropeanDate(start)}</span>
+        <span>MBARIMI / <span className="italic font-normal">ENDING</span>:</span>
+        <span>{formatEuropeanDate(end)}</span>
+      </div>
+    </div>
+  );
+}
+
+function OfficialEnvironmental({ temperature, humidity }: { temperature?: string; humidity?: string }) {
+  return (
+    <div className="contents">
+      <div className="font-bold uppercase">KUSHTET AMBJENTALE NË TË CILAT ZHVILLOHET TESTI / <span className="italic font-normal normal-case">ENVIRONMENTAL CONDITIONS</span>:</div>
+      <div className="grid grid-cols-[145px_135px] gap-x-3 font-normal">
+        <span>Temperatura / <span className="italic">Temperature</span>:</span>
+        <span className="border-b border-black text-center">{temperature || "-"}{temperature ? " °C" : ""}</span>
+        <span>Lagështia / <span className="italic">Humidity</span>:</span>
+        <span className="border-b border-black text-center">{humidity || "-"}{humidity ? "%" : ""}</span>
+      </div>
+    </div>
+  );
+}
+
+function OfficialAsterisk() {
+  return <div className="mt-1 text-[9pt]">Yll (*) tregon që testi është i akredituar / <span className="italic">Asterisk (*) means that the laboratory is accredited for this test</span></div>;
+}
+
+function OfficialNotesAndFooter({
+  notes,
+  testedBy,
+  responsible,
+  issueDate
+}: {
+  notes?: string;
+  testedBy?: string;
+  responsible?: string;
+  issueDate?: string;
+}) {
+  return (
+    <>
+      <div className="mt-5 grid grid-cols-[120px_1fr] items-end gap-2 text-[9.5pt]">
+        <div className="pl-14 italic">Shënime / Notes:</div>
+        <div className="min-h-4 border-b border-black">{notes}</div>
+        <div />
+        <div className="min-h-4 border-b border-black" />
+      </div>
+      <div className="mt-6 grid grid-cols-2 gap-16 text-center text-[9.5pt]">
+        <div><div className="font-bold">TESTUAR NGA / <span className="italic font-normal">TESTED BY</span></div><div className="mt-2 font-bold">{testedBy || "-"}</div></div>
+        <div><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic font-normal">LABORATORY RESPONSIBLE</span></div><div className="mt-2 font-bold">{responsible || "Ing./Eng. Besiana ALLIU"}</div></div>
+      </div>
+      <div className="official-disclaimers mt-7 space-y-0.5 text-[7.5pt] leading-tight">
+        <p>Rezultatet në këtë raport testimi i përkasin vetëm mostrës së testuar. / <span className="italic">The results relate only to the items tested.</span></p>
+        <p>Ky raport testimi nuk mund të riprodhohet në mënyrë të pjesshme pa aprovimin me shkrim të laboratorit. / <span className="italic">The test report shall not be reproduced except in full without the written approval of the laboratory.</span></p>
+        <p>Laboratori nuk është përgjegjës për fazën e kampionmarrjes. / <span className="italic">The laboratory is not responsible for the sampling phase.</span></p>
+      </div>
+      <div className="official-issue-date mt-5 grid grid-cols-[285px_150px] items-end gap-4 text-[9pt]">
+        <div>Data e lëshimit të Raportit të Testimit / <span className="italic">Test Report Issue Date:</span></div>
+        <div className="border-b border-black text-center">{formatEuropeanDate(issueDate)}</div>
+      </div>
+      <footer className="official-footer mt-4 text-center text-[6.7pt] leading-tight text-blue-700">
+        <div className="font-bold">SARP &amp; LAB</div>
+        <div>Adresa: Autostrada Tiranë-Durrës, km 29, Fshati Vrrin-Komuna Rrashbull, Durrës Shqipëri. Mob: +355 67 20 22 609; Web: www.sarpandlab.al; Email: d.alliu@sarpandlab.al; NIPT: L 41526502 B</div>
+      </footer>
+    </>
+  );
+}
+
+function samplingOperator(sample?: Sample) {
+  return sample?.collectionMethod === "Delivered by client" ? "KLIENTI / CLIENT" : sample?.collectedBy;
+}
+
+function sampleDimensions(values: Array<{ lengthMm?: number; widthMm?: number; heightMm?: number }>) {
+  return values.map((row) => [row.lengthMm, row.widthMm, row.heightMm].filter(Boolean).join("x")).filter(Boolean).join("; ");
+}
+
 function ReportInfoRow({ label, value }: { label: string; value?: string }) {
   const cleanLabel = label.replace(/:$/, "");
   const bilingual = splitBilingualLabel(cleanLabel);
@@ -696,41 +829,50 @@ function ConcreteWaterPenetrationReportPreview({
   project?: Project;
   concreteWater: ConcreteWaterPenetrationTest;
 }) {
+  const specimens = [concreteWater.specimens[0], concreteWater.specimens[1], concreteWater.specimens[2]];
+  const issueDate = report.issuedAt || report.approvedAt || concreteWater.testEndDate || sample?.reportDueDate;
   return (
-    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
-      <ReportHeader report={report} code="SL-RA-B-7.8/1.10" title="RAPORT TESTIM / TEST REPORT" subtitle="Depth of water penetration under pressure" />
-      <div className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
-        <Info label="Register No." value={sample?.sampleCode} />
-        <Info label="Client / Purchaser" value={client?.clientName} />
-        <Info label="Address" value={client?.address} />
-        <Info label="Contact" value={client?.phone || client?.email} />
-        <Info label="Object / Project" value={project?.projectName} />
-        <Info label="Sample" value={sample?.sampleDescription || sample?.sampleType} />
-        <Info label="Description of specimens" value={concreteWater.specimens.map((row) => `${row.lengthMm}x${row.widthMm}x${row.heightMm} mm`).filter(Boolean).join("; ")} />
-        <Info label="Date of casting" value={concreteWater.castingDate} />
-        <Info label="Date received" value={sample?.dateReceived} />
-        <Info label="Testing start" value={concreteWater.testStartDate} />
-        <Info label="Testing end" value={concreteWater.testEndDate} />
-        <Info label="Curing period" value={concreteWater.curingMethod} />
-        <Info label="Pressure direction" value={concreteWater.pressureDirection} />
-        <Info label="Sampling operator" value={sample?.collectionMethod === "Delivered by client" ? "KLIENTI / CLIENT" : sample?.collectedBy} />
-        <Info label="Test standard" value={test?.standard || "BS EN 12390-8:2019"} />
-        <Info label="Lab location" value={concreteWater.testingLocation || "01/A (Laboratori Fiziko-Mekanik / Physical-Mechanical laboratory)"} />
-        <Info label="Temperature" value={concreteWater.temperature} />
-        <Info label="Relative humidity" value={concreteWater.humidity} />
+    <OfficialReportShell report={report} code="SL-RA-B-7.8/1.10">
+      <OfficialMetaGrid entries={[
+        { sq: "Nr. REGJISTRI", en: "REGISTER No.", value: sample?.sampleCode },
+        { sq: "KLIENTI", en: "PURCHASER", value: client?.clientName },
+        { sq: "ADRESA", en: "ADRESS", value: client?.address },
+        { sq: "KONTAKTET", en: "CONTACT", value: client?.phone || client?.email },
+        { sq: "OBJEKTI", en: "OBJECT", value: project?.projectName },
+        { sq: "KAMPIONI", en: "SAMPLE", value: sample?.sampleDescription || sample?.sampleType },
+        { sq: "PËRSHKRIMI I KAMPIONËVE (FORMA DHE DIMENSIONET)", en: "DESCRIPTION OF THE SPECIMEN (SHAPE AND DIMENSIONS)", value: `${sampleDimensions(specimens)} mm` },
+        { sq: "DATA E PËRGATITJES SË KAMPIONËVE", en: "DATE OF CASTING", value: concreteWater.castingDate },
+        { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: sample?.dateReceived }
+      ]} />
+      <div className="mt-1 grid grid-cols-[315px_1fr] gap-x-8 gap-y-1 text-[10pt] leading-[1.15]">
+        <OfficialTestingDates start={concreteWater.testStartDate} end={concreteWater.testEndDate} />
+        <OfficialMetaGrid className="contents" entries={[
+          { sq: "MATURIMI I KAMPIONËVE", en: "CURING PERIOD", value: concreteWater.curingMethod },
+          { sq: "DREJTIMI I APLIKIMIT TË PRESIONIT TË UJIT", en: "DIRECTION OF APPLICATION OF WATER PRESSURE", value: concreteWater.pressureDirection },
+          { sq: "OPERATORI I MARRJES SË KAMPIONIT", en: "SAMPLING OPERATOR", value: samplingOperator(sample) },
+          { sq: "TESTIMI", en: "TEST", value: "THELLËSIA E PENETRIMIT TË UJIT NËN PRESION NË BETONIN E NGURTËSUAR* / DEPTH OF THE PENETRATION OF WATER UNDER PRESSURE*" },
+          { sq: "STANDARDI I TESTIMIT", en: "TEST STANDARD", value: test?.standard || "BS EN 12390-8:2019" },
+          { sq: "VENDI KU ËSHTË PERFORMUAR TESTI", en: "LAB. LOCATION", value: concreteWater.testingLocation || "01/A Lab. Fiziko-Mekanik / Physical-mechanical laboratory" }
+        ]} />
+        <OfficialEnvironmental temperature={concreteWater.temperature} humidity={concreteWater.humidity} />
       </div>
-      <div className="mt-8 overflow-x-auto rounded-md border border-line">
-        <table className="w-full min-w-[900px] text-left text-sm">
-          <thead className="table-head"><tr><th className="px-3 py-2">Measured parameter</th><th className="px-3 py-2">Unit</th>{[1, 2, 3].map((index) => <th key={index} className="px-3 py-2">Sample {index}</th>)}<th className="px-3 py-2">Average</th><th className="px-3 py-2">Measurement uncertainty</th></tr></thead>
-          <tbody className="divide-y divide-line">
-            <tr><td className="px-3 py-2 font-semibold text-ink">Thellësia e penetrimit të ujit nën presion në betonin e ngurtësuar / Depth of water penetration under pressure</td><td className="px-3 py-2">mm</td>{[0, 1, 2].map((index) => <td key={index} className="px-3 py-2">{concreteWater.specimens[index]?.maxPenetrationMm ?? "-"}</td>)}<td className="px-3 py-2 font-semibold text-ink">{concreteWater.averagePenetrationMm}</td><td className="px-3 py-2">1</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div className="mt-2 text-xs text-muted">Asterisk (*) means that the laboratory is accredited for this test.</div>
-      <div className="mt-8 soft-panel p-4 text-sm text-ink"><div className="font-semibold">Notes / Shënime</div><p className="mt-1">{concreteWater.notes || "Results relate only to the items tested. The laboratory is not responsible for the sampling phase."}</p></div>
-      <div className="mt-10 grid gap-6 sm:grid-cols-2"><Signature label="TESTUESI / TESTED BY" value={concreteWater.technicianName || report.draftedBy} /><Signature label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={concreteWater.checkedBy || report.approvedBy || "Ing./Eng. Besiana ALLIU"} /></div>
-    </section>
+      <table className="official-table mt-10 w-full border-collapse text-center text-[10pt]">
+        <thead>
+          <tr><th>Parametri i matur<br /><span>The measured parameter</span></th><th>Njësia matëse<br /><span>Unit</span></th><th>Mostra 1<br /><span>Sample 1</span></th><th>Mostra 2<br /><span>Sample 2</span></th><th>Mostra 3<br /><span>Sample 3</span></th><th>Mesatarja<br /><span>Average</span></th><th>Pasiguria në matje<br /><span>Measurement uncertainty</span></th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td className="text-left">Thellësia e penetrimit të ujit nën presion në betonin e ngurtësuar<br /><span className="italic">Depth of the penetration of water under pressure</span></td>
+            <td>mm</td>
+            {specimens.map((specimen, index) => <td key={index}>{specimen?.maxPenetrationMm ?? ""}</td>)}
+            <td className="font-bold">{concreteWater.averagePenetrationMm}</td>
+            <td>1</td>
+          </tr>
+        </tbody>
+      </table>
+      <OfficialAsterisk />
+      <OfficialNotesAndFooter notes={concreteWater.notes} testedBy={concreteWater.technicianName || report.draftedBy} responsible={concreteWater.checkedBy || report.approvedBy} issueDate={issueDate} />
+    </OfficialReportShell>
   );
 }
 
@@ -749,56 +891,70 @@ function ConcreteFlexuralReportPreview({
   project?: Project;
   concreteFlexural: ConcreteFlexuralTest;
 }) {
+  const specimens = [concreteFlexural.specimens[0], concreteFlexural.specimens[1], concreteFlexural.specimens[2]];
+  const issueDate = report.issuedAt || report.approvedAt || concreteFlexural.testEndDate || sample?.reportDueDate;
   return (
-    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
-      <ReportHeader report={report} code="SL-RA-B-7.8/1.4" title="RAPORT TESTIMI / TEST REPORT" subtitle="Flexural strength of test specimens" />
-      <div className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
-        <Info label="Register No." value={sample?.sampleCode} />
-        <Info label="Client / Purchaser" value={client?.clientName} />
-        <Info label="Address" value={client?.address} />
-        <Info label="Contact" value={client?.phone || client?.email} />
-        <Info label="Object / Project" value={project?.projectName} />
-        <Info label="Element" value={sample?.sampleDescription} />
-        <Info label="Sample" value={sample?.sampleType} />
-        <Info label="Date of casting" value={concreteFlexural.castingDate} />
-        <Info label="Date received" value={sample?.dateReceived} />
-        <Info label="Testing start" value={concreteFlexural.testStartDate} />
-        <Info label="Testing end" value={concreteFlexural.testEndDate} />
-        <Info label="Sampling operator" value={sample?.collectionMethod === "Delivered by client" ? "KLIENTI / CLIENT" : sample?.collectedBy} />
-        <Info label="Test standard" value={test?.standard || "BS EN 12390-5:2019"} />
-        <Info label="Apparatus type" value={concreteFlexural.apparatusType} />
-        <Info label="Lab location" value={concreteFlexural.testingLocation || "01/A (Laboratori Fiziko-Mekanik / Physical-Mechanical laboratory)"} />
-        <Info label="Temperature" value={concreteFlexural.temperature} />
-        <Info label="Relative humidity" value={concreteFlexural.humidity} />
+    <OfficialReportShell report={report} code="SL-RA-B-7.8/1.4">
+      <OfficialMetaGrid entries={[
+        { sq: "Nr. REGJISTRI", en: "REGISTER No.", value: sample?.sampleCode },
+        { sq: "KLIENTI", en: "PURCHASER", value: client?.clientName },
+        { sq: "ADRESA", en: "ADRESS", value: client?.address },
+        { sq: "KONTAKTET", en: "CONTACT", value: client?.phone || client?.email },
+        { sq: "OBJEKTI", en: "OBJECT", value: project?.projectName },
+        { sq: "ELEMENTI", en: "ELEMENT", value: sample?.sampleDescription },
+        { sq: "KAMPIONI", en: "SAMPLE", value: sample?.sampleType },
+        { sq: "DATA E PËRGATITJES SË MOSTRËS", en: "DATE OF CASTING", value: concreteFlexural.castingDate },
+        { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: sample?.dateReceived }
+      ]} />
+      <div className="mt-1 grid grid-cols-[315px_1fr] gap-x-8 gap-y-1 text-[10pt] leading-[1.15]">
+        <OfficialTestingDates start={concreteFlexural.testStartDate} end={concreteFlexural.testEndDate} />
+        <OfficialMetaGrid className="contents" entries={[
+          { sq: "OPERATORI I MARRJES SË KAMPIONIT", en: "SAMPLING OPERATOR", value: samplingOperator(sample) },
+          { sq: "TESTI", en: "TEST", value: "PËRCAKTIMI I REZISTENCËS NË PËRKULJE* / FLEXURAL STRENGTH OF TEST SPECIMENS*" },
+          { sq: "STANDARDI I TESTIMIT", en: "TEST STANDARD", value: test?.standard || "BS EN 12390-5:2019" },
+          { sq: "TIPI I APARATIT", en: "TYPE OF APPARATUS", value: concreteFlexural.apparatusType || "Aparat dy-pikësor / Two point apparatus" },
+          { sq: "VENDI KU ËSHTË PERFORMUAR TESTI", en: "LABORATORY LOCATION", value: concreteFlexural.testingLocation || "01/A Lab. Fiziko-Mekanik / Physical-mechanical laboratory" }
+        ]} />
+        <OfficialEnvironmental temperature={concreteFlexural.temperature} humidity={concreteFlexural.humidity} />
       </div>
-      <div className="mt-8 overflow-x-auto rounded-md border border-line">
-        <table className="w-full min-w-[1160px] text-left text-sm">
-          <thead className="table-head"><tr><th className="px-3 py-2">Parameter</th><th className="px-3 py-2">Unit</th>{[1, 2, 3].map((index) => <th key={index} className="px-3 py-2">Sample {index}</th>)}</tr></thead>
-          <tbody className="divide-y divide-line">
-            <FlexReportRow label="Specimen width" unit="mm" values={concreteFlexural.specimens.map((row) => row.widthMm)} />
-            <FlexReportRow label="Specimen length" unit="mm" values={concreteFlexural.specimens.map((row) => row.lengthMm)} />
-            <FlexReportRow label="Specimen thickness" unit="mm" values={concreteFlexural.specimens.map((row) => row.thicknessMm)} />
-            <FlexReportRow label="Specimen weight" unit="kg" values={concreteFlexural.specimens.map((row) => row.weightKg)} />
-            <FlexReportRow label="Distance between lower rollers" unit="mm" values={concreteFlexural.specimens.map((row) => row.spanMm)} />
-            <FlexReportRow label="Specimen volume" unit="m3" values={concreteFlexural.specimens.map((row) => row.volumeM3)} />
-            <FlexReportRow label="Apparent density" unit="kg/m3" values={concreteFlexural.specimens.map((row) => row.apparentDensityKgM3)} />
-            <FlexReportRow label="Maximum load failure" unit="kN" values={concreteFlexural.specimens.map((row) => row.maximumLoadKn)} />
-            <FlexReportRow label="Flexural strength" unit="MPa" values={concreteFlexural.specimens.map((row) => row.flexuralStrengthMpa)} strong />
-            <tr className="bg-lab-porcelain"><td className="px-3 py-2 font-semibold text-ink">Average flexural strength</td><td className="px-3 py-2">MPa</td><td className="px-3 py-2 font-semibold text-ink" colSpan={3}>{concreteFlexural.averageFlexuralStrengthMpa}</td></tr>
-            <tr><td className="px-3 py-2 font-semibold text-ink">Uncertainty of measurement</td><td className="px-3 py-2">MPa</td><td className="px-3 py-2" colSpan={3}>0.54</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div className="mt-2 text-xs text-muted">Asterisk (*) means that the laboratory is accredited for this test.</div>
-      <div className="mt-8 soft-panel p-4 text-sm text-ink"><div className="font-semibold">Notes / Shënime</div><p className="mt-1">{concreteFlexural.notes || "Results relate only to the items tested. The laboratory is not responsible for the sampling phase."}</p></div>
-      <div className="mt-10 grid gap-6 sm:grid-cols-2"><Signature label="TESTUAR NGA / TESTED BY" value={concreteFlexural.technicianName || report.draftedBy} /><Signature label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={concreteFlexural.checkedBy || report.approvedBy || "Ing./Eng. Besiana ALLIU"} /></div>
-    </section>
+      <table className="official-table mt-5 w-full border-collapse text-center text-[10pt]">
+        <thead>
+          <tr><th>Parametrat<br /><span>Parameters</span></th><th>Njësia<br /><span>Unit</span></th><th colSpan={3}>Rezultatet e testimit / <span>Test results</span></th></tr>
+          <tr><th /><th /><th>Mostra / <span>Sample 1</span></th><th>Mostra / <span>Sample 2</span></th><th>Mostra / <span>Sample 3</span></th></tr>
+        </thead>
+        <tbody>
+          <OfficialThreeValueRow label="Gjerësia e mostrës" en="Specimen width" unit="mm" values={specimens.map((row) => row?.widthMm)} />
+          <OfficialThreeValueRow label="Gjatësia e mostrës" en="Specimen length" unit="mm" values={specimens.map((row) => row?.lengthMm)} />
+          <OfficialThreeValueRow label="Trashësia e mostrës" en="Specimen thickness" unit="mm" values={specimens.map((row) => row?.thicknessMm)} />
+          <OfficialThreeValueRow label="Pesha e mostrës" en="Specimen weight" unit="kg" values={specimens.map((row) => row?.weightKg)} />
+          <OfficialThreeValueRow label="Distanca midis pikave mbështetëse" en="Distance between the lower rollers" unit="mm" values={specimens.map((row) => row?.spanMm)} />
+          <OfficialThreeValueRow label="Vëllimi i mostrës" en="Specimen volume" unit="m³" values={specimens.map((row) => row?.volumeM3)} />
+          <OfficialThreeValueRow label="Densiteti aparent" en="Apparent density" unit="kg/m³" values={specimens.map((row) => row?.apparentDensityKgM3)} />
+          <OfficialThreeValueRow label="Forca maksimale në shkatërrim" en="Maximum load failure" unit="kN" values={specimens.map((row) => row?.maximumLoadKn)} />
+          <OfficialThreeValueRow label="Rezistenca në përkulje" en="Flexural strength" unit="MPa" values={specimens.map((row) => row?.flexuralStrengthMpa)} strong />
+          <tr><td className="text-left font-bold">Pasiguria në matje / <span className="italic font-normal">Uncertainty of measurement</span></td><td className="font-bold">MPa</td><td colSpan={3} className="font-bold">0.5</td></tr>
+        </tbody>
+      </table>
+      <OfficialAsterisk />
+      <OfficialNotesAndFooter notes={concreteFlexural.notes} testedBy={concreteFlexural.technicianName || report.draftedBy} responsible={concreteFlexural.checkedBy || report.approvedBy} issueDate={issueDate} />
+    </OfficialReportShell>
   );
 }
 
 function FlexReportRow({ label, unit, values, strong }: { label: string; unit: string; values: number[]; strong?: boolean }) {
   const padded = [values[0], values[1], values[2]];
   return <tr><td className="px-3 py-2 font-semibold text-ink">{label}</td><td className="px-3 py-2">{unit}</td>{padded.map((value, index) => <td key={index} className={`px-3 py-2 ${strong ? "font-semibold text-ink" : ""}`}>{value || value === 0 ? value : "-"}</td>)}</tr>;
+}
+
+function OfficialThreeValueRow({ label, en, unit, values, strong }: { label: string; en: string; unit: string; values: Array<number | undefined>; strong?: boolean }) {
+  const padded = [values[0], values[1], values[2]];
+  return (
+    <tr>
+      <td className={`text-left ${strong ? "font-bold" : ""}`}>{label}<br /><span className="italic font-normal">{en}</span></td>
+      <td className={strong ? "font-bold" : ""}>{unit}</td>
+      {padded.map((value, index) => <td key={index} className={strong ? "font-bold" : ""}>{value || value === 0 ? value : ""}</td>)}
+    </tr>
+  );
 }
 
 function ConcreteDensityReportPreview({
@@ -816,39 +972,49 @@ function ConcreteDensityReportPreview({
   project?: Project;
   concreteDensity: ConcreteDensityTest;
 }) {
+  const specimens = [concreteDensity.specimens[0], concreteDensity.specimens[1], concreteDensity.specimens[2]];
+  const issueDate = report.issuedAt || report.approvedAt || concreteDensity.testEndDate || sample?.reportDueDate;
   return (
-    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
-      <ReportHeader report={report} code="SL-RA-B-7.8/1.8" title="RAPORT TESTIM / TEST REPORT" subtitle="Density of hardened concrete" />
-      <div className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
-        <Info label="Register No." value={sample?.sampleCode} />
-        <Info label="Client / Purchaser" value={client?.clientName} />
-        <Info label="Address" value={client?.address} />
-        <Info label="Contact" value={client?.phone || client?.email} />
-        <Info label="Object / Project" value={project?.projectName} />
-        <Info label="Sample" value={sample?.sampleDescription || sample?.sampleType} />
-        <Info label="Specimen condition" value={concreteDensity.specimenCondition} />
-        <Info label="Volume method" value={concreteDensity.volumeMethod} />
-        <Info label="Date received" value={sample?.dateReceived} />
-        <Info label="Testing start" value={concreteDensity.testStartDate} />
-        <Info label="Testing end" value={concreteDensity.testEndDate} />
-        <Info label="Sampling operator" value={sample?.collectionMethod === "Delivered by client" ? "KLIENTI / CLIENT" : sample?.collectedBy} />
-        <Info label="Test standard" value={test?.standard || "BS EN 12390-7:2019"} />
-        <Info label="Lab location" value={concreteDensity.testingLocation || "01/A (Laboratori Fiziko-Mekanik / Physical-Mechanical laboratory)"} />
-        <Info label="Temperature" value={concreteDensity.temperature} />
-        <Info label="Relative humidity" value={concreteDensity.humidity} />
+    <OfficialReportShell report={report} code="SL-RA-B-7.8/1.8">
+      <OfficialMetaGrid entries={[
+        { sq: "Nr. REGJISTRI", en: "REGISTER No.", value: sample?.sampleCode },
+        { sq: "KLIENTI", en: "PURCHASER", value: client?.clientName },
+        { sq: "ADRESA", en: "ADRESS", value: client?.address },
+        { sq: "KONTAKTET", en: "CONTACT", value: client?.phone || client?.email },
+        { sq: "OBJEKTI", en: "OBJECT", value: project?.projectName },
+        { sq: "KAMPIONI", en: "SAMPLE", value: sample?.sampleDescription || sample?.sampleType },
+        { sq: "PËRSHKRIMI I KAMPIONËVE (FORMA DHE DIMENSIONET)", en: "DESCRIPTION OF THE SPECIMEN (SHAPE AND DIMENSIONS)", value: sample?.sampleDescription || sample?.sampleType },
+        { sq: "KUSHTET E KAMPIONIT NË KOHËN E TESTIMIT", en: "CONDITION OF SPECIMEN AT TIME OF TEST", value: concreteDensity.specimenCondition },
+        { sq: "METODA E PËRCAKTIMIT TË VOLUMIT", en: "METHOD OF DETERMINATION OF VOLUME", value: concreteDensity.volumeMethod },
+        { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: sample?.dateReceived }
+      ]} />
+      <div className="mt-1 grid grid-cols-[315px_1fr] gap-x-8 gap-y-1 text-[10pt] leading-[1.15]">
+        <OfficialTestingDates start={concreteDensity.testStartDate} end={concreteDensity.testEndDate} />
+        <OfficialMetaGrid className="contents" entries={[
+          { sq: "OPERATORI I MARRJES SË KAMPIONIT", en: "SAMPLING OPERATOR", value: samplingOperator(sample) },
+          { sq: "TESTIMI", en: "TEST", value: "DENSITETI I BETONIT TË NGURTËSUAR * / DENSITY OF HARDENED CONCRETE *" },
+          { sq: "STANDARDI I TESTIMIT", en: "TEST STANDARD", value: test?.standard || "BS EN 12390-7:2019" },
+          { sq: "VENDI KU ËSHTË PERFORMUAR TESTI", en: "LAB. LOCATION", value: concreteDensity.testingLocation || "01/A Lab. Fiziko-Mekanik / Physical-mechanical laboratory" }
+        ]} />
+        <OfficialEnvironmental temperature={concreteDensity.temperature} humidity={concreteDensity.humidity} />
       </div>
-      <div className="mt-8 overflow-x-auto rounded-md border border-line">
-        <table className="w-full min-w-[860px] text-left text-sm">
-          <thead className="table-head"><tr><th className="px-3 py-2">Measured parameter</th><th className="px-3 py-2">Unit</th>{[1, 2, 3].map((index) => <th key={index} className="px-3 py-2">Sample {index}</th>)}<th className="px-3 py-2">Average</th><th className="px-3 py-2">Uncertainty</th></tr></thead>
-          <tbody className="divide-y divide-line">
-            <tr><td className="px-3 py-2 font-semibold text-ink">Densiteti volumor i betonit të ngurtësuar / Density of hardened concrete</td><td className="px-3 py-2">kg/m3</td>{[0, 1, 2].map((index) => <td key={index} className="px-3 py-2">{concreteDensity.specimens[index]?.densityKgM3 ?? "-"}</td>)}<td className="px-3 py-2 font-semibold text-ink">{concreteDensity.averageDensityKgM3}</td><td className="px-3 py-2">5</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div className="mt-2 text-xs text-muted">Asterisk (*) means that the laboratory is accredited for this test.</div>
-      <div className="mt-8 soft-panel p-4 text-sm text-ink"><div className="font-semibold">Notes / Shënime</div><p className="mt-1">{concreteDensity.notes || "Results relate only to the items tested. The laboratory is not responsible for the sampling phase."}</p></div>
-      <div className="mt-10 grid gap-6 sm:grid-cols-2"><Signature label="TESTUESI / TESTED BY" value={concreteDensity.technicianName || report.draftedBy} /><Signature label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={concreteDensity.checkedBy || report.approvedBy || "Ing./Eng. Besiana ALLIU"} /></div>
-    </section>
+      <table className="official-table mt-10 w-full border-collapse text-center text-[10pt]">
+        <thead>
+          <tr><th>Parametri i matur<br /><span>The measured parameter</span></th><th>Njësia matëse<br /><span>Unit</span></th><th>Mostra 1<br /><span>Sample 1</span></th><th>Mostra 2<br /><span>Sample 2</span></th><th>Mostra 3<br /><span>Sample 3</span></th><th>Mesatarja<br /><span>Average</span></th><th>Pasiguria në matje<br /><span>Measurement uncertainty</span></th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td className="text-left">Densiteti volumor i betonit të ngurtësuar<br /><span className="italic">Density of hardened concrete</span></td>
+            <td>kg/m³</td>
+            {specimens.map((specimen, index) => <td key={index}>{specimen?.densityKgM3 ?? ""}</td>)}
+            <td className="font-bold">{concreteDensity.averageDensityKgM3}</td>
+            <td>5</td>
+          </tr>
+        </tbody>
+      </table>
+      <OfficialAsterisk />
+      <OfficialNotesAndFooter notes={concreteDensity.notes} testedBy={concreteDensity.technicianName || report.draftedBy} responsible={concreteDensity.checkedBy || report.approvedBy} issueDate={issueDate} />
+    </OfficialReportShell>
   );
 }
 
@@ -868,51 +1034,66 @@ function ConcreteIndirectTensileReportPreview({
   concreteIndirectTensile: ConcreteIndirectTensileTest;
 }) {
   const shown = [concreteIndirectTensile.specimens[0], concreteIndirectTensile.specimens[1]];
+  const issueDate = report.issuedAt || report.approvedAt || concreteIndirectTensile.testEndDate || sample?.reportDueDate;
   return (
-    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
-      <ReportHeader report={report} code="SL-RA-B-7.8/1.5" title="RAPORT TESTIMI / TEST REPORT" subtitle="Tensile splitting strength of test specimens" />
-      <div className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
-        <Info label="Register No." value={sample?.sampleCode} />
-        <Info label="Client / Purchaser" value={client?.clientName} />
-        <Info label="Address" value={client?.address} />
-        <Info label="Contact" value={client?.phone || client?.email} />
-        <Info label="Object / Project" value={project?.projectName} />
-        <Info label="Sample" value={sample?.sampleDescription || sample?.sampleType} />
-        <Info label="Casting date" value={concreteIndirectTensile.castingDate} />
-        <Info label="Date received" value={sample?.dateReceived} />
-        <Info label="Testing start" value={concreteIndirectTensile.testStartDate} />
-        <Info label="Testing end" value={concreteIndirectTensile.testEndDate} />
-        <Info label="Age / curing" value={concreteIndirectTensile.curingMethod} />
-        <Info label="Surface moisture condition" value={concreteIndirectTensile.surfaceCondition} />
-        <Info label="Sampling operator" value={sample?.collectionMethod === "Delivered by client" ? "KLIENTI / CLIENT" : sample?.collectedBy} />
-        <Info label="Test standard" value={test?.standard || "BS EN 12390-6:2009"} />
-        <Info label="Lab location" value={concreteIndirectTensile.testingLocation || "01/A (Laboratori Fiziko-Mekanik / Physical-Mechanical laboratory)"} />
-        <Info label="Temperature" value={concreteIndirectTensile.temperature} />
-        <Info label="Relative humidity" value={concreteIndirectTensile.humidity} />
+    <OfficialReportShell report={report} code="SL-RA-B-7.8/1.5" title="RAPORT TESTIMI / TEST REPORT">
+      <OfficialMetaGrid entries={[
+        { sq: "Nr. REGJISTRI", en: "REGISTER No.", value: sample?.sampleCode },
+        { sq: "KLIENTI", en: "PURCHASER", value: client?.clientName },
+        { sq: "ADRESA", en: "ADRESS", value: client?.address },
+        { sq: "KONTAKTET", en: "CONTACT", value: client?.phone || client?.email },
+        { sq: "OBJEKTI", en: "OBJECT", value: project?.projectName },
+        { sq: "ELEMENTI", en: "ELEMENT", value: sample?.sampleDescription },
+        { sq: "KAMPIONI", en: "SAMPLE", value: sample?.sampleType },
+        { sq: "DATA E BETONIMIT", en: "CASTING DATE", value: concreteIndirectTensile.castingDate },
+        { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: sample?.dateReceived }
+      ]} />
+      <div className="mt-1 grid grid-cols-[315px_1fr] gap-x-8 gap-y-1 text-[10pt] leading-[1.15]">
+        <OfficialTestingDates start={concreteIndirectTensile.testStartDate} end={concreteIndirectTensile.testEndDate} />
+        <OfficialMetaGrid className="contents" entries={[
+          { sq: "MATURIMI", en: "AGE OF CONCRETE", value: concreteIndirectTensile.curingMethod },
+          { sq: "KUSHTET E SIPËRFAQES SË MOSTRËS NË MOMENTIN E TESTIMIT", en: "SURFACE MOISTURE CONDITION AT TIME OF TEST", value: concreteIndirectTensile.surfaceCondition },
+          { sq: "OPERATORI I MARRJES SË KAMPIONIT", en: "SAMPLING OPERATOR", value: samplingOperator(sample) },
+          { sq: "TESTI", en: "TEST", value: "PËRCAKTIMI I REZISTENCËS NË TËRHEQJE INDIREKTE* / TENSILE SPLITTING STRENGTH OF TEST SPECIMENS*" },
+          { sq: "STANDARDI I TESTIMIT", en: "TEST STANDARD", value: test?.standard || "BS EN 12390-6:2009" },
+          { sq: "VENDI KU ËSHTË PERFORMUAR TESTI", en: "LABORATORY LOCATION", value: concreteIndirectTensile.testingLocation || "01/A Lab. Fiziko-Mekanik / Physical-mechanical laboratory" }
+        ]} />
+        <OfficialEnvironmental temperature={concreteIndirectTensile.temperature} humidity={concreteIndirectTensile.humidity} />
       </div>
-      <div className="mt-8 overflow-x-auto rounded-md border border-line">
-        <table className="w-full min-w-[920px] text-left text-sm">
-          <thead className="table-head"><tr><th className="px-3 py-2">Parameter</th><th className="px-3 py-2">Unit</th><th className="px-3 py-2">Sample 1</th><th className="px-3 py-2">Sample 2</th></tr></thead>
-          <tbody className="divide-y divide-line">
-            <TwoSampleReportRow label="Length of contact line" unit="mm" values={shown.map((row) => row?.contactLengthMm ?? 0)} />
-            <TwoSampleReportRow label="Designated cross-sectional dimension" unit="mm" values={shown.map((row) => row?.crossSectionMm ?? 0)} />
-            <TwoSampleReportRow label="Maximum load" unit="N" values={shown.map((row) => row?.maximumLoadN ?? 0)} />
-            <TwoSampleReportRow label="Tensile splitting strength" unit="MPa" values={shown.map((row) => row?.tensileStrengthMpa ?? 0)} strong />
-            <tr className="bg-lab-porcelain"><td className="px-3 py-2 font-semibold text-ink">Average tensile splitting strength</td><td className="px-3 py-2">MPa</td><td className="px-3 py-2 font-semibold text-ink" colSpan={2}>{concreteIndirectTensile.averageTensileStrengthMpa}</td></tr>
-            <tr><td className="px-3 py-2 font-semibold text-ink">Uncertainty of measurement</td><td className="px-3 py-2">MPa</td><td className="px-3 py-2" colSpan={2}>0.55</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div className="mt-2 text-xs text-muted">Asterisk (*) means that the laboratory is accredited for this test.</div>
-      <div className="mt-8 soft-panel p-4 text-sm text-ink"><div className="font-semibold">Notes / Shënime</div><p className="mt-1">{concreteIndirectTensile.notes || "Results relate only to the items tested. The laboratory is not responsible for the sampling phase."}</p></div>
-      <div className="mt-10 grid gap-6 sm:grid-cols-2"><Signature label="TESTUAR NGA / TESTED BY" value={concreteIndirectTensile.technicianName || report.draftedBy} /><Signature label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={concreteIndirectTensile.checkedBy || report.approvedBy || "Ing./Eng. Besiana ALLIU"} /></div>
-    </section>
+      <table className="official-table mt-5 w-full border-collapse text-center text-[10pt]">
+        <thead>
+          <tr><th>Parametrat<br /><span>Parameters</span></th><th>Njësia<br /><span>Unit</span></th><th colSpan={2}>Rezultatet e Testimit / <span>Test Results</span></th></tr>
+          <tr><th /><th /><th>Mostra / <span>Sample 1</span></th><th>Mostra / <span>Sample 2</span></th></tr>
+        </thead>
+        <tbody>
+          <OfficialTwoValueRow label="Gjatësia e vijës së kontaktit të mostrës" en="Length of the line of contact of the specimen" unit="mm" values={shown.map((row) => row?.contactLengthMm)} />
+          <OfficialTwoValueRow label="Dimensioni i prerjes tërthore i mostrës" en="Designated cross-sectional dimension" unit="mm" values={shown.map((row) => row?.crossSectionMm)} />
+          <OfficialTwoValueRow label="Forca maksimale" en="Maximum load" unit="N" values={shown.map((row) => row?.maximumLoadN)} />
+          <OfficialTwoValueRow label="Rezistenca në tërheqje indirekte" en="Tensile splitting strength" unit="MPa" values={shown.map((row) => row?.tensileStrengthMpa)} strong />
+          <tr><td className="text-left font-bold">Rezistenca në tërheqje indirekte mesatare<br /><span className="italic font-normal">Average tensile splitting strength</span></td><td className="font-bold">MPa</td><td colSpan={2} className="font-bold">{concreteIndirectTensile.averageTensileStrengthMpa}</td></tr>
+          <tr><td className="text-left font-bold">Pasiguria në matje<br /><span className="italic font-normal">Uncertainty of measurement</span></td><td className="font-bold">MPa</td><td colSpan={2} className="font-bold">0.55</td></tr>
+        </tbody>
+      </table>
+      <OfficialAsterisk />
+      <OfficialNotesAndFooter notes={concreteIndirectTensile.notes} testedBy={concreteIndirectTensile.technicianName || report.draftedBy} responsible={concreteIndirectTensile.checkedBy || report.approvedBy} issueDate={issueDate} />
+    </OfficialReportShell>
   );
 }
 
 function TwoSampleReportRow({ label, unit, values, strong }: { label: string; unit: string; values: number[]; strong?: boolean }) {
   const padded = [values[0], values[1]];
   return <tr><td className="px-3 py-2 font-semibold text-ink">{label}</td><td className="px-3 py-2">{unit}</td>{padded.map((value, index) => <td key={index} className={`px-3 py-2 ${strong ? "font-semibold text-ink" : ""}`}>{value || value === 0 ? value : "-"}</td>)}</tr>;
+}
+
+function OfficialTwoValueRow({ label, en, unit, values, strong }: { label: string; en: string; unit: string; values: Array<number | undefined>; strong?: boolean }) {
+  const padded = [values[0], values[1]];
+  return (
+    <tr>
+      <td className={`text-left ${strong ? "font-bold" : ""}`}>{label}<br /><span className="italic font-normal">{en}</span></td>
+      <td className={strong ? "font-bold" : ""}>{unit}</td>
+      {padded.map((value, index) => <td key={index} className={strong ? "font-bold" : ""}>{value || value === 0 ? value : ""}</td>)}
+    </tr>
+  );
 }
 
 function ConcreteCoreReportPreview({
@@ -1121,101 +1302,65 @@ function SteelReportPreview({
   project?: Project;
   steel: SteelTensileTest;
 }) {
-  const reportSpecimens = steel.specimens.filter((specimen) => report.specimenCodes.includes(specimen.specimenCode));
+  const reportSpecimens = report.specimenCodes?.length ? steel.specimens.filter((specimen) => report.specimenCodes.includes(specimen.specimenCode)) : steel.specimens.slice(0, 3);
   const diameter = reportSpecimens[0]?.nominalDiameterMm || reportSpecimens[0]?.actualDiameterMm;
+  const issueDate = report.issuedAt || report.approvedAt || steel.testEndDate || sample?.reportDueDate;
 
   return (
-    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
-      <ReportHeader
-        report={report}
-        code="SL-RA-H-7.8/1.1"
-        title="RAPORT TESTIMI / TEST REPORT"
-        subtitle="Steel Rebar Tensile Test"
-      />
-
-      <div className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
-        <Info label="Client / Klienti" value={client?.clientName} />
-        <Info label="Address / Adresa" value={client?.address} />
-        <Info label="Register No." value={sample?.sampleCode} />
-        <Info label="Object / Project" value={project?.projectName} />
-        <Info label="Sample" value={sample?.sampleDescription || "Reinforcement steel rebars"} />
-        <Info label="Diameter group" value={diameter ? `${diameter} mm` : "-"} />
-        <Info label="Sampling date" value={sample?.dateReceived} />
-        <Info label="Receipt date" value={sample?.dateReceived} />
-        <Info label="Testing start" value={steel.testStartDate} />
-        <Info label="Testing end" value={steel.testEndDate} />
-        <Info label="Test standard" value={test?.standard} />
-        <Info label="Lab location" value={steel.testingLocation || "02/A Metallic materials testing sector"} />
-        <Info label="Temperature" value={steel.temperature} />
-        <Info label="Humidity" value={steel.humidity} />
+    <OfficialReportShell report={report} code="SL-RA-H-7.8/1.1" title="RAPORT TESTIMI / TEST REPORT">
+      <OfficialMetaGrid entries={[
+        { sq: "KLIENTI", en: "CLIENT", value: client?.clientName },
+        { sq: "ADRESA", en: "ADRESS", value: client?.address },
+        { sq: "KONTAKTET", en: "CONTACT", value: client?.phone || client?.email },
+        { sq: "Nr. REGJISTRI", en: "REGISTER No.", value: sample?.sampleCode },
+        { sq: "OBJEKTI", en: "OBJECT", value: project?.projectName },
+        { sq: "KAMPIONI", en: "SAMPLE", value: `${sample?.sampleDescription || sample?.sampleType || "Shufër çeliku / Steel rebar"}${diameter ? ` - Ø ${diameter} mm` : ""}` },
+        { sq: "DATA E MARRJES SË KAMPIONIT", en: "SAMPLING DATE", value: sample?.dateReceived },
+        { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: sample?.dateReceived }
+      ]} />
+      <div className="mt-1 grid grid-cols-[315px_1fr] gap-x-8 gap-y-1 text-[10pt] leading-[1.15]">
+        <OfficialTestingDates start={steel.testStartDate} end={steel.testEndDate} />
+        <OfficialMetaGrid className="contents" entries={[
+          { sq: "OPERATORI I MARRJES SË KAMPIONIT", en: "SAMPLING OPERATOR", value: samplingOperator(sample) },
+          { sq: "TESTI", en: "TEST", value: "PËRCAKTIMI I KARAKTERISTIKAVE FIZIKO-MEKANIKE PËR MATERIALE METALIKE / METALLIC MATERIALS - TENSILE TESTING" },
+          { sq: "STANDARDI I TESTIMIT", en: "TEST STANDARD", value: test?.standard || "BS EN ISO 15630-1:2019; BS EN ISO 6892-1:2020; BS 4449:2005+A3:2016" },
+          { sq: "VENDI KU ËSHTË PERFORMUAR TESTI", en: "LAB. LOCATION", value: steel.testingLocation || "02/A Sektori i testimit të materialeve metalike / Metallic materials testing sector" }
+        ]} />
+        <OfficialEnvironmental temperature={steel.temperature} humidity={steel.humidity} />
       </div>
 
-      <div className="mt-8">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">Classification / Klasifikimi</h3>
-        <div className="mt-3 overflow-x-auto rounded-md border border-line">
-          <table className="w-full min-w-[860px] text-left text-sm">
-            <thead className="table-head">
-              <tr>
-                <th className="px-3 py-2">Grade</th>
-                <th className="px-3 py-2">Yield strength Re</th>
-                <th className="px-3 py-2">Tensile strength Rm</th>
-                <th className="px-3 py-2">Rm/Re Ratio</th>
-                <th className="px-3 py-2">Elongation A</th>
-                <th className="px-3 py-2">Unit weight Pn</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              <tr><td className="px-3 py-2 font-semibold">B500B</td><td className="px-3 py-2">&gt; 500 MPa</td><td className="px-3 py-2">-</td><td className="px-3 py-2">&gt; 1.06</td><td className="px-3 py-2">-</td><td className="px-3 py-2">By diameter</td></tr>
-              <tr><td className="px-3 py-2 font-semibold">B500C</td><td className="px-3 py-2">&gt; 500 MPa</td><td className="px-3 py-2">-</td><td className="px-3 py-2">1.15 - 1.35</td><td className="px-3 py-2">&gt; 14%</td><td className="px-3 py-2">By diameter</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <table className="official-table official-classification mt-5 mx-auto w-[82%] border-collapse text-center text-[8.5pt]">
+        <thead>
+          <tr><th colSpan={6}>Klasifikimi / <span>Classification</span></th></tr>
+          <tr><th>Grade / Grada</th><th>Forca maksimale e ushtruar / Upper yield strength Re<br />[MPa]</th><th>Forca e tërheqjes / Tensile strength Rm<br />[MPa]</th><th>Rm / Re<br />Ratio</th><th>Përqindja e zgjatimit pas këputjes / Percentage elongation after fracture A<br />[%]</th><th>Pesha njësi e kampionit / Unit weight of sample Pn<br />[kg/ml]</th></tr>
+        </thead>
+        <tbody>
+          {["B500B", "B500C", "B450C", "B500S", "S500MC"].map((grade) => <tr key={grade}><td className="font-bold">{grade}</td><td>&gt; 500</td><td>{grade === "B450C" ? "> 540" : "-"}</td><td>{grade === "B500C" ? "1.15 - 1.35" : "> 1.06"}</td><td>{grade === "B500C" ? "> 14" : "-"}</td><td>{reportSpecimens.map((s) => s.unitWeightKgPerM).filter(Boolean).join("   ")}</td></tr>)}
+        </tbody>
+      </table>
 
-      <div className="mt-8">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">Test Results / Rezultatet e Testimit</h3>
-        <div className="mt-3 overflow-x-auto rounded-md border border-line">
-          <table className="w-full min-w-[980px] text-left text-sm">
-            <thead className="table-head">
-              <tr>
-                <th className="px-3 py-2">Parameters</th>
-                <th className="px-3 py-2">Symbol</th>
-                <th className="px-3 py-2">Units</th>
-                <th className="px-3 py-2">Sample 1</th>
-                <th className="px-3 py-2">Sample 2</th>
-                <th className="px-3 py-2">Sample 3</th>
-                <th className="px-3 py-2">Average</th>
-                <th className="px-3 py-2">Uncertainty</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              <SteelResultRow label="Original external diameter *" symbol="Ø" unit="mm" values={reportSpecimens.map((s) => s.actualDiameterMm)} uncertainty="0.2" />
-              <SteelResultRow label="Unit weight of sample *" symbol="Pn" unit="kg/ml" values={reportSpecimens.map((s) => s.unitWeightKgPerM)} uncertainty="0.019" />
-              <SteelResultRow label="Original cross-sectional area" symbol="S0" unit="mm2" values={reportSpecimens.map((s) => s.crossSectionalAreaMm2)} />
-              <SteelResultRow label="Minimal cross-sectional area after fracture" symbol="Su" unit="mm2" values={reportSpecimens.map((s) => s.finalCrossSectionalAreaMm2)} />
-              <SteelResultRow label="Original gauge length" symbol="L0" unit="mm" values={reportSpecimens.map((s) => s.initialGaugeLengthMm)} />
-              <SteelResultRow label="Final gauge length after fracture" symbol="Lu" unit="mm" values={reportSpecimens.map((s) => s.finalGaugeLengthMm)} />
-              <SteelResultRow label="Upper yield strength" symbol="Re" unit="MPa" values={reportSpecimens.map((s) => s.yieldStrengthMpa)} />
-              <SteelResultRow label="Tensile strength *" symbol="Rm" unit="MPa" values={reportSpecimens.map((s) => s.tensileStrengthMpa)} uncertainty="15.6" />
-              <SteelResultRow label="Ratio" symbol="Rm/Re" unit="-" values={reportSpecimens.map((s) => s.yieldStrengthMpa ? round(s.tensileStrengthMpa / s.yieldStrengthMpa, 2) : 0)} />
-              <SteelResultRow label="Reduction area of cross-sectional" symbol="Z" unit="%" values={reportSpecimens.map((s) => s.reductionOfAreaPercent)} />
-              <SteelResultRow label="Percentage elongation after fracture *" symbol="A" unit="%" values={reportSpecimens.map((s) => s.elongationPercent)} uncertainty="0.5" />
-            </tbody>
-          </table>
-        </div>
-        <div className="mt-2 text-xs text-muted">Asterisk (*) means that the laboratory is accredited for this test.</div>
-      </div>
-
-      <div className="mt-8 soft-panel p-4 text-sm text-ink">
-        <div className="font-semibold">Notes / Shënime</div>
-        <p className="mt-1">{steel.notes || "Results relate only to the items tested. The laboratory is not responsible for the sampling phase."}</p>
-      </div>
-
-      <div className="mt-10 grid gap-6 sm:grid-cols-2">
-        <Signature label="TESTUESI / TESTED BY" value={steel.technicianName || report.draftedBy} />
-        <Signature label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={steel.checkedBy || report.approvedBy || "Ing./Eng. Besiana ALLIU"} />
-      </div>
-    </section>
+      <table className="official-table mt-5 w-full border-collapse text-center text-[8.8pt]">
+        <thead>
+          <tr><th>Parametrat / <span>Parameters</span></th><th>Njësitë matëse<br /><span>Units</span></th><th colSpan={4}>Rezultatet e testimit / <span>Test Results</span></th><th>Pasiguria në matje<br /><span>Measurement uncertainty</span></th></tr>
+          <tr><th /><th /><th>1</th><th>2</th><th>3</th><th>Mesatare / <span>Average</span></th><th /></tr>
+        </thead>
+        <tbody>
+          <SteelResultRow label="Diametri faktik i kampionit * / Original external diameter *" symbol="Ø" unit="mm" values={reportSpecimens.map((s) => s.actualDiameterMm)} uncertainty="0.2" />
+          <SteelResultRow label="Pesha njësi i kampionit * / Unit weight of sample *" symbol="Pn" unit="kg/ml" values={reportSpecimens.map((s) => s.unitWeightKgPerM)} uncertainty="0.019" />
+          <SteelResultRow label="Seksioni i tërthortë / Original cross-sectional area" symbol="S0" unit="mm²" values={reportSpecimens.map((s) => s.crossSectionalAreaMm2)} />
+          <SteelResultRow label="Seksioni minimal i tërthortë pas frakturës / Minimal cross-sectional area after fracture" symbol="Su" unit="mm²" values={reportSpecimens.map((s) => s.finalCrossSectionalAreaMm2)} />
+          <SteelResultRow label="Gjatësia fillestare ndërmjet shenjave / Original gauge length" symbol="L0" unit="mm" values={reportSpecimens.map((s) => s.initialGaugeLengthMm)} />
+          <SteelResultRow label="Gjatësia fundore ndërmjet shenjave / Final gauge length after fracture" symbol="Lu" unit="mm" values={reportSpecimens.map((s) => s.finalGaugeLengthMm)} />
+          <SteelResultRow label="Ngarkesa maksimale e rrjedhshmërisë / Upper yield strength" symbol="Re" unit="MPa" values={reportSpecimens.map((s) => s.yieldStrengthMpa)} />
+          <SteelResultRow label="Rezistenca në tërheqje * / Tensile strength *" symbol="Rm" unit="MPa" values={reportSpecimens.map((s) => s.tensileStrengthMpa)} uncertainty="15.6" />
+          <SteelResultRow label="Raporti / Ratio" symbol="Rm / Re" unit="-" values={reportSpecimens.map((s) => s.yieldStrengthMpa ? round(s.tensileStrengthMpa / s.yieldStrengthMpa, 2) : 0)} />
+          <SteelResultRow label="Ngushtimi i seksionit të tërthortë / Reduction area of cross-sectional" symbol="Z" unit="%" values={reportSpecimens.map((s) => s.reductionOfAreaPercent)} />
+          <SteelResultRow label="Përqindja e zgjatimit pas këputjes * / Percentage elongation after fracture *" symbol="A" unit="%" values={reportSpecimens.map((s) => s.elongationPercent)} uncertainty="0.5" />
+        </tbody>
+      </table>
+      <OfficialAsterisk />
+      <OfficialNotesAndFooter notes={steel.notes} testedBy={steel.technicianName || report.draftedBy} responsible={steel.checkedBy || report.approvedBy} issueDate={issueDate} />
+    </OfficialReportShell>
   );
 }
 
@@ -1225,12 +1370,11 @@ function SteelResultRow({ label, symbol, unit, values, uncertainty }: { label: s
   const average = valid.length ? round(valid.reduce((sum, value) => sum + value, 0) / valid.length, 2) : 0;
   return (
     <tr>
-      <td className="px-3 py-2">{label}</td>
-      <td className="px-3 py-2 font-semibold text-ink">{symbol}</td>
-      <td className="px-3 py-2">{unit}</td>
-      {padded.map((entry, index) => <td key={index} className="px-3 py-2">{entry || entry === 0 ? entry : "-"}</td>)}
-      <td className="px-3 py-2 font-semibold text-ink">{average || "-"}</td>
-      <td className="px-3 py-2">{uncertainty ?? "-"}</td>
+      <td className="text-left"><span>{label}</span><span className="float-right font-bold">{symbol}</span></td>
+      <td>{unit}</td>
+      {padded.map((entry, index) => <td key={index}>{entry || entry === 0 ? entry : ""}</td>)}
+      <td className="font-bold">{average || ""}</td>
+      <td>{uncertainty ?? ""}</td>
     </tr>
   );
 }
