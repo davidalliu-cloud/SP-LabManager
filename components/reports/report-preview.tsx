@@ -239,7 +239,6 @@ export function ReportPreview({
             <span>{formatEuropeanDate(concrete?.testEndDate || concrete?.testDate)}</span>
           </div>
         </div>
-        <ConcreteCubeMeta label="OPERATORI I MARRJES SË KAMPIONIT / SAMPLING OPERATOR:" value={sample?.collectionMethod === "Delivered by client" ? "KLIENTI / CLIENT" : sample?.collectedBy} />
         <ConcreteCubeMeta label="TESTIMI / TEST:" value="REZISTENCA NË SHTYPJE E BETONIT TË NGURTËSUAR * / COMPRESSIVE STRENGTH OF TEST SPECIMENS *" />
         <ConcreteCubeMeta label="STANDARDI I TESTIMIT / TEST STANDARD:" value={test?.standard || "BS EN 12390-3:2019"} />
         <ConcreteCubeMeta label="VENDI KU ËSHTË PERFORMUAR TESTI / LAB. LOCATION:" value={concrete?.testingLocation || "01/A Lab. Fiziko-Mekanik / Physical-Mechanical laboratory"} />
@@ -569,10 +568,6 @@ function OfficialNotesAndFooter({
   );
 }
 
-function samplingOperator(sample?: Sample) {
-  return sample?.collectionMethod === "Delivered by client" ? "KLIENTI / CLIENT" : sample?.collectedBy;
-}
-
 function sampleDimensions(values: Array<{ lengthMm?: number; widthMm?: number; heightMm?: number }>) {
   return values.map((row) => [row.lengthMm, row.widthMm, row.heightMm].filter(Boolean).join("x")).filter(Boolean).join("; ");
 }
@@ -849,7 +844,6 @@ function ConcreteWaterPenetrationReportPreview({
         <OfficialMetaGrid className="contents" entries={[
           { sq: "MATURIMI I KAMPIONËVE", en: "CURING PERIOD", value: concreteWater.curingMethod },
           { sq: "DREJTIMI I APLIKIMIT TË PRESIONIT TË UJIT", en: "DIRECTION OF APPLICATION OF WATER PRESSURE", value: concreteWater.pressureDirection },
-          { sq: "OPERATORI I MARRJES SË KAMPIONIT", en: "SAMPLING OPERATOR", value: samplingOperator(sample) },
           { sq: "TESTIMI", en: "TEST", value: "THELLËSIA E PENETRIMIT TË UJIT NËN PRESION NË BETONIN E NGURTËSUAR* / DEPTH OF THE PENETRATION OF WATER UNDER PRESSURE*" },
           { sq: "STANDARDI I TESTIMIT", en: "TEST STANDARD", value: test?.standard || "BS EN 12390-8:2019" },
           { sq: "VENDI KU ËSHTË PERFORMUAR TESTI", en: "LAB. LOCATION", value: concreteWater.testingLocation || "01/A Lab. Fiziko-Mekanik / Physical-mechanical laboratory" }
@@ -909,7 +903,6 @@ function ConcreteFlexuralReportPreview({
       <div className="mt-1 grid grid-cols-[315px_1fr] gap-x-8 gap-y-1 text-[10pt] leading-[1.15]">
         <OfficialTestingDates start={concreteFlexural.testStartDate} end={concreteFlexural.testEndDate} />
         <OfficialMetaGrid className="contents" entries={[
-          { sq: "OPERATORI I MARRJES SË KAMPIONIT", en: "SAMPLING OPERATOR", value: samplingOperator(sample) },
           { sq: "TESTI", en: "TEST", value: "PËRCAKTIMI I REZISTENCËS NË PËRKULJE* / FLEXURAL STRENGTH OF TEST SPECIMENS*" },
           { sq: "STANDARDI I TESTIMIT", en: "TEST STANDARD", value: test?.standard || "BS EN 12390-5:2019" },
           { sq: "TIPI I APARATIT", en: "TYPE OF APPARATUS", value: concreteFlexural.apparatusType || "Aparat dy-pikësor / Two point apparatus" },
@@ -991,7 +984,6 @@ function ConcreteDensityReportPreview({
       <div className="mt-1 grid grid-cols-[315px_1fr] gap-x-8 gap-y-1 text-[10pt] leading-[1.15]">
         <OfficialTestingDates start={concreteDensity.testStartDate} end={concreteDensity.testEndDate} />
         <OfficialMetaGrid className="contents" entries={[
-          { sq: "OPERATORI I MARRJES SË KAMPIONIT", en: "SAMPLING OPERATOR", value: samplingOperator(sample) },
           { sq: "TESTIMI", en: "TEST", value: "DENSITETI I BETONIT TË NGURTËSUAR * / DENSITY OF HARDENED CONCRETE *" },
           { sq: "STANDARDI I TESTIMIT", en: "TEST STANDARD", value: test?.standard || "BS EN 12390-7:2019" },
           { sq: "VENDI KU ËSHTË PERFORMUAR TESTI", en: "LAB. LOCATION", value: concreteDensity.testingLocation || "01/A Lab. Fiziko-Mekanik / Physical-mechanical laboratory" }
@@ -1053,7 +1045,6 @@ function ConcreteIndirectTensileReportPreview({
         <OfficialMetaGrid className="contents" entries={[
           { sq: "MATURIMI", en: "AGE OF CONCRETE", value: concreteIndirectTensile.curingMethod },
           { sq: "KUSHTET E SIPËRFAQES SË MOSTRËS NË MOMENTIN E TESTIMIT", en: "SURFACE MOISTURE CONDITION AT TIME OF TEST", value: concreteIndirectTensile.surfaceCondition },
-          { sq: "OPERATORI I MARRJES SË KAMPIONIT", en: "SAMPLING OPERATOR", value: samplingOperator(sample) },
           { sq: "TESTI", en: "TEST", value: "PËRCAKTIMI I REZISTENCËS NË TËRHEQJE INDIREKTE* / TENSILE SPLITTING STRENGTH OF TEST SPECIMENS*" },
           { sq: "STANDARDI I TESTIMIT", en: "TEST STANDARD", value: test?.standard || "BS EN 12390-6:2009" },
           { sq: "VENDI KU ËSHTË PERFORMUAR TESTI", en: "LABORATORY LOCATION", value: concreteIndirectTensile.testingLocation || "01/A Lab. Fiziko-Mekanik / Physical-mechanical laboratory" }
@@ -1154,7 +1145,6 @@ function ConcreteCoreReportPreview({
         <ReportInfoRow label="PRANI HEKURI / REINFORCEMENT" value={concreteCore.reinforcement} />
         <ReportInfoRow label="PËRGATITJA E KAMPIONIT / PREPARATION OF SPECIMEN METHOD" value={concreteCore.preparationMethod} />
         <ReportInfoRow label="KLASA E REZISTENCËS / RESISTANCE CLASS" value={concreteCore.resistanceClass} />
-        <ReportInfoRow label="OPERATORI I MARRJES SË KAMPIONIT / SAMPLING OPERATOR" value={concreteCore.samplingOperator || (sample?.collectionMethod === "Delivered by client" ? "KLIENTI / CLIENT" : sample?.collectedBy)} />
         <ReportInfoRow label="TESTI / TEST" value="MOSTRAT CILINDRIKE - MARRJA, EKZAMINIMI DHE TESTIMI NË SHTYPJE I TYRE / CORED SPECIMENS - TAKING, EXAMINING AND TESTING IN COMPRESSION" />
         <ReportInfoRow label="STANDARDI I TESTIMIT / TEST STANDARD" value={test?.standard || "BS EN 12504-1:2019"} />
         <ReportInfoRow label="VENDI KU ËSHTË PERFORMUAR TESTI / LAB. LOCATION" value={concreteCore.testingLocation || "01/A (Laboratori Fiziko-Mekanik / Physical - Mechanical laboratory)"} />
@@ -1244,7 +1234,6 @@ function ThermalInsulationReportPreview({
         <BilingualInfo sq="Data e pranimit" en="Receipt date" value={sample?.dateReceived} />
         <BilingualInfo sq="Fillimi i testimit" en="Testing start" value={thermalInsulation.testStartDate} />
         <BilingualInfo sq="Përfundimi i testimit" en="Testing end" value={thermalInsulation.testEndDate} />
-        <BilingualInfo sq="Operatori i kampionimit" en="Sampling operator" value={sample?.collectionMethod === "Delivered by client" ? "KLIENTI / CLIENT" : sample?.collectedBy} />
         <BilingualInfo sq="Vendndodhja e laboratorit" en="Lab location" value={thermalInsulation.testingLocation || "01/A (Lab. Fiziko-Mekanik / Physical-Mechanical laboratory)"} />
         <BilingualInfo sq="Temperatura" en="Temperature" value={thermalInsulation.temperature} />
         <BilingualInfo sq="Lagështia relative" en="Relative humidity" value={thermalInsulation.humidity} />
@@ -1321,7 +1310,6 @@ function SteelReportPreview({
       <div className="mt-1 grid grid-cols-[315px_1fr] gap-x-8 gap-y-1 text-[10pt] leading-[1.15]">
         <OfficialTestingDates start={steel.testStartDate} end={steel.testEndDate} />
         <OfficialMetaGrid className="contents" entries={[
-          { sq: "OPERATORI I MARRJES SË KAMPIONIT", en: "SAMPLING OPERATOR", value: samplingOperator(sample) },
           { sq: "TESTI", en: "TEST", value: "PËRCAKTIMI I KARAKTERISTIKAVE FIZIKO-MEKANIKE PËR MATERIALE METALIKE / METALLIC MATERIALS - TENSILE TESTING" },
           { sq: "STANDARDI I TESTIMIT", en: "TEST STANDARD", value: test?.standard || "BS EN ISO 15630-1:2019; BS EN ISO 6892-1:2020; BS 4449:2005+A3:2016" },
           { sq: "VENDI KU ËSHTË PERFORMUAR TESTI", en: "LAB. LOCATION", value: steel.testingLocation || "02/A Sektori i testimit të materialeve metalike / Metallic materials testing sector" }
@@ -1417,8 +1405,6 @@ function AggregateReportPreview({
   const retainedPoints = sortedChartRows.map((row) => `${round(chartX(row.sieveSizeMm), 1)},${round(chartY(100 - row.cumulativePassingPercent), 1)}`).join(" ");
   const issueDate = report.issuedAt || report.approvedAt || aggregate.testEndDate || sample?.reportDueDate;
   const sampleLabel = sample?.sampleDescription || sample?.sampleType;
-  const samplingOperator = sample?.collectionMethod === "Delivered by client" ? "KLIENTI / CLIENT" : sample?.collectedBy;
-
   return (
     <section className="report-a4 aggregate-gradation-report print-surface relative rounded-md border border-line bg-white p-6 text-[#111] shadow-sm">
       <header className="border-b border-black pb-1">
@@ -1456,7 +1442,6 @@ function AggregateReportPreview({
             <span>{formatEuropeanDate(aggregate.testEndDate)}</span>
           </div>
         </div>
-        <AggregateMeta label="OPERATORI I MARRJES SË KAMPIONIT / SAMPLING OPERATOR:" value={samplingOperator} />
         <AggregateMeta label="TESTI / TEST:" value="PËRCAKTIMI I SHPËRNDARJES SË MADHËSISË SË GRIMCAVE. METODA ME SITA* / DETERMINATION OF PARTICLE SIZE DISTRIBUTION. SIEVING METHOD*" />
         <AggregateMeta label="STANDARDI I TESTIMIT / TEST STANDARD:" value={test?.standard || "BS EN 933-1:2012"} />
         <AggregateMeta label="METODA E TESTIMIT / TEST METHOD:" value={aggregate.testMethod || "Larje dhe sitosje / Washing and sieving"} />
@@ -1656,7 +1641,6 @@ function AggregateChemicalReportPreview({
         <Info label="Receipt date" value={sample?.dateReceived} />
         <Info label="Testing start" value={aggregateChemical.testStartDate} />
         <Info label="Testing end" value={aggregateChemical.testEndDate} />
-        <Info label="Sampling operator" value={sample?.collectionMethod === "Delivered by client" ? "KLIENTI / CLIENT" : sample?.collectedBy} />
         <Info label="Test standard" value={test?.standard || "BS EN 1744-1:2009+A1:2012"} />
         <Info label="Lab location" value={aggregateChemical.testingLocation || "01/B Laboratori Kimik / Chemical laboratory"} />
         <Info label="Temperature" value={aggregateChemical.temperature} />
@@ -1736,7 +1720,6 @@ function AggregateLosAngelesReportPreview({
         <Info label="Receipt date" value={sample?.dateReceived} />
         <Info label="Testing start" value={aggregateLosAngeles.testStartDate} />
         <Info label="Testing end" value={aggregateLosAngeles.testEndDate} />
-        <Info label="Sampling operator" value={sample?.collectionMethod === "Delivered by client" ? "KLIENTI / CLIENT" : sample?.collectedBy} />
         <Info label="Test standard" value={test?.standard || "BS EN 1097-2:2020"} />
         <Info label="Lab location" value={aggregateLosAngeles.testingLocation || "01/A Laboratori Fiziko-Mekanik / Physical-Mechanical Laboratory"} />
         <Info label="Temperature" value={aggregateLosAngeles.temperature} />
@@ -1845,7 +1828,6 @@ function AggregateFreezeThawReportPreview({
         <Info label="Testing start" value={aggregateFreezeThaw.testStartDate} />
         <Info label="Testing end" value={aggregateFreezeThaw.testEndDate} />
         <Info label="Freeze-thaw cycles No." value={String(aggregateFreezeThaw.totalCycles || "-")} />
-        <Info label="Sampling operator" value={sample?.collectionMethod === "Delivered by client" ? "KLIENTI / CLIENT" : sample?.collectedBy} />
         <Info label="Test standard" value={test?.standard || "BS EN 1367-1:2007"} />
         <Info label="Lab location" value={aggregateFreezeThaw.testingLocation || "01/A Laboratori Fiziko-Mekanik / Physical-mechanical laboratory"} />
         <Info label="Temperature" value={aggregateFreezeThaw.temperature} />
@@ -1958,7 +1940,6 @@ function AggregateAcvReportPreview({
         <Info label="Receipt date" value={sample?.dateReceived} />
         <Info label="Testing start" value={aggregateAcv.testStartDate} />
         <Info label="Testing end" value={aggregateAcv.testEndDate} />
-        <Info label="Sampling operator" value={sample?.collectionMethod === "Delivered by client" ? "KLIENTI / CLIENT" : sample?.collectedBy} />
         <Info label="Test standard" value={test?.standard || "BS EN 1097-2:2020"} />
         <Info label="Lab location" value={aggregateAcv.testingLocation || "01/A Laboratori Fiziko-Mekanik / Physical-Mechanical laboratory"} />
         <Info label="Temperature" value={aggregateAcv.temperature} />
@@ -2067,7 +2048,6 @@ function AggregateDensityReportPreview({
         <Info label="Receipt date" value={sample?.dateReceived} />
         <Info label="Testing start" value={aggregateDensity.testStartDate} />
         <Info label="Testing end" value={aggregateDensity.testEndDate} />
-        <Info label="Sampling operator" value={sample?.collectionMethod === "Delivered by client" ? "KLIENTI / CLIENT" : sample?.collectedBy} />
         <Info label="Test method" value={aggregateDensity.testMethod || "Metoda me piknometer / Pycnometer method"} />
         <Info label="Test standard" value={test?.standard || "BS EN 1097-6:2022"} />
         <Info label="Lab location" value={aggregateDensity.testingLocation || "01/A Laboratori Fiziko-Mekanik / Physical-Mechanical Laboratory"} />
@@ -2162,7 +2142,6 @@ function AggregateFillerDensityReportPreview({
         <Info label="Receipt date" value={sample?.dateReceived} />
         <Info label="Testing start" value={aggregateFillerDensity.testStartDate} />
         <Info label="Testing end" value={aggregateFillerDensity.testEndDate} />
-        <Info label="Sampling operator" value={sample?.collectionMethod === "Delivered by client" ? "KLIENTI / CLIENT" : sample?.collectedBy} />
         <Info label="Test method" value={aggregateFillerDensity.testMethod || "METODA ME PIKNOMETER / PYCNOMETER METHOD"} />
         <Info label="Test standard" value={test?.standard || "BS EN 1097-7:2022"} />
         <Info label="Lab location" value={aggregateFillerDensity.testingLocation || "01/A Laboratori Fiziko-Mekanik / Physical-Mechanical Laboratory"} />
@@ -2248,7 +2227,6 @@ function AggregateSoundnessReportPreview({
         <Info label="Receipt date" value={sample?.dateReceived} />
         <Info label="Testing start" value={aggregateSoundness.testStartDate} />
         <Info label="Testing end" value={aggregateSoundness.testEndDate} />
-        <Info label="Sampling operator" value={sample?.collectionMethod === "Delivered by client" ? "KLIENTI / CLIENT" : sample?.collectedBy} />
         <Info label="Test standard" value={test?.standard || "BS EN 1367-2:2009"} />
         <Info label="Testing place" value={aggregateSoundness.testingLocation || "01/A Laboratori Fiziko-Mekanik / Physical-Mechanical laboratory"} />
         <Info label="Temperature" value={aggregateSoundness.temperature} />
@@ -2308,7 +2286,6 @@ function AggregateElongationReportPreview({
         <Info label="Sample" value={sample?.sampleDescription || sample?.sampleType} />
         <Info label="Sampling date" value={sample?.dateReceived} />
         <Info label="Testing date" value={aggregateElongation.testStartDate} />
-        <Info label="Sampling operator" value={sample?.collectionMethod === "Delivered by client" ? "KLIENTI / CLIENT" : sample?.collectedBy} />
         <Info label="Test standard" value={test?.standard || "BS 812-105.2:1980"} />
         <Info label="Testing place" value={aggregateElongation.testingLocation || "Laboratori Fiziko-Mekanik / Physical-mechanical laboratory"} />
         <Info label="Temperature" value={aggregateElongation.temperature} />
@@ -2456,7 +2433,6 @@ function AggregateShapeIndexReportPreview({
         <Info label="Receipt date" value={sample?.dateReceived} />
         <Info label="Testing start" value={aggregateShapeIndex.testStartDate} />
         <Info label="Testing end" value={aggregateShapeIndex.testEndDate} />
-        <Info label="Sampling operator" value={sample?.collectionMethod === "Delivered by client" ? "KLIENTI / CLIENT" : sample?.collectedBy} />
         <Info label="Test standard" value={test?.standard || "BS EN 933-4:2008"} />
         <Info label="Lab location" value={aggregateShapeIndex.testingLocation || "01/A Laboratori Fiziko-Mekanik / Physical-Mechanical Laboratory"} />
         <Info label="Temperature" value={aggregateShapeIndex.temperature} />
@@ -2540,7 +2516,6 @@ function AggregateFlakinessReportPreview({
         <Info label="Sample" value={sample?.sampleDescription || sample?.sampleType} />
         <Info label="Sampling date" value={sample?.dateReceived} />
         <Info label="Testing date" value={aggregateFlakiness.testStartDate} />
-        <Info label="Sampling operator" value={sample?.collectionMethod === "Delivered by client" ? "KLIENTI / CLIENT" : sample?.collectedBy} />
         <Info label="Test standard" value={test?.standard || "BS EN 933-3:2012"} />
         <Info label="Testing place" value={aggregateFlakiness.testingLocation || "Laboratori Fiziko-Mekanik / Physical-mechanical laboratory"} />
         <Info label="Temperature" value={aggregateFlakiness.temperature} />
