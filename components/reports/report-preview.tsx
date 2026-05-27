@@ -202,7 +202,7 @@ export function ReportPreview({
     ?.trim();
 
   return (
-    <section className="report-a4 concrete-cube-report print-surface relative rounded-md border border-line bg-white p-4 text-[11pt] leading-[1.05] text-black shadow-sm" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
+    <section className="report-a4 concrete-cube-report print-surface relative rounded-md border border-line bg-white p-4 text-[11pt] leading-[1.16] text-black shadow-sm" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
       <header className="border-b border-black pb-1">
         <div className="grid grid-cols-[120px_1fr_105px] items-start gap-3">
           <img src="/brand/sarp-logo.png" alt="SARP" className="mt-1 h-auto w-[100px]" />
@@ -218,7 +218,7 @@ export function ReportPreview({
         </div>
       </header>
 
-      <div className="mt-2 grid grid-cols-[335px_1fr] gap-x-5 gap-y-0 text-[11pt] leading-[1.05]">
+      <div className="mt-3 grid grid-cols-[335px_1fr] gap-x-5 gap-y-1 text-[11pt] leading-[1.18]">
         <ConcreteCubeMeta label="Nr. REGJISTRI / REGISTER No.:" value={sample?.sampleCode} />
         <ConcreteCubeMeta label="KLIENTI / PURCHASER:" value={client?.clientName} />
         <ConcreteCubeMeta label="ADRESA / ADDRESS:" value={client?.address} />
@@ -252,7 +252,7 @@ export function ReportPreview({
       </div>
 
       <div className="mt-3 font-bold">Të dhëna të Kampionit / <span className="italic">Test specimen characteristics</span></div>
-      <table className="mt-1 w-full border-collapse text-center text-[9.5pt] leading-[1.05]">
+      <table className="mt-1 w-full border-collapse text-center text-[9.5pt] leading-[1.12]">
         <thead>
           <tr>
             <th className="border border-black p-0.5">Kampioni<br /><span className="font-normal italic">Test specimen</span></th>
@@ -283,7 +283,7 @@ export function ReportPreview({
       </table>
 
       <div className="mt-2 font-bold">Rezultatet e testimit / <span className="italic">Test results</span></div>
-      <table className="mt-1 w-full border-collapse text-center text-[9.5pt] leading-[1.05]">
+      <table className="mt-1 w-full border-collapse text-center text-[9.5pt] leading-[1.12]">
         <thead>
           <tr>
             <th className="border border-black p-0.5">Kampioni<br /><span className="font-normal italic">Test specimen</span></th>

@@ -48,6 +48,15 @@ export default function ReportDetailPage() {
   const canReviewReport = canReviewTests(currentUser?.role);
   const recipientEmail = issueEmail || client?.email || "";
 
+  function downloadApprovedPdf() {
+    const originalTitle = document.title;
+    document.title = "";
+    window.print();
+    window.setTimeout(() => {
+      document.title = originalTitle;
+    }, 500);
+  }
+
   function sendReportToClient() {
     if (!recipientEmail || activeReport.reportStatus !== "Approved") return;
     const subject = `Raporti laboratorik SARP LAB - ${activeReport.reportNumber}`;
@@ -110,7 +119,7 @@ export default function ReportDetailPage() {
             <h2 className="text-base font-semibold text-ink">Dërgimi te klienti</h2>
             <div className="mt-4 space-y-3">
               <button
-                onClick={() => window.print()}
+                onClick={downloadApprovedPdf}
                 disabled={!["Approved", "Issued", "Sent to Client"].includes(activeReport.reportStatus)}
                 className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300"
               >
