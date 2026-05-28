@@ -1406,8 +1406,9 @@ function ConcreteCoreReportPreview({
   project?: Project;
   concreteCore: ConcreteCoreTest;
 }) {
-  const reportSpecimens = report.specimenCodes.length
-    ? concreteCore.specimens.filter((specimen) => report.specimenCodes.includes(specimen.specimenCode))
+  const selectedSpecimenCodes = report.specimenCodes ?? [];
+  const reportSpecimens = selectedSpecimenCodes.length
+    ? concreteCore.specimens.filter((specimen) => selectedSpecimenCodes.includes(specimen.specimenCode))
     : concreteCore.specimens;
   const shown = [reportSpecimens[0], reportSpecimens[1]];
   const reportRatioType = shown.some((specimen) => (specimen?.heightDiameterRatio ?? 0) >= 1.5) ? "1:2" : "1:1";
@@ -1422,82 +1423,172 @@ function ConcreteCoreReportPreview({
     cubicStrengthMpa: averageReportValues(shown.map((row) => row?.cubicStrengthMpa), 1)
   };
   const reportCode = reportRatioType === "1:2" ? "SL-RA-B-7.8/1.9.2" : "SL-RA-B-7.8/1.9.1";
-  const ratioLabel = reportRatioType === "1:2" ? "L/D 1:2" : "L/D 1:1";
+  const issueDate = report.issuedAt || report.approvedAt || concreteCore.testEndDate || sample?.reportDueDate;
+  const specimenColumns = shown.map((specimen, index) => specimen ? `Karrota ${index + 1}` : `Karrota ${index + 1}`);
+  const firstRows = reportRatioType === "1:2"
+    ? [
+        { no: "1", label: "Lartësia e karrotës", en: "Core drill height", symbol: "H", unit: "cm", values: shown.map((row) => row?.heightCm), average: averages.heightCm },
+        { no: "2", label: "Diametri i karrotës", en: "Core drill diameter", symbol: "D", unit: "cm", values: shown.map((row) => row?.diameterCm), average: averages.diameterCm }
+      ]
+    : [
+        { no: "1", label: "Diametri i karrotës", en: "Core drill diameter", symbol: "D", unit: "cm", values: shown.map((row) => row?.diameterCm), average: averages.diameterCm },
+        { no: "2", label: "Lartësia e karrotës", en: "Core drill height", symbol: "H", unit: "cm", values: shown.map((row) => row?.heightCm), average: averages.heightCm }
+      ];
+  const coreRows = [
+    ...firstRows,
+    { no: "3", label: "Raporti Lartësi - Diametër", en: "L - D Ratio", symbol: "L/D", unit: "-", values: shown.map((row) => row?.heightDiameterRatio), average: undefined },
+    { no: "4", label: "Pesha e karrotës", en: "Core drill weight", symbol: "P", unit: "kg", values: shown.map((row) => row?.weightKg), average: averages.weightKg },
+    { no: "5", label: "Densiteti volumor i betonit të ngurtësuar", en: "Volumetric density of hardened concrete", symbol: "γ", unit: "kg/m³", values: shown.map((row) => row?.densityKgM3), average: averages.densityKgM3 },
+    { no: "6", label: "Sipërfaqja ku aplikohet forca", en: "Contact Area", symbol: "A", unit: "cm²", values: shown.map((row) => row?.contactAreaCm2), average: averages.contactAreaCm2 },
+    { no: "7", label: "Ngarkesa", en: "Load", symbol: "F", unit: "kN", values: shown.map((row) => row?.loadKn), average: averages.loadKn },
+    { no: "8", label: "Rezistenca në shtypje cilindrike", en: "Cylindrical compressive strength", symbol: "Rck", unit: "MPa", values: shown.map((row) => row?.cylindricalStrengthMpa), average: averages.cylindricalStrengthMpa, strong: true },
+    { no: "9", label: "Rezistenca në shtypje kubike", en: "Cubic compressive strength", symbol: "Rck", unit: "MPa", values: shown.map((row) => row?.cubicStrengthMpa), average: averages.cubicStrengthMpa, strong: true }
+  ];
   return (
-    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
-      <ReportHeader report={report} code={reportCode} title="RAPORT TESTIMI / TEST REPORT" subtitle={`Rezistenca në shtypje e karrotave të betonit (${ratioLabel})`} />
-      <div className="mt-6 overflow-hidden rounded-md border border-line text-sm">
-        <ReportInfoRow label="Nr. REGJISTRI / REGISTER No." value={sample?.sampleCode} />
-        <ReportInfoRow label="KLIENTI / PURCHASER" value={client?.clientName} />
-        <ReportInfoRow label="ADRESA / ADDRESS" value={client?.address} />
-        <ReportInfoRow label="KONTAKTET / CONTACT" value={client?.phone || client?.email} />
-        <ReportInfoRow label="OBJEKTI / OBJECT" value={project?.projectName} />
-        <ReportInfoRow label="ELEMENTI / ELEMENT" value={concreteCore.element || sample?.sampleDescription} />
-        <ReportInfoRow label="KAMPIONI / SAMPLE" value="CILINDËR BETONI / CONCRETE CORE DRILL" />
-        <ReportInfoRow label="DATA E MARRJES SË KAMPIONIT / SAMPLING DATE" value={concreteCore.samplingDate || sample?.dateReceived} />
-        <ReportInfoRow label="DATA E BETONIMIT / CASTING DATE" value={concreteCore.castingDate || sample?.concretingDate} />
-        <div className="grid border-b border-line md:grid-cols-[280px_1fr]">
-          <div className="bg-lab-porcelain px-3 py-2 font-semibold text-ink">DATA E TESTIMIT / TESTING DATE</div>
-          <div className="grid md:grid-cols-2">
-            <div className="px-3 py-2">FILLIMI / STARTING: <span className="font-semibold text-ink">{formatEuropeanDate(concreteCore.testStartDate)}</span></div>
-            <div className="border-t border-line px-3 py-2 md:border-t-0 md:border-l">MBARIMI / ENDING: <span className="font-semibold text-ink">{formatEuropeanDate(concreteCore.testEndDate)}</span></div>
+    <section className="report-a4 concrete-core-report print-surface relative rounded-md border border-line bg-white p-4 text-[12pt] leading-[1.12] text-black shadow-sm" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
+      <header className="border-b-2 border-black pb-1">
+        <div className="grid grid-cols-[125px_1fr_102px] items-start gap-4">
+          <img src="/brand/sarp-logo.png" alt="SARP" className="mt-1 h-auto w-[110px]" />
+          <div className="pt-2 text-center">
+            <div className="text-[14pt] font-bold uppercase">RAPORT TESTIMI / TEST REPORT</div>
+            <div className="mt-5 text-[9.5pt] font-bold">Nr. / No. {report.reportNumber}</div>
           </div>
+          <img src="/brand/da-accreditation.svg" alt="DA accreditation LT 069 09 06 21" className="ml-auto h-auto w-[86px]" />
         </div>
-        <ReportInfoRow label="MATURIMI / CONCRETE AGE" value={shown.map((row) => row?.ageDays).filter(Boolean).join(", ")} />
-        <ReportInfoRow label="MADHËSIA MAX E GRIMCËS / ESTIMATED MAX SIZE OF AGGREGATE" value={concreteCore.maximumAggregateSize} />
-        <ReportInfoRow label="INSPEKTIMI VIZUAL / VISUAL INSPECTION" value={concreteCore.visualInspection || "OK"} />
-        <ReportInfoRow label="PRANI HEKURI / REINFORCEMENT" value={concreteCore.reinforcement} />
-        <ReportInfoRow label="PËRGATITJA E KAMPIONIT / PREPARATION OF SPECIMEN METHOD" value={concreteCore.preparationMethod} />
-        <ReportInfoRow label="KLASA E REZISTENCËS / RESISTANCE CLASS" value={concreteCore.resistanceClass} />
-        <ReportInfoRow label="TESTI / TEST" value="MOSTRAT CILINDRIKE - MARRJA, EKZAMINIMI DHE TESTIMI NË SHTYPJE I TYRE / CORED SPECIMENS - TAKING, EXAMINING AND TESTING IN COMPRESSION" />
-        <ReportInfoRow label="STANDARDI I TESTIMIT / TEST STANDARD" value={test?.standard || "BS EN 12504-1:2019"} />
-        <ReportInfoRow label="VENDI KU ËSHTË PERFORMUAR TESTI / LAB. LOCATION" value={concreteCore.testingLocation || "01/A (Laboratori Fiziko-Mekanik / Physical - Mechanical laboratory)"} />
-        <div className="grid md:grid-cols-[280px_1fr]">
-          <div className="bg-lab-porcelain px-3 py-2 font-semibold text-ink">KUSHTET AMBJENTALE / ENVIRONMENTAL CONDITIONS</div>
-          <div className="grid md:grid-cols-2">
-            <div className="px-3 py-2">Temperatura / Temperature: <span className="font-semibold text-ink">{concreteCore.temperature || "-"}</span></div>
-            <div className="border-t border-line px-3 py-2 md:border-t-0 md:border-l">Lagështia / Humidity: <span className="font-semibold text-ink">{concreteCore.humidity || "-"}</span></div>
-          </div>
+        <div className="mt-1 text-[8.5pt] italic leading-tight">
+          <div>Kodi / Code: {reportCode}</div>
+          <div>Faqe / Page: 1/1</div>
+        </div>
+      </header>
+
+      <div className="mt-5 grid grid-cols-[295px_1fr] gap-x-7 gap-y-[3px] text-[9.7pt] leading-[1.08]">
+        <CoreMetaRow sq="Nr. REGJISTRI" en="REGISTER No." value={sample?.sampleCode} />
+        <CoreMetaRow sq="KLIENTI" en="PURCHASER" value={client?.clientName} />
+        <CoreMetaRow sq="ADRESA" en="ADDRESS" value={client?.address} />
+        <CoreMetaRow sq="KONTAKTET" en="CONTACT" value={client?.phone || client?.email} />
+        <CoreMetaRow sq="OBJEKTI" en="OBJECT" value={project?.projectName} />
+        <CoreMetaRow sq="ELEMENTI" en="ELEMENT" value={concreteCore.element || sample?.sampleDescription} />
+        <CoreMetaRow sq="KAMPIONI" en="SAMPLE" value="CILINDËR BETONI / CONCRETE CORE DRILL" />
+        <CoreMetaRow sq="DATA E MARRJES SË KAMPIONIT" en="SAMPLING DATE" value={concreteCore.samplingDate || sample?.dateReceived} />
+        <CoreMetaRow sq="DATA E BETONIMIT" en="CASTING DATE" value={concreteCore.castingDate || sample?.concretingDate} />
+        <div className="font-bold uppercase">DATA E TESTIMIT / <span className="italic font-normal normal-case">TESTING DATE</span></div>
+        <div className="grid grid-cols-[88px_1fr] gap-x-5 font-semibold">
+          <span>FILLIMI / <span className="italic font-normal">STARTING</span>:</span>
+          <span>{formatEuropeanDate(concreteCore.testStartDate)}</span>
+          <span>MBARIMI / <span className="italic font-normal">ENDING</span>:</span>
+          <span>{formatEuropeanDate(concreteCore.testEndDate)}</span>
+        </div>
+        <CoreMetaRow sq="MATURIMI" en="CONCRETE AGE" value={shown.map((row) => row?.ageDays).filter(Boolean).join(", ")} />
+        <CoreMetaRow sq="MADHËSIA MAX E GRIMCËS" en="ESTIMATED MAX SIZE OF AGGREGATE" value={concreteCore.maximumAggregateSize} />
+        <CoreMetaRow sq="INSPEKTIMI VIZUAL" en="VISUAL INSPECTION" value={concreteCore.visualInspection || "OK"} />
+        <CoreMetaRow sq="PRANI HEKURI" en="REINFORCEMENT" value={concreteCore.reinforcement} />
+        <CoreMetaRow sq="PËRGATITJA E KAMPIONIT" en="PREPARATION OF SPECIMEN METHOD" value={concreteCore.preparationMethod || "ME PRERJE / CUTTING"} />
+        <CoreMetaRow sq="KLASA E REZISTENCËS" en="RESISTANCE CLASS" value={concreteCore.resistanceClass} />
+        <CoreMetaRow sq="TESTI" en="TEST" value="MOSTRAT CILINDRIKE - MARRJA, EKZAMINIMI DHE TESTIMI NË SHTYPJE I TYRE / CORED SPECIMENS - TAKING, EXAMINING AND TESTING IN COMPRESSION" />
+        <CoreMetaRow sq="STANDARDI I TESTIMIT" en="TEST STANDARD" value={test?.standard || "BS EN 12504-1:2019"} />
+        <CoreMetaRow sq="VENDI KU ËSHTË PERFORMUAR TESTI" en="LAB. LOCATION" value={concreteCore.testingLocation || "01/A (Laboratori Fiziko-Mekanik / Physical - Mechanical laboratory)"} />
+        <div className="font-bold uppercase">KUSHTET AMBJENTALE / <span className="italic font-normal normal-case">ENVIRONMENTAL CONDITIONS</span>:</div>
+        <div className="grid grid-cols-[128px_96px] gap-x-4 font-normal">
+          <span>Temperatura / <span className="italic">Temperature</span>:</span>
+          <span className="border-b border-black text-center">{concreteCore.temperature || "-"}{concreteCore.temperature ? "°C" : ""}</span>
+          <span>Lagështia / <span className="italic">Humidity</span>:</span>
+          <span className="border-b border-black text-center">{concreteCore.humidity || "-"}{concreteCore.humidity ? "%" : ""}</span>
         </div>
       </div>
-      <div className="mt-6 overflow-x-auto rounded-md border border-line">
-        <table className="report-table w-full min-w-[820px] text-left text-xs">
-          <thead className="table-head">
-            <tr><th className="px-3 py-2">Nr.</th><th className="px-3 py-2">Parametri i matur<br /><span className="font-normal italic">Measured parameters</span></th><th className="px-3 py-2">Simboli</th><th className="px-3 py-2">Njësia</th><th className="px-3 py-2">Karrota 1</th><th className="px-3 py-2">Karrota 2</th><th className="px-3 py-2">Vlera mesatare</th></tr>
-          </thead>
-          <tbody className="divide-y divide-line">
-            <CoreReportRow no="1" label="Diametri i karrotës / Core drill diameter" symbol="D" unit="cm" values={shown.map((row) => row?.diameterCm ?? 0)} average={averages.diameterCm} />
-            <CoreReportRow no="2" label="Lartësia e karrotës / Core drill height" symbol="H" unit="cm" values={shown.map((row) => row?.heightCm ?? 0)} average={averages.heightCm} />
-            <CoreReportRow no="3" label="Raporti Lartësi - Diameter / L - D Ratio" symbol="L/D" unit="-" values={shown.map((row) => row?.heightDiameterRatio ?? 0)} average={undefined} />
-            <CoreReportRow no="4" label="Pesha e karrotës / Core drill weight" symbol="P" unit="kg" values={shown.map((row) => row?.weightKg ?? 0)} average={averages.weightKg} />
-            <CoreReportRow no="5" label="Densiteti volumor i betonit të ngurtësuar / Volumetric density of hardened concrete" symbol="γ" unit="kg/m3" values={shown.map((row) => row?.densityKgM3 ?? 0)} average={averages.densityKgM3} />
-            <CoreReportRow no="6" label="Sipërfaqja ku aplikohet forca / Contact Area" symbol="A" unit="cm2" values={shown.map((row) => row?.contactAreaCm2 ?? 0)} average={averages.contactAreaCm2} />
-            <CoreReportRow no="7" label="Ngarkesa / Load" symbol="F" unit="kN" values={shown.map((row) => row?.loadKn ?? 0)} average={averages.loadKn} />
-            <CoreReportRow no="8" label="Rezistenca në shtypje cilindrike / Cylindrical compressive strength" symbol="Rck" unit="MPa" values={shown.map((row) => row?.cylindricalStrengthMpa ?? 0)} average={averages.cylindricalStrengthMpa} strong />
-            <CoreReportRow no="9" label="Rezistenca në shtypje kubike / Cubic compressive strength" symbol="Rck" unit="MPa" values={shown.map((row) => row?.cubicStrengthMpa ?? 0)} average={averages.cubicStrengthMpa} strong />
-          </tbody>
-        </table>
+
+      <table className="official-table core-report-table mt-4 w-full table-fixed border-collapse text-center text-[9.2pt]">
+        <thead>
+          <tr>
+            <th className="w-[32px]">Nr.<br /><span>No.</span></th>
+            <th>Parametri i matur<br /><span>Measured parameters</span></th>
+            <th className="w-[70px]">Simboli<br /><span>Symbol</span></th>
+            <th className="w-[56px]">Njësia<br /><span>Unit</span></th>
+            <th className="w-[90px]">{specimenColumns[0]}<br /><span>Core drill 1</span></th>
+            <th className="w-[90px]">{specimenColumns[1]}<br /><span>Core drill 2</span></th>
+            <th className="w-[98px]">Vlera mesatare<br /><span>Average Value</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {coreRows.map((row) => <CoreReportRow key={row.no} {...row} />)}
+        </tbody>
+      </table>
+
+      <div className="mt-1 text-[8.2pt] leading-tight">
+        Pasiguria në matje për përcaktimin e rezistencës në shtypje të karrotave të betonit është 0,9 MPa / <span className="italic">Determination of compressive strength of concrete core drill measurement uncertainty is 0,9 MPa</span>
       </div>
-      <div className="mt-2 text-xs text-muted">Pasiguria në matje për përcaktimin e rezistencës në shtypje të karrotave të betonit është 0,9 MPa / Determination of compressive strength of concrete core drill measurement uncertainty is 0,9 MPa.</div>
-      <div className="mt-1 text-xs text-muted">Yll (*) tregon që testi është i akredituar / Asterisk (*) means that the laboratory is accredited for this test.</div>
-      <div className="mt-6 soft-panel p-4 text-sm text-ink"><div className="font-semibold">Shënime / Notes</div><p className="mt-1">{concreteCore.notes || "Rezultatet në këtë raport testimi i përkasin vetëm mostrës së testuar."}</p></div>
-      <div className="mt-8 grid gap-6 sm:grid-cols-2"><Signature label="TESTUAR NGA / TESTED BY" value={concreteCore.technicianName || report.draftedBy} /><Signature label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={headOfLabName(concreteCore.checkedBy)} /></div>
+      <div className="mt-1 text-[8.2pt] leading-tight">Yll (*) tregon që testi është i akredituar / <span className="italic">Asterisk (*) means that the laboratory is accredited for this test</span></div>
+
+      <div className="mt-4 grid grid-cols-[105px_1fr] items-end gap-2 text-[9pt]">
+        <div className="pl-5 italic">Shënime / Notes:</div>
+        <div className="min-h-4 border-b border-dotted border-black">{concreteCore.notes}</div>
+        <div />
+        <div className="min-h-4 border-b border-dotted border-black" />
+      </div>
+
+      <div className="mt-5 grid grid-cols-2 gap-16 text-center text-[8.8pt]">
+        <div><div className="font-bold">TESTUAR NGA / <span className="italic font-normal">TESTED BY</span></div><div className="mt-2 font-bold">{concreteCore.technicianName || report.draftedBy || "-"}</div></div>
+        <div><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic font-normal">LABORATORY RESPONSIBLE</span></div><div className="mt-2 font-bold">{headOfLabName(concreteCore.checkedBy)}</div></div>
+      </div>
+
+      <div className="report-disclaimers mt-7 space-y-0.5 text-[7.4pt] leading-tight">
+        <p>Rezultatet në këtë raport testimi i përkasin vetëm mostrës së testuar. / <span className="italic">The results relate only to the items tested.</span></p>
+        <p>Ky raport testimi nuk mund të riprodhohet në mënyrë të pjesshme pa aprovimin me shkrim të laboratorit. / <span className="italic">The test report shall not be reproduced except in full without the written approval of the laboratory.</span></p>
+      </div>
+      <div className="report-issue-date mt-5 grid grid-cols-[300px_150px] items-end gap-4 text-[8.8pt]">
+        <div>Data e Lëshimit të Raportit të Testimit / <span className="italic">Test Report Issue Date:</span></div>
+        <div className="border-b border-black text-center">{formatEuropeanDate(issueDate)}</div>
+      </div>
+      <footer className="mt-4 text-center text-[6.5pt] leading-tight text-blue-700">
+        <div className="font-bold">SARP&amp;LAB</div>
+        <div>Adresa: Autostrada Tiranë-Durrës, km 29, Fshati Vrrin-Komuna Rrashbull, Durrës Shqipëri. Mob: +355 67 20 74 571; Web: www.sarpandlab.al; Email: d.alliu@sarpandlab.al; NIPT: L 41526502 B</div>
+      </footer>
     </section>
   );
 }
 
-function CoreReportRow({ no, label, symbol, unit, values, average, strong }: { no: string; label: string; symbol: string; unit: string; values: number[]; average?: number; strong?: boolean }) {
+function CoreMetaRow({ sq, en, value }: { sq: string; en: string; value?: string | number }) {
+  return (
+    <>
+      <div className="font-bold uppercase">{sq} / <span className="italic font-normal normal-case">{en}</span>:</div>
+      <div className="font-semibold">{formatEuropeanDateRange(value?.toString()) || "-"}</div>
+    </>
+  );
+}
+
+function CoreReportRow({
+  no,
+  label,
+  en,
+  symbol,
+  unit,
+  values,
+  average,
+  strong
+}: {
+  no: string;
+  label: string;
+  en: string;
+  symbol: string;
+  unit: string;
+  values: Array<number | undefined>;
+  average?: number;
+  strong?: boolean;
+}) {
   const padded = [values[0], values[1]];
   return (
     <tr>
-      <td className="px-3 py-2 font-semibold text-ink">{no}</td>
-      <td className="px-3 py-2">{label}</td>
-      <td className="px-3 py-2 font-semibold text-ink">{symbol}</td>
-      <td className="px-3 py-2">{unit}</td>
-      {padded.map((value, index) => <td key={index} className={`px-3 py-2 ${strong ? "font-semibold text-ink" : ""}`}>{value || value === 0 ? value : "-"}</td>)}
-      <td className={`px-3 py-2 ${strong ? "font-semibold text-ink" : ""}`}>{average || average === 0 ? average : "-"}</td>
+      <td>{no}</td>
+      <td className={`text-left ${strong ? "font-bold" : ""}`}>{label} / <span>{en}</span></td>
+      <td className={strong ? "font-bold" : ""}>{symbol}</td>
+      <td className={strong ? "font-bold" : ""}>{unit}</td>
+      {padded.map((value, index) => <td key={index} className={strong ? "font-bold" : ""}>{formatCoreValue(value)}</td>)}
+      <td className={strong ? "font-bold" : "font-bold"}>{formatCoreValue(average)}</td>
     </tr>
   );
+}
+
+function formatCoreValue(value?: number) {
+  return typeof value === "number" && Number.isFinite(value) ? value.toString() : "-";
 }
 
 function averageReportValues(values: Array<number | undefined>, digits = 1) {

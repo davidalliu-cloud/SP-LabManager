@@ -312,6 +312,39 @@ textarea {
     right: 0 !important;
     bottom: 4mm !important;
   }
+
+  .concrete-core-report {
+    width: 255mm !important;
+    max-width: 255mm !important;
+    height: 360mm !important;
+    min-height: 0 !important;
+    margin: 8mm auto -95mm !important;
+    padding: 8mm 14mm 5mm !important;
+    overflow: hidden !important;
+    zoom: 0.76;
+    font-family: "Times New Roman", Times, serif !important;
+    font-size: 12pt !important;
+  }
+
+  .concrete-core-report .report-disclaimers {
+    position: absolute !important;
+    left: 14mm !important;
+    right: 14mm !important;
+    bottom: 21mm !important;
+  }
+
+  .concrete-core-report .report-issue-date {
+    position: absolute !important;
+    left: 14mm !important;
+    bottom: 10mm !important;
+  }
+
+  .concrete-core-report footer {
+    position: absolute !important;
+    left: 14mm !important;
+    right: 14mm !important;
+    bottom: 3mm !important;
+  }
 }
 
 @layer components {
