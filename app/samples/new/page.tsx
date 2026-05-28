@@ -8,6 +8,7 @@ import {
   getAccreditedTestById,
   getAccreditedTestsForSampleType,
   isAggregateGranulometrySampleType,
+  isAsphaltSampleType,
   isConcreteCompressiveAccreditedTest,
   isSteelSampleType
 } from "@/lib/accredited-tests";
@@ -49,6 +50,7 @@ export default function NewSamplePage() {
   const selectedTest = getAccreditedTestById(accreditedTestId) ?? testOptions[0];
   const showConcreteSchedule = isConcreteCompressiveAccreditedTest(selectedTest);
   const showSteelWorksheet = isSteelSampleType(sampleType);
+  const showAsphaltWorksheet = isAsphaltSampleType(sampleType);
   const activeEmployees = store.users.filter((user) => user.isActive !== false);
   const defaultTechnicianId =
     activeEmployees.find((user) => user.fullName.toLowerCase().includes("astrit"))?.id ??
@@ -148,7 +150,12 @@ export default function NewSamplePage() {
             ))}
           </select>
         </Field>
-        <Field label={showConcreteSchedule ? "Numri total i kubeve të pranuara" : showSteelWorksheet ? "Numri total i mostrave të çelikut të pranuara" : "Sasia e pranuar"}><input name="quantity" required type="number" min="1" defaultValue={showConcreteSchedule ? "60" : showSteelWorksheet ? "6" : "1"} className="input" /></Field>
+        {showAsphaltWorksheet ? (
+          <div className="soft-panel p-4 text-sm text-muted lg:col-span-2">
+            Për asfalt mund të regjistrohet vetëm Tapet, vetëm Binder, ose Tapet + Binder në të njëjtin kampion. Fleta e testimit më pas ruan të dhënat e përbashkëta dhe raportet dalin veçmas.
+          </div>
+        ) : null}
+        <Field label={showConcreteSchedule ? "Numri total i kubeve të pranuara" : showSteelWorksheet ? "Numri total i mostrave të çelikut të pranuara" : showAsphaltWorksheet ? "Numri i mostrave të asfaltit të pranuara" : "Sasia e pranuar"}><input name="quantity" required type="number" min="1" defaultValue={showConcreteSchedule ? "60" : showSteelWorksheet ? "6" : showAsphaltWorksheet ? "2" : "1"} className="input" /></Field>
         <Field label="Data e pranimit"><input name="dateReceived" required type="date" defaultValue={defaultReceivedDate} className="input" /></Field>
         <Field label="Ora e pranimit"><input name="timeReceived" required type="time" defaultValue="09:00" className="input" /></Field>
         <Field label="Mënyra e dorëzimit">

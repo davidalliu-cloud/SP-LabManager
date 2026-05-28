@@ -77,6 +77,74 @@ export function calculateAggregateGradation(rows: Array<{ sieveSizeMm: number; r
   });
 }
 
+export function calculateAsphaltBitumen(input: {
+  basketFilterMassG: number;
+  beforeExtractionMassG: number;
+  afterExtractionMassG: number;
+  fillerMassG: number;
+}) {
+  const conglomerateMassG = round(input.beforeExtractionMassG - input.basketFilterMassG, 1);
+  const aggregateMassG = round(input.afterExtractionMassG - input.basketFilterMassG + input.fillerMassG, 1);
+  const bitumenMassG = round(conglomerateMassG - aggregateMassG, 1);
+  return {
+    ...input,
+    conglomerateMassG,
+    aggregateMassG,
+    bitumenMassG,
+    bitumenContentPercent: conglomerateMassG ? round((bitumenMassG / conglomerateMassG) * 100, 2) : 0,
+    bitumenOnAggregatePercent: aggregateMassG ? round((bitumenMassG / aggregateMassG) * 100, 2) : 0
+  };
+}
+
+export function calculateAsphaltMarshallDensity(input: {
+  airMassG: number;
+  waterMassG: number;
+  ssdMassG: number;
+  waterTemperatureC: number;
+}) {
+  const waterDensityGcm3 = round(1.00025205 + (7.59 * input.waterTemperatureC - 5.32 * input.waterTemperatureC ** 2) / 1_000_000, 5);
+  const bulkDensityGcm3 = input.ssdMassG - input.waterMassG ? round((input.airMassG / (input.ssdMassG - input.waterMassG)) * waterDensityGcm3, 3) : 0;
+  return { waterDensityGcm3, bulkDensityGcm3 };
+}
+
+export function calculateAsphaltMaximumDensity(input: {
+  conglomerateMassG: number;
+  pycnometerMassG: number;
+  pycnometerWaterMassG: number;
+  pycnometerSampleWaterMassG: number;
+}) {
+  const denominator = input.pycnometerWaterMassG + input.conglomerateMassG - input.pycnometerSampleWaterMassG;
+  return denominator ? round(input.conglomerateMassG / denominator, 3) : 0;
+}
+
+export function calculateAsphaltAirVoids(maximumDensityGcm3: number, bulkDensityGcm3: number) {
+  if (!maximumDensityGcm3) return 0;
+  return round(((maximumDensityGcm3 - bulkDensityGcm3) / maximumDensityGcm3) * 100, 1);
+}
+
+export function calculateMarshallCorrectionCoefficient(heightMm: number) {
+  const volumeMm3 = Math.PI * 50.8 ** 2 * heightMm;
+  return round(5.2 * Math.exp(-3.2e-6 * volumeMm3), 3);
+}
+
+export function calculateAsphaltCompaction(input: {
+  specimenAirMassG: number;
+  specimenParaffinAirMassG: number;
+  specimenParaffinWaterMassG: number;
+  paraffinSpecificGravity: number;
+  maximumDensityGcm3: number;
+}) {
+  const paraffinMassG = input.specimenParaffinAirMassG - input.specimenAirMassG;
+  const apparentDisplacedVolume = input.specimenParaffinAirMassG - input.specimenParaffinWaterMassG;
+  const paraffinVolume = input.paraffinSpecificGravity ? paraffinMassG / input.paraffinSpecificGravity : 0;
+  const specimenVolume = apparentDisplacedVolume - paraffinVolume;
+  const bulkSpecificGravityGcm3 = specimenVolume ? round(input.specimenAirMassG / specimenVolume, 3) : 0;
+  return {
+    bulkSpecificGravityGcm3,
+    compactionPercent: input.maximumDensityGcm3 ? round((bulkSpecificGravityGcm3 / input.maximumDensityGcm3) * 100, 1) : 0
+  };
+}
+
 export function calculateLosAngelesResults(rows: Array<{ fractionMassG: number }>, retainedOnOnePointSixMmG: number) {
   const totalMassG = round(rows.reduce((sum, row) => sum + (row.fractionMassG || 0), 0), 1);
   const passingOnePointSixMmG = round(Math.max(0, totalMassG - retainedOnOnePointSixMmG), 1);

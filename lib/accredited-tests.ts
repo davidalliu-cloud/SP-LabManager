@@ -22,7 +22,10 @@ const sampleTypeDisplayNames: Record<string, string> = {
   "Rebar / Shufër Çeliku": "Shufër Çeliku / Rebar",
   "Llac": "Llaç / Mortar",
   "Llaç": "Llaç / Mortar",
-  "Mortar": "Llaç / Mortar"
+  "Mortar": "Llaç / Mortar",
+  "Tapet": "Tapet / Wearing Course",
+  "Binder": "Binder / Binder Course",
+  "Tapet + Binder": "Tapet + Binder / Asphalt Mixture"
 };
 
 const sampleTypeAliases: Record<string, string> = {
@@ -49,7 +52,13 @@ const sampleTypeAliases: Record<string, string> = {
   "Llac": "Llaç / Mortar",
   "Llaç": "Llaç / Mortar",
   "Mortar": "Llaç / Mortar",
-  "Llaç / Mortar": "Llaç / Mortar"
+  "Llaç / Mortar": "Llaç / Mortar",
+  "Tapet": "Tapet / Wearing Course",
+  "Binder": "Binder / Binder Course",
+  "Tapet + Binder": "Tapet + Binder / Asphalt Mixture",
+  "Tapet / Wearing Course": "Tapet / Wearing Course",
+  "Binder / Binder Course": "Binder / Binder Course",
+  "Tapet + Binder / Asphalt Mixture": "Tapet + Binder / Asphalt Mixture"
 };
 
 function displaySampleType(sampleType: string) {
@@ -122,6 +131,9 @@ const accreditedTestRows: Array<[string, string, string, string, string?, string
   ["AT-MORT-DRY-DENS", "Llaç", "Përcaktimi i densitetit specifik në të thatë të llaçit të ngurtësuar", "BS EN 1015-10:1999", "< 3000 kg/m3"],
   ["AT-MORT-FRESH-DENS", "Llaç", "Përcaktimi i densitetit specifik i llaçit të freskët", "BS EN 1015-6:1999", "< 3000 kg/m3"],
   ["AT-MORT-CHEM", "Llaç", "Analizat kimike të llaçeve. Përcaktimi i oksideve në llaçe", "BS 4551:2005 + A2:2013", "SiO2, CaO, MgO, SO3, lime content"],
+  ["AT-ASPHALT-COMBINED-TAPET", "Tapet", "Përcaktimi i vetive fiziko-mekanike të asfaltobetonit", "BS EN 12697-1:2020; BS EN 12697-2:2015+A1:2019; BS EN 12697-6:2020; BS EN 12697-5:2018; BS EN 12697-34:2020", "Bitum 3.0÷6.0%; granulometri; densitet; stabilitet Marshall", "BS EN 12697-27:2017"],
+  ["AT-ASPHALT-COMBINED-BINDER", "Binder", "Përcaktimi i vetive fiziko-mekanike të asfaltobetonit", "BS EN 12697-1:2020; BS EN 12697-2:2015+A1:2019; BS EN 12697-6:2020; BS EN 12697-5:2018; BS EN 12697-34:2020", "Bitum 3.0÷6.0%; granulometri; densitet; stabilitet Marshall", "BS EN 12697-27:2017"],
+  ["AT-ASPHALT-COMBINED-BOTH", "Tapet + Binder", "Përcaktimi i vetive fiziko-mekanike të asfaltobetonit", "BS EN 12697-1:2020; BS EN 12697-2:2015+A1:2019; BS EN 12697-6:2020; BS EN 12697-5:2018; BS EN 12697-34:2020", "Bitum 3.0÷6.0%; granulometri; densitet; stabilitet Marshall", "BS EN 12697-27:2017"],
   ["AT-ELONG-SAND", "Sand", "Përcaktimi i indeksit të zgjatimit", "BS 812-105.2:1980", "0÷100 %"],
   ["AT-ELONG-GRAVEL-1", "Gravel 1", "Përcaktimi i indeksit të zgjatimit", "BS 812-105.2:1980", "0÷100 %"],
   ["AT-ELONG-GRAVEL-2", "Gravel 2", "Përcaktimi i indeksit të zgjatimit", "BS 812-105.2:1980", "0÷100 %"],
@@ -310,6 +322,14 @@ export function isMortarSampleType(sampleType: string) {
 
 export function isMortarAccreditedTest(testIdOrType?: string) {
   return Boolean(testIdOrType?.startsWith("AT-MORT-") || testIdOrType?.toLocaleLowerCase("sq-AL").includes("llaç"));
+}
+
+export function isAsphaltSampleType(sampleType: string) {
+  return ["Tapet / Wearing Course", "Binder / Binder Course", "Tapet + Binder / Asphalt Mixture"].includes(normalizeSampleType(sampleType));
+}
+
+export function isAsphaltAccreditedTest(testIdOrType?: string) {
+  return Boolean(testIdOrType?.startsWith("AT-ASPHALT-") || testIdOrType === "Përcaktimi i vetive fiziko-mekanike të asfaltobetonit");
 }
 
 export function getMortarTestKind(testIdOrType?: string) {

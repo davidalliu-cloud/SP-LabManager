@@ -5,14 +5,15 @@ import { useParams, useRouter } from "next/navigation";
 import { Dispatch, FormEvent, SetStateAction, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { getMortarTestKind, isAggregateAcvAccreditedTest, isAggregateBulkDensityAccreditedTest, isAggregateChemicalAccreditedTest, isAggregateDensityAbsorptionAccreditedTest, isAggregateElongationIndexAccreditedTest, isAggregateFillerDensityAccreditedTest, isAggregateFlakinessIndexAccreditedTest, isAggregateFreezeThawAccreditedTest, isAggregateGranulometrySampleType, isAggregateLosAngelesAccreditedTest, isAggregateSandEquivalentAccreditedTest, isAggregateShapeIndexAccreditedTest, isAggregateSoundnessAccreditedTest, isCementBlaineAstmAccreditedTest, isCementBlaineBsEnAccreditedTest, isCementConsistencyAccreditedTest, isCementStrengthAccreditedTest, isConcreteCoreAccreditedTest, isConcreteDensityAccreditedTest, isConcreteFlexuralAccreditedTest, isConcreteIndirectTensileAccreditedTest, isConcreteWaterPenetrationAccreditedTest, isMortarAccreditedTest, isSteelSampleType, isThermalInsulationAccreditedTest } from "@/lib/accredited-tests";
+import { getMortarTestKind, isAggregateAcvAccreditedTest, isAggregateBulkDensityAccreditedTest, isAggregateChemicalAccreditedTest, isAggregateDensityAbsorptionAccreditedTest, isAggregateElongationIndexAccreditedTest, isAggregateFillerDensityAccreditedTest, isAggregateFlakinessIndexAccreditedTest, isAggregateFreezeThawAccreditedTest, isAggregateGranulometrySampleType, isAggregateLosAngelesAccreditedTest, isAggregateSandEquivalentAccreditedTest, isAggregateShapeIndexAccreditedTest, isAggregateSoundnessAccreditedTest, isAsphaltAccreditedTest, isCementBlaineAstmAccreditedTest, isCementBlaineBsEnAccreditedTest, isCementConsistencyAccreditedTest, isCementStrengthAccreditedTest, isConcreteCoreAccreditedTest, isConcreteDensityAccreditedTest, isConcreteFlexuralAccreditedTest, isConcreteIndirectTensileAccreditedTest, isConcreteWaterPenetrationAccreditedTest, isMortarAccreditedTest, isSteelSampleType, isThermalInsulationAccreditedTest } from "@/lib/accredited-tests";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { useLabStore } from "@/lib/lab-store";
 import { canEditTestData, canGenerateReportForTest, canReviewTests, canViewClientIdentity } from "@/lib/permissions";
-import type { LabTest, LabUser, MortarTest, MortarTestKind, Sample } from "@/lib/types";
+import type { AsphaltReportKind, LabTest, LabUser, MortarTest, MortarTestKind, Sample } from "@/lib/types";
 
 const aggregateSieveSizes = [125, 80, 63, 37.5, 31.5, 25, 20, 16, 12.5, 8, 4, 2, 1, 0.5, 0.25, 0.125, 0.063, 0];
 const mortarSieveSizes = [8, 4, 2, 1, 0.5, 0.25, 0.125, 0.063, 0.0001];
+const asphaltSieveSizes = [31.5, 25, 20, 16, 12.5, 8, 4, 2, 0.5, 0.25, 0.063, 0];
 
 export default function TestDetailPage() {
   const params = useParams<{ id: string }>();
@@ -35,6 +36,7 @@ export default function TestDetailPage() {
   const concreteDensity = store.concreteDensityTests.find((item) => item.testId === activeTest.id);
   const concreteIndirectTensile = store.concreteIndirectTensileTests.find((item) => item.testId === activeTest.id);
   const concreteCore = store.concreteCoreTests.find((item) => item.testId === activeTest.id);
+  const asphalt = store.asphaltTests.find((item) => item.testId === activeTest.id);
   const thermalInsulation = store.thermalInsulationTests.find((item) => item.testId === activeTest.id);
   const cementConsistency = store.cementConsistencyTests.find((item) => item.testId === activeTest.id);
   const cementStrength = store.cementStrengthTests.find((item) => item.testId === activeTest.id);
@@ -55,7 +57,9 @@ export default function TestDetailPage() {
   const aggregateSandEquivalent = store.aggregateSandEquivalentTests.find((item) => item.testId === activeTest.id);
   const aggregateSoundness = store.aggregateSoundnessTests.find((item) => item.testId === activeTest.id);
   const report = store.reports.find((item) => item.testId === activeTest.id);
-  const canGenerateReport = canGenerateReportForTest(currentUser?.role, activeTest.status, Boolean(report));
+  const nonAsphaltReport = store.reports.find((item) => item.testId === activeTest.id && !item.reportKind);
+  const canGenerateReport = canGenerateReportForTest(currentUser?.role, activeTest.status, Boolean(nonAsphaltReport));
+  const canGenerateAsphaltReport = (kind: AsphaltReportKind) => canGenerateReportForTest(currentUser?.role, activeTest.status, Boolean(store.reports.some((item) => item.testId === activeTest.id && item.reportKind === kind)));
   const activeEmployees = store.users.filter((user) => user.isActive !== false);
   const existingSpecimens =
     concrete?.specimens && concrete.specimens.length
@@ -87,6 +91,9 @@ export default function TestDetailPage() {
   const [elongationRowCount, setElongationRowCount] = useState(Math.max(aggregateElongation?.rows.length ?? 4, 4));
   const [mortarRowCount, setMortarRowCount] = useState(Math.max(mortar?.strength?.length ?? mortar?.adhesion?.length ?? 3, 3));
   const [coreRowCount, setCoreRowCount] = useState(Math.max(sample?.quantity ?? concreteCore?.specimens.length ?? 2, 2));
+  const [asphaltDensityRows, setAsphaltDensityRows] = useState(Math.max(asphalt?.marshallDensity.length ?? 3, 3));
+  const [asphaltMaxDensityRows, setAsphaltMaxDensityRows] = useState(Math.max(asphalt?.maximumDensity.length ?? 2, 2));
+  const [asphaltStabilityRows, setAsphaltStabilityRows] = useState(Math.max(asphalt?.marshallStability.length ?? 3, 3));
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -856,9 +863,74 @@ export default function TestDetailPage() {
     });
   }
 
+  function submitAsphalt(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    store.saveAsphaltTest(activeTest.id, {
+      mixtureKind: String(form.get("mixtureKind") || "Tapet") as "Tapet" | "Binder" | "Tapet + Binder",
+      asphaltDate: String(form.get("asphaltDate") ?? ""),
+      samplingLocation: String(form.get("samplingLocation") ?? ""),
+      testStartDate: String(form.get("testStartDate") ?? ""),
+      testEndDate: String(form.get("testEndDate") ?? ""),
+      temperature: String(form.get("temperature") ?? ""),
+      humidity: String(form.get("humidity") ?? ""),
+      testingLocation: String(form.get("testingLocation") ?? ""),
+      technicianName: String(form.get("technicianName") ?? ""),
+      checkedBy: String(form.get("checkedBy") ?? ""),
+      notes: String(form.get("notes") ?? ""),
+      bitumen: {
+        basketFilterMassG: Number(form.get("bitumenBasketFilter") || 0),
+        beforeExtractionMassG: Number(form.get("bitumenBefore") || 0),
+        afterExtractionMassG: Number(form.get("bitumenAfter") || 0),
+        fillerMassG: Number(form.get("bitumenFiller") || 0)
+      },
+      granulometry: asphaltSieveSizes.map((sieve, index) => ({
+        sieveSizeMm: sieve,
+        retainedMassG: Number(form.get(`asphaltRetained-${index}`) || 0)
+      })),
+      marshallDensity: Array.from({ length: asphaltDensityRows }, (_, index) => ({
+        specimenNo: String(form.get(`densityNo-${index}`) || `${index + 1}`),
+        airMassG: Number(form.get(`densityAir-${index}`) || 0),
+        waterMassG: Number(form.get(`densityWater-${index}`) || 0),
+        ssdMassG: Number(form.get(`densitySsd-${index}`) || 0),
+        waterTemperatureC: Number(form.get(`densityTemp-${index}`) || 20)
+      })),
+      maximumDensity: Array.from({ length: asphaltMaxDensityRows }, (_, index) => ({
+        specimenNo: String(form.get(`maxNo-${index}`) || `${index + 1}`),
+        conglomerateMassG: Number(form.get(`maxConglomerate-${index}`) || 0),
+        pycnometerMassG: Number(form.get(`maxPyc-${index}`) || 0),
+        pycnometerWaterMassG: Number(form.get(`maxPycWater-${index}`) || 0),
+        pycnometerSampleWaterMassG: Number(form.get(`maxPycSampleWater-${index}`) || 0),
+        waterTemperatureC: Number(form.get(`maxTemp-${index}`) || 20)
+      })),
+      marshallStability: Array.from({ length: asphaltStabilityRows }, (_, index) => ({
+        specimenNo: String(form.get(`stabilityNo-${index}`) || `${index + 1}`),
+        heightMm: Number(form.get(`stabilityHeight-${index}`) || 0),
+        measuredStabilityKn: Number(form.get(`stabilityMeasured-${index}`) || 0),
+        flowMm: Number(form.get(`stabilityFlow-${index}`) || 0)
+      })),
+      compaction: (["Bazë", "Binder", "Tapet"] as const).map((layer) => ({
+        layer,
+        heightCm: Number(form.get(`compactionHeight-${layer}`) || 0),
+        specimenAirMassG: Number(form.get(`compactionAir-${layer}`) || 0),
+        specimenParaffinAirMassG: Number(form.get(`compactionParaffinAir-${layer}`) || 0),
+        specimenParaffinWaterMassG: Number(form.get(`compactionParaffinWater-${layer}`) || 0),
+        paraffinSpecificGravity: Number(form.get(`compactionParaffinSg-${layer}`) || 0.9),
+        maximumDensityGcm3: Number(form.get(`compactionMaxDensity-${layer}`) || 0)
+      }))
+    });
+  }
+
   function generateReport() {
     if (!canGenerateReport) return;
     const reportId = report?.id ?? store.generateReport(activeTest.id);
+    window.setTimeout(() => router.push(`/reports/${reportId}`), 0);
+  }
+
+  function generateAsphaltReport(kind: AsphaltReportKind) {
+    if (!canGenerateAsphaltReport(kind)) return;
+    const existing = store.reports.find((item) => item.testId === activeTest.id && item.reportKind === kind);
+    const reportId = existing?.id ?? store.generateReport(activeTest.id, kind);
     window.setTimeout(() => router.push(`/reports/${reportId}`), 0);
   }
 
@@ -870,6 +942,7 @@ export default function TestDetailPage() {
   const isConcreteDensityTest = isConcreteDensityAccreditedTest(activeTest.testType);
   const isIndirectTensileTest = isConcreteIndirectTensileAccreditedTest(activeTest.testType);
   const isConcreteCoreTest = isConcreteCoreAccreditedTest(activeTest.testType);
+  const isAsphaltTest = isAsphaltAccreditedTest(activeTest.testType);
   const isThermalInsulationTest = isThermalInsulationAccreditedTest(activeTest.testType);
   const isCementConsistencyTest = isCementConsistencyAccreditedTest(activeTest.testType);
   const isCementStrengthTest = isCementStrengthAccreditedTest(activeTest.testType);
@@ -1369,6 +1442,139 @@ export default function TestDetailPage() {
             </div>
           </form>
           <TestActionsSidebar ready={Boolean(concreteCore)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={concreteCore ? `Raporti do të përdorë formatin ${concreteCore.reportRatioType === "1:2" ? "1 me 2" : concreteCore.reportRatioType === "1:1" ? "1 me 1" : "të përzier"}.` : "Ruaj të dhënat për të zgjedhur automatikisht raportin."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+        </div>
+      </>
+    );
+  }
+
+  if (isAsphaltTest) {
+    const asphaltReports = {
+      "bitumen-content": store.reports.find((item) => item.testId === activeTest.id && item.reportKind === "bitumen-content"),
+      granulometry: store.reports.find((item) => item.testId === activeTest.id && item.reportKind === "granulometry"),
+      "marshall-density": store.reports.find((item) => item.testId === activeTest.id && item.reportKind === "marshall-density"),
+      "marshall-stability": store.reports.find((item) => item.testId === activeTest.id && item.reportKind === "marshall-stability"),
+      compaction: store.reports.find((item) => item.testId === activeTest.id && item.reportKind === "compaction")
+    };
+    return (
+      <>
+        <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Asfaltobeton`} action={<StatusBadge status={activeTest.status} />} />
+        <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
+          <form onSubmit={submitAsphalt} className="surface-card">
+            <div className="border-b border-line bg-lab-porcelain px-5 py-4">
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Fletë Pune / Worksheet</div>
+              <h2 className="mt-1 text-lg font-semibold text-ink">Vetitë fiziko-mekanike të asfaltobetonit</h2>
+              <p className="mt-1 text-sm text-muted">Një fletë pune ruan të dhënat për % bitumi, granulometri, densitet Marshall, stabilitet Marshall dhe kompaktesim.</p>
+            </div>
+            <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
+              <Field label="Kodi i kampionit"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
+              <Field label="Kampioni"><input className="input bg-lab-porcelain" value={sample?.sampleType ?? ""} readOnly /></Field>
+              <Field label="Lloji i asfaltit">
+                <select name="mixtureKind" defaultValue={asphalt?.mixtureKind ?? (sample?.sampleType.includes("Binder") && sample.sampleType.includes("Tapet") ? "Tapet + Binder" : sample?.sampleType.includes("Binder") ? "Binder" : "Tapet")} className="input">
+                  <option value="Tapet">Tapet</option>
+                  <option value="Binder">Binder</option>
+                  <option value="Tapet + Binder">Tapet + Binder</option>
+                </select>
+              </Field>
+              <Field label="Vendi i marrjes"><input name="samplingLocation" defaultValue={asphalt?.samplingLocation ?? project?.location ?? ""} className="input" /></Field>
+              <Field label="Datë asfaltimi"><input name="asphaltDate" type="date" defaultValue={asphalt?.asphaltDate ?? sample?.dateReceived ?? ""} className="input" /></Field>
+              <Field label="Data e pranimit"><input className="input bg-lab-porcelain" value={formatEuropeanDate(sample?.dateReceived)} readOnly /></Field>
+              <Field label="Fillimi i testimit"><input name="testStartDate" type="date" defaultValue={asphalt?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
+              <Field label="Mbarimi i testimit"><input name="testEndDate" type="date" defaultValue={asphalt?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
+              <Field label="Standardet"><input className="input bg-lab-porcelain" value={activeTest.standard} readOnly /></Field>
+              <Field label="Tekniku"><EmployeeSelect name="technicianName" employees={activeEmployees} required value={asphalt?.technicianName ?? "Ing./Eng."} /></Field>
+              <Field label="Kontrolluar nga"><EmployeeSelect name="checkedBy" employees={activeEmployees} value={asphalt?.checkedBy ?? "Ing./Eng. Besiana ALLIU"} /></Field>
+              <Field label="Vendi i testimit"><input name="testingLocation" defaultValue={asphalt?.testingLocation ?? "05/A Lab. i testimit të asfaltobetoneve / Asphalt testing laboratory"} className="input" /></Field>
+              <Field label="Temperatura"><input name="temperature" defaultValue={asphalt?.temperature ?? ""} className="input" /></Field>
+              <Field label="Lagështia"><input name="humidity" defaultValue={asphalt?.humidity ?? ""} className="input" /></Field>
+            </div>
+
+            <div className="grid gap-5 p-5">
+              <section className="rounded-md border border-line p-4">
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">1. Përmbajtja e bitumit</h3>
+                <div className="mt-3 grid gap-3 md:grid-cols-4">
+                  <Field label="Koshi + filter [g]"><input name="bitumenBasketFilter" type="number" step="0.1" defaultValue={asphalt?.bitumen.basketFilterMassG ?? ""} className="input" /></Field>
+                  <Field label="Para ekstraktimit [g]"><input name="bitumenBefore" type="number" step="0.1" defaultValue={asphalt?.bitumen.beforeExtractionMassG ?? ""} className="input" /></Field>
+                  <Field label="Pas ekstraktimit [g]"><input name="bitumenAfter" type="number" step="0.1" defaultValue={asphalt?.bitumen.afterExtractionMassG ?? ""} className="input" /></Field>
+                  <Field label="Filer [g]"><input name="bitumenFiller" type="number" step="0.1" defaultValue={asphalt?.bitumen.fillerMassG ?? ""} className="input" /></Field>
+                </div>
+                <div className="mt-3 grid gap-3 text-sm md:grid-cols-4">
+                  <Info label="Masa e bitumit" value={asphalt ? `${asphalt.bitumen.bitumenMassG} g` : "Ruaj"} />
+                  <Info label="% bitumi në konglomerat" value={asphalt ? `${asphalt.bitumen.bitumenContentPercent}%` : "Ruaj"} />
+                  <Info label="% bitumi në agregat" value={asphalt ? `${asphalt.bitumen.bitumenOnAggregatePercent}%` : "Ruaj"} />
+                </div>
+              </section>
+
+              <section className="rounded-md border border-line p-4">
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">2. Granulometria pas ekstraktimit</h3>
+                <div className="mt-3 overflow-x-auto">
+                  <table className="w-full min-w-[780px] text-left text-sm">
+                    <thead className="table-head"><tr><th className="px-3 py-2">Sita [mm]</th><th className="px-3 py-2">Mbetja [g]</th><th className="px-3 py-2">Mbetja progresive [g]</th><th className="px-3 py-2">Mbetja progresive [%]</th><th className="px-3 py-2">Kalimi [%]</th></tr></thead>
+                    <tbody className="divide-y divide-line">{asphaltSieveSizes.map((sieve, index) => { const row = asphalt?.granulometry[index]; return <tr key={sieve}><td className="px-3 py-2 font-semibold">{sieve}</td><td className="px-3 py-2"><input name={`asphaltRetained-${index}`} type="number" step="0.1" defaultValue={row?.retainedMassG ?? ""} className="input min-w-28" /></td><td className="px-3 py-2">{row?.cumulativeRetainedMassG ?? "Ruaj"}</td><td className="px-3 py-2">{row?.cumulativeRetainedPercent ?? "Ruaj"}</td><td className="px-3 py-2 font-semibold">{row?.cumulativePassingPercent ?? "Ruaj"}</td></tr>; })}</tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section className="rounded-md border border-line p-4">
+                <RowsToolbar title="3. Densiteti Marshall" rowCount={asphaltDensityRows} setRowCount={setAsphaltDensityRows} />
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[900px] text-left text-sm">
+                    <thead className="table-head"><tr><th className="px-3 py-2">Mostra</th><th className="px-3 py-2">Pesha në ajër [g]</th><th className="px-3 py-2">Pesha në ujë [g]</th><th className="px-3 py-2">Pesha SSD [g]</th><th className="px-3 py-2">Temp. ujit [°C]</th><th className="px-3 py-2">Densiteti [g/cm3]</th></tr></thead>
+                    <tbody className="divide-y divide-line">{Array.from({ length: asphaltDensityRows }, (_, index) => { const row = asphalt?.marshallDensity[index]; return <tr key={index}><td className="px-3 py-2"><input name={`densityNo-${index}`} defaultValue={row?.specimenNo ?? `${index + 1}`} className="input min-w-20" /></td><td className="px-3 py-2"><input name={`densityAir-${index}`} type="number" step="0.1" defaultValue={row?.airMassG ?? ""} className="input min-w-28" /></td><td className="px-3 py-2"><input name={`densityWater-${index}`} type="number" step="0.1" defaultValue={row?.waterMassG ?? ""} className="input min-w-28" /></td><td className="px-3 py-2"><input name={`densitySsd-${index}`} type="number" step="0.1" defaultValue={row?.ssdMassG ?? ""} className="input min-w-28" /></td><td className="px-3 py-2"><input name={`densityTemp-${index}`} type="number" step="0.1" defaultValue={row?.waterTemperatureC ?? 20} className="input min-w-24" /></td><td className="px-3 py-2 font-semibold">{row?.bulkDensityGcm3 ?? "Ruaj"}</td></tr>; })}</tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section className="rounded-md border border-line p-4">
+                <RowsToolbar title="4. Densiteti specifik maksimal" rowCount={asphaltMaxDensityRows} setRowCount={setAsphaltMaxDensityRows} />
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[980px] text-left text-sm">
+                    <thead className="table-head"><tr><th className="px-3 py-2">Mostra</th><th className="px-3 py-2">Konglomerati [g]</th><th className="px-3 py-2">Piknometri [g]</th><th className="px-3 py-2">Piknometri + ujë [g]</th><th className="px-3 py-2">Piknometri + kongl. + ujë [g]</th><th className="px-3 py-2">Dmax [g/cm3]</th></tr></thead>
+                    <tbody className="divide-y divide-line">{Array.from({ length: asphaltMaxDensityRows }, (_, index) => { const row = asphalt?.maximumDensity[index]; return <tr key={index}><td className="px-3 py-2"><input name={`maxNo-${index}`} defaultValue={row?.specimenNo ?? `${index + 1}`} className="input min-w-20" /></td><td className="px-3 py-2"><input name={`maxConglomerate-${index}`} type="number" step="0.1" defaultValue={row?.conglomerateMassG ?? ""} className="input min-w-28" /></td><td className="px-3 py-2"><input name={`maxPyc-${index}`} type="number" step="0.1" defaultValue={row?.pycnometerMassG ?? ""} className="input min-w-28" /></td><td className="px-3 py-2"><input name={`maxPycWater-${index}`} type="number" step="0.1" defaultValue={row?.pycnometerWaterMassG ?? ""} className="input min-w-28" /></td><td className="px-3 py-2"><input name={`maxPycSampleWater-${index}`} type="number" step="0.1" defaultValue={row?.pycnometerSampleWaterMassG ?? ""} className="input min-w-28" /></td><td className="px-3 py-2 font-semibold">{row?.maximumDensityGcm3 ?? "Ruaj"}</td><input type="hidden" name={`maxTemp-${index}`} value={row?.waterTemperatureC ?? 20} /></tr>; })}</tbody>
+                  </table>
+                </div>
+                <div className="mt-3 text-sm font-semibold text-ink">Boshllëqet në ajër: {asphalt ? `${asphalt.summaries.airVoidsPercent}%` : "Ruaj"}</div>
+              </section>
+
+              <section className="rounded-md border border-line p-4">
+                <RowsToolbar title="5. Stabiliteti Marshall" rowCount={asphaltStabilityRows} setRowCount={setAsphaltStabilityRows} />
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[920px] text-left text-sm">
+                    <thead className="table-head"><tr><th className="px-3 py-2">Mostra</th><th className="px-3 py-2">Lartësia [mm]</th><th className="px-3 py-2">Stabiliteti i matur [kN]</th><th className="px-3 py-2">Rrjedhshmëria [mm]</th><th className="px-3 py-2">Koef.</th><th className="px-3 py-2">Stabiliteti korr. [kN]</th><th className="px-3 py-2">MQ [kN/mm]</th></tr></thead>
+                    <tbody className="divide-y divide-line">{Array.from({ length: asphaltStabilityRows }, (_, index) => { const row = asphalt?.marshallStability[index]; return <tr key={index}><td className="px-3 py-2"><input name={`stabilityNo-${index}`} defaultValue={row?.specimenNo ?? `${index + 1}`} className="input min-w-20" /></td><td className="px-3 py-2"><input name={`stabilityHeight-${index}`} type="number" step="0.1" defaultValue={row?.heightMm ?? ""} className="input min-w-24" /></td><td className="px-3 py-2"><input name={`stabilityMeasured-${index}`} type="number" step="0.01" defaultValue={row?.measuredStabilityKn ?? ""} className="input min-w-24" /></td><td className="px-3 py-2"><input name={`stabilityFlow-${index}`} type="number" step="0.01" defaultValue={row?.flowMm ?? ""} className="input min-w-24" /></td><td className="px-3 py-2">{row?.correctionCoefficient ?? "Ruaj"}</td><td className="px-3 py-2 font-semibold">{row?.correctedStabilityKn ?? "Ruaj"}</td><td className="px-3 py-2 font-semibold">{row?.marshallQuotientKnMm ?? "Ruaj"}</td></tr>; })}</tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section className="rounded-md border border-line p-4">
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">6. Kompaktesimi me parafinë</h3>
+                <div className="mt-3 overflow-x-auto">
+                  <table className="w-full min-w-[1050px] text-left text-sm">
+                    <thead className="table-head"><tr><th className="px-3 py-2">Shtresa</th><th className="px-3 py-2">Lartësia [cm]</th><th className="px-3 py-2">Pesha në ajër [g]</th><th className="px-3 py-2">Mostra + parafinë në ajër [g]</th><th className="px-3 py-2">Mostra + parafinë në ujë [g]</th><th className="px-3 py-2">G parafinës</th><th className="px-3 py-2">Dmax [g/cm3]</th><th className="px-3 py-2">Gmb [g/cm3]</th><th className="px-3 py-2">Kompaktesimi [%]</th></tr></thead>
+                    <tbody className="divide-y divide-line">{(["Bazë", "Binder", "Tapet"] as const).map((layer) => { const row = asphalt?.compaction.find((item) => item.layer === layer); return <tr key={layer}><td className="px-3 py-2 font-semibold">{layer}</td><td className="px-3 py-2"><input name={`compactionHeight-${layer}`} type="number" step="0.1" defaultValue={row?.heightCm ?? ""} className="input min-w-24" /></td><td className="px-3 py-2"><input name={`compactionAir-${layer}`} type="number" step="0.1" defaultValue={row?.specimenAirMassG ?? ""} className="input min-w-28" /></td><td className="px-3 py-2"><input name={`compactionParaffinAir-${layer}`} type="number" step="0.1" defaultValue={row?.specimenParaffinAirMassG ?? ""} className="input min-w-28" /></td><td className="px-3 py-2"><input name={`compactionParaffinWater-${layer}`} type="number" step="0.1" defaultValue={row?.specimenParaffinWaterMassG ?? ""} className="input min-w-28" /></td><td className="px-3 py-2"><input name={`compactionParaffinSg-${layer}`} type="number" step="0.01" defaultValue={row?.paraffinSpecificGravity ?? 0.9} className="input min-w-20" /></td><td className="px-3 py-2"><input name={`compactionMaxDensity-${layer}`} type="number" step="0.001" defaultValue={row?.maximumDensityGcm3 ?? asphalt?.summaries.averageMaximumDensityGcm3 ?? ""} className="input min-w-24" /></td><td className="px-3 py-2 font-semibold">{row?.bulkSpecificGravityGcm3 ?? "Ruaj"}</td><td className="px-3 py-2 font-semibold">{row?.compactionPercent ?? "Ruaj"}</td></tr>; })}</tbody>
+                  </table>
+                </div>
+              </section>
+
+              <div>
+                <label className="text-sm font-medium text-ink">Shënime</label>
+                <textarea name="notes" rows={4} defaultValue={asphalt?.notes} className="input mt-1" />
+                <div className="mt-5 flex justify-end"><button className="btn-secondary">Ruaj fletën e asfaltit</button></div>
+              </div>
+            </div>
+          </form>
+          <aside className="space-y-4">
+            <TestActionsSidebar ready={Boolean(asphalt)} activeTest={activeTest} reportId={undefined} complete={complete} generateReport={() => generateAsphaltReport("bitumen-content")} message={asphalt ? `Bitum ${asphalt.bitumen.bitumenContentPercent}%, dendësi mesatare ${asphalt.summaries.averageBulkDensityGcm3} g/cm3.` : "Ruani fillimisht të dhënat e fletës së asfaltit."} canEdit={canEditWorksheet} canGenerateReport={canGenerateAsphaltReport("bitumen-content")} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+            <div className="surface-card p-4">
+              <h2 className="text-base font-semibold text-ink">Raportet nga e njëjta fletë pune</h2>
+              <div className="mt-4 grid gap-2">
+                <AsphaltReportButton label="% Bitumi" report={asphaltReports["bitumen-content"]} canGenerate={canGenerateAsphaltReport("bitumen-content")} onClick={() => generateAsphaltReport("bitumen-content")} />
+                <AsphaltReportButton label="Granulometri" report={asphaltReports.granulometry} canGenerate={canGenerateAsphaltReport("granulometry")} onClick={() => generateAsphaltReport("granulometry")} />
+                <AsphaltReportButton label="Densiteti Marshall" report={asphaltReports["marshall-density"]} canGenerate={canGenerateAsphaltReport("marshall-density")} onClick={() => generateAsphaltReport("marshall-density")} />
+                <AsphaltReportButton label="Stabiliteti Marshall" report={asphaltReports["marshall-stability"]} canGenerate={canGenerateAsphaltReport("marshall-stability")} onClick={() => generateAsphaltReport("marshall-stability")} />
+                <AsphaltReportButton label="Kompaktesimi" report={asphaltReports.compaction} canGenerate={canGenerateAsphaltReport("compaction")} onClick={() => generateAsphaltReport("compaction")} />
+              </div>
+            </div>
+          </aside>
         </div>
       </>
     );
@@ -3165,6 +3371,10 @@ function MortarWorksheetSection({
 }
 
 function MortarRowsToolbar({ title, rowCount, setRowCount }: { title: string; rowCount: number; setRowCount: Dispatch<SetStateAction<number>> }) {
+  return <RowsToolbar title={title} rowCount={rowCount} setRowCount={setRowCount} />;
+}
+
+function RowsToolbar({ title, rowCount, setRowCount }: { title: string; rowCount: number; setRowCount: Dispatch<SetStateAction<number>> }) {
   return (
     <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
       <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">{title}</h3>
@@ -3173,6 +3383,14 @@ function MortarRowsToolbar({ title, rowCount, setRowCount }: { title: string; ro
         <button type="button" onClick={() => setRowCount((count) => Math.max(1, count - 1))} className="btn-secondary px-3">Hiq rresht</button>
       </div>
     </div>
+  );
+}
+
+function AsphaltReportButton({ label, report, canGenerate, onClick }: { label: string; report?: { id: string; reportNumber: string }; canGenerate: boolean; onClick: () => void }) {
+  return report ? (
+    <Link href={`/reports/${report.id}`} className="btn-secondary text-center">{label}: {report.reportNumber}</Link>
+  ) : (
+    <button type="button" onClick={onClick} disabled={!canGenerate} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">{label}</button>
   );
 }
 

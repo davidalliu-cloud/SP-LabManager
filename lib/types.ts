@@ -296,6 +296,106 @@ export interface ConcreteCoreSpecimen {
   cubicStrengthMpa: number;
 }
 
+export type AsphaltMixtureKind = "Tapet" | "Binder" | "Tapet + Binder";
+export type AsphaltReportKind = "bitumen-content" | "granulometry" | "marshall-density" | "marshall-stability" | "compaction";
+
+export interface AsphaltTest {
+  id: string;
+  testId: string;
+  mixtureKind: AsphaltMixtureKind;
+  asphaltDate?: string;
+  samplingLocation?: string;
+  testStartDate?: string;
+  testEndDate?: string;
+  temperature?: string;
+  humidity?: string;
+  testingLocation?: string;
+  technicianName: string;
+  checkedBy?: string;
+  notes?: string;
+  bitumen: AsphaltBitumenExtraction;
+  granulometry: AsphaltGradationRow[];
+  marshallDensity: AsphaltMarshallDensitySpecimen[];
+  maximumDensity: AsphaltMaximumDensitySpecimen[];
+  marshallStability: AsphaltMarshallStabilitySpecimen[];
+  compaction: AsphaltCompactionLayer[];
+  summaries: AsphaltSummaries;
+  createdAt: string;
+}
+
+export interface AsphaltBitumenExtraction {
+  basketFilterMassG: number;
+  beforeExtractionMassG: number;
+  afterExtractionMassG: number;
+  fillerMassG: number;
+  conglomerateMassG: number;
+  aggregateMassG: number;
+  bitumenMassG: number;
+  bitumenContentPercent: number;
+  bitumenOnAggregatePercent: number;
+}
+
+export interface AsphaltGradationRow {
+  sieveSizeMm: number;
+  retainedMassG: number;
+  cumulativeRetainedMassG: number;
+  cumulativeRetainedPercent: number;
+  cumulativePassingPercent: number;
+}
+
+export interface AsphaltMarshallDensitySpecimen {
+  specimenNo: string;
+  airMassG: number;
+  waterMassG: number;
+  ssdMassG: number;
+  waterTemperatureC: number;
+  waterDensityGcm3: number;
+  bulkDensityGcm3: number;
+}
+
+export interface AsphaltMaximumDensitySpecimen {
+  specimenNo: string;
+  conglomerateMassG: number;
+  pycnometerMassG: number;
+  pycnometerWaterMassG: number;
+  pycnometerSampleWaterMassG: number;
+  waterTemperatureC: number;
+  maximumDensityGcm3: number;
+}
+
+export interface AsphaltMarshallStabilitySpecimen {
+  specimenNo: string;
+  heightMm: number;
+  measuredStabilityKn: number;
+  flowMm: number;
+  correctionCoefficient: number;
+  correctedStabilityKn: number;
+  marshallQuotientKnMm: number;
+}
+
+export interface AsphaltCompactionLayer {
+  layer: "Tapet" | "Binder" | "Bazë";
+  heightCm: number;
+  specimenAirMassG: number;
+  specimenParaffinAirMassG: number;
+  specimenParaffinWaterMassG: number;
+  paraffinSpecificGravity: number;
+  maximumDensityGcm3: number;
+  bulkSpecificGravityGcm3: number;
+  compactionPercent: number;
+}
+
+export interface AsphaltSummaries {
+  sampleMassBeforeExtractionG: number;
+  finalPassingPercent: number;
+  averageBulkDensityGcm3: number;
+  averageMaximumDensityGcm3: number;
+  airVoidsPercent: number;
+  averageCorrectedStabilityKn: number;
+  averageFlowMm: number;
+  averageMarshallQuotientKnMm: number;
+}
+
 export interface IndirectTensileSpecimen {
   specimenCode: string;
   contactLengthMm: number;
@@ -1072,6 +1172,7 @@ export interface Report {
   specimenCodes: string[];
   reportSequence: number;
   totalReports: number;
+  reportKind?: string;
   reportStatus: ReportStatus;
   draftedBy: string;
   checkedBy?: string;
@@ -1150,6 +1251,7 @@ export interface LabState {
   concreteDensityTests: ConcreteDensityTest[];
   concreteIndirectTensileTests: ConcreteIndirectTensileTest[];
   concreteCoreTests: ConcreteCoreTest[];
+  asphaltTests: AsphaltTest[];
   thermalInsulationTests: ThermalInsulationTest[];
   cementConsistencyTests: CementConsistencyTest[];
   cementStrengthTests: CementStrengthTest[];
