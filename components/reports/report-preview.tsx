@@ -6,6 +6,12 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
 
+const HEAD_OF_LAB_NAME = "Adela Duzha";
+
+function headOfLabName(preferred?: string) {
+  return preferred?.trim() || HEAD_OF_LAB_NAME;
+}
+
 export function ReportPreview({
   report,
   test,
@@ -331,7 +337,7 @@ export function ReportPreview({
 
       <div className="mt-5 grid grid-cols-2 gap-16 text-center">
         <div><div className="font-bold">TESTUESI / <span className="italic">TESTED BY</span></div><div className="mt-1 font-bold">{concrete?.technicianName || report.draftedBy}</div></div>
-        <div><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic">LABORATORY RESPONSIBLE</span></div><div className="mt-1 font-bold">{report.approvedBy || "Ing./ Eng. Besiana ALLIU"}</div></div>
+        <div><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic">LABORATORY RESPONSIBLE</span></div><div className="mt-1 font-bold">{headOfLabName()}</div></div>
       </div>
 
       <div className="report-disclaimers mt-6 space-y-0.5 text-[9pt] leading-tight">
@@ -549,7 +555,7 @@ function OfficialNotesAndFooter({
       </div>
       <div className="mt-6 grid grid-cols-2 gap-16 text-center text-[9.5pt]">
         <div><div className="font-bold">TESTUAR NGA / <span className="italic font-normal">TESTED BY</span></div><div className="mt-2 font-bold">{testedBy || "-"}</div></div>
-        <div><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic font-normal">LABORATORY RESPONSIBLE</span></div><div className="mt-2 font-bold">{responsible || "Ing./Eng. Besiana ALLIU"}</div></div>
+        <div><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic font-normal">LABORATORY RESPONSIBLE</span></div><div className="mt-2 font-bold">{headOfLabName(responsible)}</div></div>
       </div>
       <div className="official-disclaimers mt-7 space-y-0.5 text-[7.5pt] leading-tight">
         <p>Rezultatet në këtë raport testimi i përkasin vetëm mostrës së testuar. / <span className="italic">The results relate only to the items tested.</span></p>
@@ -626,7 +632,7 @@ function CementConsistencyReportPreview({
         </table>
       </div>
       <div className="mt-8 soft-panel p-4 text-sm text-ink"><div className="font-semibold">Notes / Shënime</div><p className="mt-1">{cementConsistency.notes || "Results relate only to the submitted sample."}</p></div>
-      <div className="mt-10 grid gap-6 sm:grid-cols-2"><Signature label="TESTUAR NGA / TESTED BY" value={cementConsistency.technicianName || report.draftedBy} /><Signature label="PËRGJEGJËSI I LABORATORIT / HEAD OF LABORATORY" value={cementConsistency.checkedBy || report.approvedBy} /></div>
+      <div className="mt-10 grid gap-6 sm:grid-cols-2"><Signature label="TESTUAR NGA / TESTED BY" value={cementConsistency.technicianName || report.draftedBy} /><Signature label="PËRGJEGJËSI I LABORATORIT / HEAD OF LABORATORY" value={headOfLabName(cementConsistency.checkedBy)} /></div>
     </section>
   );
 }
@@ -673,7 +679,7 @@ function CementStrengthReportPreview({
         </table>
       </div>
       <div className="mt-8 soft-panel p-4 text-sm text-ink"><div className="font-semibold">Notes / Shënime</div><p className="mt-1">{cementStrength.notes || "Results relate only to the submitted sample."}</p></div>
-      <div className="mt-10 grid gap-6 sm:grid-cols-2"><Signature label="TESTUAR NGA / TESTED BY" value={cementStrength.technicianName || report.draftedBy} /><Signature label="PËRGJEGJËSI I LABORATORIT / HEAD OF LABORATORY" value={cementStrength.checkedBy || report.approvedBy} /></div>
+      <div className="mt-10 grid gap-6 sm:grid-cols-2"><Signature label="TESTUAR NGA / TESTED BY" value={cementStrength.technicianName || report.draftedBy} /><Signature label="PËRGJEGJËSI I LABORATORIT / HEAD OF LABORATORY" value={headOfLabName(cementStrength.checkedBy)} /></div>
     </section>
   );
 }
@@ -719,7 +725,7 @@ function CementBlaineReportPreview({
         <Info label="Constant K" value={cementBlaine.method === "ASTM" ? String(cementBlaine.astm?.constantK ?? "-") : String(cementBlaine.bsEn?.constantK ?? "-")} />
       </div>
       <div className="mt-8 soft-panel p-4 text-sm text-ink"><div className="font-semibold">Notes / Shënime</div><p className="mt-1">{cementBlaine.notes || "Results relate only to the submitted sample."}</p></div>
-      <div className="mt-10 grid gap-6 sm:grid-cols-2"><Signature label="TESTUAR NGA / TESTED BY" value={cementBlaine.technicianName || report.draftedBy} /><Signature label="PËRGJEGJËSI I LABORATORIT / HEAD OF LABORATORY" value={cementBlaine.checkedBy || report.approvedBy} /></div>
+      <div className="mt-10 grid gap-6 sm:grid-cols-2"><Signature label="TESTUAR NGA / TESTED BY" value={cementBlaine.technicianName || report.draftedBy} /><Signature label="PËRGJEGJËSI I LABORATORIT / HEAD OF LABORATORY" value={headOfLabName(cementBlaine.checkedBy)} /></div>
     </section>
   );
 }
@@ -834,7 +840,7 @@ function MortarReportPreview({
       {mortar.testKind === "dry-density" || mortar.testKind === "fresh-density" ? <MortarPhysicalReport mortar={mortar} /> : null}
       {mortar.testKind === "chemical" ? <MortarChemicalReport mortar={mortar} /> : null}
 
-      <MortarNotesAndFooter notes={mortar.notes} testedBy={mortar.technicianName || report.draftedBy} responsible={mortar.checkedBy || report.approvedBy || "Ing./Eng. Besiana ALLIU"} issueDate={issueDate} />
+      <MortarNotesAndFooter notes={mortar.notes} testedBy={mortar.technicianName || report.draftedBy} responsible={mortar.checkedBy} issueDate={issueDate} />
     </section>
   );
 }
@@ -1088,7 +1094,7 @@ function MortarNotesAndFooter({
       </div>
       <div className="mt-4 grid grid-cols-2 gap-16 text-center text-[7.3pt]">
         <div><div className="font-bold">TESTUESI / <span className="italic font-normal">TESTED BY</span></div><div className="mt-1 font-bold">{testedBy || "Ing./Eng."}</div></div>
-        <div><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic font-normal">LABORATORY RESPONSIBLE</span></div><div className="mt-1 font-bold">{responsible || "Ing./Eng. Besiana ALLIU"}</div></div>
+        <div><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic font-normal">LABORATORY RESPONSIBLE</span></div><div className="mt-1 font-bold">{headOfLabName(responsible)}</div></div>
       </div>
       <div className="mt-5 space-y-0.5 text-[5.7pt] leading-tight">
         <p>Rezultatet në këtë raport testimi i përkasin vetëm mostrës së testuar. / <span className="italic">The results relate only to the items tested.</span></p>
@@ -1163,7 +1169,7 @@ function ConcreteWaterPenetrationReportPreview({
         </tbody>
       </table>
       <OfficialAsterisk />
-      <OfficialNotesAndFooter notes={concreteWater.notes} testedBy={concreteWater.technicianName || report.draftedBy} responsible={concreteWater.checkedBy || report.approvedBy} issueDate={issueDate} />
+      <OfficialNotesAndFooter notes={concreteWater.notes} testedBy={concreteWater.technicianName || report.draftedBy} responsible={concreteWater.checkedBy} issueDate={issueDate} />
     </OfficialReportShell>
   );
 }
@@ -1227,7 +1233,7 @@ function ConcreteFlexuralReportPreview({
         </tbody>
       </table>
       <OfficialAsterisk />
-      <OfficialNotesAndFooter notes={concreteFlexural.notes} testedBy={concreteFlexural.technicianName || report.draftedBy} responsible={concreteFlexural.checkedBy || report.approvedBy} issueDate={issueDate} />
+      <OfficialNotesAndFooter notes={concreteFlexural.notes} testedBy={concreteFlexural.technicianName || report.draftedBy} responsible={concreteFlexural.checkedBy} issueDate={issueDate} />
     </OfficialReportShell>
   );
 }
@@ -1303,7 +1309,7 @@ function ConcreteDensityReportPreview({
         </tbody>
       </table>
       <OfficialAsterisk />
-      <OfficialNotesAndFooter notes={concreteDensity.notes} testedBy={concreteDensity.technicianName || report.draftedBy} responsible={concreteDensity.checkedBy || report.approvedBy} issueDate={issueDate} />
+      <OfficialNotesAndFooter notes={concreteDensity.notes} testedBy={concreteDensity.technicianName || report.draftedBy} responsible={concreteDensity.checkedBy} issueDate={issueDate} />
     </OfficialReportShell>
   );
 }
@@ -1364,7 +1370,7 @@ function ConcreteIndirectTensileReportPreview({
         </tbody>
       </table>
       <OfficialAsterisk />
-      <OfficialNotesAndFooter notes={concreteIndirectTensile.notes} testedBy={concreteIndirectTensile.technicianName || report.draftedBy} responsible={concreteIndirectTensile.checkedBy || report.approvedBy} issueDate={issueDate} />
+      <OfficialNotesAndFooter notes={concreteIndirectTensile.notes} testedBy={concreteIndirectTensile.technicianName || report.draftedBy} responsible={concreteIndirectTensile.checkedBy} issueDate={issueDate} />
     </OfficialReportShell>
   );
 }
@@ -1475,7 +1481,7 @@ function ConcreteCoreReportPreview({
       <div className="mt-2 text-xs text-muted">Pasiguria në matje për përcaktimin e rezistencës në shtypje të karrotave të betonit është 0,9 MPa / Determination of compressive strength of concrete core drill measurement uncertainty is 0,9 MPa.</div>
       <div className="mt-1 text-xs text-muted">Yll (*) tregon që testi është i akredituar / Asterisk (*) means that the laboratory is accredited for this test.</div>
       <div className="mt-6 soft-panel p-4 text-sm text-ink"><div className="font-semibold">Shënime / Notes</div><p className="mt-1">{concreteCore.notes || "Rezultatet në këtë raport testimi i përkasin vetëm mostrës së testuar."}</p></div>
-      <div className="mt-8 grid gap-6 sm:grid-cols-2"><Signature label="TESTUAR NGA / TESTED BY" value={concreteCore.technicianName || report.draftedBy} /><Signature label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={concreteCore.checkedBy || report.approvedBy || "Ing./Eng. Besiana ALLIU"} /></div>
+      <div className="mt-8 grid gap-6 sm:grid-cols-2"><Signature label="TESTUAR NGA / TESTED BY" value={concreteCore.technicianName || report.draftedBy} /><Signature label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={headOfLabName(concreteCore.checkedBy)} /></div>
     </section>
   );
 }
@@ -1553,7 +1559,7 @@ function ThermalInsulationReportPreview({
           <ThermalReportRow no="6" labelSq="Përcaktimi i sjelljes ndaj shtypjes" labelEn="Determination of compression behaviour" standard="BS EN 826:2013" unit="kPa" values={sampleValues((i) => thermalInsulation.specimens[i]?.compressiveStressAtTenPercentKpa || thermalInsulation.specimens[i]?.compressiveStressKpa || 0)} average={thermalInsulation.averages.compressiveStressKpa} uncertainty="2.70" />
         </tbody>
       </table>
-      <OfficialNotesAndFooter notes={thermalInsulation.notes} testedBy={thermalInsulation.technicianName || report.draftedBy} responsible={thermalInsulation.checkedBy || report.approvedBy} issueDate={issueDate} />
+      <OfficialNotesAndFooter notes={thermalInsulation.notes} testedBy={thermalInsulation.technicianName || report.draftedBy} responsible={thermalInsulation.checkedBy} issueDate={issueDate} />
     </OfficialReportShell>
   );
 }
@@ -1644,7 +1650,7 @@ function SteelReportPreview({
         </tbody>
       </table>
       <OfficialAsterisk />
-      <OfficialNotesAndFooter notes={steel.notes} testedBy={steel.technicianName || report.draftedBy} responsible={steel.checkedBy || report.approvedBy} issueDate={issueDate} />
+      <OfficialNotesAndFooter notes={steel.notes} testedBy={steel.technicianName || report.draftedBy} responsible={steel.checkedBy} issueDate={issueDate} />
     </OfficialReportShell>
   );
 }
@@ -1851,7 +1857,7 @@ function AggregateReportPreview({
       </div>
       <div className="mt-3 grid grid-cols-2 gap-16 text-center text-[7.2px] leading-tight">
         <SignatureCompact label="TESTUAR NGA / TESTED BY" value={aggregate.technicianName} />
-        <SignatureCompact label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={aggregate.checkedBy || report.approvedBy || "Ing./Eng. Besiana ALLIU"} />
+        <SignatureCompact label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={headOfLabName(aggregate.checkedBy)} />
       </div>
 
       <div className="mt-4 space-y-0.5 text-[6.4px] leading-tight">
@@ -1976,7 +1982,7 @@ function AggregateChemicalReportPreview({
 
       <div className="mt-10 grid gap-6 sm:grid-cols-2">
         <Signature label="TESTUAR NGA / TESTED BY" value={aggregateChemical.technicianName || "Ing./Eng. Anxhela KANTO"} />
-        <Signature label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={aggregateChemical.checkedBy || report.approvedBy || "Ing./Eng. Besiana ALLIU"} />
+        <Signature label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={headOfLabName(aggregateChemical.checkedBy)} />
       </div>
     </section>
   );
@@ -2083,7 +2089,7 @@ function AggregateLosAngelesReportPreview({
 
       <div className="mt-10 grid gap-6 sm:grid-cols-2">
         <Signature label="TESTUAR NGA / TESTED BY" value={aggregateLosAngeles.technicianName || report.draftedBy} />
-        <Signature label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={aggregateLosAngeles.checkedBy || report.approvedBy || "Ing./Eng. Besiana ALLIU"} />
+        <Signature label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={headOfLabName(aggregateLosAngeles.checkedBy)} />
       </div>
     </section>
   );
@@ -2196,7 +2202,7 @@ function AggregateFreezeThawReportPreview({
 
       <div className="mt-10 grid gap-6 sm:grid-cols-2">
         <Signature label="TESTUAR NGA / TESTED BY" value={aggregateFreezeThaw.technicianName || report.draftedBy} />
-        <Signature label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={aggregateFreezeThaw.checkedBy || report.approvedBy || "Ing./Eng. Besiana ALLIU"} />
+        <Signature label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={headOfLabName(aggregateFreezeThaw.checkedBy)} />
       </div>
     </section>
   );
@@ -2303,7 +2309,7 @@ function AggregateAcvReportPreview({
 
       <div className="mt-10 grid gap-6 sm:grid-cols-2">
         <Signature label="TESTUAR NGA / TESTED BY" value={aggregateAcv.technicianName || report.draftedBy} />
-        <Signature label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={aggregateAcv.checkedBy || report.approvedBy || "Ing./Eng. Besiana ALLIU"} />
+        <Signature label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={headOfLabName(aggregateAcv.checkedBy)} />
       </div>
     </section>
   );
@@ -2397,7 +2403,7 @@ function AggregateDensityReportPreview({
 
       <div className="mt-10 grid gap-6 sm:grid-cols-2">
         <Signature label="TESTUESI / TESTED BY" value={aggregateDensity.technicianName || report.draftedBy} />
-        <Signature label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={aggregateDensity.checkedBy || report.approvedBy || "Ing./Eng. Besiana ALLIU"} />
+        <Signature label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={headOfLabName(aggregateDensity.checkedBy)} />
       </div>
     </section>
   );
@@ -2489,7 +2495,7 @@ function AggregateFillerDensityReportPreview({
 
       <div className="mt-10 grid gap-6 sm:grid-cols-2">
         <Signature label="TESTUESI / TESTED BY" value={aggregateFillerDensity.technicianName || report.draftedBy} />
-        <Signature label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={aggregateFillerDensity.checkedBy || report.approvedBy || "Ing./Eng. Besiana ALLIU"} />
+        <Signature label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={headOfLabName(aggregateFillerDensity.checkedBy)} />
       </div>
     </section>
   );
@@ -2553,7 +2559,7 @@ function AggregateSoundnessReportPreview({
         <Info label="Particles after" value={String(aggregateSoundness.totalParticlesAfter || "-")} />
       </div>
       <div className="mt-8 soft-panel p-4 text-sm text-ink"><div className="font-semibold">Notes / Shënime</div><p className="mt-1">{aggregateSoundness.notes || "Results relate only to the items tested. The laboratory is not responsible for the sampling phase."}</p></div>
-      <div className="mt-10 grid gap-6 sm:grid-cols-2"><Signature label="TESTUAR NGA / TESTED BY" value={aggregateSoundness.technicianName || report.draftedBy} /><Signature label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={aggregateSoundness.checkedBy || report.approvedBy || "Ing./Eng. Besiana ALLIU"} /></div>
+      <div className="mt-10 grid gap-6 sm:grid-cols-2"><Signature label="TESTUAR NGA / TESTED BY" value={aggregateSoundness.technicianName || report.draftedBy} /><Signature label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={headOfLabName(aggregateSoundness.checkedBy)} /></div>
     </section>
   );
 }
@@ -2601,7 +2607,7 @@ function AggregateElongationReportPreview({
         </div>
       </div>
       <div className="mt-8 soft-panel p-4 text-sm text-ink"><div className="font-semibold">Notes / Shënime</div><p className="mt-1">{aggregateElongation.notes || "This test report belongs only to the tested sample."}</p></div>
-      <div className="mt-10 grid gap-6 sm:grid-cols-2"><Signature label="TESTUAR NGA / TESTED BY" value={aggregateElongation.technicianName || report.draftedBy} /><Signature label="PËRGJEGJËSI I LABORATORIT / HEAD OF LABORATORY" value={aggregateElongation.checkedBy || report.approvedBy || "Ing./Eng. Besiana ALLIU"} /></div>
+      <div className="mt-10 grid gap-6 sm:grid-cols-2"><Signature label="TESTUAR NGA / TESTED BY" value={aggregateElongation.technicianName || report.draftedBy} /><Signature label="PËRGJEGJËSI I LABORATORIT / HEAD OF LABORATORY" value={headOfLabName(aggregateElongation.checkedBy)} /></div>
     </section>
   );
 }
@@ -2646,7 +2652,7 @@ function AggregateBulkDensityReportPreview({
         </table>
       </div>
       <div className="mt-8 soft-panel p-4 text-sm text-ink"><div className="font-semibold">Notes / Shënime</div><p className="mt-1">{aggregateBulkDensity.notes || "Results relate only to the items tested."}</p></div>
-      <div className="mt-10 grid gap-6 sm:grid-cols-2"><Signature label="TESTUAR NGA / TESTED BY" value={aggregateBulkDensity.technicianName || report.draftedBy} /><Signature label="PËRGJEGJËSI I LABORATORIT / HEAD OF LABORATORY" value={aggregateBulkDensity.checkedBy || report.approvedBy || "Ing./Eng. Besiana ALLIU"} /></div>
+      <div className="mt-10 grid gap-6 sm:grid-cols-2"><Signature label="TESTUAR NGA / TESTED BY" value={aggregateBulkDensity.technicianName || report.draftedBy} /><Signature label="PËRGJEGJËSI I LABORATORIT / HEAD OF LABORATORY" value={headOfLabName(aggregateBulkDensity.checkedBy)} /></div>
     </section>
   );
 }
@@ -2690,7 +2696,7 @@ function AggregateSandEquivalentReportPreview({
         </table>
       </div>
       <div className="mt-8 soft-panel p-4 text-sm text-ink"><div className="font-semibold">Notes / Shënime</div><p className="mt-1">{aggregateSandEquivalent.notes || "This test report belongs only to the tested sample."}</p></div>
-      <div className="mt-10 grid gap-6 sm:grid-cols-2"><Signature label="TESTUAR NGA / TESTED BY" value={aggregateSandEquivalent.technicianName || report.draftedBy} /><Signature label="PËRGJEGJËSI I LABORATORIT / HEAD OF LABORATORY" value={aggregateSandEquivalent.checkedBy || report.approvedBy || "Ing./Eng. Besiana ALLIU"} /></div>
+      <div className="mt-10 grid gap-6 sm:grid-cols-2"><Signature label="TESTUAR NGA / TESTED BY" value={aggregateSandEquivalent.technicianName || report.draftedBy} /><Signature label="PËRGJEGJËSI I LABORATORIT / HEAD OF LABORATORY" value={headOfLabName(aggregateSandEquivalent.checkedBy)} /></div>
     </section>
   );
 }
@@ -2776,7 +2782,7 @@ function AggregateShapeIndexReportPreview({
 
       <div className="mt-10 grid gap-6 sm:grid-cols-2">
         <Signature label="TESTUESI / TESTED BY" value={aggregateShapeIndex.technicianName || report.draftedBy} />
-        <Signature label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={aggregateShapeIndex.checkedBy || report.approvedBy || "Ing./Eng. Besiana ALLIU"} />
+        <Signature label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={headOfLabName(aggregateShapeIndex.checkedBy)} />
       </div>
     </section>
   );
@@ -2871,7 +2877,7 @@ function AggregateFlakinessReportPreview({
 
       <div className="mt-10 grid gap-6 sm:grid-cols-2">
         <Signature label="TESTUAR NGA / TESTED BY" value={aggregateFlakiness.technicianName || report.draftedBy} />
-        <Signature label="PËRGJEGJËSI I LABORATORIT / HEAD OF LABORATORY" value={aggregateFlakiness.checkedBy || report.approvedBy || "Ing./Eng. Besiana ALLIU"} />
+        <Signature label="PËRGJEGJËSI I LABORATORIT / HEAD OF LABORATORY" value={headOfLabName(aggregateFlakiness.checkedBy)} />
       </div>
     </section>
   );
