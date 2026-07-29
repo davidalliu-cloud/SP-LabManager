@@ -8,7 +8,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { SummaryCard } from "@/components/ui/summary-card";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { useLabStore } from "@/lib/lab-store";
-import { canAssignSampleClient, canViewClientIdentity } from "@/lib/permissions";
+import { canAssignSampleClient, canReviewTests, canViewClientIdentity } from "@/lib/permissions";
 
 export default function SampleDetailPage() {
   const params = useParams<{ id: string }>();
@@ -25,7 +25,8 @@ export default function SampleDetailPage() {
   const project = store.projects.find((item) => item.id === sample.projectId);
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
   const showClientIdentity = canViewClientIdentity(currentUser?.role);
-  const canAssignClient = canAssignSampleClient(currentUser?.role);
+  const canAssignClient = canAssignSampleClient(currentUser?.role, currentUser);
+  const canAcceptSample = canReviewTests(currentUser?.role);
   const selectedAssignmentClientId = assignmentClientId || sample.clientId || store.clients[0]?.id || "";
   const assignmentProjects = store.projects.filter((item) => item.clientId === selectedAssignmentClientId);
   const selectedAssignmentProjectId = assignmentProjectId || sample.projectId || assignmentProjects[0]?.id || "";
@@ -161,7 +162,7 @@ export default function SampleDetailPage() {
                   >
                     {store.clients.map((item) => (
                       <option key={item.id} value={item.id}>
-                        {item.clientCode} - {item.clientName}
+                        {showClientIdentity ? `${item.clientCode} - ${item.clientName}` : item.clientCode}
                       </option>
                     ))}
                   </select>
@@ -179,7 +180,7 @@ export default function SampleDetailPage() {
                 <button className="btn-primary w-full">Ruaj caktimin e klientit</button>
               </form>
             ) : null}
-            {canAssignClient && !tests.length ? (
+            {canAcceptSample && !tests.length ? (
               <div className="mt-4 rounded-md border border-fuchsia-100 bg-fuchsia-50 p-3">
                 <div className="text-sm font-semibold text-lab-purple">Pranimi i kampionit</div>
                 <p className="mt-1 text-sm text-muted">
