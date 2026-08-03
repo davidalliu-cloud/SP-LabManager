@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { SimpleTable } from "@/components/ui/simple-table";
 import { futureErpClients } from "@/lib/client-directory";
 import { useLabStore } from "@/lib/lab-store";
-import { canViewClientIdentity } from "@/lib/permissions";
+import { canManageClients, canViewClientIdentity } from "@/lib/permissions";
 
 const emptyClientDraft = {
   clientCode: "",
@@ -50,7 +50,8 @@ export default function ClientsPage() {
   const [deleteMessage, setDeleteMessage] = useState("");
 
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
-  const canEditClients = canViewClientIdentity(currentUser?.role);
+  const canViewClients = canViewClientIdentity(currentUser?.role);
+  const canEditClients = canManageClients(currentUser?.role);
   const suggestedCode = useMemo(() => nextClientCode(store.clients.map((client) => client.clientCode)), [store.clients]);
 
   function openNewForm() {
@@ -174,7 +175,7 @@ export default function ClientsPage() {
 
       {!canEditClients ? (
         <div className="surface-card p-6 text-sm text-muted">
-          Identitetet e klientëve janë të kufizuara vetëm për Kryelaborantin, Kontrolluesin e Dokumenteve dhe Administratorin.
+          Vetëm Kryelaboranti dhe Administratori mund të shtojnë ose ruajnë klientë.
         </div>
       ) : null}
 
@@ -242,7 +243,7 @@ export default function ClientsPage() {
         </div>
       ) : null}
 
-      {canEditClients ? (
+      {canViewClients ? (
       <SimpleTable>
         <table className="w-full min-w-[1180px] text-left text-sm">
           <thead className="table-head">

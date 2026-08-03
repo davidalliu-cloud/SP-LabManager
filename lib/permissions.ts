@@ -8,6 +8,10 @@ export function canReviewTests(role?: Role) {
   return isSuperAdmin(role) || role === "Chief of Lab";
 }
 
+export function canManageClients(role?: Role) {
+  return isSuperAdmin(role) || role === "Chief of Lab";
+}
+
 export function canViewClientIdentity(role?: Role) {
   return role === "Admin / Managing Director" || role === "Chief of Lab" || role === "Document Controller";
 }
