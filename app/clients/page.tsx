@@ -24,6 +24,28 @@ const emptyClientDraft = {
 
 type ClientDraft = typeof emptyClientDraft;
 
+function clientCodeNumber(code: string) {
+  const match = /^K(\d+)$/i.exec(code.trim());
+  return match ? Number(match[1]) : Number.NaN;
+}
+
+function compareClientCodes(left: string, right: string) {
+  const leftNumber = clientCodeNumber(left);
+  const rightNumber = clientCodeNumber(right);
+  const leftHasNumber = Number.isFinite(leftNumber);
+  const rightHasNumber = Number.isFinite(rightNumber);
+
+  if (leftHasNumber && rightHasNumber && leftNumber !== rightNumber) {
+    return leftNumber - rightNumber;
+  }
+
+  if (leftHasNumber !== rightHasNumber) {
+    return leftHasNumber ? -1 : 1;
+  }
+
+  return left.localeCompare(right, undefined, { numeric: true, sensitivity: "base" });
+}
+
 function nextClientCode(codes: string[]) {
   const numbers = codes
     .map((code) => /^K(\d+)$/i.exec(code)?.[1])
@@ -53,6 +75,10 @@ export default function ClientsPage() {
   const canViewClients = canViewClientIdentity(currentUser?.role);
   const canEditClients = canManageClients(currentUser?.role);
   const suggestedCode = useMemo(() => nextClientCode(store.clients.map((client) => client.clientCode)), [store.clients]);
+  const sortedClients = useMemo(
+    () => [...store.clients].sort((left, right) => compareClientCodes(left.clientCode, right.clientCode)),
+    [store.clients]
+  );
 
   function openNewForm() {
     setEditingClientId("");
@@ -260,7 +286,7 @@ export default function ClientsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
-            {store.clients.map((client) => {
+            {sortedClients.map((client) => {
               const project = store.projects.find((item) => item.clientId === client.id);
               return (
                 <tr key={client.id}>

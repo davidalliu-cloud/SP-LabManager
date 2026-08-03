@@ -67,7 +67,7 @@ import {
 } from "./calculations";
 import { useAuth } from "./auth";
 import { officialClientCodes2026 } from "./client-directory";
-import { canAssignSampleClient, canDeleteSamples, canEditTestData, canReviewTests, canGenerateReportForTest, canManageEmployees } from "./permissions";
+import { canAssignSampleClient, canDeleteSamples, canEditTestData, canReviewTests, canGenerateReportForTest, canManageClients, canManageEmployees } from "./permissions";
 import { initialState } from "./seed-data";
 import { createSupabaseBrowserClient } from "./supabase/client";
 import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltMixtureKind, AsphaltReportKind, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabState, LabTest, LabUser, MortarTest, MortarTestKind, Notification, Project, Report, Role, Sample, SteelTensileTest, ThermalInsulationTest } from "./types";
@@ -890,6 +890,30 @@ function stableIdFromCode(prefix: string, code: string) {
   return `${prefix}-${code.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 }
 
+function clientCodeNumber(code: string) {
+  const match = /^K(\d+)$/i.exec(code.trim());
+  return match ? Number(match[1]) : Number.NaN;
+}
+
+function sortClientsByCode(clients: Client[]) {
+  return [...clients].sort((left, right) => {
+    const leftNumber = clientCodeNumber(left.clientCode);
+    const rightNumber = clientCodeNumber(right.clientCode);
+    const leftHasNumber = Number.isFinite(leftNumber);
+    const rightHasNumber = Number.isFinite(rightNumber);
+
+    if (leftHasNumber && rightHasNumber && leftNumber !== rightNumber) {
+      return leftNumber - rightNumber;
+    }
+
+    if (leftHasNumber !== rightHasNumber) {
+      return leftHasNumber ? -1 : 1;
+    }
+
+    return left.clientCode.localeCompare(right.clientCode, undefined, { numeric: true, sensitivity: "base" });
+  });
+}
+
 function mergeOfficialClientCodes2026(state: LabState): LabState {
   let clients = [...state.clients];
   let projects = [...state.projects];
@@ -950,7 +974,7 @@ function mergeOfficialClientCodes2026(state: LabState): LabState {
     }
   }
 
-  return changed ? { ...state, clients, projects } : state;
+  return changed ? { ...state, clients: sortClientsByCode(clients), projects } : { ...state, clients: sortClientsByCode(clients) };
 }
 
 function mergeWithInitialState(saved: Partial<LabState>): LabState {
@@ -1310,7 +1334,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
         const clientId = crypto.randomUUID();
         const projectId = crypto.randomUUID();
         setState((previous) => {
-          if (!canReviewTests(currentRole)) return previous;
+          if (!canManageClients(currentRole)) return previous;
           const client: Client = {
             id: clientId,
             clientCode: input.clientCode || nextClientCode(previous.clients),
@@ -1330,7 +1354,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           };
           const draft: LabState = {
             ...previous,
-            clients: [client, ...previous.clients],
+            clients: sortClientsByCode([client, ...previous.clients]),
             projects: [project, ...previous.projects],
             auditLog: [...previous.auditLog]
           };
@@ -1341,24 +1365,26 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       updateClient(id, input) {
         setState((previous) => {
-          if (!canReviewTests(currentRole)) return previous;
+          if (!canManageClients(currentRole)) return previous;
           const client = previous.clients.find((row) => row.id === id);
           const projectId = input.projectId ?? previous.projects.find((project) => project.clientId === id)?.id;
           const draft: LabState = {
             ...previous,
-            clients: previous.clients.map((row) =>
-              row.id === id
-                ? {
-                    ...row,
-                    clientCode: input.clientCode || row.clientCode,
-                    clientName: input.clientName,
-                    contactPerson: input.contactPerson,
-                    email: input.email,
-                    phone: input.phone,
-                    address: input.address,
-                    notes: input.notes
-                  }
-                : row
+            clients: sortClientsByCode(
+              previous.clients.map((row) =>
+                row.id === id
+                  ? {
+                      ...row,
+                      clientCode: input.clientCode || row.clientCode,
+                      clientName: input.clientName,
+                      contactPerson: input.contactPerson,
+                      email: input.email,
+                      phone: input.phone,
+                      address: input.address,
+                      notes: input.notes
+                    }
+                  : row
+              )
             ),
             projects: projectId
               ? previous.projects.map((project) =>
@@ -1388,7 +1414,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
         });
       },
       removeClient(id) {
-        if (!canReviewTests(currentRole)) {
+        if (!canManageClients(currentRole)) {
           return { ok: false, message: "Only the Chief of Lab or Superadmin can delete clients." };
         }
         const client = state.clients.find((row) => row.id === id);
