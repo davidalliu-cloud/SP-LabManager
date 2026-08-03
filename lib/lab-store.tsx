@@ -878,8 +878,46 @@ interface LabStoreValue extends LabState {
 }
 
 const LabStoreContext = createContext<LabStoreValue | null>(null);
-const STORAGE_KEY = "sarp-lab-management-state-v1";
+const STORAGE_KEY = "sarp-lab-management-state-v2";
 const ONLINE_STATE_ROW_ID = "shared-lab-state";
+const CLEAN_SLATE_RESET_MARKER = "sarp-lab-clean-slate-2026-08-03";
+
+function resetOperationalRecords(saved: Partial<LabState>): Partial<LabState> {
+  return {
+    ...saved,
+    samples: [],
+    tests: [],
+    concreteTests: [],
+    concreteWaterPenetrationTests: [],
+    concreteFlexuralTests: [],
+    concreteDensityTests: [],
+    concreteIndirectTensileTests: [],
+    concreteCoreTests: [],
+    asphaltTests: [],
+    thermalInsulationTests: [],
+    cementConsistencyTests: [],
+    cementStrengthTests: [],
+    cementBlaineTests: [],
+    mortarTests: [],
+    steelTests: [],
+    aggregateTests: [],
+    aggregateChemicalTests: [],
+    aggregateLosAngelesTests: [],
+    aggregateFreezeThawTests: [],
+    aggregateAcvTests: [],
+    aggregateDensityAbsorptionTests: [],
+    aggregateFillerDensityTests: [],
+    aggregateShapeIndexTests: [],
+    aggregateFlakinessIndexTests: [],
+    aggregateElongationIndexTests: [],
+    aggregateBulkDensityTests: [],
+    aggregateSandEquivalentTests: [],
+    aggregateSoundnessTests: [],
+    reports: [],
+    notifications: [],
+    auditLog: []
+  };
+}
 
 function hasSupabaseConfig() {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
@@ -953,49 +991,50 @@ function mergeOfficialClientCodes2026(state: LabState): LabState {
 }
 
 function mergeWithInitialState(saved: Partial<LabState>): LabState {
-  const procedureRevisions = (saved.procedureRevisions ?? initialState.procedureRevisions).map((revision) => ({
+  const cleanedSaved = resetOperationalRecords(saved);
+  const procedureRevisions = (cleanedSaved.procedureRevisions ?? initialState.procedureRevisions).map((revision) => ({
     ...revision,
     pdfUrl: revision.pdfUrl ?? (revision.fileUrl.endsWith(".doc") ? revision.fileUrl.replace(/\.doc$/, ".pdf") : revision.fileUrl)
   }));
   const mergedState = {
     ...initialState,
-    ...saved,
-    users: saved.users ?? initialState.users,
-    clients: saved.clients ?? initialState.clients,
-    projects: saved.projects ?? initialState.projects,
-    samples: saved.samples ?? initialState.samples,
-    tests: saved.tests ?? initialState.tests,
-    concreteTests: saved.concreteTests ?? initialState.concreteTests,
-    concreteWaterPenetrationTests: saved.concreteWaterPenetrationTests ?? initialState.concreteWaterPenetrationTests,
-    concreteFlexuralTests: saved.concreteFlexuralTests ?? initialState.concreteFlexuralTests,
-    concreteDensityTests: saved.concreteDensityTests ?? initialState.concreteDensityTests,
-    concreteIndirectTensileTests: saved.concreteIndirectTensileTests ?? initialState.concreteIndirectTensileTests,
-    concreteCoreTests: saved.concreteCoreTests ?? initialState.concreteCoreTests,
-    asphaltTests: saved.asphaltTests ?? initialState.asphaltTests,
-    thermalInsulationTests: saved.thermalInsulationTests ?? initialState.thermalInsulationTests,
-    cementConsistencyTests: saved.cementConsistencyTests ?? initialState.cementConsistencyTests,
-    cementStrengthTests: saved.cementStrengthTests ?? initialState.cementStrengthTests,
-    cementBlaineTests: saved.cementBlaineTests ?? initialState.cementBlaineTests,
-    mortarTests: saved.mortarTests ?? initialState.mortarTests,
-    steelTests: saved.steelTests ?? initialState.steelTests,
-    aggregateTests: saved.aggregateTests ?? initialState.aggregateTests,
-    aggregateChemicalTests: saved.aggregateChemicalTests ?? initialState.aggregateChemicalTests,
-    aggregateLosAngelesTests: saved.aggregateLosAngelesTests ?? initialState.aggregateLosAngelesTests,
-    aggregateFreezeThawTests: saved.aggregateFreezeThawTests ?? initialState.aggregateFreezeThawTests,
-    aggregateAcvTests: saved.aggregateAcvTests ?? initialState.aggregateAcvTests,
-    aggregateDensityAbsorptionTests: saved.aggregateDensityAbsorptionTests ?? initialState.aggregateDensityAbsorptionTests,
-    aggregateFillerDensityTests: saved.aggregateFillerDensityTests ?? initialState.aggregateFillerDensityTests,
-    aggregateShapeIndexTests: saved.aggregateShapeIndexTests ?? initialState.aggregateShapeIndexTests,
-    aggregateFlakinessIndexTests: saved.aggregateFlakinessIndexTests ?? initialState.aggregateFlakinessIndexTests,
-    aggregateElongationIndexTests: saved.aggregateElongationIndexTests ?? initialState.aggregateElongationIndexTests,
-    aggregateBulkDensityTests: saved.aggregateBulkDensityTests ?? initialState.aggregateBulkDensityTests,
-    aggregateSandEquivalentTests: saved.aggregateSandEquivalentTests ?? initialState.aggregateSandEquivalentTests,
-    aggregateSoundnessTests: saved.aggregateSoundnessTests ?? initialState.aggregateSoundnessTests,
-    reports: saved.reports ?? initialState.reports,
-    procedures: saved.procedures ?? initialState.procedures,
+    ...cleanedSaved,
+    users: cleanedSaved.users ?? initialState.users,
+    clients: cleanedSaved.clients ?? initialState.clients,
+    projects: cleanedSaved.projects ?? initialState.projects,
+    samples: cleanedSaved.samples ?? initialState.samples,
+    tests: cleanedSaved.tests ?? initialState.tests,
+    concreteTests: cleanedSaved.concreteTests ?? initialState.concreteTests,
+    concreteWaterPenetrationTests: cleanedSaved.concreteWaterPenetrationTests ?? initialState.concreteWaterPenetrationTests,
+    concreteFlexuralTests: cleanedSaved.concreteFlexuralTests ?? initialState.concreteFlexuralTests,
+    concreteDensityTests: cleanedSaved.concreteDensityTests ?? initialState.concreteDensityTests,
+    concreteIndirectTensileTests: cleanedSaved.concreteIndirectTensileTests ?? initialState.concreteIndirectTensileTests,
+    concreteCoreTests: cleanedSaved.concreteCoreTests ?? initialState.concreteCoreTests,
+    asphaltTests: cleanedSaved.asphaltTests ?? initialState.asphaltTests,
+    thermalInsulationTests: cleanedSaved.thermalInsulationTests ?? initialState.thermalInsulationTests,
+    cementConsistencyTests: cleanedSaved.cementConsistencyTests ?? initialState.cementConsistencyTests,
+    cementStrengthTests: cleanedSaved.cementStrengthTests ?? initialState.cementStrengthTests,
+    cementBlaineTests: cleanedSaved.cementBlaineTests ?? initialState.cementBlaineTests,
+    mortarTests: cleanedSaved.mortarTests ?? initialState.mortarTests,
+    steelTests: cleanedSaved.steelTests ?? initialState.steelTests,
+    aggregateTests: cleanedSaved.aggregateTests ?? initialState.aggregateTests,
+    aggregateChemicalTests: cleanedSaved.aggregateChemicalTests ?? initialState.aggregateChemicalTests,
+    aggregateLosAngelesTests: cleanedSaved.aggregateLosAngelesTests ?? initialState.aggregateLosAngelesTests,
+    aggregateFreezeThawTests: cleanedSaved.aggregateFreezeThawTests ?? initialState.aggregateFreezeThawTests,
+    aggregateAcvTests: cleanedSaved.aggregateAcvTests ?? initialState.aggregateAcvTests,
+    aggregateDensityAbsorptionTests: cleanedSaved.aggregateDensityAbsorptionTests ?? initialState.aggregateDensityAbsorptionTests,
+    aggregateFillerDensityTests: cleanedSaved.aggregateFillerDensityTests ?? initialState.aggregateFillerDensityTests,
+    aggregateShapeIndexTests: cleanedSaved.aggregateShapeIndexTests ?? initialState.aggregateShapeIndexTests,
+    aggregateFlakinessIndexTests: cleanedSaved.aggregateFlakinessIndexTests ?? initialState.aggregateFlakinessIndexTests,
+    aggregateElongationIndexTests: cleanedSaved.aggregateElongationIndexTests ?? initialState.aggregateElongationIndexTests,
+    aggregateBulkDensityTests: cleanedSaved.aggregateBulkDensityTests ?? initialState.aggregateBulkDensityTests,
+    aggregateSandEquivalentTests: cleanedSaved.aggregateSandEquivalentTests ?? initialState.aggregateSandEquivalentTests,
+    aggregateSoundnessTests: cleanedSaved.aggregateSoundnessTests ?? initialState.aggregateSoundnessTests,
+    reports: cleanedSaved.reports ?? initialState.reports,
+    procedures: cleanedSaved.procedures ?? initialState.procedures,
     procedureRevisions,
-    notifications: saved.notifications ?? initialState.notifications,
-    auditLog: saved.auditLog ?? initialState.auditLog
+    notifications: cleanedSaved.notifications ?? initialState.notifications,
+    auditLog: cleanedSaved.auditLog ?? initialState.auditLog
   };
 
   return mergeOfficialClientCodes2026(mergedState);
@@ -1016,6 +1055,11 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     try {
+      if (!window.localStorage.getItem(CLEAN_SLATE_RESET_MARKER)) {
+        window.localStorage.removeItem("sarp-lab-management-state-v1");
+        window.localStorage.removeItem("sarp-lab-management-state-v2");
+        window.localStorage.setItem(CLEAN_SLATE_RESET_MARKER, "applied");
+      }
       const saved = window.localStorage.getItem(STORAGE_KEY);
       if (saved) {
         setState(mergeWithInitialState(JSON.parse(saved) as Partial<LabState>));
