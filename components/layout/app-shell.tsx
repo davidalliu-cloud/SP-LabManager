@@ -13,7 +13,6 @@ import { canViewClientIdentity } from "@/lib/permissions";
 const navItems = [
   ["nav.dashboard", "/"],
   ["nav.sampleRegister", "/samples"],
-  ["nav.newSample", "/samples/new"],
   ["nav.tests", "/tests"],
   ["nav.reports", "/reports"],
   ["nav.procedures", "/procedures"],
