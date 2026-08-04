@@ -4,10 +4,10 @@
 
 :root {
   color-scheme: light;
-  --app-bg: #f4efe7;
-  --app-cream: #fcf8f2;
-  --app-sand: #e7d8c1;
-  --app-paper: rgba(255, 251, 246, 0.94);
+  --app-bg: #ffffff;
+  --app-cream: #ffffff;
+  --app-sand: #ece1d1;
+  --app-paper: rgba(255, 255, 255, 0.96);
   --app-burgundy: #5b193f;
   --app-ink: #1f1a1c;
   --app-olive: #7c7d4e;
