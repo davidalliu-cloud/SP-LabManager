@@ -999,6 +999,50 @@ function mergeOfficialClientCodes2026(state: LabState): LabState {
   return changed ? { ...state, clients: sortClientsByCode(clients), projects } : { ...state, clients: sortClientsByCode(clients) };
 }
 
+type IdRecord = { id: string; [key: string]: unknown };
+
+/**
+ * Reconciles a remote state (freshly loaded from Supabase) with the local
+ * in-memory state, using `base` (the state we last knew to be in sync with
+ * remote) to work out which records the local session actually touched.
+ * Untouched records fall back to remote so other users' saves aren't lost;
+ * records the local session added/edited/deleted win over remote, so an
+ * in-progress edit here isn't clobbered by someone else's concurrent save.
+ * A true edit-the-same-record-at-the-same-instant collision still resolves
+ * local-wins, but every other conflict pattern (the common case of two
+ * people touching different samples/tests) now merges instead of one side
+ * silently overwriting the other's work.
+ */
+function mergeCollectionsPreferLocal(remote: LabState, base: LabState, local: LabState): LabState {
+  const result: Record<string, unknown> = {};
+  const keys = Object.keys(remote) as (keyof LabState)[];
+
+  for (const key of keys) {
+    const remoteArr = (remote[key] as unknown as IdRecord[] | undefined) ?? [];
+    const baseArr = (base[key] as unknown as IdRecord[] | undefined) ?? [];
+    const localArr = (local[key] as unknown as IdRecord[] | undefined) ?? [];
+
+    const baseById = new Map(baseArr.map((row) => [row.id, row]));
+    const localById = new Map(localArr.map((row) => [row.id, row]));
+
+    const merged = new Map(remoteArr.map((row) => [row.id, row]));
+
+    for (const [id, row] of localById) {
+      const baseRow = baseById.get(id);
+      if (!baseRow || JSON.stringify(baseRow) !== JSON.stringify(row)) {
+        merged.set(id, row);
+      }
+    }
+    for (const id of baseById.keys()) {
+      if (!localById.has(id)) merged.delete(id);
+    }
+
+    result[key] = Array.from(merged.values());
+  }
+
+  return result as unknown as LabState;
+}
+
 function mergeWithInitialState(saved: Partial<LabState>): LabState {
   const procedureRevisions = (saved.procedureRevisions ?? initialState.procedureRevisions).map((revision) => ({
     ...revision,
@@ -1054,6 +1098,8 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
   const [isHydrated, setIsHydrated] = useState(false);
   const [isRemoteChecked, setIsRemoteChecked] = useState(false);
   const lastSavedOnlineJson = useRef<string | null>(null);
+  const remoteUpdatedAtRef = useRef<string | null>(null);
+  const lastSyncedStateRef = useRef<LabState | null>(null);
   const currentUser =
     state.users.find((user) => user.email.toLowerCase() === auth.user?.email?.toLowerCase()) ??
     state.users.find((user) => user.role === "Technician") ??
@@ -1103,7 +1149,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
         const supabase = createSupabaseBrowserClient();
         const { data, error } = await supabase
           .from("app_state")
-          .select("state")
+          .select("state, updated_at")
           .eq("id", ONLINE_STATE_ROW_ID)
           .maybeSingle();
 
@@ -1115,6 +1161,8 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
         if (!isCancelled && data?.state) {
           const mergedState = mergeWithInitialState(data.state as Partial<LabState>);
           lastSavedOnlineJson.current = JSON.stringify(mergedState);
+          remoteUpdatedAtRef.current = data.updated_at ?? null;
+          lastSyncedStateRef.current = mergedState;
           setState(mergedState);
           window.localStorage.setItem(STORAGE_KEY, JSON.stringify(mergedState));
         }
@@ -1132,6 +1180,39 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
     };
   }, [isHydrated]);
 
+  // Live updates: pick up other users' saves without waiting for a page refresh.
+  useEffect(() => {
+    if (!isHydrated || !isRemoteChecked || !hasSupabaseConfig()) return;
+
+    const supabase = createSupabaseBrowserClient();
+    const channel = supabase
+      .channel("app_state_sync")
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "app_state", filter: `id=eq.${ONLINE_STATE_ROW_ID}` },
+        (payload) => {
+          const incoming = payload.new as { state?: Partial<LabState>; updated_at?: string } | null;
+          if (!incoming?.state || !incoming.updated_at) return;
+          // Ignore the echo of our own save.
+          if (incoming.updated_at === remoteUpdatedAtRef.current) return;
+
+          const incomingState = mergeWithInitialState(incoming.state);
+          setState((current) => {
+            const base = lastSyncedStateRef.current ?? incomingState;
+            const merged = mergeCollectionsPreferLocal(incomingState, base, current);
+            lastSyncedStateRef.current = incomingState;
+            remoteUpdatedAtRef.current = incoming.updated_at!;
+            return merged;
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isHydrated, isRemoteChecked]);
+
   useEffect(() => {
     if (!isHydrated || !isRemoteChecked || !hasSupabaseConfig()) return;
 
@@ -1139,20 +1220,86 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       const json = JSON.stringify(state);
       if (lastSavedOnlineJson.current === json) return;
 
-      try {
-        const supabase = createSupabaseBrowserClient();
-        const { error } = await supabase.from("app_state").upsert({
-          id: ONLINE_STATE_ROW_ID,
-          state,
-          updated_at: new Date().toISOString()
-        });
+      const supabase = createSupabaseBrowserClient();
+
+      // Conditional save: only write if remote hasn't moved since we last synced
+      // (compare-and-swap on updated_at). If someone else saved in between, pull
+      // their state, merge our actually-changed records on top of it (instead of
+      // blindly overwriting), and retry — so two people saving around the same
+      // time both keep their work instead of one silently clobbering the other.
+      async function attemptSave(expectedUpdatedAt: string | null, stateToSave: LabState, attempt: number): Promise<void> {
+        const nowIso = new Date().toISOString();
+        let query = supabase.from("app_state").update({ state: stateToSave, updated_at: nowIso }).eq("id", ONLINE_STATE_ROW_ID);
+        if (expectedUpdatedAt) {
+          query = query.eq("updated_at", expectedUpdatedAt);
+        }
+        const { data, error } = await query.select("updated_at");
 
         if (error) {
           console.warn("Could not save online SARP LAB data.", error.message);
           return;
         }
 
-        lastSavedOnlineJson.current = json;
+        if (!data || data.length === 0) {
+          if (attempt >= 3) {
+            const { error: forceError } = await supabase.from("app_state").upsert({
+              id: ONLINE_STATE_ROW_ID,
+              state: stateToSave,
+              updated_at: nowIso
+            });
+            if (!forceError) {
+              remoteUpdatedAtRef.current = nowIso;
+              lastSyncedStateRef.current = stateToSave;
+              lastSavedOnlineJson.current = JSON.stringify(stateToSave);
+            } else {
+              console.warn("Could not save SARP LAB data to Supabase after retries.", forceError.message);
+            }
+            return;
+          }
+
+          const { data: fresh, error: fetchError } = await supabase
+            .from("app_state")
+            .select("state, updated_at")
+            .eq("id", ONLINE_STATE_ROW_ID)
+            .maybeSingle();
+
+          if (fetchError) {
+            console.warn("Could not reconcile online SARP LAB data.", fetchError.message);
+            return;
+          }
+
+          if (!fresh) {
+            // Row doesn't exist yet (fresh deployment) - bootstrap it.
+            const { error: insertError } = await supabase.from("app_state").upsert({
+              id: ONLINE_STATE_ROW_ID,
+              state: stateToSave,
+              updated_at: nowIso
+            });
+            if (!insertError) {
+              remoteUpdatedAtRef.current = nowIso;
+              lastSyncedStateRef.current = stateToSave;
+              lastSavedOnlineJson.current = JSON.stringify(stateToSave);
+            }
+            return;
+          }
+
+          const freshState = mergeWithInitialState(fresh.state as Partial<LabState>);
+          const base = lastSyncedStateRef.current ?? freshState;
+          const merged = mergeCollectionsPreferLocal(freshState, base, stateToSave);
+          setState(merged);
+          lastSyncedStateRef.current = freshState;
+          remoteUpdatedAtRef.current = fresh.updated_at ?? null;
+          await attemptSave(fresh.updated_at ?? null, merged, attempt + 1);
+          return;
+        }
+
+        remoteUpdatedAtRef.current = nowIso;
+        lastSyncedStateRef.current = stateToSave;
+        lastSavedOnlineJson.current = JSON.stringify(stateToSave);
+      }
+
+      try {
+        await attemptSave(remoteUpdatedAtRef.current, state, 0);
       } catch (error) {
         console.warn("Could not save SARP LAB data to Supabase.", error);
       }

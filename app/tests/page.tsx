@@ -12,6 +12,11 @@ export default function TestsPage() {
   return (
     <>
       <PageHeader title="Testet" description="Lista e testeve me afate, status dhe teknik të caktuar." />
+      {!store.tests.length ? (
+        <div className="rounded-md border border-line bg-white p-6 text-sm text-muted shadow-sm">
+          Nuk ka ende teste. Regjistroni një kampion dhe pranoni testin për ta parë këtu.
+        </div>
+      ) : null}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {store.tests.map((test) => (
           <TestCard
