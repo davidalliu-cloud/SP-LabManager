@@ -8,11 +8,12 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { SummaryCard } from "@/components/ui/summary-card";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { useLabStore } from "@/lib/lab-store";
-import { canAssignSampleClient, canReviewTests, canViewClientIdentity } from "@/lib/permissions";
+import { canAssignSampleClient, canEditSampleAfterRegistration, canReviewTests, canViewClientIdentity } from "@/lib/permissions";
 
 export default function SampleDetailPage() {
   const params = useParams<{ id: string }>();
   const store = useLabStore();
+  const [isEditingDetails, setIsEditingDetails] = useState(false);
   const [assignmentClientId, setAssignmentClientId] = useState("");
   const [assignmentProjectId, setAssignmentProjectId] = useState("");
   const sample = store.samples.find((item) => item.id === params.id);
@@ -26,10 +27,15 @@ export default function SampleDetailPage() {
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
   const showClientIdentity = canViewClientIdentity(currentUser?.role);
   const canAssignClient = canAssignSampleClient(currentUser?.role, currentUser);
+  const canEditSample = canEditSampleAfterRegistration(currentUser?.role);
   const canAcceptSample = canReviewTests(currentUser?.role);
+  const activeEmployees = store.users.filter((user) => user.isActive !== false);
   const selectedAssignmentClientId = assignmentClientId || sample.clientId || store.clients[0]?.id || "";
   const assignmentProjects = store.projects.filter((item) => item.clientId === selectedAssignmentClientId);
   const selectedAssignmentProjectId = assignmentProjectId || sample.projectId || assignmentProjects[0]?.id || "";
+  const selectedEditClientId = assignmentClientId || sample.clientId || store.clients[0]?.id || "";
+  const editProjects = store.projects.filter((item) => item.clientId === selectedEditClientId);
+  const selectedEditProjectId = assignmentProjectId || sample.projectId || editProjects[0]?.id || "";
   const tests = store.tests.filter((item) => item.sampleId === sample.id);
   const plannedCastingDates = Array.from(new Set((sample.testSchedules ?? []).map((row) => row.concretingDate).filter(Boolean)));
   const sampleCastingSummary =
@@ -43,12 +49,39 @@ export default function SampleDetailPage() {
     .reduce((sum, test) => sum + test.cubeCount, 0);
   const remainingCubes = Math.max(0, sample.quantity - completedCubes);
   const nextTest = tests.find((test) => ["Pending", "Scheduled", "In Progress"].includes(test.status));
+  const hasMultipleSchedules = (sample.testSchedules?.length ?? 0) > 1;
 
   function submitAssignment(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!sample) return;
     const form = new FormData(event.currentTarget);
     store.assignSampleClient(sample.id, String(form.get("clientId")), String(form.get("projectId")));
+  }
+
+  function submitEdit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!sample) return;
+    const form = new FormData(event.currentTarget);
+    store.updateSample(sample.id, {
+      clientId: canAssignClient ? String(form.get("clientId") || sample.clientId) : sample.clientId,
+      projectId: canAssignClient ? String(form.get("projectId") || sample.projectId) : sample.projectId,
+      sampleType: String(form.get("sampleType") || sample.sampleType),
+      sampleDescription: String(form.get("sampleDescription") || ""),
+      quantity: Number(form.get("quantity") || sample.quantity),
+      dateReceived: String(form.get("dateReceived") || sample.dateReceived),
+      timeReceived: String(form.get("timeReceived") || sample.timeReceived),
+      collectionMethod: String(form.get("collectionMethod") || sample.collectionMethod) as "Delivered by client" | "Collected by lab technician",
+      deliveredBy: String(form.get("deliveredBy") || ""),
+      collectedBy: String(form.get("collectedBy") || ""),
+      concretingDate: String(form.get("concretingDate") || ""),
+      requestedTestType: String(form.get("requestedTestType") || sample.requestedTestType),
+      standard: String(form.get("standard") || sample.standard),
+      requiredTestDate: hasMultipleSchedules ? sample.requiredTestDate : String(form.get("requiredTestDate") || sample.requiredTestDate),
+      reportDueDate: hasMultipleSchedules ? sample.reportDueDate : String(form.get("reportDueDate") || sample.reportDueDate),
+      assignedTechnician: String(form.get("assignedTechnician") || ""),
+      notes: String(form.get("notes") || "")
+    });
+    setIsEditingDetails(false);
   }
 
   function acceptSample() {
@@ -74,29 +107,119 @@ export default function SampleDetailPage() {
       <div className="grid gap-5 xl:grid-cols-[1fr_380px]">
         <section className="space-y-5">
           <div className="surface-card p-5">
-            <h2 className="text-base font-semibold text-ink">Informacioni i kampionit</h2>
-            <div className="mt-4 grid gap-4 text-sm md:grid-cols-3">
-              <Info label="Kodi i klientit" value={client?.clientCode ?? "Në pritje të caktimit nga Kryelaboranti"} />
-              <Info label="Projekti" value={showClientIdentity ? project?.projectName ?? "Në pritje të caktimit" : "I kufizuar"} />
-              <Info label="Vendndodhja e projektit" value={showClientIdentity ? project?.location : "I kufizuar"} />
-              <Info label="Tipi i kampionit" value={sample.sampleType} />
-              <Info label="Data e pranimit" value={sample.dateReceived} />
-              <Info label="Ora e pranimit" value={sample.timeReceived} />
-              <Info label="Data e betonimit" value={sampleCastingSummary || sample.concretingDate} />
-              <Info label="Mënyra e dorëzimit" value={sample.collectionMethod} />
-              <Info label="Dorëzuar nga" value={sample.deliveredBy} />
-              <Info label="Marrë nga" value={sample.collectedBy} />
-              <Info label="Personi që do të kryejë testin" value={store.users.find((user) => user.id === sample.assignedTechnician)?.fullName ?? "-"} />
-              <Info label="Testi i kërkuar" value={sample.requestedTestType} />
-              <Info label="Standardi" value={sample.standard} />
-              <Info label="Afati i raportit" value={sample.reportDueDate} />
-              <div className="md:col-span-3">
-                <Info label="Përshkrimi" value={sample.sampleDescription} />
-              </div>
-              <div className="md:col-span-3">
-                <Info label="Shënime" value={sample.notes || "-"} />
-              </div>
+            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+              <h2 className="text-base font-semibold text-ink">Informacioni i kampionit</h2>
+              {canEditSample ? (
+                <button type="button" onClick={() => setIsEditingDetails((current) => !current)} className="btn-secondary px-3">
+                  {isEditingDetails ? "Mbyll modifikimin" : "Modifiko të dhënat"}
+                </button>
+              ) : null}
             </div>
+            {isEditingDetails && canEditSample ? (
+              <form onSubmit={submitEdit} className="mt-4 grid gap-4 md:grid-cols-3">
+                {canAssignClient ? (
+                  <>
+                    <Field label="Kodi i klientit">
+                      <select
+                        name="clientId"
+                        value={selectedEditClientId}
+                        onChange={(event) => {
+                          const nextClientId = event.target.value;
+                          setAssignmentClientId(nextClientId);
+                          setAssignmentProjectId(store.projects.find((item) => item.clientId === nextClientId)?.id ?? "");
+                        }}
+                        className="input"
+                      >
+                        {store.clients.map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {showClientIdentity ? `${item.clientCode} - ${item.clientName}` : item.clientCode}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                    <Field label="Projekti">
+                      <select name="projectId" value={selectedEditProjectId} onChange={(event) => setAssignmentProjectId(event.target.value)} className="input">
+                        {editProjects.map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.projectName}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                  </>
+                ) : null}
+                <Field label="Tipi i kampionit"><input name="sampleType" defaultValue={sample.sampleType} className="input" /></Field>
+                <Field label="Sasia e pranuar"><input name="quantity" type="number" min="1" defaultValue={sample.quantity} className="input" /></Field>
+                <Field label="Data e pranimit"><input name="dateReceived" type="date" defaultValue={sample.dateReceived} className="input" /></Field>
+                <Field label="Ora e pranimit"><input name="timeReceived" type="time" defaultValue={sample.timeReceived} className="input" /></Field>
+                <Field label="Mënyra e dorëzimit">
+                  <select name="collectionMethod" defaultValue={sample.collectionMethod} className="input">
+                    <option value="Delivered by client">Dorëzuar nga klienti</option>
+                    <option value="Collected by lab technician">Marrë nga tekniku i laboratorit</option>
+                  </select>
+                </Field>
+                <Field label="Dorëzuar nga"><input name="deliveredBy" defaultValue={sample.deliveredBy ?? ""} className="input" /></Field>
+                <Field label="Marrë nga"><input name="collectedBy" defaultValue={sample.collectedBy ?? ""} className="input" /></Field>
+                <Field label="Data e betonimit"><input name="concretingDate" type="date" defaultValue={sample.concretingDate ?? ""} className="input" /></Field>
+                <Field label="Personi që do të kryejë testin">
+                  <select name="assignedTechnician" defaultValue={sample.assignedTechnician ?? ""} className="input">
+                    <option value="">Zgjidh teknikun ose inxhinierin</option>
+                    {activeEmployees.map((employee) => (
+                      <option key={employee.id} value={employee.id}>
+                        {employee.fullName}{employee.position ? ` - ${employee.position}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Testi i kërkuar"><input name="requestedTestType" defaultValue={sample.requestedTestType} className="input" /></Field>
+                <Field label="Standardi"><input name="standard" defaultValue={sample.standard} className="input" /></Field>
+                {!hasMultipleSchedules ? <Field label="Data e kërkuar për testim"><input name="requiredTestDate" type="date" defaultValue={sample.requiredTestDate} className="input" /></Field> : null}
+                {!hasMultipleSchedules ? <Field label="Afati i raportit"><input name="reportDueDate" type="date" defaultValue={sample.reportDueDate} className="input" /></Field> : null}
+                <div className="md:col-span-3">
+                  <Field label="Përshkrimi"><textarea name="sampleDescription" rows={3} defaultValue={sample.sampleDescription} className="input" /></Field>
+                </div>
+                <div className="md:col-span-3">
+                  <Field label="Shënime"><textarea name="notes" rows={4} defaultValue={sample.notes ?? ""} className="input" /></Field>
+                </div>
+                {tests.length ? (
+                  <div className="soft-panel p-4 text-sm text-muted md:col-span-3">
+                    Korrigjimi i kampionit nuk ndryshon grupet e testeve që janë krijuar tashmë. Për testet ekzistuese përditësohen kodi i klientit/projekti, standardi dhe tekniku i caktuar.
+                  </div>
+                ) : null}
+                {hasMultipleSchedules ? (
+                  <div className="soft-panel p-4 text-sm text-muted md:col-span-3">
+                    Ky kampion ka disa grupe testimi, prandaj datat e planit ruhen siç janë te seksioni "Plani i testimit".
+                  </div>
+                ) : null}
+                <div className="flex gap-3 md:col-span-3">
+                  <button className="btn-primary">Ruaj ndryshimet</button>
+                  <button type="button" onClick={() => setIsEditingDetails(false)} className="btn-secondary">Anulo</button>
+                </div>
+              </form>
+            ) : (
+              <div className="mt-4 grid gap-4 text-sm md:grid-cols-3">
+                <Info label="Kodi i klientit" value={client?.clientCode ?? "Në pritje të caktimit nga Kryelaboranti"} />
+                <Info label="Projekti" value={showClientIdentity ? project?.projectName ?? "Në pritje të caktimit" : "I kufizuar"} />
+                <Info label="Vendndodhja e projektit" value={showClientIdentity ? project?.location : "I kufizuar"} />
+                <Info label="Tipi i kampionit" value={sample.sampleType} />
+                <Info label="Data e pranimit" value={sample.dateReceived} />
+                <Info label="Ora e pranimit" value={sample.timeReceived} />
+                <Info label="Data e betonimit" value={sampleCastingSummary || sample.concretingDate} />
+                <Info label="Mënyra e dorëzimit" value={sample.collectionMethod} />
+                <Info label="Dorëzuar nga" value={sample.deliveredBy} />
+                <Info label="Marrë nga" value={sample.collectedBy} />
+                <Info label="Personi që do të kryejë testin" value={store.users.find((user) => user.id === sample.assignedTechnician)?.fullName ?? "-"} />
+                <Info label="Testi i kërkuar" value={sample.requestedTestType} />
+                <Info label="Standardi" value={sample.standard} />
+                <Info label="Afati i raportit" value={sample.reportDueDate} />
+                <div className="md:col-span-3">
+                  <Info label="Përshkrimi" value={sample.sampleDescription} />
+                </div>
+                <div className="md:col-span-3">
+                  <Info label="Shënime" value={sample.notes || "-"} />
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="surface-card p-5">
@@ -243,6 +366,15 @@ export default function SampleDetailPage() {
         </aside>
       </div>
     </>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block text-sm font-medium text-ink">
+      {label}
+      <div className="mt-1">{children}</div>
+    </label>
   );
 }
 

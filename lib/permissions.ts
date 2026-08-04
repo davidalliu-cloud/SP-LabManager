@@ -41,7 +41,7 @@ export function canDeleteSamples(role?: Role) {
 }
 
 export function canEditSampleAfterRegistration(role?: Role) {
-  return isSuperAdmin(role) || role === "Chief of Lab";
+  return isSuperAdmin(role) || role === "Chief of Lab" || role === "Operations Manager" || role === "Technician";
 }
 
 export function canEditTestData(role?: Role, status?: TestStatus) {

@@ -67,7 +67,7 @@ import {
 } from "./calculations";
 import { useAuth } from "./auth";
 import { officialClientCodes2026 } from "./client-directory";
-import { canAssignSampleClient, canDeleteSamples, canEditTestData, canReviewTests, canGenerateReportForTest, canManageClients, canManageEmployees } from "./permissions";
+import { canAssignSampleClient, canDeleteSamples, canEditSampleAfterRegistration, canEditTestData, canReviewTests, canGenerateReportForTest, canManageClients, canManageEmployees } from "./permissions";
 import { initialState } from "./seed-data";
 import { createSupabaseBrowserClient } from "./supabase/client";
 import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltMixtureKind, AsphaltReportKind, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabState, LabTest, LabUser, MortarTest, MortarTestKind, Notification, Project, Report, Role, Sample, SteelTensileTest, ThermalInsulationTest } from "./types";
@@ -96,6 +96,26 @@ interface NewSampleInput {
     requiredTestDate: string;
     reportDueDate: string;
   }>;
+  notes?: string;
+}
+
+interface SampleCorrectionInput {
+  clientId: string;
+  projectId: string;
+  sampleType: string;
+  sampleDescription: string;
+  quantity: number;
+  dateReceived: string;
+  timeReceived: string;
+  collectionMethod: Sample["collectionMethod"];
+  deliveredBy?: string;
+  collectedBy?: string;
+  concretingDate?: string;
+  requestedTestType: string;
+  standard: string;
+  requiredTestDate: string;
+  reportDueDate: string;
+  assignedTechnician?: string;
   notes?: string;
 }
 
@@ -835,6 +855,7 @@ interface LabStoreValue extends LabState {
   removeClient: (id: string) => { ok: boolean; message?: string };
   removeSample: (id: string) => void;
   assignSampleClient: (sampleId: string, clientId: string, projectId: string) => void;
+  updateSample: (sampleId: string, input: SampleCorrectionInput) => void;
   acceptSample: (sampleId: string) => void;
   createSample: (input: NewSampleInput) => string;
   saveConcreteTest: (testId: string, input: ConcreteInput) => void;
@@ -1517,6 +1538,69 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             "sample",
             sampleId,
             `${sample?.sampleCode ?? "Sample"} assigned to ${client?.clientCode ?? "client code"}${project?.projectName ? ` / ${project.projectName}` : ""}.`
+          );
+          return draft;
+        });
+      },
+      updateSample(sampleId, input) {
+        setState((previous) => {
+          if (!canEditSampleAfterRegistration(currentRole)) return previous;
+          const sample = previous.samples.find((row) => row.id === sampleId);
+          if (!sample) return previous;
+          const normalizedDeliveredBy = input.deliveredBy?.trim() || undefined;
+          const normalizedCollectedBy = input.collectedBy?.trim() || undefined;
+          const normalizedConcretingDate = input.concretingDate?.trim() || undefined;
+          const normalizedAssignedTechnician = input.assignedTechnician?.trim() || undefined;
+          const normalizedNotes = input.notes?.trim() || undefined;
+          const linkedTests = previous.tests.filter((row) => row.sampleId === sampleId);
+          const draft: LabState = {
+            ...previous,
+            samples: previous.samples.map((row) =>
+              row.id === sampleId
+                ? {
+                    ...row,
+                    clientId: input.clientId,
+                    projectId: input.projectId,
+                    sampleType: input.sampleType,
+                    sampleDescription: input.sampleDescription,
+                    quantity: input.quantity,
+                    dateReceived: input.dateReceived,
+                    timeReceived: input.timeReceived,
+                    collectionMethod: input.collectionMethod,
+                    deliveredBy: normalizedDeliveredBy,
+                    collectedBy: normalizedCollectedBy,
+                    concretingDate: normalizedConcretingDate,
+                    requestedTestType: input.requestedTestType,
+                    standard: input.standard,
+                    requiredTestDate: input.requiredTestDate,
+                    reportDueDate: input.reportDueDate,
+                    assignedTechnician: normalizedAssignedTechnician,
+                    notes: normalizedNotes
+                  }
+                : row
+            ),
+            tests: previous.tests.map((row) =>
+              row.sampleId === sampleId
+                ? {
+                    ...row,
+                    clientId: input.clientId,
+                    projectId: input.projectId,
+                    standard: input.standard,
+                    assignedTechnician: normalizedAssignedTechnician || row.assignedTechnician
+                  }
+                : row
+            ),
+            reports: previous.reports.map((row) =>
+              row.sampleId === sampleId ? { ...row, clientId: input.clientId, projectId: input.projectId } : row
+            ),
+            auditLog: [...previous.auditLog]
+          };
+          addAudit(
+            draft,
+            "sample_updated",
+            "sample",
+            sampleId,
+            `Sample ${sample.sampleCode} details updated after registration${linkedTests.length ? ` with ${linkedTests.length} linked test batch${linkedTests.length === 1 ? "" : "es"} preserved.` : "."}`
           );
           return draft;
         });
