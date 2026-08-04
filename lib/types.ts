@@ -83,6 +83,7 @@ export interface Sample {
   testSchedules?: Array<{
     cubeCount: number;
     ageDays: number;
+    concretingDate?: string;
     requiredTestDate: string;
     reportDueDate: string;
   }>;
@@ -102,6 +103,7 @@ export interface LabTest {
   assignedTechnician: string;
   cubeCount: number;
   scheduledAgeDays: number;
+  concretingDate?: string;
   requiredTestDate: string;
   dueDate: string;
   status: TestStatus;

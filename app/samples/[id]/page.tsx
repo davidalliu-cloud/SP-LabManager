@@ -31,6 +31,11 @@ export default function SampleDetailPage() {
   const assignmentProjects = store.projects.filter((item) => item.clientId === selectedAssignmentClientId);
   const selectedAssignmentProjectId = assignmentProjectId || sample.projectId || assignmentProjects[0]?.id || "";
   const tests = store.tests.filter((item) => item.sampleId === sample.id);
+  const plannedCastingDates = Array.from(new Set((sample.testSchedules ?? []).map((row) => row.concretingDate).filter(Boolean)));
+  const sampleCastingSummary =
+    plannedCastingDates.length > 1
+      ? `${plannedCastingDates.map((date) => formatEuropeanDate(date)).join(", ")}`
+      : sample.concretingDate;
   const reports = store.reports.filter((item) => item.sampleId === sample.id);
   const finishedStatuses = ["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"];
   const completedCubes = tests
@@ -77,7 +82,7 @@ export default function SampleDetailPage() {
               <Info label="Tipi i kampionit" value={sample.sampleType} />
               <Info label="Data e pranimit" value={sample.dateReceived} />
               <Info label="Ora e pranimit" value={sample.timeReceived} />
-              <Info label="Data e betonimit" value={sample.concretingDate} />
+              <Info label="Data e betonimit" value={sampleCastingSummary || sample.concretingDate} />
               <Info label="Mënyra e dorëzimit" value={sample.collectionMethod} />
               <Info label="Dorëzuar nga" value={sample.deliveredBy} />
               <Info label="Marrë nga" value={sample.collectedBy} />
@@ -110,6 +115,7 @@ export default function SampleDetailPage() {
                     <th className="px-4 py-3">ID e testit</th>
                     <th className="px-4 py-3">Grupi</th>
                     <th className="px-4 py-3">Mosha</th>
+                    <th className="px-4 py-3">Data e betonimit</th>
                     <th className="px-4 py-3">Data e kërkuar</th>
                     <th className="px-4 py-3">Afati i raportit</th>
                     <th className="px-4 py-3">Statusi</th>
@@ -122,6 +128,7 @@ export default function SampleDetailPage() {
                       <td className="px-4 py-3 font-semibold text-ink">{test.testCode}</td>
                       <td className="px-4 py-3">{test.cubeCount} kube</td>
                       <td className="px-4 py-3">{test.scheduledAgeDays} ditë</td>
+                      <td className="px-4 py-3">{formatEuropeanDate(test.concretingDate)}</td>
                       <td className="px-4 py-3">{formatEuropeanDate(test.requiredTestDate)}</td>
                       <td className="px-4 py-3">{formatEuropeanDate(test.dueDate)}</td>
                       <td className="px-4 py-3"><StatusBadge status={test.status} /></td>
@@ -129,7 +136,7 @@ export default function SampleDetailPage() {
                     </tr>
                   )) : (
                     <tr>
-                      <td colSpan={7} className="px-4 py-6 text-center text-sm text-muted">
+                      <td colSpan={8} className="px-4 py-6 text-center text-sm text-muted">
                         Testet do të krijohen pasi Kryelaboranti të caktojë klientin/projektin dhe të pranojë kampionin.
                       </td>
                     </tr>

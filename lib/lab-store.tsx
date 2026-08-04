@@ -92,6 +92,7 @@ interface NewSampleInput {
   schedules: Array<{
     cubeCount: number;
     ageDays: number;
+    concretingDate?: string;
     requiredTestDate: string;
     reportDueDate: string;
   }>;
@@ -1535,7 +1536,15 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           const schedules =
             sample.testSchedules && sample.testSchedules.length > 0
               ? sample.testSchedules
-              : [{ cubeCount: sample.quantity, ageDays: 0, requiredTestDate: sample.requiredTestDate, reportDueDate: sample.reportDueDate }];
+              : [
+                  {
+                    cubeCount: sample.quantity,
+                    ageDays: 0,
+                    concretingDate: sample.concretingDate,
+                    requiredTestDate: sample.requiredTestDate,
+                    reportDueDate: sample.reportDueDate
+                  }
+                ];
           const tests: LabTest[] = schedules.map((schedule, index) => ({
             id: crypto.randomUUID(),
             testCode: nextNumber("TEST", previous.tests.length + index),
@@ -1547,13 +1556,14 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             assignedTechnician: sample.assignedTechnician || sample.createdBy || currentUserId,
             cubeCount: schedule.cubeCount,
             scheduledAgeDays: schedule.ageDays,
+            concretingDate: schedule.concretingDate || sample.concretingDate,
             requiredTestDate: schedule.requiredTestDate,
             dueDate: schedule.reportDueDate,
             status: "Pending",
             priority: "Normal",
             notes: schedule.ageDays
-              ? `${schedule.cubeCount} mostra të planifikuara në ${schedule.ageDays} ditë.`
-              : `${schedule.cubeCount} mostra të planifikuara.`,
+              ? `${schedule.cubeCount} mostra të planifikuara në ${schedule.ageDays} ditë${schedule.concretingDate ? ` nga betonimi i datës ${schedule.concretingDate}` : ""}.`
+              : `${schedule.cubeCount} mostra të planifikuara${schedule.concretingDate ? ` nga betonimi i datës ${schedule.concretingDate}` : ""}.`,
             createdAt: new Date().toISOString()
           }));
           const draft: LabState = {
@@ -1582,7 +1592,15 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
         const schedules =
           input.schedules.length > 0
             ? input.schedules
-            : [{ cubeCount: input.quantity, ageDays: 0, requiredTestDate: input.requiredTestDate, reportDueDate: input.reportDueDate }];
+            : [
+                {
+                  cubeCount: input.quantity,
+                  ageDays: 0,
+                  concretingDate: input.concretingDate,
+                  requiredTestDate: input.requiredTestDate,
+                  reportDueDate: input.reportDueDate
+                }
+              ];
         setState((previous) => {
           const sample: Sample = {
             id: sampleId,

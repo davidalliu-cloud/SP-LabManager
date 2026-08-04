@@ -14,21 +14,21 @@ export function SummaryCard({
   href?: string;
 }) {
   const dot = {
-    blue: "bg-lab-blue",
+    blue: "bg-lab-cyan",
     green: "bg-lab-green",
-    amber: "bg-lab-amber",
-    red: "bg-lab-red",
-    purple: "bg-lab-purple",
-    gray: "bg-slate-500"
+    amber: "bg-lab-gold",
+    red: "bg-lab-terracotta",
+    purple: "bg-lab-burgundy",
+    gray: "bg-lab-olive"
   }[tone];
   const content = (
     <>
-      <div className="flex items-center gap-2">
-        <span className={`h-2 w-2 rounded-full ${dot}`} />
-        <div className="text-sm font-medium text-muted">{label}</div>
+      <div className="flex items-center gap-3">
+        <span className={`h-3 w-3 rounded-full shadow-sm ${dot}`} />
+        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">{label}</div>
       </div>
-      <div className="mt-3 text-3xl font-semibold text-ink">{value}</div>
-      {detail ? <div className="mt-1 text-xs text-muted">{detail}</div> : null}
+      <div className="mt-4 text-3xl font-semibold text-ink">{value}</div>
+      {detail ? <div className="mt-2 text-xs uppercase tracking-[0.14em] text-muted">{detail}</div> : null}
     </>
   );
 
@@ -36,7 +36,7 @@ export function SummaryCard({
     return (
       <Link
         href={href}
-        className="block rounded-md border border-line bg-[#FDFEFD] p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-lab-steel hover:shadow-soft focus:outline-none focus:ring-2 focus:ring-lab-mist"
+        className="block rounded-[1.5rem] border border-[#ddcdb7] bg-[linear-gradient(160deg,rgba(255,252,247,0.95),rgba(247,239,226,0.86))] p-5 shadow-card transition hover:-translate-y-1 hover:border-lab-burgundy/35 hover:shadow-soft focus:outline-none focus:ring-2 focus:ring-[#ead7c7]"
       >
         {content}
       </Link>
@@ -44,7 +44,7 @@ export function SummaryCard({
   }
 
   return (
-    <div className="rounded-md border border-line bg-[#FDFEFD] p-4 shadow-sm">
+    <div className="rounded-[1.5rem] border border-[#ddcdb7] bg-[linear-gradient(160deg,rgba(255,252,247,0.95),rgba(247,239,226,0.86))] p-5 shadow-card">
       {content}
     </div>
   );

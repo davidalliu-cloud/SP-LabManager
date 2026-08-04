@@ -46,6 +46,10 @@ export default function NewSamplePage() {
   const [scheduleRows, setScheduleRows] = useState(2);
   const [scheduleAges, setScheduleAges] = useState([7, 28]);
   const [concretingDate, setConcretingDate] = useState(formatDateInput(new Date()));
+  const [scheduleConcretingDates, setScheduleConcretingDates] = useState(() => {
+    const today = formatDateInput(new Date());
+    return [today, today];
+  });
   const testOptions = useMemo(() => getAccreditedTestsForSampleType(sampleType), [sampleType]);
   const selectedTest = getAccreditedTestById(accreditedTestId) ?? testOptions[0];
   const showConcreteSchedule = isConcreteCompressiveAccreditedTest(selectedTest);
@@ -61,8 +65,8 @@ export default function NewSamplePage() {
   const defaultReceivedDate = formatDateInput(today);
   const defaultRequiredDate = formatDateInput(today);
   const defaultReportDueDate = formatDateInput(addDays(today, 2));
-  const calculatedTestDate = (ageDays: number) => formatDateInput(addDays(dateFromInput(concretingDate), ageDays));
-  const calculatedReportDate = (ageDays: number) => formatDateInput(addDays(dateFromInput(concretingDate), ageDays + 1));
+  const calculatedTestDate = (castingDate: string, ageDays: number) => formatDateInput(addDays(dateFromInput(castingDate), ageDays));
+  const calculatedReportDate = (castingDate: string, ageDays: number) => formatDateInput(addDays(dateFromInput(castingDate), ageDays + 1));
 
   function changeSampleType(nextSampleType: string) {
     const nextTests = getAccreditedTestsForSampleType(nextSampleType);
@@ -78,11 +82,30 @@ export default function NewSamplePage() {
     });
   }
 
+  function updateScheduleConcretingDate(index: number, value: string) {
+    setScheduleConcretingDates((dates) => {
+      const next = [...dates];
+      next[index] = value;
+      return next;
+    });
+  }
+
+  function updateDefaultConcretingDate(nextDate: string) {
+    setConcretingDate((current) => {
+      setScheduleConcretingDates((dates) => dates.map((date) => (date === current ? nextDate : date)));
+      return nextDate;
+    });
+  }
+
   function removeScheduleRow(indexToRemove: number) {
     setScheduleRows((count) => Math.max(1, count - 1));
     setScheduleAges((ages) => {
       const next = ages.filter((_, index) => index !== indexToRemove);
       return next.length ? next : [7];
+    });
+    setScheduleConcretingDates((dates) => {
+      const next = dates.filter((_, index) => index !== indexToRemove);
+      return next.length ? next : [concretingDate];
     });
   }
 
@@ -98,11 +121,13 @@ export default function NewSamplePage() {
       .join(" | ");
     const concreteSchedules = Array.from({ length: scheduleRows }, (_, index) => {
       const ageDays = Number(form.get(`scheduleMoshaDays-${index}`) || 0);
+      const rowConcretingDate = String(form.get(`scheduleConcretingDate-${index}`) || concretingDate);
       return {
         cubeCount: Number(form.get(`scheduleCubeCount-${index}`) || 0),
         ageDays,
-        requiredTestDate: calculatedTestDate(ageDays),
-        reportDueDate: calculatedReportDate(ageDays)
+        concretingDate: rowConcretingDate,
+        requiredTestDate: calculatedTestDate(rowConcretingDate, ageDays),
+        reportDueDate: calculatedReportDate(rowConcretingDate, ageDays)
       };
     }).filter((row) => row.cubeCount > 0 && row.ageDays > 0);
     const firstConcreteSchedule = concreteSchedules[0];
@@ -120,8 +145,8 @@ export default function NewSamplePage() {
       concretingDate: showConcreteSchedule ? String(form.get("concretingDate") || concretingDate) : "",
       requestedTestType: selectedTest?.testName ?? String(form.get("requestedTestType")),
       standard: selectedTest?.standard || "Standardi nuk është përcaktuar në listën e akreditimit",
-      requiredTestDate: showConcreteSchedule ? firstConcreteSchedule?.requiredTestDate ?? calculatedTestDate(7) : String(form.get("requiredTestDate")),
-      reportDueDate: showConcreteSchedule ? firstConcreteSchedule?.reportDueDate ?? calculatedReportDate(7) : String(form.get("reportDueDate")),
+      requiredTestDate: showConcreteSchedule ? firstConcreteSchedule?.requiredTestDate ?? calculatedTestDate(concretingDate, 7) : String(form.get("requiredTestDate")),
+      reportDueDate: showConcreteSchedule ? firstConcreteSchedule?.reportDueDate ?? calculatedReportDate(concretingDate, 7) : String(form.get("reportDueDate")),
       assignedTechnician: String(form.get("assignedTechnician") || ""),
       schedules: showConcreteSchedule ? concreteSchedules : [],
       notes
@@ -167,13 +192,13 @@ export default function NewSamplePage() {
         <Field label="Dorëzuar nga"><input name="deliveredBy" className="input" placeholder="Personi që dorëzoi kampionin" /></Field>
         <Field label="Marrë nga"><input name="collectedBy" className="input" defaultValue="Violeta Biba" placeholder="Emri i personit që regjistron ose merr kampionin" /></Field>
         {showConcreteSchedule ? (
-          <Field label="Data e betonimit">
+          <Field label="Data bazë e betonimit">
             <input
               name="concretingDate"
               required
               type="date"
               value={concretingDate}
-              onChange={(event) => setConcretingDate(event.target.value)}
+              onChange={(event) => updateDefaultConcretingDate(event.target.value)}
               className="input"
             />
           </Field>
@@ -202,13 +227,14 @@ export default function NewSamplePage() {
           <div className="mb-3 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
             <div>
               <h2 className="text-base font-semibold text-ink">Plani i testimit</h2>
-              <p className="mt-1 text-sm text-muted">Ndani kubet sipas moshës së testimit. Datat llogariten automatikisht nga Data e betonimit, ndërsa afati i raportit vendoset 24 orë pas testimit.</p>
+              <p className="mt-1 text-sm text-muted">Ndani kubet sipas moshës së testimit. Numri i ditëve shkruhet manualisht për çdo grup, ndërsa datat llogariten automatikisht nga data e betonimit e atij rreshti.</p>
             </div>
             <button
               type="button"
               onClick={() => {
                 setScheduleRows((count) => count + 1);
                 setScheduleAges((ages) => [...ages, 28]);
+                setScheduleConcretingDates((dates) => [...dates, concretingDate]);
               }}
               className="btn-secondary px-3"
             >
@@ -222,6 +248,7 @@ export default function NewSamplePage() {
                   <th className="px-3 py-2">Grupi</th>
                   <th className="px-3 py-2">Kube për testim</th>
                   <th className="px-3 py-2">Mosha</th>
+                  <th className="px-3 py-2">Data e betonimit</th>
                   <th className="px-3 py-2">Data e kërkuar e testimit</th>
                   <th className="px-3 py-2">Afati i raportit</th>
                   <th className="px-3 py-2">Veprim</th>
@@ -230,6 +257,7 @@ export default function NewSamplePage() {
               <tbody className="divide-y divide-line">
                 {Array.from({ length: scheduleRows }, (_, index) => {
                   const selectedAge = scheduleAges[index] ?? maturityAgeForRow(index);
+                  const selectedConcretingDate = scheduleConcretingDates[index] ?? concretingDate;
                   return (
                     <tr key={index}>
                       <td className="px-3 py-2 font-semibold text-ink">{index + 1}</td>
@@ -237,16 +265,27 @@ export default function NewSamplePage() {
                         <input name={`scheduleCubeCount-${index}`} type="number" min="0" defaultValue={index === 0 ? 20 : index === 1 ? 40 : ""} className="input" />
                       </td>
                       <td className="px-3 py-2">
-                        <select name={`scheduleMoshaDays-${index}`} value={selectedAge} onChange={(event) => updateScheduleAge(index, Number(event.target.value))} className="input">
-                          <option value="3">3 ditë</option>
-                          <option value="7">7 ditë</option>
-                          <option value="14">14 ditë</option>
-                          <option value="28">28 ditë</option>
-                          <option value="56">56 ditë</option>
-                        </select>
+                        <input
+                          name={`scheduleMoshaDays-${index}`}
+                          type="number"
+                          min="1"
+                          step="1"
+                          value={selectedAge}
+                          onChange={(event) => updateScheduleAge(index, Number(event.target.value) || 0)}
+                          className="input"
+                        />
                       </td>
-                      <td className="px-3 py-2"><input readOnly value={formatEuropeanDate(calculatedTestDate(selectedAge))} className="input bg-lab-porcelain" /></td>
-                      <td className="px-3 py-2"><input readOnly value={formatEuropeanDate(calculatedReportDate(selectedAge))} className="input bg-lab-porcelain" /></td>
+                      <td className="px-3 py-2">
+                        <input
+                          name={`scheduleConcretingDate-${index}`}
+                          type="date"
+                          value={selectedConcretingDate}
+                          onChange={(event) => updateScheduleConcretingDate(index, event.target.value)}
+                          className="input"
+                        />
+                      </td>
+                      <td className="px-3 py-2"><input readOnly value={formatEuropeanDate(calculatedTestDate(selectedConcretingDate, selectedAge))} className="input bg-lab-porcelain" /></td>
+                      <td className="px-3 py-2"><input readOnly value={formatEuropeanDate(calculatedReportDate(selectedConcretingDate, selectedAge))} className="input bg-lab-porcelain" /></td>
                       <td className="px-3 py-2">
                         <button
                           type="button"

@@ -19,11 +19,17 @@ const config: Config = {
           burgundy: "#5B193F",
           mist: "#E6F8F6",
           porcelain: "#F3F7F3",
-          steel: "#BDC8D0"
+          steel: "#BDC8D0",
+          cream: "#F6EFE4",
+          sand: "#E9D8BE",
+          terracotta: "#C7744A",
+          olive: "#7C7D4E",
+          gold: "#D8A13B"
         }
       },
       boxShadow: {
-        soft: "0 10px 28px rgba(55, 52, 85, 0.10)"
+        soft: "0 16px 34px rgba(55, 52, 85, 0.12)",
+        card: "0 24px 48px rgba(91, 25, 63, 0.08)"
       }
     }
   },
