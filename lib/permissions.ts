@@ -22,6 +22,7 @@ export function canAssignSampleClient(role?: Role, user?: Pick<LabUser, "fullNam
   return (
     role === "Admin / Managing Director" ||
     role === "Chief of Lab" ||
+    role === "Operations Manager" ||
     normalizedName === "astrit prethi" ||
     normalizedEmail.includes("astrit")
   );
@@ -49,6 +50,12 @@ export function canEditTestData(role?: Role, status?: TestStatus) {
 }
 
 export function canGenerateReportForTest(role?: Role, status?: TestStatus, hasReport = false) {
-  if (isSuperAdmin(role) || hasReport) return true;
+  const canPrepareReports =
+    role === "Admin / Managing Director" ||
+    role === "Chief of Lab" ||
+    role === "Document Controller";
+
+  if (!canPrepareReports) return false;
+  if (hasReport) return true;
   return status === "Approved";
 }

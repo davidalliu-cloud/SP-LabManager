@@ -23,12 +23,10 @@ export function SummaryCard({
   }[tone];
   const content = (
     <>
-      <div className="flex items-center gap-3">
-        <span className={`h-3 w-3 rounded-full shadow-sm ${dot}`} />
-        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">{label}</div>
-      </div>
-      <div className="mt-4 text-3xl font-semibold text-ink">{value}</div>
-      {detail ? <div className="mt-2 text-xs uppercase tracking-[0.14em] text-muted">{detail}</div> : null}
+      <div className={`h-1 w-14 ${dot}`} />
+      <div className="mt-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-muted">{label}</div>
+      <div className="mt-4 text-3xl font-semibold uppercase tracking-[-0.04em] text-ink">{value}</div>
+      {detail ? <div className="mt-2 text-xs uppercase tracking-[0.16em] text-muted">{detail}</div> : null}
     </>
   );
 
@@ -36,7 +34,7 @@ export function SummaryCard({
     return (
       <Link
         href={href}
-        className="block rounded-[1.5rem] border border-[#ddcdb7] bg-[linear-gradient(160deg,rgba(255,252,247,0.95),rgba(247,239,226,0.86))] p-5 shadow-card transition hover:-translate-y-1 hover:border-lab-burgundy/35 hover:shadow-soft focus:outline-none focus:ring-2 focus:ring-[#ead7c7]"
+        className="block border border-[#d5c8b7] bg-[linear-gradient(180deg,rgba(255,252,248,0.98),rgba(245,238,229,0.94))] p-5 shadow-card transition hover:-translate-y-1 hover:border-lab-burgundy/35 hover:shadow-soft focus:outline-none focus:ring-2 focus:ring-[#ead7c7]"
       >
         {content}
       </Link>
@@ -44,7 +42,7 @@ export function SummaryCard({
   }
 
   return (
-    <div className="rounded-[1.5rem] border border-[#ddcdb7] bg-[linear-gradient(160deg,rgba(255,252,247,0.95),rgba(247,239,226,0.86))] p-5 shadow-card">
+    <div className="border border-[#d5c8b7] bg-[linear-gradient(180deg,rgba(255,252,248,0.98),rgba(245,238,229,0.94))] p-5 shadow-card">
       {content}
     </div>
   );

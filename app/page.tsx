@@ -108,7 +108,7 @@ export default function DashboardPage() {
             </div>
             <Link href="/tests" className="text-sm font-semibold text-lab-burgundy hover:text-lab-purple">{t("dashboard.openAllTests")}</Link>
           </div>
-          <div className="overflow-x-auto rounded-md border border-line">
+          <div className="overflow-x-auto border border-line">
             <table className="w-full min-w-[1180px] text-left text-sm">
               <thead className="table-head">
                 <tr>
@@ -179,7 +179,7 @@ function WorkflowRow({
   const quantity = test ? `${test.cubeCount} ${unit}${test.scheduledAgeDays ? ` / ${test.scheduledAgeDays} ditë` : ""}` : `${sample?.quantity ?? "-"} ${unit}`;
 
   return (
-    <tr className={`${overdue ? "bg-red-50/70" : approaching ? "bg-amber-50/60" : "hover:bg-lab-mist/60"}`}>
+    <tr className={`${overdue ? "bg-red-50/70" : approaching ? "bg-amber-50/60" : "hover:bg-[rgba(91,25,63,0.04)]"}`}>
       <td className="px-4 py-3"><StatusBadge status={status} /></td>
       <td className="px-4 py-3 font-semibold text-ink">{sample?.sampleCode ?? test?.testCode}</td>
       <td className="px-4 py-3 font-semibold text-ink">{client?.clientCode ?? "Në pritje"}</td>
@@ -201,9 +201,9 @@ function WorkflowRow({
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[1.25rem] border border-[#ddcdb7] bg-[rgba(255,252,247,0.65)] p-3">
-      <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted">{label}</div>
-      <div className="mt-2 text-sm font-semibold text-ink">{value}</div>
+    <div className="border border-[#d5c8b7] bg-[rgba(255,252,247,0.76)] p-3">
+      <div className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted">{label}</div>
+      <div className="mt-2 text-sm font-semibold uppercase tracking-[-0.02em] text-ink">{value}</div>
     </div>
   );
 }

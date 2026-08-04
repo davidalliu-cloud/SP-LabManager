@@ -4,12 +4,12 @@
 
 :root {
   color-scheme: light;
-  --app-bg: #f6efe4;
-  --app-cream: #fbf4e8;
-  --app-sand: #e9d8be;
-  --app-paper: rgba(255, 252, 247, 0.9);
+  --app-bg: #f4efe7;
+  --app-cream: #fcf8f2;
+  --app-sand: #e7d8c1;
+  --app-paper: rgba(255, 251, 246, 0.94);
   --app-burgundy: #5b193f;
-  --app-ink: #373455;
+  --app-ink: #1f1a1c;
   --app-olive: #7c7d4e;
   --app-gold: #d8a13b;
   --app-cyan: #6baead;
@@ -23,14 +23,22 @@
 body {
   margin: 0;
   color: var(--app-ink);
-  font-family: "Avenir Next", "Segoe UI", sans-serif;
+  font-family: "Avenir Next", "Helvetica Neue", "Segoe UI", sans-serif;
   background:
-    radial-gradient(circle at 12% 14%, rgba(216, 161, 59, 0.18) 0, rgba(216, 161, 59, 0.18) 64px, transparent 65px),
-    radial-gradient(circle at 85% 10%, rgba(107, 174, 173, 0.16) 0, rgba(107, 174, 173, 0.16) 78px, transparent 79px),
-    radial-gradient(circle at 82% 78%, rgba(124, 125, 78, 0.12) 0, rgba(124, 125, 78, 0.12) 110px, transparent 111px),
-    linear-gradient(135deg, rgba(91, 25, 63, 0.08) 0, rgba(91, 25, 63, 0.08) 14%, transparent 14%, transparent 100%),
-    linear-gradient(180deg, rgba(246, 239, 228, 0.98) 0%, rgba(251, 244, 232, 0.96) 280px, #f6efe4 100%);
+    linear-gradient(180deg, #101010 0, #101010 18px, transparent 18px),
+    linear-gradient(90deg, rgba(16, 16, 16, 0.03) 0, rgba(16, 16, 16, 0.03) 1px, transparent 1px),
+    linear-gradient(rgba(16, 16, 16, 0.025) 0, rgba(16, 16, 16, 0.025) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(252, 248, 242, 0.98) 0%, rgba(244, 239, 231, 0.98) 100%);
+  background-size: 100% 100%, 32px 32px, 32px 32px, 100% 100%;
   background-attachment: fixed;
+}
+
+h1,
+h2,
+h3,
+th {
+  font-family: "Avenir Next Condensed", "Arial Narrow", "Helvetica Neue", sans-serif;
+  letter-spacing: -0.03em;
 }
 
 button,
@@ -364,30 +372,30 @@ textarea {
 
 @layer components {
   .input {
-    @apply w-full rounded-[1.15rem] border border-[#d7c9b4] bg-[rgba(255,252,247,0.92)] px-3 py-2 text-sm text-ink outline-none transition placeholder:text-slate-400 focus:border-lab-burgundy focus:ring-2 focus:ring-[#ead7c7];
+    @apply w-full rounded-[0.45rem] border border-[#cdbba3] bg-[rgba(255,253,249,0.96)] px-3 py-2 text-sm text-ink outline-none transition placeholder:text-slate-400 focus:border-lab-burgundy focus:ring-2 focus:ring-[#ead7c7];
   }
 
   .surface-card {
-    @apply rounded-[1.6rem] border border-[#ddcdb7] bg-[rgba(255,252,247,0.9)] shadow-card backdrop-blur-sm;
+    @apply rounded-[0.55rem] border border-[#d5c8b7] bg-[rgba(255,251,246,0.94)] shadow-card backdrop-blur-sm;
   }
 
   .soft-panel {
-    @apply rounded-[1.4rem] border border-[#e2cfb4] bg-[linear-gradient(135deg,rgba(255,249,240,0.95),rgba(240,231,215,0.75))];
+    @apply rounded-[0.45rem] border border-[#d8ccb9] bg-[linear-gradient(180deg,rgba(255,252,248,0.96),rgba(245,238,229,0.92))];
   }
 
   .table-head {
-    @apply border-b border-[#ddcdb7] bg-[rgba(233,216,190,0.45)] text-xs uppercase tracking-[0.18em] text-muted;
+    @apply border-b border-[#d5c8b7] bg-[rgba(231,216,193,0.38)] text-[11px] uppercase tracking-[0.22em] text-muted;
   }
 
   .btn-primary {
-    @apply rounded-full bg-lab-burgundy px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-lab-purple focus:outline-none focus:ring-2 focus:ring-[#ead7c7];
+    @apply rounded-[0.35rem] bg-lab-burgundy px-5 py-2.5 text-sm font-semibold uppercase tracking-[0.08em] text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#44122f] focus:outline-none focus:ring-2 focus:ring-[#ead7c7];
   }
 
   .btn-success {
-    @apply rounded-full bg-lab-green px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-[#ead7c7];
+    @apply rounded-[0.35rem] bg-lab-green px-5 py-2.5 text-sm font-semibold uppercase tracking-[0.08em] text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-[#ead7c7];
   }
 
   .btn-secondary {
-    @apply rounded-full border border-[#d7c9b4] bg-[rgba(255,252,247,0.92)] px-5 py-2.5 text-sm font-semibold text-ink shadow-sm transition hover:-translate-y-0.5 hover:border-lab-burgundy hover:bg-[#fbf2e6] hover:text-lab-burgundy;
+    @apply rounded-[0.35rem] border border-[#cdbba3] bg-[rgba(255,253,249,0.96)] px-5 py-2.5 text-sm font-semibold uppercase tracking-[0.08em] text-ink shadow-sm transition hover:-translate-y-0.5 hover:border-lab-burgundy hover:bg-[#fbf2e6] hover:text-lab-burgundy;
   }
 }
