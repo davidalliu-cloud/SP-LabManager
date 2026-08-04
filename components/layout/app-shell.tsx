@@ -21,7 +21,6 @@ const navItems = [
   ["nav.employees", "/employees"],
   ["nav.delayedItems", "/delayed"],
   ["nav.monthlySummary", "/monthly-summary"],
-  ["nav.users", "/users"],
   ["nav.settings", "/settings"]
 ] as const;
 

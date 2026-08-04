@@ -16,7 +16,6 @@ const translations = {
 
     "nav.dashboard": "Dashboard",
     "nav.sampleRegister": "Sample Register",
-    "nav.newSample": "New Sample",
     "nav.tests": "Tests",
     "nav.reports": "Reports",
     "nav.procedures": "Procedures",
@@ -25,7 +24,6 @@ const translations = {
     "nav.employees": "Employees",
     "nav.delayedItems": "Delayed Items",
     "nav.monthlySummary": "Monthly Summary",
-    "nav.users": "Users",
     "nav.settings": "Settings",
 
     "status.Registered": "Registered",
@@ -123,7 +121,6 @@ const translations = {
 
     "nav.dashboard": "Paneli",
     "nav.sampleRegister": "Regjistri i Kampionëve",
-    "nav.newSample": "Kampion i Ri",
     "nav.tests": "Testet",
     "nav.reports": "Raportet",
     "nav.procedures": "Procedurat",
@@ -132,7 +129,6 @@ const translations = {
     "nav.employees": "Punonjësit",
     "nav.delayedItems": "Vonesat",
     "nav.monthlySummary": "Përmbledhje Mujore",
-    "nav.users": "Përdoruesit",
     "nav.settings": "Cilësimet",
 
     "status.Registered": "Regjistruar",

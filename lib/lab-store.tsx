@@ -893,6 +893,7 @@ interface LabStoreValue extends LabState {
   rejectReport: (reportId: string, comments: string) => void;
   issueReport: (reportId: string, clientEmail: string, notes?: string) => void;
   sendReportsToClient: (reportIds: string[], clientEmail: string, notes?: string) => void;
+  setReportPdfUrl: (reportId: string, pdfUrl: string) => void;
   createProcedureRevision: (input: ProcedureRevisionInput) => string;
   submitProcedureRevision: (revisionId: string) => void;
   approveProcedureRevision: (revisionId: string) => void;
@@ -3343,6 +3344,19 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             auditLog: [...previous.auditLog]
           };
           addAudit(draft, "report_sent_to_client", "report", reportId, `${report.reportNumber} sent to ${clientEmail}.`);
+          return draft;
+        });
+      },
+      setReportPdfUrl(reportId, pdfUrl) {
+        setState((previous) => {
+          const report = previous.reports.find((row) => row.id === reportId);
+          if (!report) return previous;
+          const draft: LabState = {
+            ...previous,
+            reports: previous.reports.map((row) => (row.id === reportId ? { ...row, pdfUrl } : row)),
+            auditLog: [...previous.auditLog]
+          };
+          addAudit(draft, "report_pdf_generated", "report", reportId, `PDF u gjenerua për ${report.reportNumber}.`);
           return draft;
         });
       },

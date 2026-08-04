@@ -1,17 +1,21 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ReportPreview } from "@/components/reports/report-preview";
 import { PageHeader } from "@/components/ui/page-header";
 import { useLabStore } from "@/lib/lab-store";
 import { canReviewTests } from "@/lib/permissions";
+import { generateAndStoreReportPdf } from "@/lib/pdf";
 
 export default function ReportDetailPage() {
   const params = useParams<{ id: string }>();
   const store = useLabStore();
   const [comments, setComments] = useState("");
   const [issueEmail, setIssueEmail] = useState("");
+  const [pdfStatus, setPdfStatus] = useState<"idle" | "generating" | "error">("idle");
+  const [pdfError, setPdfError] = useState("");
+  const reportSurfaceRef = useRef<HTMLDivElement>(null);
   const report = store.reports.find((item) => item.id === params.id);
   if (!report) return <PageHeader title="Raporti nuk u gjet" />;
   const activeReport = report;
@@ -58,6 +62,21 @@ export default function ReportDetailPage() {
     }, 500);
   }
 
+  async function generateStoredPdf() {
+    const surface = reportSurfaceRef.current?.querySelector<HTMLElement>(".print-surface");
+    if (!surface) return;
+    setPdfStatus("generating");
+    setPdfError("");
+    try {
+      const pdfUrl = await generateAndStoreReportPdf(surface, activeReport.reportNumber);
+      store.setReportPdfUrl(activeReport.id, pdfUrl);
+      setPdfStatus("idle");
+    } catch (error) {
+      setPdfStatus("error");
+      setPdfError(error instanceof Error ? error.message : "Gabim i panjohur gjatë gjenerimit të PDF-së.");
+    }
+  }
+
   function sendReportToClient() {
     if (!recipientEmail || activeReport.reportStatus !== "Approved") return;
     const subject = `Raporti laboratorik SARP LAB - ${activeReport.reportNumber}`;
@@ -66,10 +85,14 @@ export default function ReportDetailPage() {
       "",
       `Raporti ${activeReport.reportNumber} eshte miratuar dhe gati per shqyrtim:`,
       `${window.location.origin}/reports/${activeReport.id}`,
+      activeReport.pdfUrl ? "" : null,
+      activeReport.pdfUrl ? `PDF-ja e raportit: ${activeReport.pdfUrl}` : null,
       "",
       "Me respekt,",
       "SARP LAB"
-    ].join("\n");
+    ]
+      .filter((line): line is string => line !== null)
+      .join("\n");
     window.location.href = `mailto:${encodeURIComponent(recipientEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     store.issueReport(activeReport.id, recipientEmail, `Dërguar me email: ${activeReport.reportNumber}`);
   }
@@ -80,7 +103,9 @@ export default function ReportDetailPage() {
         <PageHeader title={activeReport.reportNumber} description="Përgatitja, miratimi, shkarkimi PDF dhe dërgimi i raportit te klienti." />
       </div>
       <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-        <ReportPreview report={activeReport} test={test} sample={sample} client={client} project={project} concrete={concrete} concreteWater={concreteWater} concreteFlexural={concreteFlexural} concreteDensity={concreteDensity} concreteIndirectTensile={concreteIndirectTensile} concreteCore={concreteCore} asphalt={asphalt} thermalInsulation={thermalInsulation} cementConsistency={cementConsistency} cementStrength={cementStrength} cementBlaine={cementBlaine} mortar={mortar} steel={steel} aggregate={aggregate} aggregateChemical={aggregateChemical} aggregateLosAngeles={aggregateLosAngeles} aggregateFreezeThaw={aggregateFreezeThaw} aggregateAcv={aggregateAcv} aggregateDensity={aggregateDensity} aggregateFillerDensity={aggregateFillerDensity} aggregateShapeIndex={aggregateShapeIndex} aggregateFlakiness={aggregateFlakiness} aggregateElongation={aggregateElongation} aggregateBulkDensity={aggregateBulkDensity} aggregateSandEquivalent={aggregateSandEquivalent} aggregateSoundness={aggregateSoundness} />
+        <div ref={reportSurfaceRef}>
+          <ReportPreview report={activeReport} test={test} sample={sample} client={client} project={project} concrete={concrete} concreteWater={concreteWater} concreteFlexural={concreteFlexural} concreteDensity={concreteDensity} concreteIndirectTensile={concreteIndirectTensile} concreteCore={concreteCore} asphalt={asphalt} thermalInsulation={thermalInsulation} cementConsistency={cementConsistency} cementStrength={cementStrength} cementBlaine={cementBlaine} mortar={mortar} steel={steel} aggregate={aggregate} aggregateChemical={aggregateChemical} aggregateLosAngeles={aggregateLosAngeles} aggregateFreezeThaw={aggregateFreezeThaw} aggregateAcv={aggregateAcv} aggregateDensity={aggregateDensity} aggregateFillerDensity={aggregateFillerDensity} aggregateShapeIndex={aggregateShapeIndex} aggregateFlakiness={aggregateFlakiness} aggregateElongation={aggregateElongation} aggregateBulkDensity={aggregateBulkDensity} aggregateSandEquivalent={aggregateSandEquivalent} aggregateSoundness={aggregateSoundness} />
+        </div>
         <aside className="no-print space-y-4">
           <div className="surface-card p-4">
             <h2 className="text-base font-semibold text-ink">Veprimet e miratimit</h2>
@@ -120,11 +145,20 @@ export default function ReportDetailPage() {
             <h2 className="text-base font-semibold text-ink">Dërgimi te klienti</h2>
             <div className="mt-4 space-y-3">
               <button
-                onClick={downloadApprovedPdf}
-                disabled={!["Approved", "Issued", "Sent to Client"].includes(activeReport.reportStatus)}
+                onClick={generateStoredPdf}
+                disabled={!["Approved", "Issued", "Sent to Client"].includes(activeReport.reportStatus) || pdfStatus === "generating"}
                 className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300"
               >
-                Shkarko PDF-në e miratuar
+                {pdfStatus === "generating" ? "Duke gjeneruar PDF..." : "Gjenero dhe ruaj PDF"}
+              </button>
+              {pdfStatus === "error" ? <p className="text-xs text-lab-red">{pdfError}</p> : null}
+              {activeReport.pdfUrl ? (
+                <a href={activeReport.pdfUrl} target="_blank" rel="noreferrer" className="btn-secondary block w-full text-center">
+                  Shkarko PDF-në e ruajtur
+                </a>
+              ) : null}
+              <button onClick={downloadApprovedPdf} className="w-full text-xs font-medium text-muted underline hover:text-lab-burgundy">
+                Ose printo/shfaq për printim manual
               </button>
               <input
                 value={issueEmail}
