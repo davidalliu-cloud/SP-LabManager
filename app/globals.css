@@ -26,9 +26,9 @@ body {
   font-family: "Avenir Next", "Helvetica Neue", "Segoe UI", sans-serif;
   background:
     linear-gradient(180deg, #101010 0, #101010 18px, transparent 18px),
-    linear-gradient(90deg, rgba(16, 16, 16, 0.03) 0, rgba(16, 16, 16, 0.03) 1px, transparent 1px),
-    linear-gradient(rgba(16, 16, 16, 0.025) 0, rgba(16, 16, 16, 0.025) 1px, transparent 1px),
-    linear-gradient(180deg, rgba(252, 248, 242, 0.98) 0%, rgba(244, 239, 231, 0.98) 100%);
+    linear-gradient(90deg, rgba(16, 16, 16, 0.022) 0, rgba(16, 16, 16, 0.022) 1px, transparent 1px),
+    linear-gradient(rgba(16, 16, 16, 0.018) 0, rgba(16, 16, 16, 0.018) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.995) 0%, rgba(255, 255, 255, 0.995) 100%);
   background-size: 100% 100%, 32px 32px, 32px 32px, 100% 100%;
   background-attachment: fixed;
 }
