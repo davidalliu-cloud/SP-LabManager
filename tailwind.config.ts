@@ -5,9 +5,9 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: "#373455",
-        muted: "#6F7186",
-        line: "#DCE3E6",
+        ink: "#1A1A1A",
+        muted: "#666666",
+        line: "#E3E3E3",
         lab: {
           navy: "#373455",
           blue: "#777DA7",

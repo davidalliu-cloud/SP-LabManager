@@ -201,9 +201,9 @@ function WorkflowRow({
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="border border-[#d5c8b7] bg-[rgba(255,252,247,0.76)] p-3">
-      <div className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted">{label}</div>
-      <div className="mt-2 text-sm font-semibold uppercase tracking-[-0.02em] text-ink">{value}</div>
+    <div className="rounded-md border border-line bg-white p-3">
+      <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted">{label}</div>
+      <div className="mt-2 text-sm font-semibold text-ink">{value}</div>
     </div>
   );
 }

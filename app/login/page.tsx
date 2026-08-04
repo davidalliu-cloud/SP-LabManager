@@ -33,7 +33,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#F3F7F3] px-4 py-10">
+    <main className="flex min-h-screen items-center justify-center bg-[#FAFAFA] px-4 py-10">
       <section className="grid w-full max-w-5xl overflow-hidden rounded-lg border border-line bg-white shadow-sm md:grid-cols-[1fr_420px]">
         <div className="hidden bg-lab-burgundy p-10 text-white md:flex md:flex-col md:justify-between">
           <div>

@@ -23,10 +23,12 @@ export function SummaryCard({
   }[tone];
   const content = (
     <>
-      <div className={`h-1 w-14 ${dot}`} />
-      <div className="mt-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-muted">{label}</div>
-      <div className="mt-4 text-3xl font-semibold uppercase tracking-[-0.04em] text-ink">{value}</div>
-      {detail ? <div className="mt-2 text-xs uppercase tracking-[0.16em] text-muted">{detail}</div> : null}
+      <div className="flex items-center gap-2">
+        <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
+        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">{label}</span>
+      </div>
+      <div className="mt-4 text-3xl font-bold tracking-[-0.02em] text-ink">{value}</div>
+      {detail ? <div className="mt-2 text-xs uppercase tracking-[0.1em] text-muted">{detail}</div> : null}
     </>
   );
 
@@ -34,7 +36,7 @@ export function SummaryCard({
     return (
       <Link
         href={href}
-        className="block border border-[#d5c8b7] bg-[linear-gradient(180deg,rgba(255,252,248,0.98),rgba(245,238,229,0.94))] p-5 shadow-card transition hover:-translate-y-1 hover:border-lab-burgundy/35 hover:shadow-soft focus:outline-none focus:ring-2 focus:ring-[#ead7c7]"
+        className="block rounded-lg border border-line bg-white p-5 transition hover:border-lab-burgundy focus:outline-none focus:ring-2 focus:ring-lab-burgundy/15"
       >
         {content}
       </Link>
@@ -42,7 +44,7 @@ export function SummaryCard({
   }
 
   return (
-    <div className="border border-[#d5c8b7] bg-[linear-gradient(180deg,rgba(255,252,248,0.98),rgba(245,238,229,0.94))] p-5 shadow-card">
+    <div className="rounded-lg border border-line bg-white p-5">
       {content}
     </div>
   );

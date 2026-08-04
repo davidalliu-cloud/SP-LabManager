@@ -28,7 +28,7 @@ export function TestCard({
   return (
     <Link
       href={`/tests/${test.id}`}
-      className={`block rounded-md border bg-[#FDFEFD] p-3 shadow-sm transition hover:-translate-y-0.5 hover:border-lab-steel hover:shadow-soft ${
+      className={`block rounded-md border bg-white p-3 transition hover:border-lab-burgundy ${
         overdue ? "border-red-300" : soon ? "border-amber-300" : "border-line"
       }`}
     >
