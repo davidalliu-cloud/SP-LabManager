@@ -855,6 +855,7 @@ interface LabStoreValue extends LabState {
   removeClient: (id: string) => { ok: boolean; message?: string };
   removeSample: (id: string) => void;
   assignSampleClient: (sampleId: string, clientId: string, projectId: string) => void;
+  assignSampleTechnician: (sampleId: string, technicianId: string) => void;
   updateSample: (sampleId: string, input: SampleCorrectionInput) => void;
   acceptSample: (sampleId: string) => void;
   createSample: (input: NewSampleInput) => string;
@@ -1668,7 +1669,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       assignSampleClient(sampleId, clientId, projectId) {
         setState((previous) => {
-          if (!canAssignSampleClient(currentRole, currentUser)) return previous;
+          if (!canAssignSampleClient(currentRole)) return previous;
           const sample = previous.samples.find((row) => row.id === sampleId);
           const client = previous.clients.find((row) => row.id === clientId);
           const project = previous.projects.find((row) => row.id === projectId);
@@ -1686,6 +1687,27 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             "sample",
             sampleId,
             `${sample?.sampleCode ?? "Sample"} assigned to ${client?.clientCode ?? "client code"}${project?.projectName ? ` / ${project.projectName}` : ""}.`
+          );
+          return draft;
+        });
+      },
+      assignSampleTechnician(sampleId, technicianId) {
+        setState((previous) => {
+          if (!canReviewTests(currentRole)) return previous;
+          const sample = previous.samples.find((row) => row.id === sampleId);
+          const technician = previous.users.find((row) => row.id === technicianId);
+          if (!sample || !technician) return previous;
+          const draft: LabState = {
+            ...previous,
+            samples: previous.samples.map((row) => (row.id === sampleId ? { ...row, assignedTechnician: technicianId } : row)),
+            auditLog: [...previous.auditLog]
+          };
+          addAudit(
+            draft,
+            "sample_technician_assigned",
+            "sample",
+            sampleId,
+            `${sample.sampleCode} assigned to ${technician.fullName} to carry out testing.`
           );
           return draft;
         });
@@ -1757,7 +1779,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
         setState((previous) => {
           if (!canReviewTests(currentRole)) return previous;
           const sample = previous.samples.find((row) => row.id === sampleId);
-          if (!sample || !sample.clientId || !sample.projectId) return previous;
+          if (!sample || !sample.clientId || !sample.projectId || !sample.assignedTechnician) return previous;
           const existingTests = previous.tests.filter((test) => test.sampleId === sampleId);
           if (existingTests.length) {
             return {
@@ -3271,6 +3293,8 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
         setState((previous) => {
           const report = previous.reports.find((row) => row.id === reportId);
           if (!report) return previous;
+          if (!canGenerateReportForTest(currentRole, undefined, true)) return previous;
+          if (!["Report Drafted", "Rejected"].includes(report.reportStatus)) return previous;
           const draft: LabState = {
             ...previous,
             reports: previous.reports.map((row) =>
@@ -3280,7 +3304,15 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             notifications: [...previous.notifications],
             auditLog: [...previous.auditLog]
           };
-          addNotification(draft, "u-chief", "Report pending approval", `${report.reportNumber} is ready for review.`, report.testId, reportId);
+          addRoleNotification(
+            draft,
+            previous.users,
+            ["Admin / Managing Director", "Chief of Lab"],
+            "Report pending approval",
+            `${report.reportNumber} is ready for review.`,
+            report.testId,
+            reportId
+          );
           addAudit(draft, "report_submitted", "report", reportId, `${report.reportNumber} submitted for approval.`);
           return draft;
         });
@@ -3301,7 +3333,15 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             notifications: [...previous.notifications],
             auditLog: [...previous.auditLog]
           };
-          addNotification(draft, "u-doc", "Report approved", `${report.reportNumber} is ready to issue.`, report.testId, reportId);
+          addRoleNotification(
+            draft,
+            previous.users,
+            ["Admin / Managing Director", "Document Controller"],
+            "Report approved",
+            `${report.reportNumber} is ready to issue.`,
+            report.testId,
+            reportId
+          );
           addAudit(draft, "report_approved", "report", reportId, `${report.reportNumber} approved.`);
           return draft;
         });
@@ -3322,7 +3362,10 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             notifications: [...previous.notifications],
             auditLog: [...previous.auditLog]
           };
-          addNotification(draft, "u-doc", "Report rejected", comments || `${report.reportNumber} requires correction.`, report.testId, reportId);
+          const rejectionMessage = comments || `${report.reportNumber} requires correction.`;
+          if (report.draftedBy) {
+            addNotification(draft, report.draftedBy, "Report rejected", rejectionMessage, report.testId, reportId);
+          }
           addAudit(draft, "report_rejected", "report", reportId, `${report.reportNumber} rejected.`);
           return draft;
         });

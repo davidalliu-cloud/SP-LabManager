@@ -1,4 +1,4 @@
-import type { LabUser, Role, TestStatus } from "./types";
+import type { Role, TestStatus } from "./types";
 
 export function isSuperAdmin(role?: Role) {
   return role === "Admin / Managing Director";
@@ -16,16 +16,8 @@ export function canViewClientIdentity(role?: Role) {
   return role === "Admin / Managing Director" || role === "Chief of Lab" || role === "Document Controller";
 }
 
-export function canAssignSampleClient(role?: Role, user?: Pick<LabUser, "fullName" | "email">) {
-  const normalizedName = user?.fullName?.trim().toLowerCase() ?? "";
-  const normalizedEmail = user?.email?.trim().toLowerCase() ?? "";
-  return (
-    role === "Admin / Managing Director" ||
-    role === "Chief of Lab" ||
-    role === "Operations Manager" ||
-    normalizedName === "astrit prethi" ||
-    normalizedEmail.includes("astrit")
-  );
+export function canAssignSampleClient(role?: Role) {
+  return isSuperAdmin(role) || role === "Chief of Lab";
 }
 
 export function canRegisterSamples(role?: Role) {

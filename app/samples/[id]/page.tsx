@@ -26,7 +26,7 @@ export default function SampleDetailPage() {
   const project = store.projects.find((item) => item.id === sample.projectId);
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
   const showClientIdentity = canViewClientIdentity(currentUser?.role);
-  const canAssignClient = canAssignSampleClient(currentUser?.role, currentUser);
+  const canAssignClient = canAssignSampleClient(currentUser?.role);
   const canEditSample = canEditSampleAfterRegistration(currentUser?.role);
   const canAcceptSample = canReviewTests(currentUser?.role);
   const activeEmployees = store.users.filter((user) => user.isActive !== false);
@@ -314,12 +314,27 @@ export default function SampleDetailPage() {
               <div className="mt-4 rounded-md border border-fuchsia-100 bg-fuchsia-50 p-3">
                 <div className="text-sm font-semibold text-lab-purple">Pranimi i kampionit</div>
                 <p className="mt-1 text-sm text-muted">
-                  Pasi të jetë caktuar kodi i klientit dhe projekti, prano kampionin për të krijuar testet e planifikuara.
+                  Cakto kodin e klientit dhe personin që do të kryejë testin, pastaj prano kampionin për të krijuar testet e planifikuara.
                 </p>
+                <label className="mt-3 block text-sm font-medium text-ink">
+                  Personi që do të kryejë testin
+                  <select
+                    value={sample.assignedTechnician ?? ""}
+                    onChange={(event) => store.assignSampleTechnician(sample.id, event.target.value)}
+                    className="input mt-1"
+                  >
+                    <option value="">Zgjidh teknikun ose inxhinierin</option>
+                    {activeEmployees.map((employee) => (
+                      <option key={employee.id} value={employee.id}>
+                        {employee.fullName}{employee.position ? ` - ${employee.position}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <button
                   type="button"
                   onClick={acceptSample}
-                  disabled={!sample.clientId || !sample.projectId}
+                  disabled={!sample.clientId || !sample.projectId || !sample.assignedTechnician}
                   className="btn-success mt-3 w-full disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
                   Prano kampionin dhe krijo testet
