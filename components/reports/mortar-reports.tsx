@@ -66,7 +66,7 @@ export function MortarReportPreview({
             <div className="text-[12pt] font-bold uppercase leading-tight">RAPORT TESTIM / TEST REPORT</div>
             <div className="mt-3 text-[8.5pt] font-bold">Nr. / No. <span className="text-red-600">{report.reportNumber}</span></div>
           </div>
-          <img src="/brand/da-accreditation.svg" alt="DA accreditation LT 069 09 06 21" className="ml-auto mt-0.5 h-auto w-[72px]" />
+          <img src="/brand/da-accreditation.png" alt="DA accreditation LT 069 09 06 21" className="ml-auto mt-0.5 h-auto w-[72px]" />
         </div>
         <div className="mt-0.5 text-[7.4pt] italic leading-tight">
           <div>Kodi / Code: {codeByKind[mortar.testKind]}</div>

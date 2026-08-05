@@ -348,7 +348,7 @@ export function ConcreteCoreReportPreview({
             <div className="text-[14pt] font-bold uppercase">RAPORT TESTIMI / TEST REPORT</div>
             <div className="mt-5 text-[9.5pt] font-bold">Nr. / No. {report.reportNumber}</div>
           </div>
-          <img src="/brand/da-accreditation.svg" alt="DA accreditation LT 069 09 06 21" className="ml-auto h-auto w-[86px]" />
+          <img src="/brand/da-accreditation.png" alt="DA accreditation LT 069 09 06 21" className="ml-auto h-auto w-[86px]" />
         </div>
         <div className="mt-1 text-[8.5pt] italic leading-tight">
           <div>Kodi / Code: {reportCode}</div>

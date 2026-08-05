@@ -69,7 +69,7 @@ export function ConcreteCubeReportPreview({
             <div className="font-bold uppercase">RAPORT TESTIM / TEST REPORT</div>
             <div className="mt-3 text-[10pt] font-bold">Nr. / No. {report.reportNumber}</div>
           </div>
-          <img src="/brand/da-accreditation.svg" alt="DA accreditation LT 069 09 06 21" className="ml-auto h-auto w-[90px]" />
+          <img src="/brand/da-accreditation.png" alt="DA accreditation LT 069 09 06 21" className="ml-auto h-auto w-[90px]" />
         </div>
         <div className="mt-1 text-[9pt] italic leading-tight">
           <div>Kodi / Code: SL-RA-B-7.8/1.3</div>
@@ -77,7 +77,7 @@ export function ConcreteCubeReportPreview({
         </div>
       </header>
 
-      <div className="mt-3 grid grid-cols-[335px_1fr] gap-x-5 gap-y-1 text-[11pt] leading-[1.18]">
+      <div className="cube-meta mt-3 grid grid-cols-[335px_1fr] gap-x-5 gap-y-1 text-[11pt] leading-[1.18]">
         <ConcreteCubeMeta label="Nr. REGJISTRI / REGISTER No.:" value={sample?.sampleCode} />
         <ConcreteCubeMeta label="KLIENTI / PURCHASER:" value={client?.clientName} />
         <ConcreteCubeMeta label="ADRESA / ADDRESS:" value={client?.address} />
@@ -110,7 +110,7 @@ export function ConcreteCubeReportPreview({
       </div>
 
       <div className="mt-3 font-bold">Të dhëna të Kampionit / <span className="italic">Test specimen characteristics</span></div>
-      <table className="mt-1 w-full border-collapse text-center text-[9.5pt] leading-[1.12]">
+      <table className="cube-table mt-1 w-full border-collapse text-center text-[9.5pt] leading-[1.12]">
         <thead>
           <tr>
             <th className="border border-black p-0.5">Kampioni<br /><span className="font-normal italic">Test specimen</span></th>
@@ -141,7 +141,7 @@ export function ConcreteCubeReportPreview({
       </table>
 
       <div className="mt-2 font-bold">Rezultatet e testimit / <span className="italic">Test results</span></div>
-      <table className="mt-1 w-full border-collapse text-center text-[9.5pt] leading-[1.12]">
+      <table className="cube-table mt-1 w-full border-collapse text-center text-[9.5pt] leading-[1.12]">
         <thead>
           <tr>
             <th className="border border-black p-0.5">Kampioni<br /><span className="font-normal italic">Test specimen</span></th>

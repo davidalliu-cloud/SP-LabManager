@@ -36,7 +36,7 @@ export function ReportHeader({
           <div className="mt-2 text-xs text-muted">Nr. / No. {report.reportNumber} · Faqe / Page: {report.reportSequence} / {report.totalReports}</div>
         </div>
         <div className="flex justify-end">
-          <img src="/brand/da-accreditation.svg" alt="DA accreditation LT 069 09 06 21" className="h-auto w-28" />
+          <img src="/brand/da-accreditation.png" alt="DA accreditation LT 069 09 06 21" className="h-auto w-28" />
         </div>
       </div>
       <div className="mt-3 flex justify-end no-print">
@@ -133,7 +133,7 @@ export function OfficialReportShell({
             <div className="text-[15pt] font-bold uppercase leading-tight">{title}</div>
             <div className="mt-5 text-[10pt] font-bold text-red-600">Nr. / No. {report.reportNumber}</div>
           </div>
-          <img src="/brand/da-accreditation.svg" alt="DA accreditation LT 069 09 06 21" className="ml-auto mt-1 h-auto w-[88px]" />
+          <img src="/brand/da-accreditation.png" alt="DA accreditation LT 069 09 06 21" className="ml-auto mt-1 h-auto w-[88px]" />
         </div>
         <div className="mt-1 text-[9pt] italic leading-tight">
           <div>Kodi / Code: {code}</div>

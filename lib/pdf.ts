@@ -6,16 +6,22 @@ const A4_HEIGHT_MM = 297;
 async function renderElementToPdfBlob(element: HTMLElement): Promise<Blob> {
   const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
 
-  // Deliberately capture the element in its normal on-screen state, with no CSS
-  // zoom/transform tricks forced in. html2canvas has its own text/table-layout engine
-  // that doesn't reliably reproduce `zoom` or `transform: scale()` (verified: both
-  // produced corrupted glyphs or misplaced table borders). Instead we always get a
-  // clean, correctly-rendered capture and fit it onto one page below via plain image
-  // scaling, which only ever resizes an already-rendered bitmap.
+  // html2canvas renders the DOM under *screen* CSS and ignores @media print, so the
+  // captured element must be put into its print (A4) layout explicitly. We toggle a
+  // `.pdf-capture` class (which mirrors each report's @media print rules) on the
+  // cloned document only, so the on-screen preview is never disturbed. Report
+  // families that define a `.pdf-capture` mirror (concrete cube, official family)
+  // render as a clean single-page A4; any others simply fall back to the normal
+  // capture, which is still fitted onto one page below.
   const canvas = await html2canvas(element, {
     scale: 2,
     useCORS: true,
-    backgroundColor: "#ffffff"
+    backgroundColor: "#ffffff",
+    onclone: (clonedDoc) => {
+      clonedDoc
+        .querySelectorAll(".print-surface")
+        .forEach((node) => node.classList.add("pdf-capture"));
+    }
   });
 
   const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
