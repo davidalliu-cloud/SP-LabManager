@@ -3,70 +3,34 @@ import { createSupabaseBrowserClient } from "./supabase/client";
 const A4_WIDTH_MM = 210;
 const A4_HEIGHT_MM = 297;
 
-function collectPrintOnlyCss(): string {
-  let css = "";
-  for (const sheet of Array.from(document.styleSheets)) {
-    let rules: CSSRuleList;
-    try {
-      rules = sheet.cssRules;
-    } catch {
-      continue;
-    }
-    for (const rule of Array.from(rules)) {
-      if (rule instanceof CSSMediaRule && Array.from(rule.media).includes("print")) {
-        for (const inner of Array.from(rule.cssRules)) css += inner.cssText + "\n";
-      }
-    }
-  }
-  return css;
-}
-
 async function renderElementToPdfBlob(element: HTMLElement): Promise<Blob> {
   const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
 
-  // html2canvas captures the DOM in its normal on-screen (non-print) state, so the
-  // @media print rules that make reports fit one page never apply unless we force them
-  // into the cloned document html2canvas actually renders from.
-  const printOnlyCss = collectPrintOnlyCss();
-
+  // Deliberately capture the element in its normal on-screen state, with no CSS
+  // zoom/transform tricks forced in. html2canvas has its own text/table-layout engine
+  // that doesn't reliably reproduce `zoom` or `transform: scale()` (verified: both
+  // produced corrupted glyphs or misplaced table borders). Instead we always get a
+  // clean, correctly-rendered capture and fit it onto one page below via plain image
+  // scaling, which only ever resizes an already-rendered bitmap.
   const canvas = await html2canvas(element, {
     scale: 2,
     useCORS: true,
-    backgroundColor: "#ffffff",
-    onclone: (clonedDocument) => {
-      const style = clonedDocument.createElement("style");
-      style.textContent = printOnlyCss;
-      clonedDocument.head.appendChild(style);
-    }
+    backgroundColor: "#ffffff"
   });
 
   const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const imageData = canvas.toDataURL("image/jpeg", 0.95);
-  const pageHeightMm = (canvas.height * A4_WIDTH_MM) / canvas.width;
+  const naturalPageHeightMm = (canvas.height * A4_WIDTH_MM) / canvas.width;
 
-  if (pageHeightMm <= A4_HEIGHT_MM) {
-    pdf.addImage(imageData, "JPEG", 0, 0, A4_WIDTH_MM, pageHeightMm);
+  if (naturalPageHeightMm <= A4_HEIGHT_MM) {
+    pdf.addImage(imageData, "JPEG", 0, 0, A4_WIDTH_MM, naturalPageHeightMm);
   } else {
-    let remainingCanvasHeightPx = canvas.height;
-    const pageHeightPx = (canvas.width * A4_HEIGHT_MM) / A4_WIDTH_MM;
-    let offsetPx = 0;
-    let isFirstPage = true;
-
-    while (remainingCanvasHeightPx > 0) {
-      const sliceHeightPx = Math.min(pageHeightPx, remainingCanvasHeightPx);
-      const pageCanvas = document.createElement("canvas");
-      pageCanvas.width = canvas.width;
-      pageCanvas.height = sliceHeightPx;
-      const context = pageCanvas.getContext("2d");
-      context?.drawImage(canvas, 0, offsetPx, canvas.width, sliceHeightPx, 0, 0, canvas.width, sliceHeightPx);
-
-      if (!isFirstPage) pdf.addPage();
-      pdf.addImage(pageCanvas.toDataURL("image/jpeg", 0.95), "JPEG", 0, 0, A4_WIDTH_MM, (sliceHeightPx * A4_WIDTH_MM) / canvas.width);
-
-      offsetPx += sliceHeightPx;
-      remainingCanvasHeightPx -= sliceHeightPx;
-      isFirstPage = false;
-    }
+    // Content is taller than one page at full width: shrink the whole image
+    // proportionally so it still fits on a single page, centered horizontally,
+    // rather than splitting it across multiple pages.
+    const fittedWidthMm = (A4_HEIGHT_MM / naturalPageHeightMm) * A4_WIDTH_MM;
+    const xOffsetMm = (A4_WIDTH_MM - fittedWidthMm) / 2;
+    pdf.addImage(imageData, "JPEG", xOffsetMm, 0, fittedWidthMm, A4_HEIGHT_MM);
   }
 
   return pdf.output("blob");
