@@ -216,6 +216,19 @@ textarea {
   font-weight: 400 !important;
 }
 
+/* Concrete cube tables: centre cell text vertically and keep the three specimen
+   rows at a fixed height, so the tables are the same size (and never overlap the
+   grid lines) whether 1, 2 or 3 cubes are registered. Applies on screen and in
+   both PDF paths. */
+.cube-table th,
+.cube-table td {
+  vertical-align: middle;
+}
+
+.cube-table .cube-specimen-row {
+  height: 0.62cm;
+}
+
 .report-table {
   width: 100%;
   table-layout: fixed;
@@ -369,12 +382,17 @@ textarea {
 
 .concrete-cube-report.pdf-capture .cube-table {
   font-size: 8.3pt !important;
-  line-height: 1.08 !important;
+  line-height: 1.15 !important;
 }
 
 .concrete-cube-report.pdf-capture .cube-table th,
 .concrete-cube-report.pdf-capture .cube-table td {
-  padding: 1.5px 3px !important;
+  padding: 2px 3px !important;
+  vertical-align: middle !important;
+}
+
+.concrete-cube-report.pdf-capture .cube-table .cube-specimen-row {
+  height: 0.62cm !important;
 }
 
 .concrete-cube-report.pdf-capture .report-disclaimers {
@@ -572,15 +590,23 @@ textarea {
     row-gap: 1px !important;
   }
 
-  /* Data tables */
+  /* Data tables. vertical-align:middle + a fixed specimen-row height keep the
+     text centred within each cell (html2canvas otherwise lets the borders cut
+     through the text) and keep the three specimen "boxes" the same size whether
+     1, 2 or 3 cubes are registered. */
   .concrete-cube-report .cube-table {
     font-size: 8.3pt !important;
-    line-height: 1.08 !important;
+    line-height: 1.15 !important;
   }
 
   .concrete-cube-report .cube-table th,
   .concrete-cube-report .cube-table td {
-    padding: 1.5px 3px !important;
+    padding: 2px 3px !important;
+    vertical-align: middle !important;
+  }
+
+  .concrete-cube-report .cube-table .cube-specimen-row {
+    height: 0.62cm !important;
   }
 
   /* Footer sections flow with the document. The legal/issue-date/footer block

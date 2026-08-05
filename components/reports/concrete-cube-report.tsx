@@ -127,7 +127,7 @@ export function ConcreteCubeReportPreview({
         </thead>
         <tbody>
           {paddedSpecimens.map((specimen, index) => (
-            <tr key={`cube-characteristic-${index}`}>
+            <tr key={`cube-characteristic-${index}`} className="cube-specimen-row">
               <td className="border border-black p-0.5">{specimen ? index + 1 : ""}</td>
               <td className="border border-black p-0.5">{specimen?.lengthMm ?? ""}</td>
               <td className="border border-black p-0.5">{specimen?.widthMm ?? ""}</td>
@@ -158,7 +158,7 @@ export function ConcreteCubeReportPreview({
         </thead>
         <tbody>
           {paddedSpecimens.map((specimen, index) => (
-            <tr key={`cube-result-${index}`}>
+            <tr key={`cube-result-${index}`} className="cube-specimen-row">
               <td className="border border-black p-0.5">{specimen ? index + 1 : ""}</td>
               <td className="border border-black p-0.5">{specimen ? formatEuropeanDate(concrete?.castingDate) : ""}</td>
               <td className="border border-black p-0.5">{specimen ? formatEuropeanDate(concrete?.testDate || concrete?.testEndDate) : ""}</td>
