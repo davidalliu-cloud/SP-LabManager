@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { SortableTh, sortRows, useSort } from "@/components/ui/sortable-header";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { useI18n } from "@/lib/i18n";
 import { useLabStore } from "@/lib/lab-store";
@@ -13,6 +14,7 @@ export default function SamplesPage() {
   const store = useLabStore();
   const { t } = useI18n();
   const [query, setQuery] = useState("");
+  const { sort, toggle } = useSort("number");
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
   const showClientIdentity = canViewClientIdentity(currentUser?.role);
   const canDelete = canDeleteSamples(currentUser?.role);
@@ -28,12 +30,35 @@ export default function SamplesPage() {
     store.removeSample(sampleId);
   }
   const rows = useMemo(() => {
-    return store.samples.filter((sample) => {
+    const filtered = store.samples.filter((sample) => {
       const clientCode = store.clients.find((item) => item.id === sample.clientId)?.clientCode ?? "";
       const project = showClientIdentity ? store.projects.find((item) => item.id === sample.projectId)?.projectName ?? "" : "";
       return `${sample.sampleCode} ${clientCode} ${project} ${sample.sampleType}`.toLowerCase().includes(query.toLowerCase());
     });
-  }, [query, showClientIdentity, store.clients, store.projects, store.samples]);
+    const nextTestFor = (sampleId: string) => {
+      const sampleTests = store.tests.filter((item) => item.sampleId === sampleId);
+      return sampleTests.find((item) => ["Pending", "Scheduled", "In Progress"].includes(item.status)) ?? sampleTests[0];
+    };
+    const valueFor = (sample: (typeof filtered)[number]) => {
+      const nextTest = nextTestFor(sample.id);
+      const report = store.reports.find((item) => item.sampleId === sample.id);
+      switch (sort.key) {
+        case "date": return sample.dateReceived;
+        case "client": return store.clients.find((item) => item.id === sample.clientId)?.clientCode ?? "";
+        case "project": return store.projects.find((item) => item.id === sample.projectId)?.projectName ?? "";
+        case "type": return sample.sampleType;
+        case "qty": return sample.quantity;
+        case "requested": return sample.requestedTestType;
+        case "required": return nextTest?.requiredTestDate ?? sample.requiredTestDate;
+        case "reportDue": return nextTest?.dueDate ?? sample.reportDueDate;
+        case "status": return sample.status;
+        case "technician": return store.users.find((item) => item.id === (nextTest?.assignedTechnician ?? sample.assignedTechnician))?.fullName ?? "";
+        case "reportStatus": return report?.reportStatus ?? "";
+        default: return sample.sampleCode;
+      }
+    };
+    return sortRows(filtered, valueFor, sort);
+  }, [query, showClientIdentity, sort, store.clients, store.projects, store.reports, store.samples, store.tests, store.users]);
 
   return (
     <>
@@ -55,23 +80,19 @@ export default function SamplesPage() {
           <table className="w-full min-w-[1100px] text-left text-sm">
             <thead className="table-head">
               <tr>
-                {[
-                  t("samples.sampleCode"),
-                  t("samples.dateReceived"),
-                  t("samples.clientCode"),
-                  t("samples.project"),
-                  t("samples.sampleType"),
-                  t("samples.qty"),
-                  t("samples.requestedTest"),
-                  t("samples.requiredDate"),
-                  t("samples.reportDue"),
-                  t("samples.status"),
-                  t("samples.assignedTechnician"),
-                  t("samples.reportStatus"),
-                  t("samples.actions")
-                ].map((head) => (
-                  <th key={head} className="px-4 py-3 font-semibold">{head}</th>
-                ))}
+                <SortableTh label={t("samples.sampleCode")} sortKey="number" sort={sort} onToggle={toggle} />
+                <SortableTh label={t("samples.dateReceived")} sortKey="date" sort={sort} onToggle={toggle} />
+                <SortableTh label={t("samples.clientCode")} sortKey="client" sort={sort} onToggle={toggle} />
+                <SortableTh label={t("samples.project")} sortKey="project" sort={sort} onToggle={toggle} />
+                <SortableTh label={t("samples.sampleType")} sortKey="type" sort={sort} onToggle={toggle} />
+                <SortableTh label={t("samples.qty")} sortKey="qty" sort={sort} onToggle={toggle} />
+                <SortableTh label={t("samples.requestedTest")} sortKey="requested" sort={sort} onToggle={toggle} />
+                <SortableTh label={t("samples.requiredDate")} sortKey="required" sort={sort} onToggle={toggle} />
+                <SortableTh label={t("samples.reportDue")} sortKey="reportDue" sort={sort} onToggle={toggle} />
+                <SortableTh label={t("samples.status")} sortKey="status" sort={sort} onToggle={toggle} />
+                <SortableTh label={t("samples.assignedTechnician")} sortKey="technician" sort={sort} onToggle={toggle} />
+                <SortableTh label={t("samples.reportStatus")} sortKey="reportStatus" sort={sort} onToggle={toggle} />
+                <th className="px-4 py-3 font-semibold">{t("samples.actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">

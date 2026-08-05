@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { SortableTh, sortRows, useSort } from "@/components/ui/sortable-header";
 import { useLabStore } from "@/lib/lab-store";
 import type { ReportStatus } from "@/lib/types";
 
@@ -25,6 +26,7 @@ export default function ReportsPage() {
   const [sampleType, setSampleType] = useState("all");
   const [testType, setTestType] = useState("all");
   const [selectedReportIds, setSelectedReportIds] = useState<string[]>([]);
+  const { sort, toggle } = useSort("number");
   const [batchEmail, setBatchEmail] = useState("");
   const [sendMessage, setSendMessage] = useState("");
   const completedWithoutReport = store.tests.filter((test) => test.status === "Completed" && !store.reports.some((report) => report.testId === test.id));
@@ -52,6 +54,18 @@ export default function ReportsPage() {
       (testType === "all" || test?.testType === testType)
     );
   });
+  const sortedRows = sortRows(filteredRows, ({ report, sample, test, client, project }) => {
+    switch (sort.key) {
+      case "sequence": return report.reportSequence;
+      case "sample": return sample?.sampleCode;
+      case "test": return test?.testType;
+      case "specimens": return report.specimenCodes.join(", ");
+      case "client": return client?.clientName;
+      case "project": return project?.projectName;
+      case "status": return report.reportStatus;
+      default: return report.reportNumber;
+    }
+  }, sort);
   const selectedRows = filteredRows.filter(({ report }) => selectedReportIds.includes(report.id));
   const selectedClientIds = Array.from(new Set(selectedRows.map(({ report }) => report.clientId)));
   const selectedClient = selectedClientIds.length === 1 ? store.clients.find((client) => client.id === selectedClientIds[0]) : undefined;
@@ -205,19 +219,19 @@ export default function ReportsPage() {
               <th className="px-4 py-3">
                 <input type="checkbox" checked={filteredRows.length > 0 && filteredRows.every(({ report }) => selectedReportIds.includes(report.id))} onChange={toggleVisibleReports} aria-label="Zgjidh raportet e dukshme" />
               </th>
-              <th className="px-4 py-3">Numri i raportit</th>
-              <th className="px-4 py-3">Pjesa</th>
-              <th className="px-4 py-3">Kampioni</th>
-              <th className="px-4 py-3">Testi</th>
-              <th className="px-4 py-3">Mostrat</th>
-              <th className="px-4 py-3">Klienti</th>
-              <th className="px-4 py-3">Projekti</th>
-              <th className="px-4 py-3">Statusi</th>
+              <SortableTh label="Numri i raportit" sortKey="number" sort={sort} onToggle={toggle} />
+              <SortableTh label="Pjesa" sortKey="sequence" sort={sort} onToggle={toggle} />
+              <SortableTh label="Kampioni" sortKey="sample" sort={sort} onToggle={toggle} />
+              <SortableTh label="Testi" sortKey="test" sort={sort} onToggle={toggle} />
+              <SortableTh label="Mostrat" sortKey="specimens" sort={sort} onToggle={toggle} />
+              <SortableTh label="Klienti" sortKey="client" sort={sort} onToggle={toggle} />
+              <SortableTh label="Projekti" sortKey="project" sort={sort} onToggle={toggle} />
+              <SortableTh label="Statusi" sortKey="status" sort={sort} onToggle={toggle} />
               <th className="px-4 py-3">Veprime</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
-            {filteredRows.map(({ report, sample, test, client, project }) => (
+            {sortedRows.map(({ report, sample, test, client, project }) => (
               <tr key={report.id} className="hover:bg-lab-mist/60">
                 <td className="px-4 py-3">
                   <input type="checkbox" checked={selectedReportIds.includes(report.id)} onChange={() => toggleReport(report.id)} aria-label={`Zgjidh ${report.reportNumber}`} />
