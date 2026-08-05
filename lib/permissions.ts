@@ -29,15 +29,15 @@ export function canAssignSampleClient(role?: Role, user?: Pick<LabUser, "fullNam
 }
 
 export function canRegisterSamples(role?: Role) {
-  return role === "Admin / Managing Director" || role === "Operations Manager" || role === "Technician";
+  return isSuperAdmin(role) || role === "Chief of Lab" || role === "Operations Manager" || role === "Technician";
 }
 
 export function canManageEmployees(role?: Role) {
-  return role === "Admin / Managing Director";
+  return isSuperAdmin(role) || role === "Chief of Lab";
 }
 
 export function canDeleteSamples(role?: Role) {
-  return role === "Admin / Managing Director";
+  return isSuperAdmin(role) || role === "Chief of Lab";
 }
 
 export function canEditSampleAfterRegistration(role?: Role) {
@@ -45,7 +45,7 @@ export function canEditSampleAfterRegistration(role?: Role) {
 }
 
 export function canEditTestData(role?: Role, status?: TestStatus) {
-  if (isSuperAdmin(role)) return true;
+  if (isSuperAdmin(role) || role === "Chief of Lab") return true;
   return Boolean(status && ["Pending", "Scheduled", "In Progress", "Delayed", "Rejected"].includes(status));
 }
 
