@@ -216,17 +216,30 @@ textarea {
   font-weight: 400 !important;
 }
 
-/* Concrete cube tables: centre cell text vertically and keep the three specimen
-   rows at a fixed height, so the tables are the same size (and never overlap the
-   grid lines) whether 1, 2 or 3 cubes are registered. Applies on screen and in
-   both PDF paths. */
+/* Concrete cube tables: centre cell text vertically and give every row type a
+   fixed height. html2canvas otherwise computes row boxes slightly too short and
+   draws the grid lines through the text; a fixed row height gives it a correct
+   box. It also keeps the three specimen "boxes" the same size whether 1, 2 or 3
+   cubes are registered. Applies on screen and in both PDF paths. */
 .cube-table th,
 .cube-table td {
   vertical-align: middle;
 }
 
+.cube-table thead tr {
+  height: 0.5cm;
+}
+
+.cube-table thead tr:first-child {
+  height: 0.82cm;
+}
+
 .cube-table .cube-specimen-row {
-  height: 0.62cm;
+  height: 0.6cm;
+}
+
+.cube-table tbody tr:not(.cube-specimen-row) {
+  height: 0.52cm;
 }
 
 .report-table {
@@ -382,17 +395,13 @@ textarea {
 
 .concrete-cube-report.pdf-capture .cube-table {
   font-size: 8.3pt !important;
-  line-height: 1.15 !important;
+  line-height: 1.2 !important;
 }
 
 .concrete-cube-report.pdf-capture .cube-table th,
 .concrete-cube-report.pdf-capture .cube-table td {
   padding: 2px 3px !important;
   vertical-align: middle !important;
-}
-
-.concrete-cube-report.pdf-capture .cube-table .cube-specimen-row {
-  height: 0.62cm !important;
 }
 
 .concrete-cube-report.pdf-capture .report-disclaimers {
@@ -596,17 +605,13 @@ textarea {
      1, 2 or 3 cubes are registered. */
   .concrete-cube-report .cube-table {
     font-size: 8.3pt !important;
-    line-height: 1.15 !important;
+    line-height: 1.2 !important;
   }
 
   .concrete-cube-report .cube-table th,
   .concrete-cube-report .cube-table td {
     padding: 2px 3px !important;
     vertical-align: middle !important;
-  }
-
-  .concrete-cube-report .cube-table .cube-specimen-row {
-    height: 0.62cm !important;
   }
 
   /* Footer sections flow with the document. The legal/issue-date/footer block
