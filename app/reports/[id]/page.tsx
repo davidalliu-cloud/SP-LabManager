@@ -68,7 +68,7 @@ export default function ReportDetailPage() {
     setPdfStatus("generating");
     setPdfError("");
     try {
-      const pdfUrl = await generateAndStoreReportPdf(surface, activeReport.reportNumber);
+      const pdfUrl = await generateAndStoreReportPdf(surface, activeReport.reportNumber, activeReport.pdfUrl);
       store.setReportPdfUrl(activeReport.id, pdfUrl);
       setPdfStatus("idle");
     } catch (error) {

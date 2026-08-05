@@ -24,19 +24,21 @@ async function renderElementToPdfBlob(element: HTMLElement): Promise<Blob> {
     }
   });
 
-  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  const imageData = canvas.toDataURL("image/jpeg", 0.95);
+  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
+  // Use PNG (lossless) rather than JPEG: the reports are thin 1px rules and small
+  // text, which JPEG compression blurs and smears. PNG keeps the lines crisp.
+  const imageData = canvas.toDataURL("image/png");
   const naturalPageHeightMm = (canvas.height * A4_WIDTH_MM) / canvas.width;
 
   if (naturalPageHeightMm <= A4_HEIGHT_MM) {
-    pdf.addImage(imageData, "JPEG", 0, 0, A4_WIDTH_MM, naturalPageHeightMm);
+    pdf.addImage(imageData, "PNG", 0, 0, A4_WIDTH_MM, naturalPageHeightMm);
   } else {
     // Content is taller than one page at full width: shrink the whole image
     // proportionally so it still fits on a single page, centered horizontally,
     // rather than splitting it across multiple pages.
     const fittedWidthMm = (A4_HEIGHT_MM / naturalPageHeightMm) * A4_WIDTH_MM;
     const xOffsetMm = (A4_WIDTH_MM - fittedWidthMm) / 2;
-    pdf.addImage(imageData, "JPEG", xOffsetMm, 0, fittedWidthMm, A4_HEIGHT_MM);
+    pdf.addImage(imageData, "PNG", xOffsetMm, 0, fittedWidthMm, A4_HEIGHT_MM);
   }
 
   return pdf.output("blob");
@@ -48,18 +50,38 @@ async function renderElementToPdfBlob(element: HTMLElement): Promise<Blob> {
  * "issued" reports become a real stored file instead of only the browser's
  * print dialog.
  */
-export async function generateAndStoreReportPdf(element: HTMLElement, reportNumber: string): Promise<string> {
+export async function generateAndStoreReportPdf(
+  element: HTMLElement,
+  reportNumber: string,
+  previousUrl?: string
+): Promise<string> {
   const blob = await renderElementToPdfBlob(element);
   const supabase = createSupabaseBrowserClient();
-  const path = `${reportNumber.replace(/[^a-zA-Z0-9_-]/g, "_")}.pdf`;
+  const safe = reportNumber.replace(/[^a-zA-Z0-9_-]/g, "_");
+  // A unique filename per generation. Supabase's storage CDN caches objects by
+  // path for a while, so overwriting one fixed name meant "Shkarko PDF-në e
+  // ruajtur" could keep serving a stale, previously-generated copy. A fresh path
+  // each time guarantees the download is always the just-generated file.
+  const path = `${safe}-${Date.now()}.pdf`;
 
   const { error: uploadError } = await supabase.storage.from("reports").upload(path, blob, {
     contentType: "application/pdf",
-    upsert: true
+    upsert: true,
+    cacheControl: "0"
   });
 
   if (uploadError) {
     throw new Error(`Could not upload PDF: ${uploadError.message}`);
+  }
+
+  // Best-effort: delete the report's previous stored file so old copies don't pile
+  // up. Derive its storage path from the previous signed URL.
+  if (previousUrl) {
+    const match = previousUrl.match(/\/reports\/([^?]+)/);
+    const oldPath = match ? decodeURIComponent(match[1]) : undefined;
+    if (oldPath && oldPath !== path) {
+      await supabase.storage.from("reports").remove([oldPath]).catch(() => undefined);
+    }
   }
 
   const oneYearInSeconds = 60 * 60 * 24 * 365;
