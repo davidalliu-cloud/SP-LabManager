@@ -26,7 +26,7 @@ export function ThermalInsulationReportPreview({
   const sampleValues = (selector: (index: number) => number) => [0, 1, 2, 3, 4].map(selector);
   const issueDate = report.issuedAt || report.approvedAt || thermalInsulation.testEndDate || sample?.reportDueDate;
   return (
-    <OfficialReportShell report={report} code="SL-RA-PT-7.8/1" title="RAPORT TESTIMI / TEST REPORT">
+    <OfficialReportShell report={report} code="SL-RA-PT-7.8/1" title="RAPORT TESTIMI / TEST REPORT" className="compact-official-report">
       <OfficialMetaGrid entries={[
         { sq: "Nr. REGJISTRI", en: "REGISTER No.", value: sample?.sampleCode },
         { sq: "KLIENTI", en: "PURCHASER", value: client?.clientName },
@@ -102,7 +102,7 @@ export function SteelReportPreview({
   const issueDate = report.issuedAt || report.approvedAt || steel.testEndDate || sample?.reportDueDate;
 
   return (
-    <OfficialReportShell report={report} code="SL-RA-H-7.8/1.1" title="RAPORT TESTIMI / TEST REPORT">
+    <OfficialReportShell report={report} code="SL-RA-H-7.8/1.1" title="RAPORT TESTIMI / TEST REPORT" className="compact-official-report">
       <OfficialMetaGrid entries={[
         { sq: "KLIENTI", en: "CLIENT", value: client?.clientName },
         { sq: "ADRESA", en: "ADRESS", value: client?.address },

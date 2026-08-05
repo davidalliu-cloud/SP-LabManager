@@ -115,15 +115,17 @@ export function OfficialReportShell({
   report,
   code,
   title = "RAPORT TESTIM / TEST REPORT",
+  className = "",
   children
 }: {
   report: Report;
   code: string;
   title?: string;
+  className?: string;
   children: ReactNode;
 }) {
   return (
-    <section className="report-a4 official-report print-surface relative rounded-md border border-line bg-white p-4 leading-tight text-black shadow-sm">
+    <section className={`report-a4 official-report print-surface relative rounded-md border border-line bg-white p-4 leading-tight text-black shadow-sm ${className}`}>
       <header className="border-b-2 border-black pb-1">
         <div className="grid grid-cols-[130px_1fr_115px] items-start gap-4">
           <img src="/brand/sarp-logo.png" alt="SARP" className="mt-1 h-auto w-[112px]" />

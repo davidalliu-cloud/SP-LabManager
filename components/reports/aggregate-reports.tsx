@@ -255,7 +255,7 @@ export function AggregateChemicalReportPreview({
   const results = aggregateChemical.results;
 
   return (
-    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 simple-report print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader
         report={report}
         code="SL-RA-AG-7.8/1.10"
@@ -334,7 +334,7 @@ export function AggregateLosAngelesReportPreview({
   aggregateLosAngeles: AggregateLosAngelesTest;
 }) {
   return (
-    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 simple-report print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader
         report={report}
         code="SL-RA-AG-7.8/1.12"
@@ -441,7 +441,7 @@ export function AggregateFreezeThawReportPreview({
   aggregateFreezeThaw: AggregateFreezeThawTest;
 }) {
   return (
-    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 simple-report print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader
         report={report}
         code="SL-RA-AG-7.8/1.13"
@@ -554,7 +554,7 @@ export function AggregateAcvReportPreview({
   aggregateAcv: AggregateAcvTest;
 }) {
   return (
-    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 simple-report print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader
         report={report}
         code="SL-RA-AG-7.8/1.15"

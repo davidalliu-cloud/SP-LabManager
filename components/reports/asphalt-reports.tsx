@@ -50,7 +50,7 @@ export function AsphaltReportPreview({
     { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: sample?.dateReceived }
   ];
   return (
-    <OfficialReportShell report={report} code={codeMap[kind] ?? "SL-RA-AS-7.8/1"}>
+    <OfficialReportShell report={report} code={codeMap[kind] ?? "SL-RA-AS-7.8/1"} className="compact-official-report">
       <OfficialMetaGrid entries={metaEntries} className="mt-5" />
       <div className="mt-1 grid grid-cols-[315px_1fr] gap-x-8 gap-y-1 text-[10pt] leading-[1.12]">
         <OfficialTestingDates start={asphalt.testStartDate} end={asphalt.testEndDate} />

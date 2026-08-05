@@ -100,6 +100,92 @@ textarea {
     word-break: normal !important;
     vertical-align: top !important;
   }
+
+  .print-surface.simple-report {
+    padding: 5mm 8mm !important;
+  }
+
+  .simple-report header.border-b {
+    padding-bottom: 4px !important;
+  }
+
+  .simple-report header img {
+    width: 90px !important;
+  }
+
+  .simple-report header .text-lg {
+    font-size: 11pt !important;
+  }
+
+  .simple-report .grid.gap-4.text-sm {
+    font-size: 9pt !important;
+    gap: 4px 16px !important;
+  }
+
+  .simple-report .grid.gap-4.text-sm > div > div.mt-1 {
+    line-height: 1.25 !important;
+    margin-top: 1px !important;
+  }
+
+  .simple-report .grid.gap-4.text-sm .text-xs {
+    font-size: 6.8pt !important;
+    line-height: 1.1 !important;
+  }
+
+  .simple-report h3.text-sm {
+    font-size: 8.5pt !important;
+    margin-bottom: 2px !important;
+  }
+
+  .simple-report table.text-sm,
+  .simple-report table.text-sm th,
+  .simple-report table.text-sm td {
+    font-size: 7.5pt !important;
+    line-height: 1.15 !important;
+    padding: 2px 4px !important;
+  }
+
+  .simple-report table {
+    table-layout: fixed !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .simple-report .overflow-x-auto {
+    overflow: visible !important;
+  }
+
+  .simple-report .mt-3 {
+    margin-top: 4px !important;
+  }
+
+  .simple-report .space-y-1 > * + * {
+    margin-top: 1px !important;
+  }
+
+  .simple-report .mt-6 {
+    margin-top: 5px !important;
+  }
+
+  .simple-report .mt-8 {
+    margin-top: 5px !important;
+  }
+
+  .simple-report .mt-10 {
+    margin-top: 6px !important;
+  }
+
+  .simple-report .soft-panel.p-4 {
+    padding: 4px 8px !important;
+  }
+
+  .simple-report .text-xs {
+    font-size: 7.5pt !important;
+  }
+
+  .simple-report .text-sm {
+    font-size: 9.5pt !important;
+  }
 }
 
 .report-a4 {
@@ -175,69 +261,73 @@ textarea {
   width: 6%;
 }
 
-.thermal-report header {
+.compact-official-report header {
   padding-bottom: 10px;
 }
 
-.thermal-report header > div:first-child {
+.compact-official-report header > div:first-child {
   grid-template-columns: 112px 1fr 92px;
   gap: 10px;
 }
 
-.thermal-report header img[alt="SARP"] {
+.compact-official-report header img[alt="SARP"] {
   width: 108px;
 }
 
-.thermal-report header img[alt^="DA"] {
+.compact-official-report header img[alt^="DA"] {
   width: 78px;
 }
 
-.thermal-report header .text-lg {
+.compact-official-report header .text-lg {
   font-size: 13px;
   line-height: 1.15;
 }
 
-.thermal-report header .text-sm {
+.compact-official-report header .text-sm {
   font-size: 10px;
   line-height: 1.2;
 }
 
-.thermal-report header .text-xs {
+.compact-official-report header .text-xs {
   font-size: 8.5px;
   line-height: 1.15;
 }
 
-.thermal-report .table-head {
+.compact-official-report .table-head {
   font-size: 8px;
   line-height: 1.1;
 }
 
-.thermal-report .uppercase {
+.compact-official-report .uppercase {
   letter-spacing: 0;
 }
 
-.thermal-report [class*="mt-1"] {
+.compact-official-report [class*="mt-1"] {
   margin-top: 2px;
 }
 
 @media print {
-  .thermal-report {
-    height: 277mm;
-    overflow: hidden;
-    font-size: 9px !important;
+  .official-report.compact-official-report {
+    height: 330mm !important;
+    font-size: 10pt !important;
     line-height: 1.18 !important;
   }
 
-  .thermal-report header {
+  .compact-official-report header {
     padding-bottom: 8px !important;
   }
 
-  .thermal-report .report-table {
-    font-size: 7.6px !important;
+  .compact-official-report .official-table th,
+  .compact-official-report .official-table td {
+    padding: 2px 4px !important;
   }
 
-  .thermal-report .table-head {
-    font-size: 7px !important;
+  .compact-official-report .official-table {
+    font-size: 8pt !important;
+  }
+
+  .compact-official-report .table-head {
+    font-size: 7pt !important;
   }
 
   .aggregate-gradation-report {
@@ -256,7 +346,7 @@ textarea {
   .mortar-report {
     width: 244mm !important;
     max-width: 244mm !important;
-    height: 345mm !important;
+    height: 325mm !important;
     min-height: 0 !important;
     margin: 0 auto !important;
     padding: 8mm 14mm 5mm !important;
@@ -301,13 +391,13 @@ textarea {
   .concrete-cube-report {
     width: 255mm !important;
     max-width: 255mm !important;
-    height: 360mm !important;
+    height: 345mm !important;
     min-height: 0 !important;
     margin: 8mm auto -95mm !important;
     overflow: hidden !important;
     zoom: 0.76;
     font-family: "Times New Roman", Times, serif !important;
-    font-size: 11pt !important;
+    font-size: 10pt !important;
   }
 
   .concrete-cube-report .report-disclaimers {
@@ -333,7 +423,7 @@ textarea {
   .concrete-core-report {
     width: 255mm !important;
     max-width: 255mm !important;
-    height: 360mm !important;
+    height: 325mm !important;
     min-height: 0 !important;
     margin: 8mm auto -95mm !important;
     padding: 8mm 14mm 5mm !important;

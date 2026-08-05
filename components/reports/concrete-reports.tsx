@@ -26,7 +26,7 @@ export function ConcreteWaterPenetrationReportPreview({
   const specimens = [concreteWater.specimens[0], concreteWater.specimens[1], concreteWater.specimens[2]];
   const issueDate = report.issuedAt || report.approvedAt || concreteWater.testEndDate || sample?.reportDueDate;
   return (
-    <OfficialReportShell report={report} code="SL-RA-B-7.8/1.10">
+    <OfficialReportShell report={report} code="SL-RA-B-7.8/1.10" className="compact-official-report">
       <OfficialMetaGrid entries={[
         { sq: "Nr. REGJISTRI", en: "REGISTER No.", value: sample?.sampleCode },
         { sq: "KLIENTI", en: "PURCHASER", value: client?.clientName },
@@ -87,7 +87,7 @@ export function ConcreteFlexuralReportPreview({
   const specimens = [concreteFlexural.specimens[0], concreteFlexural.specimens[1], concreteFlexural.specimens[2]];
   const issueDate = report.issuedAt || report.approvedAt || concreteFlexural.testEndDate || sample?.reportDueDate;
   return (
-    <OfficialReportShell report={report} code="SL-RA-B-7.8/1.4">
+    <OfficialReportShell report={report} code="SL-RA-B-7.8/1.4" className="compact-official-report">
       <OfficialMetaGrid entries={[
         { sq: "Nr. REGJISTRI", en: "REGISTER No.", value: sample?.sampleCode },
         { sq: "KLIENTI", en: "PURCHASER", value: client?.clientName },
@@ -167,7 +167,7 @@ export function ConcreteDensityReportPreview({
   const specimens = [concreteDensity.specimens[0], concreteDensity.specimens[1], concreteDensity.specimens[2]];
   const issueDate = report.issuedAt || report.approvedAt || concreteDensity.testEndDate || sample?.reportDueDate;
   return (
-    <OfficialReportShell report={report} code="SL-RA-B-7.8/1.8">
+    <OfficialReportShell report={report} code="SL-RA-B-7.8/1.8" className="compact-official-report">
       <OfficialMetaGrid entries={[
         { sq: "Nr. REGJISTRI", en: "REGISTER No.", value: sample?.sampleCode },
         { sq: "KLIENTI", en: "PURCHASER", value: client?.clientName },
@@ -227,7 +227,7 @@ export function ConcreteIndirectTensileReportPreview({
   const shown = [concreteIndirectTensile.specimens[0], concreteIndirectTensile.specimens[1]];
   const issueDate = report.issuedAt || report.approvedAt || concreteIndirectTensile.testEndDate || sample?.reportDueDate;
   return (
-    <OfficialReportShell report={report} code="SL-RA-B-7.8/1.5" title="RAPORT TESTIMI / TEST REPORT">
+    <OfficialReportShell report={report} code="SL-RA-B-7.8/1.5" title="RAPORT TESTIMI / TEST REPORT" className="compact-official-report">
       <OfficialMetaGrid entries={[
         { sq: "Nr. REGJISTRI", en: "REGISTER No.", value: sample?.sampleCode },
         { sq: "KLIENTI", en: "PURCHASER", value: client?.clientName },

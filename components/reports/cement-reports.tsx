@@ -30,7 +30,7 @@ export function CementConsistencyReportPreview({
     ["4", "Expansion after 24 hours", "BS EN 196-3:2016", "mm", cementConsistency.expansion.expansionMm, "0.9"]
   ] as const;
   return (
-    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 simple-report print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader report={report} code="SL-RA-Ç-7.8/1.1" title="RAPORT TESTIMI / TEST REPORT" subtitle="Consistency, setting time and expansion of cement" />
       <div className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
         <Info label="Register No." value={sample?.sampleCode} />
@@ -70,7 +70,7 @@ export function CementStrengthReportPreview({
   cementStrength: CementStrengthTest;
 }) {
   return (
-    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 simple-report print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader report={report} code="SL-RA-Ç-7.8/1.3" title="RAPORT TESTIMI / TEST REPORT" subtitle="Flexural and compressive strength of cement mortar" />
       <div className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
         <Info label="Register No." value={sample?.sampleCode} />
@@ -118,7 +118,7 @@ export function CementBlaineReportPreview({
 }) {
   const code = cementBlaine.method === "ASTM" ? "SL-RA-Ç-7.8/1.4.2" : "SL-RA-Ç-7.8/1.4.1";
   return (
-    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 simple-report print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader report={report} code={code} title="RAPORT TESTIMI / TEST REPORT" subtitle={`Blaine specific surface of cement (${cementBlaine.method})`} />
       <div className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
         <Info label="Register No." value={sample?.sampleCode} />

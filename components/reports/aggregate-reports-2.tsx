@@ -25,7 +25,7 @@ export function AggregateDensityReportPreview({
 }) {
   const sampleValues = (selector: (index: number) => number) => [selector(0), selector(1)];
   return (
-    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 simple-report print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader
         report={report}
         code="SL-RA-AG-7.8/1.2"
@@ -119,7 +119,7 @@ export function AggregateFillerDensityReportPreview({
 }) {
   const values = (selector: (index: number) => number) => [selector(0), selector(1)];
   return (
-    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 simple-report print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader
         report={report}
         code="SL-RA-AG-7.8/1.2f"
@@ -210,7 +210,7 @@ export function AggregateSoundnessReportPreview({
   aggregateSoundness: AggregateSoundnessTest;
 }) {
   return (
-    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 simple-report print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader report={report} code="SL-RA-AG-7.8/1.11" title="RAPORT TESTIMI / TEST REPORT" subtitle="Magnesium Sulfate Soundness Test" />
       <div className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
         <Info label="Register No." value={sample?.sampleCode} />
@@ -273,7 +273,7 @@ export function AggregateElongationReportPreview({
   aggregateElongation: AggregateElongationIndexTest;
 }) {
   return (
-    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 simple-report print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader report={report} code="SL-RA-AG-7.8/1.5" title="RAPORT TESTIMI / TEST REPORT" subtitle="Elongation Index of aggregates" />
       <div className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
         <Info label="Register No." value={sample?.sampleCode} />
@@ -321,7 +321,7 @@ export function AggregateBulkDensityReportPreview({
   aggregateBulkDensity: AggregateBulkDensityTest;
 }) {
   return (
-    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 simple-report print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader report={report} code="SL-RA-AG-7.8/1.7" title="RAPORT TESTIMI / TEST REPORT" subtitle="Loose bulk density and voids of aggregate" />
       <div className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
         <Info label="Register No." value={sample?.sampleCode} />
@@ -366,7 +366,7 @@ export function AggregateSandEquivalentReportPreview({
   aggregateSandEquivalent: AggregateSandEquivalentTest;
 }) {
   return (
-    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 simple-report print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader report={report} code="SL-RA-AG-7.8/1.8" title="RAPORT TESTIMI / TEST REPORT" subtitle="Sand Equivalent test" />
       <div className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
         <Info label="Register No." value={sample?.sampleCode} />
@@ -410,7 +410,7 @@ export function AggregateShapeIndexReportPreview({
   aggregateShapeIndex: AggregateShapeIndexTest;
 }) {
   return (
-    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 simple-report print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader
         report={report}
         code="SL-RA-AG-7.8/1.3"
@@ -497,7 +497,7 @@ export function AggregateFlakinessReportPreview({
   aggregateFlakiness: AggregateFlakinessIndexTest;
 }) {
   return (
-    <section className="report-a4 print-surface rounded-md border border-line bg-white p-8 shadow-sm">
+    <section className="report-a4 simple-report print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader
         report={report}
         code="SL-RA-AG-7.8/1.4"
