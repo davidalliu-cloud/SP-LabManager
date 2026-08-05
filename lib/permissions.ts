@@ -29,7 +29,13 @@ export function canAssignSampleClient(role?: Role, user?: Pick<LabUser, "fullNam
 }
 
 export function canRegisterSamples(role?: Role) {
-  return isSuperAdmin(role) || role === "Chief of Lab" || role === "Operations Manager" || role === "Technician";
+  return (
+    isSuperAdmin(role) ||
+    role === "Chief of Lab" ||
+    role === "Operations Manager" ||
+    role === "Technician" ||
+    role === "Quality Manager"
+  );
 }
 
 export function canManageEmployees(role?: Role) {
