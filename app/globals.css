@@ -259,6 +259,33 @@ textarea {
   border-bottom-width: 1px !important;
 }
 
+/* Cement strength results table: same uniform single-stroke grid lines as the
+   cube table, plus fixed row heights so the multi-line headers never overlap
+   their borders in the html2canvas export. */
+.cement-table {
+  border-top: 1px solid #000;
+  border-left: 1px solid #000;
+}
+
+.cement-table th,
+.cement-table td {
+  border: 0 solid #000 !important;
+  border-right-width: 1px !important;
+  border-bottom-width: 1px !important;
+}
+
+.cement-table thead tr:first-child {
+  height: 0.82cm;
+}
+
+.cement-table thead tr:last-child {
+  height: 0.42cm;
+}
+
+.cement-table tbody tr {
+  height: 0.5cm;
+}
+
 .report-table {
   width: 100%;
   table-layout: fixed;

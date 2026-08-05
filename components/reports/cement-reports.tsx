@@ -69,35 +69,109 @@ export function CementStrengthReportPreview({
   project?: Project;
   cementStrength: CementStrengthTest;
 }) {
+  const fmt = (value?: number, digits = 2) =>
+    typeof value === "number" && Number.isFinite(value) ? value.toFixed(digits) : "";
+  const avg = (type: "compressive" | "flexural", age: number) =>
+    cementStrength.averages[`${type}${age}DayMpa` as keyof typeof cementStrength.averages];
+
+  const ages = Array.from(new Set(cementStrength.specimens.map((row) => row.ageDays))).sort((a, b) => a - b);
+  const groups = ages.map((age) => {
+    const rows = cementStrength.specimens.filter((row) => row.ageDays === age).sort((a, b) => a.rowNo - b.rowNo);
+    const compressive = rows.filter((row) => row.testType === "Compressive");
+    const flexural = rows.filter((row) => row.testType === "Flexural");
+    return {
+      age,
+      compressive,
+      flexural,
+      ordered: [...compressive, ...flexural],
+      testDate: rows.find((row) => row.testDate)?.testDate
+    };
+  });
+
+  const issueDate = report.issuedAt || report.approvedAt || cementStrength.testEndDate || sample?.reportDueDate;
+  const receiptDate = formatEuropeanDate(sample?.dateReceived);
+
   return (
-    <section className="report-a4 simple-report print-surface rounded-md border border-line bg-white p-8 shadow-sm">
-      <ReportHeader report={report} code="SL-RA-Ç-7.8/1.3" title="RAPORT TESTIMI / TEST REPORT" subtitle="Flexural and compressive strength of cement mortar" />
-      <div className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
-        <Info label="Register No." value={sample?.sampleCode} />
-        <Info label="Client / Purchaser" value={client?.clientName} />
-        <Info label="Object / Project" value={project?.projectName} />
-        <Info label="Sample" value={sample?.sampleDescription || sample?.sampleType} />
-        <Info label="Date received" value={sample?.dateReceived} />
-        <Info label="Casting date" value={cementStrength.castingDate} />
-        <Info label="Standard" value={test?.standard} />
-        <Info label="Lab location" value={cementStrength.testingLocation} />
+    <OfficialReportShell report={report} code="SL-RA-Ç-7.8/1.3" className="compact-official-report">
+      <OfficialMetaGrid entries={[
+        { sq: "Nr. REGJISTRI", en: "REGISTER No.", value: sample?.sampleCode },
+        { sq: "KLIENTI", en: "PURCHASER", value: client?.clientName },
+        { sq: "ADRESA", en: "ADRESS", value: client?.address },
+        { sq: "KONTAKTET", en: "CONTACT", value: client?.phone || client?.email },
+        { sq: "OBJEKTI", en: "OBJECT", value: project?.projectName },
+        { sq: "KAMPIONI", en: "SAMPLE", value: "ÇIMENTO / CEMENT" },
+        { sq: "DATA E MARRJES SË KAMPIONIT", en: "SAMPLING DATE", value: receiptDate },
+        { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: receiptDate },
+        { sq: "OPERATORI I MARRJES SË KAMPIONIT", en: "SAMPLING OPERATOR", value: "KLIENTI / CLIENT" },
+        { sq: "TESTIMI", en: "TEST", value: "PËRCAKTIMI I REZISTENCËS NË SHTYPJE DHE PËRKULJE TË ÇIMENTOS* / DETERMINATION OF STRENGTH*" },
+        { sq: "STANDARDET E TESTIMIT", en: "TEST STANDARDS", value: test?.standard || "BS EN 196-1:2016" },
+        { sq: "VENDI KU ËSHTË PERFORMUAR TESTI", en: "LABORATORY LOCATION", value: cementStrength.testingLocation || "01/A Laboratori Fiziko-Mekanik / Physical-Mechanical laboratory" }
+      ]} />
+      <div className="mt-1 grid grid-cols-[315px_1fr] gap-x-8 gap-y-1 text-[10pt] leading-[1.15]">
+        <OfficialEnvironmental temperature={cementStrength.temperature} humidity={cementStrength.humidity} />
       </div>
-      <div className="mt-8 overflow-x-auto rounded-md border border-line">
-        <table className="w-full min-w-[900px] text-left text-sm">
-          <thead className="table-head"><tr><th className="px-3 py-2">No.</th><th className="px-3 py-2">Age</th><th className="px-3 py-2">Test</th><th className="px-3 py-2">Area [mm2]</th><th className="px-3 py-2">Load [kN]</th><th className="px-3 py-2">Result [MPa]</th><th className="px-3 py-2">Average / Uncertainty</th></tr></thead>
-          <tbody className="divide-y divide-line">
-            {cementStrength.specimens.map((row) => {
-              const average = row.testType === "Flexural"
-                ? cementStrength.averages[`flexural${row.ageDays}DayMpa` as keyof typeof cementStrength.averages]
-                : cementStrength.averages[`compressive${row.ageDays}DayMpa` as keyof typeof cementStrength.averages];
-              return <tr key={row.rowNo}><td className="px-3 py-2 font-semibold text-ink">{row.rowNo}</td><td className="px-3 py-2">{row.ageDays} days</td><td className="px-3 py-2">{row.testType}</td><td className="px-3 py-2">{row.surfaceAreaMm2}</td><td className="px-3 py-2">{row.loadKn}</td><td className="px-3 py-2 font-semibold text-ink">{row.strengthMpa}</td><td className="px-3 py-2">{average} MPa / {row.testType === "Flexural" ? "0.5" : "2"} MPa</td></tr>;
-            })}
-          </tbody>
-        </table>
-      </div>
-      <div className="mt-8 soft-panel p-4 text-sm text-ink"><div className="font-semibold">Notes / Shënime</div><p className="mt-1">{cementStrength.notes || "Results relate only to the submitted sample."}</p></div>
-      <div className="mt-10 grid gap-6 sm:grid-cols-2"><Signature label="TESTUAR NGA / TESTED BY" value={cementStrength.technicianName || report.draftedBy} /><Signature label="PËRGJEGJËSI I LABORATORIT / HEAD OF LABORATORY" value={headOfLabName(cementStrength.checkedBy)} /></div>
-    </section>
+
+      <table className="official-table cement-table mt-3 w-full border-collapse text-center text-[9pt]">
+        <thead>
+          <tr>
+            <th>Nr.<br /><span>No.</span></th>
+            <th>Testi<br /><span>Test type</span></th>
+            <th>Maturimi<br /><span>Age of prism</span></th>
+            <th>Sipërfaqja<br /><span>Surface Area</span></th>
+            <th>Data e përgatitjes së mostrës<br /><span>Date of Casting</span></th>
+            <th>Data e testimit<br /><span>Date of Testing</span></th>
+            <th>Ngarkesa<br /><span>Crushing Load</span></th>
+            <th>Rezultatet<br /><span>Test results</span></th>
+            <th>Mesatarja<br /><span>Avg. Strength</span></th>
+          </tr>
+          <tr>
+            <th />
+            <th />
+            <th>(Ditë / Days)</th>
+            <th>(mm²)</th>
+            <th>(dd/mm/vv)</th>
+            <th>(dd/mm/vv)</th>
+            <th>(kN)</th>
+            <th>(N/mm²)</th>
+            <th>(N/mm²)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {groups.map((group) =>
+            group.ordered.map((row, indexInGroup) => {
+              const isFirstOfGroup = indexInGroup === 0;
+              const isFirstCompressive = row.testType === "Compressive" && group.compressive[0]?.rowNo === row.rowNo;
+              return (
+                <tr key={`cement-${row.rowNo}`}>
+                  <td>{row.rowNo}</td>
+                  <td>
+                    {row.testType === "Flexural" ? "Rez. në përkulje / " : "Rez. në shtypje / "}
+                    <span>{row.testType === "Flexural" ? "Flexural strength" : "Comp. strength"}</span>
+                  </td>
+                  {isFirstOfGroup ? <td rowSpan={group.ordered.length}>{group.age}</td> : null}
+                  <td>{row.surfaceAreaMm2}</td>
+                  {isFirstOfGroup ? <td rowSpan={group.ordered.length}>{formatEuropeanDate(cementStrength.castingDate)}</td> : null}
+                  {isFirstOfGroup ? <td rowSpan={group.ordered.length}>{formatEuropeanDate(group.testDate)}</td> : null}
+                  <td>{row.loadKn}</td>
+                  <td>{fmt(row.strengthMpa)}</td>
+                  {row.testType === "Flexural" ? (
+                    <td>{fmt(avg("flexural", group.age))}</td>
+                  ) : isFirstCompressive ? (
+                    <td rowSpan={group.compressive.length}>{fmt(avg("compressive", group.age))}</td>
+                  ) : null}
+                </tr>
+              );
+            })
+          )}
+        </tbody>
+      </table>
+
+      <OfficialAsterisk />
+      <div className="mt-1 text-[8pt] leading-tight">Pasiguria në matje për rezistencën në shtypje 2 MPa / <span className="italic">Measurement uncertainty of Comp. strength 2 MPa</span></div>
+      <div className="text-[8pt] leading-tight">Pasiguria në matje për rezistencën në përkulje 0.5 MPa / <span className="italic">Measurement uncertainty of Flexural strength 0.5 MPa</span></div>
+
+      <OfficialNotesAndFooter notes={cementStrength.notes} testedBy={cementStrength.technicianName || report.draftedBy} responsible={cementStrength.checkedBy} issueDate={issueDate} />
+    </OfficialReportShell>
   );
 }
 
