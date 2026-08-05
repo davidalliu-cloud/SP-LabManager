@@ -8,6 +8,22 @@ import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
 import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, Signature } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
 
+// Metadata rows shared by every cement report (register, client, sample, dates).
+function cementBaseMeta(sample?: Sample, client?: Client, project?: Project): OfficialMetaEntry[] {
+  const receiptDate = formatEuropeanDate(sample?.dateReceived);
+  return [
+    { sq: "Nr. REGJISTRI", en: "REGISTER No.", value: sample?.sampleCode },
+    { sq: "KLIENTI", en: "PURCHASER", value: client?.clientName },
+    { sq: "ADRESA", en: "ADRESS", value: client?.address },
+    { sq: "KONTAKTET", en: "CONTACT", value: client?.phone || client?.email },
+    { sq: "OBJEKTI", en: "OBJECT", value: project?.projectName },
+    { sq: "KAMPIONI", en: "SAMPLE", value: "ÇIMENTO / CEMENT" },
+    { sq: "DATA E MARRJES SË KAMPIONIT", en: "SAMPLING DATE", value: receiptDate },
+    { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: receiptDate },
+    { sq: "OPERATORI I MARRJES SË KAMPIONIT", en: "SAMPLING OPERATOR", value: "KLIENTI / CLIENT" }
+  ];
+}
+
 export function CementConsistencyReportPreview({
   report,
   test,
@@ -23,34 +39,54 @@ export function CementConsistencyReportPreview({
   project?: Project;
   cementConsistency: CementConsistencyTest;
 }) {
-  const rows = [
-    ["1", "Water demand for standard consistency", "BS EN 196-3:2016", "%", cementConsistency.consistency.waterDemandPercent, "0.8"],
-    ["2", "Initial setting time", "BS EN 196-3:2016", "min", cementConsistency.setting.initialSettingMinutes, "1"],
-    ["3", "Final setting time", "BS EN 196-3:2016", "min", cementConsistency.setting.finalSettingMinutes, "1"],
-    ["4", "Expansion after 24 hours", "BS EN 196-3:2016", "mm", cementConsistency.expansion.expansionMm, "0.9"]
-  ] as const;
+  const standard = test?.standard || "BS EN 196-3:2016";
+  const rows: Array<{ sq: string; en: string; unit: string; result?: number; unc: string }> = [
+    { sq: "Kërkesa për ujë për konsistencë standarde", en: "Water demand for standard consistency", unit: "%", result: cementConsistency.consistency.waterDemandPercent, unc: "0.8" },
+    { sq: "Koha e fillimit të lidhjes", en: "Initial setting time", unit: "min", result: cementConsistency.setting.initialSettingMinutes, unc: "1" },
+    { sq: "Koha e përfundimit të lidhjes", en: "Final setting time", unit: "min", result: cementConsistency.setting.finalSettingMinutes, unc: "1" },
+    { sq: "Zgjerimi pas 24 orësh", en: "Expansion after 24 hours", unit: "mm", result: cementConsistency.expansion.expansionMm, unc: "0.9" }
+  ];
+  const issueDate = report.issuedAt || report.approvedAt || cementConsistency.testEndDate || sample?.reportDueDate;
   return (
-    <section className="report-a4 simple-report print-surface rounded-md border border-line bg-white p-8 shadow-sm">
-      <ReportHeader report={report} code="SL-RA-Ç-7.8/1.1" title="RAPORT TESTIMI / TEST REPORT" subtitle="Consistency, setting time and expansion of cement" />
-      <div className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
-        <Info label="Register No." value={sample?.sampleCode} />
-        <Info label="Client / Purchaser" value={client?.clientName} />
-        <Info label="Object / Project" value={project?.projectName} />
-        <Info label="Sample" value={sample?.sampleDescription || sample?.sampleType} />
-        <Info label="Date received" value={sample?.dateReceived} />
-        <Info label="Testing period" value={`${cementConsistency.testStartDate || "-"} / ${cementConsistency.testEndDate || "-"}`} />
-        <Info label="Standard" value={test?.standard} />
-        <Info label="Lab location" value={cementConsistency.testingLocation} />
+    <OfficialReportShell report={report} code="SL-RA-Ç-7.8/1.1" className="compact-official-report">
+      <OfficialMetaGrid entries={[
+        ...cementBaseMeta(sample, client, project),
+        { sq: "TESTIMI", en: "TEST", value: "PËRCAKTIMI I KONSISTENCËS, KOHËS SË LIDHJES DHE QËNDRUESHMËRISË* / DETERMINATION OF CONSISTENCY, SETTING TIME AND SOUNDNESS*" },
+        { sq: "STANDARDI I TESTIMIT", en: "TEST STANDARD", value: standard },
+        { sq: "VENDI KU ËSHTË PERFORMUAR TESTI", en: "LABORATORY LOCATION", value: cementConsistency.testingLocation || "01/A Laboratori Fiziko-Mekanik / Physical-Mechanical laboratory" }
+      ]} />
+      <div className="mt-1 grid grid-cols-[315px_1fr] gap-x-8 gap-y-1 text-[10pt] leading-[1.15]">
+        <OfficialEnvironmental temperature={cementConsistency.temperature} humidity={cementConsistency.humidity} />
       </div>
-      <div className="mt-8 overflow-x-auto rounded-md border border-line">
-        <table className="w-full min-w-[760px] text-left text-sm">
-          <thead className="table-head"><tr><th className="px-3 py-2">No.</th><th className="px-3 py-2">Test</th><th className="px-3 py-2">Standard</th><th className="px-3 py-2">Unit</th><th className="px-3 py-2">Result</th><th className="px-3 py-2">Uncertainty</th></tr></thead>
-          <tbody className="divide-y divide-line">{rows.map((row) => <tr key={row[0]}><td className="px-3 py-2 font-semibold text-ink">{row[0]}</td><td className="px-3 py-2">{row[1]}</td><td className="px-3 py-2">{row[2]}</td><td className="px-3 py-2">{row[3]}</td><td className="px-3 py-2 font-semibold text-ink">{row[4]}</td><td className="px-3 py-2">{row[5]}</td></tr>)}</tbody>
-        </table>
-      </div>
-      <div className="mt-8 soft-panel p-4 text-sm text-ink"><div className="font-semibold">Notes / Shënime</div><p className="mt-1">{cementConsistency.notes || "Results relate only to the submitted sample."}</p></div>
-      <div className="mt-10 grid gap-6 sm:grid-cols-2"><Signature label="TESTUAR NGA / TESTED BY" value={cementConsistency.technicianName || report.draftedBy} /><Signature label="PËRGJEGJËSI I LABORATORIT / HEAD OF LABORATORY" value={headOfLabName(cementConsistency.checkedBy)} /></div>
-    </section>
+
+      <table className="official-table cement-table mt-3 w-full border-collapse text-center text-[9pt]">
+        <thead>
+          <tr>
+            <th>Nr.<br /><span>No.</span></th>
+            <th>Testi<br /><span>Test</span></th>
+            <th>Standardi<br /><span>Standard</span></th>
+            <th>Njësia<br /><span>Unit</span></th>
+            <th>Rezultati<br /><span>Result</span></th>
+            <th>Pasiguria<br /><span>Uncertainty</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, index) => (
+            <tr key={row.en}>
+              <td>{index + 1}</td>
+              <td className="text-left">{row.sq} / <span>{row.en}</span></td>
+              <td>{standard}</td>
+              <td>{row.unit}</td>
+              <td>{row.result ?? ""}</td>
+              <td>{row.unc}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <OfficialAsterisk />
+      <OfficialNotesAndFooter notes={cementConsistency.notes} testedBy={cementConsistency.technicianName || report.draftedBy} responsible={cementConsistency.checkedBy} issueDate={issueDate} />
+    </OfficialReportShell>
   );
 }
 
@@ -191,33 +227,68 @@ export function CementBlaineReportPreview({
   cementBlaine: CementBlaineTest;
 }) {
   const code = cementBlaine.method === "ASTM" ? "SL-RA-Ç-7.8/1.4.2" : "SL-RA-Ç-7.8/1.4.1";
+  const standard = test?.standard || (cementBlaine.method === "ASTM" ? "ASTM C204" : "BS EN 196-6:2018");
+  const density = cementBlaine.density?.cementDensityGcm3;
+  const bedVolume = cementBlaine.method === "ASTM" ? cementBlaine.astm?.bedVolumeCm3 : cementBlaine.bsEn?.bedVolumeCm3;
+  const constantK = cementBlaine.method === "ASTM" ? cementBlaine.astm?.constantK : cementBlaine.bsEn?.constantK;
+  const issueDate = report.issuedAt || report.approvedAt || cementBlaine.testEndDate || sample?.reportDueDate;
   return (
-    <section className="report-a4 simple-report print-surface rounded-md border border-line bg-white p-8 shadow-sm">
-      <ReportHeader report={report} code={code} title="RAPORT TESTIMI / TEST REPORT" subtitle={`Blaine specific surface of cement (${cementBlaine.method})`} />
-      <div className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
-        <Info label="Register No." value={sample?.sampleCode} />
-        <Info label="Client / Purchaser" value={client?.clientName} />
-        <Info label="Object / Project" value={project?.projectName} />
-        <Info label="Sample" value={sample?.sampleDescription || sample?.sampleType} />
-        <Info label="Date received" value={sample?.dateReceived} />
-        <Info label="Testing period" value={`${cementBlaine.testStartDate || "-"} / ${cementBlaine.testEndDate || "-"}`} />
-        <Info label="Standard" value={test?.standard} />
-        <Info label="Lab location" value={cementBlaine.testingLocation} />
+    <OfficialReportShell report={report} code={code} className="compact-official-report">
+      <OfficialMetaGrid entries={[
+        ...cementBaseMeta(sample, client, project),
+        { sq: "TESTIMI", en: "TEST", value: `PËRCAKTIMI I IMTËSISË (BLAINE) - ${cementBlaine.method}* / DETERMINATION OF FINENESS (BLAINE) - ${cementBlaine.method}*` },
+        { sq: "STANDARDI I TESTIMIT", en: "TEST STANDARD", value: standard },
+        { sq: "VENDI KU ËSHTË PERFORMUAR TESTI", en: "LABORATORY LOCATION", value: cementBlaine.testingLocation || "01/A Laboratori Fiziko-Mekanik / Physical-Mechanical laboratory" }
+      ]} />
+      <div className="mt-1 grid grid-cols-[315px_1fr] gap-x-8 gap-y-1 text-[10pt] leading-[1.15]">
+        <OfficialEnvironmental temperature={cementBlaine.temperature} humidity={cementBlaine.humidity} />
       </div>
-      <div className="mt-8 overflow-x-auto rounded-md border border-line">
-        <table className="w-full min-w-[720px] text-left text-sm">
-          <thead className="table-head"><tr><th className="px-3 py-2">No.</th><th className="px-3 py-2">Test</th><th className="px-3 py-2">Standard</th><th className="px-3 py-2">Unit</th><th className="px-3 py-2">Result</th><th className="px-3 py-2">Uncertainty</th></tr></thead>
-          <tbody><tr><td className="px-3 py-2 font-semibold text-ink">1</td><td className="px-3 py-2">Specific surface area by Blaine air permeability</td><td className="px-3 py-2">{test?.standard}</td><td className="px-3 py-2">cm2/g</td><td className="px-3 py-2 font-semibold text-ink">{cementBlaine.specificSurfaceCm2G}</td><td className="px-3 py-2">80</td></tr></tbody>
-        </table>
-      </div>
-      <div className="mt-6 grid gap-4 text-sm sm:grid-cols-3">
-        <Info label="Cement density" value={cementBlaine.density ? `${cementBlaine.density.cementDensityGcm3} g/cm3` : undefined} />
-        <Info label="Bed volume" value={cementBlaine.method === "ASTM" ? `${cementBlaine.astm?.bedVolumeCm3 ?? "-"} cm3` : `${cementBlaine.bsEn?.bedVolumeCm3 ?? "-"} cm3`} />
-        <Info label="Constant K" value={cementBlaine.method === "ASTM" ? String(cementBlaine.astm?.constantK ?? "-") : String(cementBlaine.bsEn?.constantK ?? "-")} />
-      </div>
-      <div className="mt-8 soft-panel p-4 text-sm text-ink"><div className="font-semibold">Notes / Shënime</div><p className="mt-1">{cementBlaine.notes || "Results relate only to the submitted sample."}</p></div>
-      <div className="mt-10 grid gap-6 sm:grid-cols-2"><Signature label="TESTUAR NGA / TESTED BY" value={cementBlaine.technicianName || report.draftedBy} /><Signature label="PËRGJEGJËSI I LABORATORIT / HEAD OF LABORATORY" value={headOfLabName(cementBlaine.checkedBy)} /></div>
-    </section>
+
+      <table className="official-table cement-table mt-3 w-full border-collapse text-center text-[9pt]">
+        <thead>
+          <tr>
+            <th>Nr.<br /><span>No.</span></th>
+            <th>Parametri<br /><span>Parameter</span></th>
+            <th>Njësia<br /><span>Unit</span></th>
+            <th>Rezultati<br /><span>Result</span></th>
+            <th>Pasiguria<br /><span>Uncertainty</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td className="text-left">Sipërfaqja specifike (Blaine) / <span>Specific surface area (Blaine)</span></td>
+            <td>cm²/g</td>
+            <td>{cementBlaine.specificSurfaceCm2G}</td>
+            <td>80</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td className="text-left">Densiteti i çimentos / <span>Cement density</span></td>
+            <td>g/cm³</td>
+            <td>{density ?? ""}</td>
+            <td>-</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td className="text-left">Vëllimi i shtratit / <span>Bed volume</span></td>
+            <td>cm³</td>
+            <td>{bedVolume ?? ""}</td>
+            <td>-</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td className="text-left">Konstantja K / <span>Constant K</span></td>
+            <td>-</td>
+            <td>{constantK ?? ""}</td>
+            <td>-</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <OfficialAsterisk />
+      <OfficialNotesAndFooter notes={cementBlaine.notes} testedBy={cementBlaine.technicianName || report.draftedBy} responsible={cementBlaine.checkedBy} issueDate={issueDate} />
+    </OfficialReportShell>
   );
 }
 
