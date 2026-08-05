@@ -286,6 +286,31 @@ textarea {
   height: 0.5cm;
 }
 
+/* Mortar report tables: uniform single-stroke grid lines + vertical centering,
+   so the html2canvas export doesn't double the internal borders or cut text. */
+.mortar-report table {
+  border-top: 1px solid #000;
+  border-left: 1px solid #000;
+}
+
+.mortar-report table th,
+.mortar-report table td {
+  border: 0 solid #000 !important;
+  border-right-width: 1px !important;
+  border-bottom-width: 1px !important;
+  vertical-align: middle !important;
+  padding: 3px !important;
+  line-height: 1.2 !important;
+}
+
+.mortar-report table tbody tr {
+  height: 0.62cm;
+}
+
+.mortar-report table thead tr {
+  height: 0.42cm;
+}
+
 .report-table {
   width: 100%;
   table-layout: fixed;
@@ -463,6 +488,23 @@ textarea {
   line-height: 1.15 !important;
 }
 
+/* Mortar report — PDF capture layout (html2canvas path). Mirrors the mortar
+   @media print box so the stored PDF is a full-size single A4 page. */
+.mortar-report.pdf-capture {
+  width: 210mm !important;
+  max-width: 210mm !important;
+  height: 296mm !important;
+  min-height: 0 !important;
+  margin: 0 auto !important;
+  padding: 7mm 11mm 4mm !important;
+  overflow: hidden !important;
+  transform: none !important;
+  box-sizing: border-box !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
 /* Official report family — PDF capture layout (html2canvas path).
    KEEP IN SYNC with the ".official-report" rules inside @media print. */
 .official-report.pdf-capture {
@@ -543,18 +585,20 @@ textarea {
     font-size: 12pt !important;
   }
 
+  /* Mortar report: clean single A4 page (no transform/oversized-width). The
+     footer is absolutely pinned inside the report markup, so a fixed 296mm box
+     keeps it at the foot of the sheet on one page. */
   .mortar-report {
-    width: 244mm !important;
-    max-width: 244mm !important;
-    height: 325mm !important;
+    width: 210mm !important;
+    max-width: 210mm !important;
+    height: 296mm !important;
     min-height: 0 !important;
     margin: 0 auto !important;
-    padding: 8mm 14mm 5mm !important;
+    padding: 7mm 11mm 4mm !important;
     overflow: hidden !important;
-    transform: scale(0.86);
-    transform-origin: top left;
+    transform: none !important;
+    box-sizing: border-box !important;
     font-family: "Times New Roman", Times, serif !important;
-    font-size: 12pt !important;
   }
 
   /* Official report family (asphalt, concrete water/flexural/density/indirect,
