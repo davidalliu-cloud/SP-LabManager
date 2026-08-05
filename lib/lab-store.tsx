@@ -3467,12 +3467,18 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           const draft: LabState = {
             ...previous,
             procedureRevisions: previous.procedureRevisions.map((row) =>
-              row.id === revisionId ? { ...row, status: "In Review" as const, reviewedBy: "u-chief" } : row
+              row.id === revisionId ? { ...row, status: "In Review" as const } : row
             ),
             notifications: [...previous.notifications],
             auditLog: [...previous.auditLog]
           };
-          addNotification(draft, "u-chief", "SOP pending review", `${procedure.code} revision ${revision.revision} is ready for review.`, undefined);
+          addRoleNotification(
+            draft,
+            previous.users,
+            ["Admin / Managing Director", "Chief of Lab"],
+            "SOP pending review",
+            `${procedure.code} revision ${revision.revision} is ready for review.`
+          );
           addAudit(draft, "procedure_revision_submitted", "procedure_revision", revisionId, `${procedure.code} revision ${revision.revision} submitted for review.`);
           return draft;
         });
