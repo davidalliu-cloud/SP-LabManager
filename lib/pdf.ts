@@ -3,13 +3,41 @@ import { createSupabaseBrowserClient } from "./supabase/client";
 const A4_WIDTH_MM = 210;
 const A4_HEIGHT_MM = 297;
 
+function collectPrintOnlyCss(): string {
+  let css = "";
+  for (const sheet of Array.from(document.styleSheets)) {
+    let rules: CSSRuleList;
+    try {
+      rules = sheet.cssRules;
+    } catch {
+      continue;
+    }
+    for (const rule of Array.from(rules)) {
+      if (rule instanceof CSSMediaRule && Array.from(rule.media).includes("print")) {
+        for (const inner of Array.from(rule.cssRules)) css += inner.cssText + "\n";
+      }
+    }
+  }
+  return css;
+}
+
 async function renderElementToPdfBlob(element: HTMLElement): Promise<Blob> {
   const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
+
+  // html2canvas captures the DOM in its normal on-screen (non-print) state, so the
+  // @media print rules that make reports fit one page never apply unless we force them
+  // into the cloned document html2canvas actually renders from.
+  const printOnlyCss = collectPrintOnlyCss();
 
   const canvas = await html2canvas(element, {
     scale: 2,
     useCORS: true,
-    backgroundColor: "#ffffff"
+    backgroundColor: "#ffffff",
+    onclone: (clonedDocument) => {
+      const style = clonedDocument.createElement("style");
+      style.textContent = printOnlyCss;
+      clonedDocument.head.appendChild(style);
+    }
   });
 
   const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });

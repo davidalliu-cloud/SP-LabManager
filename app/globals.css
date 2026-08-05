@@ -338,7 +338,6 @@ textarea {
     margin: 0 auto !important;
     padding: 8mm 14mm 5mm !important;
     overflow: hidden !important;
-    zoom: 1;
     font-family: "Times New Roman", Times, serif !important;
     font-size: 12pt !important;
   }
@@ -351,7 +350,8 @@ textarea {
     margin: 0 auto !important;
     padding: 8mm 14mm 5mm !important;
     overflow: hidden !important;
-    zoom: 0.86;
+    transform: scale(0.86);
+    transform-origin: top left;
     font-family: "Times New Roman", Times, serif !important;
     font-size: 12pt !important;
   }
@@ -363,7 +363,8 @@ textarea {
     min-height: 0 !important;
     margin: 8mm auto -95mm !important;
     overflow: hidden !important;
-    zoom: 0.76;
+    transform: scale(0.76);
+    transform-origin: top left;
     font-family: "Times New Roman", Times, serif !important;
     font-size: 12pt !important;
   }
@@ -395,7 +396,8 @@ textarea {
     min-height: 0 !important;
     margin: 8mm auto -95mm !important;
     overflow: hidden !important;
-    zoom: 0.76;
+    transform: scale(0.76);
+    transform-origin: top left;
     font-family: "Times New Roman", Times, serif !important;
     font-size: 10pt !important;
   }
@@ -428,7 +430,8 @@ textarea {
     margin: 8mm auto -95mm !important;
     padding: 8mm 14mm 5mm !important;
     overflow: hidden !important;
-    zoom: 0.76;
+    transform: scale(0.76);
+    transform-origin: top left;
     font-family: "Times New Roman", Times, serif !important;
     font-size: 12pt !important;
   }
