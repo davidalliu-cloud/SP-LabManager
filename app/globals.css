@@ -722,6 +722,6 @@ textarea {
   }
 
   .btn-secondary {
-    @apply rounded-md border border-line bg-white px-5 py-2.5 text-sm font-semibold text-ink transition hover:border-lab-burgundy hover:text-lab-burgundy;
+    @apply rounded-md border border-line bg-white px-5 py-2.5 text-sm font-semibold text-ink transition hover:border-lab-burgundy hover:bg-lab-burgundy hover:text-white;
   }
 }

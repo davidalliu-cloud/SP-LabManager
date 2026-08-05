@@ -71,8 +71,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 href={href}
                 className={`mb-1 flex min-h-11 items-center border-l-2 px-4 text-sm font-medium transition ${
                   active
-                    ? "border-lab-burgundy bg-lab-burgundy/5 text-lab-burgundy font-semibold"
-                    : "border-transparent text-ink hover:bg-[#FAFAFA] hover:text-lab-burgundy"
+                    ? "border-lab-burgundy bg-lab-burgundy/5 text-lab-burgundy font-semibold hover:bg-lab-burgundy hover:text-white"
+                    : "border-transparent text-ink hover:bg-lab-burgundy hover:text-white"
                 }`}
               >
                 {t(label)}
@@ -99,7 +99,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <button
                   type="button"
                   onClick={() => auth.signOut()}
-                  className="rounded-md border border-line bg-white px-3 py-2 text-xs font-semibold text-ink transition hover:border-lab-burgundy hover:text-lab-burgundy"
+                  className="rounded-md border border-line bg-white px-3 py-2 text-xs font-semibold text-ink transition hover:border-lab-burgundy hover:bg-lab-burgundy hover:text-white"
                 >
                   Dil
                 </button>
