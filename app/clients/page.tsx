@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { SimpleTable } from "@/components/ui/simple-table";
@@ -70,6 +70,7 @@ export default function ClientsPage() {
   const [selectedErpId, setSelectedErpId] = useState("");
   const [clientDraft, setClientDraft] = useState<ClientDraft>(emptyClientDraft);
   const [deleteMessage, setDeleteMessage] = useState("");
+  const router = useRouter();
 
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
   const canViewClients = canViewClientIdentity(currentUser?.role);
@@ -289,11 +290,13 @@ export default function ClientsPage() {
             {sortedClients.map((client) => {
               const project = store.projects.find((item) => item.clientId === client.id);
               return (
-                <tr key={client.id}>
+                <tr
+                  key={client.id}
+                  onClick={() => router.push(`/clients/${client.id}`)}
+                  className="group cursor-pointer transition-colors hover:bg-lab-burgundy hover:text-white"
+                >
                   <td className="px-4 py-3 font-semibold">
-                    <Link href={`/clients/${client.id}`} className="text-lab-burgundy hover:text-lab-purple hover:underline">
-                      {client.clientCode}
-                    </Link>
+                    <span className="text-lab-burgundy underline group-hover:text-white">{client.clientCode}</span>
                   </td>
                   <td className="px-4 py-3">{client.clientName}</td>
                   <td className="px-4 py-3">{project?.projectName ?? "-"}</td>
@@ -307,14 +310,20 @@ export default function ClientsPage() {
                       <div className="flex flex-col gap-1">
                         <button
                           type="button"
-                          onClick={() => editClient(client.id)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            editClient(client.id);
+                          }}
                           className="rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700 transition hover:border-blue-400 hover:bg-blue-100"
                         >
                           Ndrysho
                         </button>
                         <button
                           type="button"
-                          onClick={() => deleteClient(client.id)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            deleteClient(client.id);
+                          }}
                           className="rounded-md border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700 transition hover:border-red-400 hover:bg-red-100"
                         >
                           Fshi
