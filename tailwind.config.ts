@@ -5,14 +5,19 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: "#1A1A1A",
+        ink: "#373455",
         muted: "#666666",
         line: "#E3E3E3",
+        brand: {
+          risk: "#FFBD59",
+          late: "#FF5757",
+          green: "#10BB82"
+        },
         lab: {
           navy: "#373455",
           blue: "#777DA7",
           cyan: "#6BAEAD",
-          green: "#317A65",
+          green: "#10BB82",
           amber: "#9A6A24",
           red: "#A23146",
           purple: "#7B1E7A",

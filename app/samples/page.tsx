@@ -80,8 +80,8 @@ export default function SamplesPage() {
         />
       </div>
       <div className="mb-4 flex flex-wrap items-center gap-4 text-xs text-ink">
-        <span className="inline-flex items-center gap-2"><span className="h-3 w-5 rounded-sm border border-red-300 bg-red-200" /> Vonuar / Late</span>
-        <span className="inline-flex items-center gap-2"><span className="h-3 w-5 rounded-sm border border-amber-300 bg-amber-200" /> Në rrezik / At risk</span>
+        <span className="inline-flex items-center gap-2"><span className="h-3 w-5 rounded-sm border border-[#ff3d3d] bg-brand-late" /> Vonuar / Late</span>
+        <span className="inline-flex items-center gap-2"><span className="h-3 w-5 rounded-sm border border-[#f0a93a] bg-brand-risk" /> Në rrezik / At risk</span>
         <span className="inline-flex items-center gap-2"><span className="h-3 w-5 rounded-sm border border-line bg-white" /> Në kohë / On time</span>
       </div>
       <div className="surface-card overflow-hidden">
@@ -123,7 +123,7 @@ export default function SamplesPage() {
                 const risk = !sampleDone && !late && (activeTests.length
                   ? activeTests.some((item) => isApproaching(item.requiredTestDate))
                   : isApproaching(sample.requiredTestDate));
-                const rowClass = late ? "bg-red-200 hover:bg-red-300" : risk ? "bg-amber-200 hover:bg-amber-300" : "hover:bg-lab-mist/60";
+                const rowClass = late ? "bg-brand-late hover:bg-[#ff3d3d]" : risk ? "bg-brand-risk hover:bg-[#f5ad3d]" : "hover:bg-lab-mist/60";
                 return (
                   <tr key={sample.id} className={`transition-colors ${rowClass}`}>
                     <td className="px-4 py-3 font-semibold text-ink">{sample.sampleCode}</td>

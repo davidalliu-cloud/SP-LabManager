@@ -57,8 +57,8 @@ export default function TestsPage() {
 
       {/* Legend explaining the row colours. */}
       <div className="mb-4 flex flex-wrap items-center gap-4 text-xs text-ink">
-        <span className="inline-flex items-center gap-2"><span className="h-3 w-5 rounded-sm border border-red-300 bg-red-200" /> Vonuar / Late</span>
-        <span className="inline-flex items-center gap-2"><span className="h-3 w-5 rounded-sm border border-amber-300 bg-amber-200" /> Në rrezik / At risk</span>
+        <span className="inline-flex items-center gap-2"><span className="h-3 w-5 rounded-sm border border-[#ff3d3d] bg-brand-late" /> Vonuar / Late</span>
+        <span className="inline-flex items-center gap-2"><span className="h-3 w-5 rounded-sm border border-[#f0a93a] bg-brand-risk" /> Në rrezik / At risk</span>
         <span className="inline-flex items-center gap-2"><span className="h-3 w-5 rounded-sm border border-line bg-white" /> Në kohë / On time</span>
       </div>
 
@@ -84,9 +84,9 @@ export default function TestsPage() {
             <tbody className="divide-y divide-line">
               {rows.map(({ test, sample, technician, late, risk, number, clientLabel, projectLabel }) => {
                 const rowClass = late
-                  ? "bg-red-200 hover:bg-red-300"
+                  ? "bg-brand-late hover:bg-[#ff3d3d]"
                   : risk
-                    ? "bg-amber-200 hover:bg-amber-300"
+                    ? "bg-brand-risk hover:bg-[#f5ad3d]"
                     : "bg-white hover:bg-slate-100";
                 const unitLabel = sample?.sampleType.includes("Rebar") || sample?.sampleType.includes("Shufër Çeliku") ? "mostra" : t("test.cubes");
                 const batchLabel = test.scheduledAgeDays ? `${test.cubeCount} ${unitLabel} / ${test.scheduledAgeDays}d` : `${test.cubeCount} ${unitLabel}`;

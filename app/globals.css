@@ -9,7 +9,7 @@
   --app-sand: #ece1d1;
   --app-paper: rgba(255, 255, 255, 0.96);
   --app-burgundy: #5b193f;
-  --app-ink: #1f1a1c;
+  --app-ink: #373455;
   --app-olive: #7c7d4e;
   --app-gold: #d8a13b;
   --app-cyan: #6baead;
@@ -214,6 +214,13 @@ textarea {
 .print-surface > :not(header),
 .print-surface > :not(header) * {
   font-weight: 400 !important;
+}
+
+/* The app UI text uses the brand colour (ink = #373455), but printed reports are
+   official documents that should stay pure black. Keep any report text that uses
+   the ink token black. */
+.print-surface .text-ink {
+  color: #000 !important;
 }
 
 /* Concrete cube tables: centre cell text vertically and give every row type a
@@ -821,7 +828,7 @@ textarea {
   }
 
   .btn-success {
-    @apply rounded-md bg-lab-green px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-800/20;
+    @apply rounded-md bg-brand-green px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0e9d6e] focus:outline-none focus:ring-2 focus:ring-brand-green/20;
   }
 
   .btn-secondary {
