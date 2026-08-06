@@ -1056,7 +1056,11 @@ function mergeWithInitialState(saved: Partial<LabState>): LabState {
     users: saved.users ?? initialState.users,
     clients: saved.clients ?? initialState.clients,
     projects: saved.projects ?? initialState.projects,
-    samples: saved.samples ?? initialState.samples,
+    // Migrate existing samples to the current stage naming: the old initial
+    // status "Pending Acceptance" is now "Registered". Idempotent on every load.
+    samples: (saved.samples ?? initialState.samples).map((sample) =>
+      sample.status === "Pending Acceptance" ? { ...sample, status: "Registered" as const } : sample
+    ),
     tests: saved.tests ?? initialState.tests,
     concreteTests: saved.concreteTests ?? initialState.concreteTests,
     concreteWaterPenetrationTests: saved.concreteWaterPenetrationTests ?? initialState.concreteWaterPenetrationTests,
