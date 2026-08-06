@@ -8,7 +8,11 @@ import { SortableTh, sortRows, useSort } from "@/components/ui/sortable-header";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { useI18n } from "@/lib/i18n";
 import { useLabStore } from "@/lib/lab-store";
+import { isApproaching, isOverdue } from "@/lib/status";
 import { canDeleteSamples, canViewClientIdentity } from "@/lib/permissions";
+import type { TestStatus } from "@/lib/types";
+
+const FINISHED_TEST_STATUSES: TestStatus[] = ["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"];
 
 export default function SamplesPage() {
   const store = useLabStore();
@@ -75,6 +79,11 @@ export default function SamplesPage() {
           className="input"
         />
       </div>
+      <div className="mb-4 flex flex-wrap items-center gap-4 text-xs text-ink">
+        <span className="inline-flex items-center gap-2"><span className="h-3 w-5 rounded-sm border border-red-300 bg-red-200" /> Vonuar / Late</span>
+        <span className="inline-flex items-center gap-2"><span className="h-3 w-5 rounded-sm border border-amber-300 bg-amber-200" /> Në rrezik / At risk</span>
+        <span className="inline-flex items-center gap-2"><span className="h-3 w-5 rounded-sm border border-line bg-white" /> Në kohë / On time</span>
+      </div>
       <div className="surface-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1100px] text-left text-sm">
@@ -104,8 +113,19 @@ export default function SamplesPage() {
                 const schedule = sampleTests
                   .map((item) => `${item.scheduledAgeDays}d: ${item.cubeCount} mostra (${formatEuropeanDate(item.requiredTestDate)})`)
                   .join("; ") || sample.testSchedules?.map((item) => `${item.ageDays || "-"}d: ${item.cubeCount} mostra (${formatEuropeanDate(item.requiredTestDate)})`).join("; ");
+                // Overdue overlay (same rule as the Tests page): late = an unfinished
+                // test past its deadline; at-risk = due within 3 days.
+                const sampleDone = sample.status === "Completed";
+                const activeTests = sampleTests.filter((item) => !FINISHED_TEST_STATUSES.includes(item.status));
+                const late = !sampleDone && (activeTests.length
+                  ? activeTests.some((item) => isOverdue(item.requiredTestDate, item.status))
+                  : isOverdue(sample.requiredTestDate, "Pending"));
+                const risk = !sampleDone && !late && (activeTests.length
+                  ? activeTests.some((item) => isApproaching(item.requiredTestDate))
+                  : isApproaching(sample.requiredTestDate));
+                const rowClass = late ? "bg-red-200 hover:bg-red-300" : risk ? "bg-amber-200 hover:bg-amber-300" : "hover:bg-lab-mist/60";
                 return (
-                  <tr key={sample.id} className="hover:bg-lab-mist/60">
+                  <tr key={sample.id} className={`transition-colors ${rowClass}`}>
                     <td className="px-4 py-3 font-semibold text-ink">{sample.sampleCode}</td>
                     <td className="px-4 py-3">{formatEuropeanDate(sample.dateReceived)}</td>
                     <td className="px-4 py-3 font-semibold text-ink">{store.clients.find((item) => item.id === sample.clientId)?.clientCode ?? "Në pritje"}</td>

@@ -1874,7 +1874,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             standard: input.standard,
             requiredTestDate: input.requiredTestDate,
             reportDueDate: input.reportDueDate,
-            status: "Pending Acceptance",
+            status: "Registered",
             assignedTechnician: input.assignedTechnician,
             testSchedules: schedules,
             notes: input.notes,
