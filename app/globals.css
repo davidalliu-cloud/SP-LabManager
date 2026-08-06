@@ -311,6 +311,32 @@ textarea {
   height: 0.42cm;
 }
 
+/* Aggregate gradation report: uniform single-stroke grid lines + centred,
+   roomier rows for the sieve table (same html2canvas fix as the mortar table).
+   The chart is an SVG and is unaffected. */
+.aggregate-gradation-report table {
+  border-top: 1px solid #000;
+  border-left: 1px solid #000;
+}
+
+.aggregate-gradation-report table th,
+.aggregate-gradation-report table td {
+  border: 0 solid #000 !important;
+  border-right-width: 1px !important;
+  border-bottom-width: 1px !important;
+  vertical-align: middle !important;
+  padding: 3px !important;
+  line-height: 1.2 !important;
+}
+
+.aggregate-gradation-report table tbody tr {
+  height: 0.52cm;
+}
+
+.aggregate-gradation-report table thead tr {
+  height: 0.42cm;
+}
+
 .report-table {
   width: 100%;
   table-layout: fixed;
@@ -504,6 +530,12 @@ textarea {
   box-shadow: none !important;
   border-radius: 0 !important;
 }
+
+/* NOTE: the aggregate gradation report intentionally has NO `.pdf-capture`
+   mirror. html2canvas fails to rasterise its SVG grading chart when the section
+   is re-laid-out in a forced A4 box, so for the "Gjenero dhe ruaj PDF" path we
+   let it capture at its natural on-screen size (already ~210x264mm, one page)
+   where the chart renders correctly. */
 
 /* Official report family — PDF capture layout (html2canvas path).
    KEEP IN SYNC with the ".official-report" rules inside @media print. */
