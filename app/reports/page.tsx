@@ -13,8 +13,8 @@ const reportStatusLabels: Record<Exclude<ReportStatus, "Draft">, string> = {
   "Pending Approval": "Në pritje miratimi",
   Approved: "Miratuar",
   Rejected: "Refuzuar",
-  Issued: "Lëshuar",
-  "Sent to Client": "Dërguar Klientit"
+  Issued: "Raporti i lëshuar",
+  "Sent to Client": "Dërguar klientit"
 };
 
 export default function ReportsPage() {
@@ -110,7 +110,7 @@ export default function ReportsPage() {
     ].join("\n");
     window.location.href = `mailto:${encodeURIComponent(selectedEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     store.sendReportsToClient(reportIds, selectedEmail, `Dërguar me email: ${reportNumbers.join(", ")}`);
-    setSendMessage(`${reportNumbers.length} raport${reportNumbers.length === 1 ? "" : "e"} u shënuan si Dërguar Klientit për ${selectedEmail}.`);
+    setSendMessage(`${reportNumbers.length} raport${reportNumbers.length === 1 ? "" : "e"} u shënuan si Dërguar klientit për ${selectedEmail}.`);
     setSelectedReportIds([]);
   }
 

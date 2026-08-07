@@ -173,7 +173,7 @@ export default function ReportDetailPage() {
               >
                 Dërgo te klienti
               </button>
-              <p className="text-xs text-muted">Ky veprim lejohet vetëm pas statusit Miratuar dhe e ndryshon statusin në Dërguar Klientit.</p>
+              <p className="text-xs text-muted">Ky veprim lejohet vetëm pas statusit Miratuar dhe e ndryshon statusin në Dërguar klientit.</p>
             </div>
           </div>
           {activeReport.rejectionComments ? (

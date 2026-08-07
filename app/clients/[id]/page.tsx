@@ -20,8 +20,8 @@ const reportStatusLabels: Record<ReportStatus | "No Report", string> = {
   "Pending Approval": "Në pritje miratimi",
   Approved: "Miratuar",
   Rejected: "Refuzuar",
-  Issued: "Lëshuar",
-  "Sent to Client": "Dërguar Klientit",
+  Issued: "Raporti i lëshuar",
+  "Sent to Client": "Dërguar klientit",
   "No Report": "Pa raport"
 };
 

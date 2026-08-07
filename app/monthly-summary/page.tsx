@@ -31,11 +31,11 @@ export default function MonthlySummaryPage() {
     tests: store.tests.filter((test) => test.clientId === client.id).length
   }));
   const byStatus = [
-    { value: "Completed", label: "Përfunduar" },
+    { value: "Completed", label: "Testuar / Përfunduar" },
     { value: "Report Drafted", label: "Raport i përgatitur" },
     { value: "Pending Approval", label: "Në pritje miratimi" },
     { value: "Approved", label: "Miratuar" },
-    { value: "Sent to Client", label: "Dërguar Klientit" }
+    { value: "Sent to Client", label: "Dërguar klientit" }
   ].map((status) => ({
     name: status.label,
     reports: store.reports.filter((report) => status.value === "Sent to Client" ? ["Sent to Client", "Issued"].includes(report.reportStatus) : report.reportStatus === status.value).length
