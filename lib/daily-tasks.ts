@@ -187,7 +187,10 @@ export function computeReportTasks(state: Partial<LabState>, today: string): Rep
     } else if (report.reportStatus === "Pending Approval") {
       toApprove.push({ ...base, person: nameOf(report.checkedBy || report.draftedBy), note: "Në pritje miratimi / Awaiting approval" });
     } else if (report.reportStatus === "Approved") {
-      toSend.push({ ...base, person: nameOf(report.approvedBy), note: "Miratuar – gati për dërgim / Approved – ready to send" });
+      // Sending to the client follows the client's own schedule (weekly, monthly,
+      // or as soon as ready) rather than the internal report due date, so this
+      // bucket is a plain count/list and never flagged overdue.
+      toSend.push({ ...base, overdue: false, person: nameOf(report.approvedBy), note: "Miratuar – gati për dërgim / Approved – ready to send" });
     }
   }
 
