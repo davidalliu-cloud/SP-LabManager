@@ -148,7 +148,7 @@ textarea {
   .simple-report table.text-sm,
   .simple-report table.text-sm th,
   .simple-report table.text-sm td {
-    font-size: 7.5pt !important;
+    font-size: 7.1pt !important;
     line-height: 1.15 !important;
     padding: 2px 4px !important;
   }
@@ -188,7 +188,7 @@ textarea {
   }
 
   .simple-report .text-xs {
-    font-size: 7.5pt !important;
+    font-size: 7.1pt !important;
   }
 
   .simple-report .text-sm {
@@ -506,9 +506,13 @@ textarea {
   vertical-align: middle !important;
 }
 
+.concrete-cube-report.pdf-capture .report-signatures {
+  margin-top: auto !important;
+}
+
 .concrete-cube-report.pdf-capture .report-disclaimers {
   position: static !important;
-  margin-top: auto !important;
+  margin-top: 8px !important;
 }
 
 .concrete-cube-report.pdf-capture .report-issue-date,
@@ -538,6 +542,16 @@ textarea {
   border-radius: 0 !important;
 }
 
+/* Pin the signature/legal/issue/address block to the foot of the sheet so the
+   tester + lab-responsible names (with signing space) sit just above the
+   address footer. Left/right match the section's horizontal padding. */
+.mortar-report.pdf-capture .mortar-footer-cluster {
+  position: absolute !important;
+  left: 11mm !important;
+  right: 11mm !important;
+  bottom: 3mm !important;
+}
+
 /* NOTE: the aggregate gradation report intentionally has NO `.pdf-capture`
    mirror. html2canvas fails to rasterise its SVG grading chart when the section
    is re-laid-out in a forced A4 box, so for the "Gjenero dhe ruaj PDF" path we
@@ -559,11 +573,9 @@ textarea {
   border: 0 !important;
   box-shadow: none !important;
   border-radius: 0 !important;
-  display: flex !important;
-  flex-direction: column !important;
   font-family: "Times New Roman", Times, serif !important;
-  font-size: 7.9pt !important;
-  line-height: 1.08 !important;
+  font-size: 7.1pt !important;
+  line-height: 1.15 !important;
 }
 
 .official-report.pdf-capture > * {
@@ -575,7 +587,8 @@ textarea {
 }
 
 .official-report.pdf-capture .official-table {
-  font-size: 7.8pt !important;
+  font-size: 7.1pt !important;
+  line-height: 1.06 !important;
 }
 
 .official-report.pdf-capture .official-table th,
@@ -583,15 +596,12 @@ textarea {
   padding: 1.5px 4px !important;
 }
 
-.official-report.pdf-capture .official-disclaimers {
-  position: static !important;
-  margin-top: auto !important;
-}
-
-.official-report.pdf-capture .official-issue-date,
-.official-report.pdf-capture .official-footer {
-  position: static !important;
-  margin-top: 4px !important;
+.official-report.pdf-capture .official-footer-cluster {
+  position: absolute !important;
+  left: 9mm !important;
+  right: 9mm !important;
+  bottom: 3mm !important;
+  margin: 0 !important;
 }
 
 @media print {
@@ -605,7 +615,7 @@ textarea {
   }
 
   .compact-official-report .official-table {
-    font-size: 8pt !important;
+    font-size: 7.8pt !important;
   }
 
   .compact-official-report .table-head {
@@ -624,9 +634,19 @@ textarea {
     font-size: 12pt !important;
   }
 
+  /* Pin the signature/legal/issue/address cluster to the foot of the sheet so
+     the tester + lab-responsible names (with signing space) sit just above the
+     address footer. Left/right match the section's horizontal padding. */
+  .aggregate-gradation-report .gradation-footer-cluster {
+    position: absolute !important;
+    left: 14mm !important;
+    right: 14mm !important;
+    bottom: 2mm !important;
+  }
+
   /* Mortar report: clean single A4 page (no transform/oversized-width). The
-     footer is absolutely pinned inside the report markup, so a fixed 296mm box
-     keeps it at the foot of the sheet on one page. */
+     signature/legal/address cluster is absolutely pinned inside the report
+     markup, so a fixed 296mm box keeps it at the foot of the sheet on one page. */
   .mortar-report {
     width: 210mm !important;
     max-width: 210mm !important;
@@ -638,6 +658,13 @@ textarea {
     transform: none !important;
     box-sizing: border-box !important;
     font-family: "Times New Roman", Times, serif !important;
+  }
+
+  .mortar-report .mortar-footer-cluster {
+    position: absolute !important;
+    left: 11mm !important;
+    right: 11mm !important;
+    bottom: 3mm !important;
   }
 
   /* Official report family (asphalt, concrete water/flexural/density/indirect,
@@ -653,11 +680,9 @@ textarea {
     overflow: hidden !important;
     transform: none !important;
     box-sizing: border-box !important;
-    display: flex !important;
-    flex-direction: column !important;
     font-family: "Times New Roman", Times, serif !important;
-    font-size: 7.9pt !important;
-    line-height: 1.08 !important;
+    font-size: 7.1pt !important;
+    line-height: 1.15 !important;
   }
 
   /* Uniformly tighten the spacing between the report's stacked sections. */
@@ -670,7 +695,8 @@ textarea {
   }
 
   .official-report .official-table {
-    font-size: 7.8pt !important;
+    font-size: 7.1pt !important;
+    line-height: 1.06 !important;
   }
 
   .official-report .official-table th,
@@ -678,15 +704,16 @@ textarea {
     padding: 1.5px 4px !important;
   }
 
-  .official-report .official-disclaimers {
-    position: static !important;
-    margin-top: auto !important;
-  }
-
-  .official-report .official-issue-date,
-  .official-report .official-footer {
-    position: static !important;
-    margin-top: 4px !important;
+  /* Fix the whole bottom cluster at the foot of the sheet: the signatures (with
+     signing space) sit above the disclaimers, issue date and the address footer,
+     all stacked in normal flow inside one pinned container so they never overlap.
+     The content above simply flows in above the cluster. */
+  .official-report .official-footer-cluster {
+    position: absolute !important;
+    left: 9mm !important;
+    right: 9mm !important;
+    bottom: 3mm !important;
+    margin: 0 !important;
   }
 
   /* Concrete cube report: a single, naturally-flowing A4 page. No transform,
@@ -744,9 +771,13 @@ textarea {
   /* Footer sections flow with the document. The legal/issue-date/footer block
      is pushed to the bottom of the page (flex-column auto margin) so the SARP
      & LAB footer sits at the foot of the sheet. */
+  .concrete-cube-report .report-signatures {
+    margin-top: auto !important;
+  }
+
   .concrete-cube-report .report-disclaimers {
     position: static !important;
-    margin-top: auto !important;
+    margin-top: 8px !important;
   }
 
   .concrete-cube-report .report-issue-date,
@@ -786,7 +817,7 @@ textarea {
   }
 
   .concrete-core-report .official-table {
-    font-size: 8pt !important;
+    font-size: 7.8pt !important;
   }
 
   .concrete-core-report .official-table th,
@@ -794,9 +825,13 @@ textarea {
     padding: 1.5px 4px !important;
   }
 
+  .concrete-core-report .report-signatures {
+    margin-top: auto !important;
+  }
+
   .concrete-core-report .report-disclaimers {
     position: static !important;
-    margin-top: auto !important;
+    margin-top: 8px !important;
   }
 
   .concrete-core-report .report-issue-date,

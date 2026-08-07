@@ -131,7 +131,7 @@ export function OfficialReportShell({
           <img src="/brand/sarp-logo.png" alt="SARP" className="mt-1 h-auto w-[112px]" />
           <div className="pt-3 text-center">
             <div className="text-[15pt] font-bold uppercase leading-tight">{title}</div>
-            <div className="mt-5 text-[10pt] font-bold text-red-600">Nr. / No. {report.reportNumber}</div>
+            <div className="mt-2 text-[10pt] font-bold text-red-600">Nr. / No. {report.reportNumber}</div>
           </div>
           <img src="/brand/da-accreditation.png" alt="DA accreditation LT 069 09 06 21" className="ml-auto mt-1 h-auto w-[88px]" />
         </div>
@@ -147,7 +147,7 @@ export function OfficialReportShell({
 
 export function OfficialMetaGrid({ entries, className = "mt-6" }: { entries: OfficialMetaEntry[]; className?: string }) {
   return (
-    <div className={`${className} grid grid-cols-[315px_1fr] gap-x-8 gap-y-1 text-[10pt] leading-[1.15]`}>
+    <div className={`${className} grid grid-cols-[315px_1fr] gap-x-8 gap-y-0.5 text-[10pt] leading-[1.15]`}>
       {entries.map((entry) => (
         <div className="contents" key={`${entry.sq}-${entry.en}`}>
           <div className="font-bold uppercase">{entry.sq} / <span className="italic font-normal normal-case">{entry.en}</span>:</div>
@@ -203,29 +203,29 @@ export function OfficialNotesAndFooter({
 }) {
   return (
     <>
-      <div className="mt-5 grid grid-cols-[120px_1fr] items-end gap-2 text-[9.5pt]">
+      <div className="mt-4 grid grid-cols-[120px_1fr] items-end gap-2 text-[9.5pt]">
         <div className="pl-14 italic">Shënime / Notes:</div>
         <div className="min-h-4 border-b border-black">{notes}</div>
-        <div />
-        <div className="min-h-4 border-b border-black" />
       </div>
-      <div className="mt-6 grid grid-cols-2 gap-16 text-center text-[9.5pt]">
-        <div><div className="font-bold">TESTUAR NGA / <span className="italic font-normal">TESTED BY</span></div><div className="mt-2 font-bold">{testedBy || "-"}</div></div>
-        <div><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic font-normal">LABORATORY RESPONSIBLE</span></div><div className="mt-2 font-bold">{headOfLabName(responsible)}</div></div>
+      <div className="official-footer-cluster">
+        <div className="official-signatures grid grid-cols-2 gap-16 text-center text-[9.5pt]">
+          <div><div className="font-bold">TESTUAR NGA / <span className="italic font-normal">TESTED BY</span></div><div className="mt-[7mm] font-bold">{testedBy || "-"}</div></div>
+          <div><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic font-normal">LABORATORY RESPONSIBLE</span></div><div className="mt-[7mm] font-bold">{headOfLabName(responsible)}</div></div>
+        </div>
+        <div className="official-disclaimers mt-2 space-y-0.5 text-[7.5pt] leading-tight">
+          <p>Rezultatet në këtë raport testimi i përkasin vetëm mostrës së testuar. / <span className="italic">The results relate only to the items tested.</span></p>
+          <p>Ky raport testimi nuk mund të riprodhohet në mënyrë të pjesshme pa aprovimin me shkrim të laboratorit. / <span className="italic">The test report shall not be reproduced except in full without the written approval of the laboratory.</span></p>
+          <p>Laboratori nuk është përgjegjës për fazën e kampionmarrjes. / <span className="italic">The laboratory is not responsible for the sampling phase.</span></p>
+        </div>
+        <div className="official-issue-date mt-2 grid grid-cols-[285px_150px] items-end gap-4 text-[9pt]">
+          <div>Data e lëshimit të Raportit të Testimit / <span className="italic">Test Report Issue Date:</span></div>
+          <div className="border-b border-black text-center">{formatEuropeanDate(issueDate)}</div>
+        </div>
+        <footer className="official-footer mt-2 text-center text-[6.7pt] leading-tight text-blue-700">
+          <div className="font-bold">SARP &amp; LAB</div>
+          <div>Adresa: Autostrada Tiranë-Durrës, km 29, Fshati Vrrin-Komuna Rrashbull, Durrës Shqipëri. Mob: +355 67 20 22 609; Web: www.sarpandlab.al; Email: d.alliu@sarpandlab.al; NIPT: L 41526502 B</div>
+        </footer>
       </div>
-      <div className="official-disclaimers mt-7 space-y-0.5 text-[7.5pt] leading-tight">
-        <p>Rezultatet në këtë raport testimi i përkasin vetëm mostrës së testuar. / <span className="italic">The results relate only to the items tested.</span></p>
-        <p>Ky raport testimi nuk mund të riprodhohet në mënyrë të pjesshme pa aprovimin me shkrim të laboratorit. / <span className="italic">The test report shall not be reproduced except in full without the written approval of the laboratory.</span></p>
-        <p>Laboratori nuk është përgjegjës për fazën e kampionmarrjes. / <span className="italic">The laboratory is not responsible for the sampling phase.</span></p>
-      </div>
-      <div className="official-issue-date mt-5 grid grid-cols-[285px_150px] items-end gap-4 text-[9pt]">
-        <div>Data e lëshimit të Raportit të Testimit / <span className="italic">Test Report Issue Date:</span></div>
-        <div className="border-b border-black text-center">{formatEuropeanDate(issueDate)}</div>
-      </div>
-      <footer className="official-footer mt-4 text-center text-[6.7pt] leading-tight text-blue-700">
-        <div className="font-bold">SARP &amp; LAB</div>
-        <div>Adresa: Autostrada Tiranë-Durrës, km 29, Fshati Vrrin-Komuna Rrashbull, Durrës Shqipëri. Mob: +355 67 20 22 609; Web: www.sarpandlab.al; Email: d.alliu@sarpandlab.al; NIPT: L 41526502 B</div>
-      </footer>
     </>
   );
 }

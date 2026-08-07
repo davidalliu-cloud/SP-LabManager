@@ -193,26 +193,28 @@ export function AggregateReportPreview({
         <div>Shënime / <span className="italic">Notes</span> :</div>
         <div className="min-h-4 border-b border-black">{aggregate.notes}</div>
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-16 text-center text-[7.2px] leading-tight">
-        <SignatureCompact label="TESTUAR NGA / TESTED BY" value={aggregate.technicianName} />
-        <SignatureCompact label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={headOfLabName(aggregate.checkedBy)} />
-      </div>
+      <div className="gradation-footer-cluster">
+        <div className="mt-3 grid grid-cols-2 gap-16 text-center text-[7.2px] leading-tight">
+          <SignatureCompact label="TESTUAR NGA / TESTED BY" value={aggregate.technicianName} />
+          <SignatureCompact label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={headOfLabName(aggregate.checkedBy)} />
+        </div>
 
-      <div className="mt-4 space-y-0.5 text-[6.4px] leading-tight">
-        <p>Rezultatet në këtë raport testimi i përkasin vetëm mostrës së testuar. / <span className="italic">The results relate only to the items tested.</span></p>
-        <p>Ky raport testimi nuk mund të riprodhohet në mënyrë të pjesshme pa aprovimin me shkrim të laboratorit. / <span className="italic">The test report shall not be reproduced except in full without the written approval of the laboratory.</span></p>
-        <p>Laboratori nuk është përgjegjës për fazën e kampionmarrjes. / <span className="italic">The laboratory is not responsible for the sampling phase.</span></p>
-      </div>
+        <div className="mt-3 space-y-0.5 text-[6.4px] leading-tight">
+          <p>Rezultatet në këtë raport testimi i përkasin vetëm mostrës së testuar. / <span className="italic">The results relate only to the items tested.</span></p>
+          <p>Ky raport testimi nuk mund të riprodhohet në mënyrë të pjesshme pa aprovimin me shkrim të laboratorit. / <span className="italic">The test report shall not be reproduced except in full without the written approval of the laboratory.</span></p>
+          <p>Laboratori nuk është përgjegjës për fazën e kampionmarrjes. / <span className="italic">The laboratory is not responsible for the sampling phase.</span></p>
+        </div>
 
-      <div className="mt-2 grid grid-cols-[250px_160px] items-end gap-4 text-[7px]">
-        <div>Data e Lëshimit të Raportit të Testimit / <span className="italic">Test Report Issue Date:</span></div>
-        <div className="border-b border-black text-center">{formatEuropeanDate(issueDate)}</div>
-      </div>
+        <div className="mt-2 grid grid-cols-[250px_160px] items-end gap-4 text-[7px]">
+          <div>Data e Lëshimit të Raportit të Testimit / <span className="italic">Test Report Issue Date:</span></div>
+          <div className="border-b border-black text-center">{formatEuropeanDate(issueDate)}</div>
+        </div>
 
-      <footer className="absolute bottom-0 left-0 right-0 text-center text-[6.2px] leading-tight text-blue-700">
-        <div className="font-bold text-[#5b193f]">SARP &amp; LAB</div>
-        <div>Adresa: Autostrada Tiranë-Durrës, km 29, Fshati Vrrin-Komuna Rrashbull, Durrës Shqipëri. Mob: +355 67 20 22 609; Web: www.sarpandlab.al; Email: d.alliu@sarpandlab.al; NIPT: L 41526502 B</div>
-      </footer>
+        <footer className="mt-2 text-center text-[6.2px] leading-tight text-blue-700">
+          <div className="font-bold text-[#5b193f]">SARP &amp; LAB</div>
+          <div>Adresa: Autostrada Tiranë-Durrës, km 29, Fshati Vrrin-Komuna Rrashbull, Durrës Shqipëri. Mob: +355 67 20 22 609; Web: www.sarpandlab.al; Email: d.alliu@sarpandlab.al; NIPT: L 41526502 B</div>
+        </footer>
+      </div>
     </section>
   );
 }
@@ -232,7 +234,7 @@ export function SignatureCompact({ label, value }: { label: string; value?: stri
   return (
     <div>
       <div className="font-bold">{label}</div>
-      <div className="mt-2 font-bold">{value || "-"}</div>
+      <div className="mt-[5mm] font-bold">{value || "-"}</div>
     </div>
   );
 }

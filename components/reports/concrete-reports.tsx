@@ -420,9 +420,9 @@ export function ConcreteCoreReportPreview({
         <div className="min-h-4 border-b border-dotted border-black" />
       </div>
 
-      <div className="mt-5 grid grid-cols-2 gap-16 text-center text-[8.8pt]">
-        <div><div className="font-bold">TESTUAR NGA / <span className="italic font-normal">TESTED BY</span></div><div className="mt-2 font-bold">{concreteCore.technicianName || report.draftedBy || "-"}</div></div>
-        <div><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic font-normal">LABORATORY RESPONSIBLE</span></div><div className="mt-2 font-bold">{headOfLabName(concreteCore.checkedBy)}</div></div>
+      <div className="report-signatures mt-5 grid grid-cols-2 gap-16 text-center text-[8.8pt]">
+        <div><div className="font-bold">TESTUAR NGA / <span className="italic font-normal">TESTED BY</span></div><div className="signature-name mt-[9mm] font-bold">{concreteCore.technicianName || report.draftedBy || "-"}</div></div>
+        <div><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic font-normal">LABORATORY RESPONSIBLE</span></div><div className="signature-name mt-[9mm] font-bold">{headOfLabName(concreteCore.checkedBy)}</div></div>
       </div>
 
       <div className="report-disclaimers mt-7 space-y-0.5 text-[7.4pt] leading-tight">

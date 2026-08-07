@@ -370,23 +370,25 @@ export function MortarNotesAndFooter({
         <div />
         <div className="min-h-3 border-b border-black" />
       </div>
-      <div className="mt-4 grid grid-cols-2 gap-16 text-center text-[7.3pt]">
-        <div><div className="font-bold">TESTUESI / <span className="italic font-normal">TESTED BY</span></div><div className="mt-1 font-bold">{testedBy || "Ing./Eng."}</div></div>
-        <div><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic font-normal">LABORATORY RESPONSIBLE</span></div><div className="mt-1 font-bold">{headOfLabName(responsible)}</div></div>
+      <div className="mortar-footer-cluster">
+        <div className="mortar-signatures mt-4 grid grid-cols-2 gap-16 text-center text-[7.3pt]">
+          <div><div className="font-bold">TESTUESI / <span className="italic font-normal">TESTED BY</span></div><div className="mt-[6mm] font-bold">{testedBy || "Ing./Eng."}</div></div>
+          <div><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic font-normal">LABORATORY RESPONSIBLE</span></div><div className="mt-[6mm] font-bold">{headOfLabName(responsible)}</div></div>
+        </div>
+        <div className="mt-3 space-y-0.5 text-[5.7pt] leading-tight">
+          <p>Rezultatet në këtë raport testimi i përkasin vetëm mostrës së testuar. / <span className="italic">The results relate only to the items tested.</span></p>
+          <p>Ky raport testimi nuk mund të riprodhohet në mënyrë të pjesshme pa aprovimin me shkrim të laboratorit. / <span className="italic">The test report shall not be reproduced except in full without the written approval of the laboratory.</span></p>
+          <p>Laboratori nuk është përgjegjës për fazën e kampionmarrjes. / <span className="italic">The laboratory is not responsible for the sampling phase.</span></p>
+        </div>
+        <div className="mt-2 grid grid-cols-[285px_150px] items-end gap-4 text-[7pt]">
+          <div>Data e Lëshimit të Raportit të Testimit / <span className="italic">Test Report Issue Date:</span></div>
+          <div className="border-b border-black text-center">{formatEuropeanDate(issueDate)}</div>
+        </div>
+        <footer className="mt-2 text-center text-[5.8pt] leading-tight text-blue-700">
+          <div className="font-bold text-[#5b193f]">SARP &amp; LAB</div>
+          <div>Adresa: Autostrada Tiranë-Durrës, km 29, Fshati Vrrin-Komuna Rrashbull, Durrës Shqipëri. Mob: +355 67 20 74 511; Web: www.sarpandlab.al; Email: d.alliu@sarpandlab.al; NIPT: L 41526502 B</div>
+        </footer>
       </div>
-      <div className="mt-5 space-y-0.5 text-[5.7pt] leading-tight">
-        <p>Rezultatet në këtë raport testimi i përkasin vetëm mostrës së testuar. / <span className="italic">The results relate only to the items tested.</span></p>
-        <p>Ky raport testimi nuk mund të riprodhohet në mënyrë të pjesshme pa aprovimin me shkrim të laboratorit. / <span className="italic">The test report shall not be reproduced except in full without the written approval of the laboratory.</span></p>
-        <p>Laboratori nuk është përgjegjës për fazën e kampionmarrjes. / <span className="italic">The laboratory is not responsible for the sampling phase.</span></p>
-      </div>
-      <div className="mt-3 grid grid-cols-[285px_150px] items-end gap-4 text-[7pt]">
-        <div>Data e Lëshimit të Raportit të Testimit / <span className="italic">Test Report Issue Date:</span></div>
-        <div className="border-b border-black text-center">{formatEuropeanDate(issueDate)}</div>
-      </div>
-      <footer className="absolute bottom-[2mm] left-0 right-0 text-center text-[5.8pt] leading-tight text-blue-700">
-        <div className="font-bold text-[#5b193f]">SARP &amp; LAB</div>
-        <div>Adresa: Autostrada Tiranë-Durrës, km 29, Fshati Vrrin-Komuna Rrashbull, Durrës Shqipëri. Mob: +355 67 20 74 511; Web: www.sarpandlab.al; Email: d.alliu@sarpandlab.al; NIPT: L 41526502 B</div>
-      </footer>
     </>
   );
 }
