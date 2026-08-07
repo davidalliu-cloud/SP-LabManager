@@ -27,6 +27,11 @@ const translations = {
     "nav.settings": "Settings",
 
     "status.Registered": "Registered",
+    "status.Accepted": "Accepted",
+    "status.In Testing": "In Testing",
+    "status.Tested": "Tested",
+    "status.Report Issued": "Report Issued",
+    "status.Delivered": "Delivered",
     "status.Pending Acceptance": "Pending Acceptance",
     "status.Pending Testing": "Pending Testing",
     "status.In Progress": "In Progress",
@@ -132,6 +137,11 @@ const translations = {
     "nav.settings": "Cilësimet",
 
     "status.Registered": "Regjistruar",
+    "status.Accepted": "Pranuar",
+    "status.In Testing": "Në testim",
+    "status.Tested": "Testuar / Përfunduar",
+    "status.Report Issued": "Raporti i lëshuar",
+    "status.Delivered": "Dërguar klientit",
     "status.Pending Acceptance": "Në pritje pranimi",
     "status.Pending Testing": "Në pritje të testimit",
     "status.In Progress": "Në proces",

@@ -10,7 +10,10 @@ import { useI18n } from "@/lib/i18n";
 import { useLabStore } from "@/lib/lab-store";
 import { isApproaching, isOverdue } from "@/lib/status";
 import { canDeleteSamples, canViewClientIdentity } from "@/lib/permissions";
-import type { TestStatus } from "@/lib/types";
+import { deriveSampleStage, sampleStageIndex } from "@/lib/sample-stage";
+import type { SampleStatus, TestStatus } from "@/lib/types";
+
+const TESTING_COMPLETE_STAGES: SampleStatus[] = ["Tested", "Report Issued", "Delivered"];
 
 const FINISHED_TEST_STATUSES: TestStatus[] = ["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"];
 
@@ -55,7 +58,7 @@ export default function SamplesPage() {
         case "requested": return sample.requestedTestType;
         case "required": return nextTest?.requiredTestDate ?? sample.requiredTestDate;
         case "reportDue": return nextTest?.dueDate ?? sample.reportDueDate;
-        case "status": return sample.status;
+        case "status": return sampleStageIndex(deriveSampleStage(sample, store.tests, store.reports));
         case "technician": return store.users.find((item) => item.id === (nextTest?.assignedTechnician ?? sample.assignedTechnician))?.fullName ?? "";
         case "reportStatus": return report?.reportStatus ?? "";
         default: return sample.sampleCode;
@@ -115,7 +118,8 @@ export default function SamplesPage() {
                   .join("; ") || sample.testSchedules?.map((item) => `${item.ageDays || "-"}d: ${item.cubeCount} mostra (${formatEuropeanDate(item.requiredTestDate)})`).join("; ");
                 // Overdue overlay (same rule as the Tests page): late = an unfinished
                 // test past its deadline; at-risk = due within 3 days.
-                const sampleDone = sample.status === "Completed";
+                const stage = deriveSampleStage(sample, store.tests, store.reports);
+                const sampleDone = TESTING_COMPLETE_STAGES.includes(stage);
                 const activeTests = sampleTests.filter((item) => !FINISHED_TEST_STATUSES.includes(item.status));
                 const late = !sampleDone && (activeTests.length
                   ? activeTests.some((item) => isOverdue(item.requiredTestDate, item.status))
@@ -135,7 +139,7 @@ export default function SamplesPage() {
                     <td className="px-4 py-3">{sample.requestedTestType}</td>
                     <td className="px-4 py-3">{formatEuropeanDate(nextTest?.requiredTestDate ?? sample.requiredTestDate)}</td>
                     <td className="px-4 py-3">{formatEuropeanDate(nextTest?.dueDate ?? sample.reportDueDate)}</td>
-                    <td className="px-4 py-3"><StatusBadge status={sample.status} /></td>
+                    <td className="px-4 py-3"><StatusBadge status={stage} /></td>
                     <td className="px-4 py-3">{store.users.find((item) => item.id === (nextTest?.assignedTechnician ?? sample.assignedTechnician))?.fullName ?? "-"}</td>
                     <td className="px-4 py-3">{report ? <StatusBadge status={report.reportStatus} /> : "-"}</td>
                     <td className="px-3 py-2">

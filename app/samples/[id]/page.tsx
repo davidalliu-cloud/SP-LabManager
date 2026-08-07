@@ -9,6 +9,8 @@ import { SummaryCard } from "@/components/ui/summary-card";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { useLabStore } from "@/lib/lab-store";
 import { canAssignSampleClient, canEditSampleAfterRegistration, canReviewTests, canViewClientIdentity } from "@/lib/permissions";
+import { deriveSampleStage } from "@/lib/sample-stage";
+import { SampleStageStepper } from "@/components/samples/sample-stage-stepper";
 
 export default function SampleDetailPage() {
   const params = useParams<{ id: string }>();
@@ -43,6 +45,7 @@ export default function SampleDetailPage() {
       ? `${plannedCastingDates.map((date) => formatEuropeanDate(date)).join(", ")}`
       : sample.concretingDate;
   const reports = store.reports.filter((item) => item.sampleId === sample.id);
+  const stage = deriveSampleStage(sample, store.tests, store.reports);
   const finishedStatuses = ["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"];
   const completedCubes = tests
     .filter((test) => finishedStatuses.includes(test.status))
@@ -94,8 +97,12 @@ export default function SampleDetailPage() {
       <PageHeader
         title={sample.sampleCode}
         description="Detajet e kampionit, plani i testimit, raportet e lidhura dhe progresi."
-        action={<StatusBadge status={sample.status} />}
+        action={<StatusBadge status={stage} />}
       />
+
+      <div className="mb-5">
+        <SampleStageStepper status={stage} />
+      </div>
 
       <section className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <SummaryCard label="Total kube të pranuara" value={sample.quantity} />

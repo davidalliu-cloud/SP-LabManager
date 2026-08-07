@@ -8,6 +8,7 @@ import { formatEuropeanDate } from "@/lib/date-format";
 import { useI18n } from "@/lib/i18n";
 import { useLabStore } from "@/lib/lab-store";
 import { canViewClientIdentity } from "@/lib/permissions";
+import { deriveSampleStage } from "@/lib/sample-stage";
 import { isApproaching, isOverdue } from "@/lib/status";
 import type { LabTest, Sample } from "@/lib/types";
 
@@ -174,7 +175,7 @@ function WorkflowRow({
   const report = test ? store.reports.find((item) => item.testId === test.id) : undefined;
   const overdue = test ? isOverdue(test.requiredTestDate, test.status) : false;
   const approaching = test ? isApproaching(test.requiredTestDate) : false;
-  const status = test ? (overdue ? "Delayed" : test.status) : sample?.status ?? "Registered";
+  const status = test ? (overdue ? "Delayed" : test.status) : sample ? deriveSampleStage(sample, store.tests, store.reports) : "Registered";
   const unit = sample?.sampleType.includes("Rebar") || sample?.sampleType.includes("Shufër Çeliku") ? "mostra" : "mostra";
   const quantity = test ? `${test.cubeCount} ${unit}${test.scheduledAgeDays ? ` / ${test.scheduledAgeDays} ditë` : ""}` : `${sample?.quantity ?? "-"} ${unit}`;
 

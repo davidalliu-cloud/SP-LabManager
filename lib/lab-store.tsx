@@ -69,8 +69,9 @@ import { useAuth } from "./auth";
 import { officialClientCodes2026 } from "./client-directory";
 import { canAssignSampleClient, canDeleteSamples, canEditSampleAfterRegistration, canEditTestData, canReviewTests, canGenerateReportForTest, canManageClients, canManageEmployees } from "./permissions";
 import { initialState } from "./seed-data";
+import { deriveSampleStage, SAMPLE_STAGES } from "./sample-stage";
 import { createSupabaseBrowserClient } from "./supabase/client";
-import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltMixtureKind, AsphaltReportKind, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabState, LabTest, LabUser, MortarTest, MortarTestKind, Notification, Project, Report, Role, Sample, SteelTensileTest, ThermalInsulationTest } from "./types";
+import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltMixtureKind, AsphaltReportKind, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabState, LabTest, LabUser, MortarTest, MortarTestKind, Notification, Project, Report, Role, Sample, SampleStatus, SteelTensileTest, ThermalInsulationTest } from "./types";
 
 interface NewSampleInput {
   clientId: string;
@@ -1056,11 +1057,30 @@ function mergeWithInitialState(saved: Partial<LabState>): LabState {
     users: saved.users ?? initialState.users,
     clients: saved.clients ?? initialState.clients,
     projects: saved.projects ?? initialState.projects,
-    // Migrate existing samples to the current stage naming: the old initial
-    // status "Pending Acceptance" is now "Registered". Idempotent on every load.
-    samples: (saved.samples ?? initialState.samples).map((sample) =>
-      sample.status === "Pending Acceptance" ? { ...sample, status: "Registered" as const } : sample
-    ),
+    // Re-derive every sample's lifecycle stage from its tests + reports on load.
+    // This both migrates the legacy status names (Pending Testing, In Progress,
+    // Completed, ...) to the agreed stage set and self-heals any stored status
+    // that drifted from the underlying test progress. Samples that have no tests
+    // keep their explicit stage (legacy names are mapped; unknown → Registered).
+    samples: (() => {
+      const rawSamples = saved.samples ?? initialState.samples;
+      const rawTests = saved.tests ?? initialState.tests;
+      const rawReports = saved.reports ?? initialState.reports;
+      const legacy: Record<string, SampleStatus> = {
+        "Pending Acceptance": "Registered",
+        "Pending Testing": "Accepted",
+        "In Progress": "In Testing",
+        Completed: "Tested",
+        Delayed: "In Testing"
+      };
+      return rawSamples.map((sample) => {
+        const hasTests = rawTests.some((test) => test.sampleId === sample.id);
+        const nextStatus: SampleStatus = hasTests
+          ? deriveSampleStage(sample, rawTests, rawReports)
+          : legacy[sample.status as string] ?? (SAMPLE_STAGES.includes(sample.status) ? sample.status : "Registered");
+        return sample.status === nextStatus ? sample : { ...sample, status: nextStatus };
+      });
+    })(),
     tests: saved.tests ?? initialState.tests,
     concreteTests: saved.concreteTests ?? initialState.concreteTests,
     concreteWaterPenetrationTests: saved.concreteWaterPenetrationTests ?? initialState.concreteWaterPenetrationTests,
@@ -1414,22 +1434,22 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       return Array.from(groups.entries()).flatMap(([, codes]) => chunk(codes, 3));
     }
 
-    function isTestingFinished(status: LabTest["status"]) {
-      return ["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"].includes(status);
-    }
-
     function canCurrentUserEditTest(previous: LabState, testId: string) {
       const test = previous.tests.find((row) => row.id === testId);
       return canEditTestData(currentRole, test?.status);
     }
 
-    function sampleStatusAfterTestChange(previous: LabState, changedTest: LabTest, nextStatus: LabTest["status"]): Sample["status"] {
-      const sampleTests = previous.tests
-        .map((row) => (row.id === changedTest.id ? { ...row, status: nextStatus } : row))
-        .filter((row) => row.sampleId === changedTest.sampleId);
-      const finishedCount = sampleTests.filter((row) => isTestingFinished(row.status)).length;
-      if (!finishedCount) return "In Progress";
-      return finishedCount === sampleTests.length ? "Completed" : "Partially Tested";
+    // Re-derive every sample's lifecycle stage from its (already-updated) tests,
+    // so the stored status stays consistent with the tests as they move through
+    // testing, reporting and delivery. Samples with no tests keep "Registered".
+    function withDerivedSampleStatuses(draft: LabState): LabState {
+      return {
+        ...draft,
+        samples: draft.samples.map((sample) => {
+          const nextStatus = deriveSampleStage(sample, draft.tests, draft.reports);
+          return sample.status === nextStatus ? sample : { ...sample, status: nextStatus };
+        })
+      };
     }
 
     return {
@@ -1786,10 +1806,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           if (!sample || !sample.clientId || !sample.projectId || !sample.assignedTechnician) return previous;
           const existingTests = previous.tests.filter((test) => test.sampleId === sampleId);
           if (existingTests.length) {
-            return {
-              ...previous,
-              samples: previous.samples.map((row) => (row.id === sampleId ? { ...row, status: "Pending Testing" } : row))
-            };
+            return withDerivedSampleStatuses(previous);
           }
           const schedules =
             sample.testSchedules && sample.testSchedules.length > 0
@@ -1826,7 +1843,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           }));
           const draft: LabState = {
             ...previous,
-            samples: previous.samples.map((row) => (row.id === sampleId ? { ...row, status: "Pending Testing" } : row)),
+            samples: previous.samples,
             tests: [...tests, ...previous.tests],
             auditLog: [...previous.auditLog],
             notifications: [...previous.notifications]
@@ -1841,7 +1858,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             );
           });
           addAudit(draft, "sample_accepted", "sample", sampleId, `Sample ${sample.sampleCode} accepted and ${tests.length} test batch${tests.length === 1 ? "" : "es"} created.`);
-          return draft;
+          return withDerivedSampleStatuses(draft);
         });
       },
       createSample(input) {
@@ -3144,10 +3161,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
                 ? { ...row, status: "Pending Technical Review", completedAt: new Date().toISOString(), completedBy: currentUserId }
                 : row
             ),
-            samples: previous.samples.map((sample) => {
-              if (sample.id !== test.sampleId) return sample;
-              return { ...sample, status: "In Progress" };
-            }),
+            samples: previous.samples,
             notifications: [...previous.notifications],
             auditLog: [...previous.auditLog]
           };
@@ -3159,7 +3173,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             `${test.testCode} është përfunduar nga tekniku dhe pret miratimin teknik.`
           );
           addAudit(draft, "test_submitted_for_review", "test", testId, `${test.testCode} submitted for Chief of Lab technical review.`);
-          return draft;
+          return withDerivedSampleStatuses(draft);
         });
       },
       approveTestResult(testId) {
@@ -3170,9 +3184,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           const draft: LabState = {
             ...previous,
             tests: previous.tests.map((row) => (row.id === testId ? { ...row, status: "Approved" } : row)),
-            samples: previous.samples.map((sample) =>
-              sample.id === test.sampleId ? { ...sample, status: sampleStatusAfterTestChange(previous, test, "Approved") } : sample
-            ),
+            samples: previous.samples,
             notifications: [...previous.notifications],
             auditLog: [...previous.auditLog]
           };
@@ -3185,7 +3197,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             testId
           );
           addAudit(draft, "test_result_approved", "test", testId, `${test.testCode} approved after technical review.`);
-          return draft;
+          return withDerivedSampleStatuses(draft);
         });
       },
       rejectTestResult(testId, comments) {
@@ -3199,13 +3211,13 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             tests: previous.tests.map((row) =>
               row.id === testId ? { ...row, status: "Rejected", notes: rejectionNote, completedAt: undefined, completedBy: undefined } : row
             ),
-            samples: previous.samples.map((sample) => (sample.id === test.sampleId ? { ...sample, status: "In Progress" } : sample)),
+            samples: previous.samples,
             notifications: [...previous.notifications],
             auditLog: [...previous.auditLog]
           };
           addNotification(draft, test.assignedTechnician, "Testi u refuzua", rejectionNote, testId);
           addAudit(draft, "test_result_rejected", "test", testId, `${test.testCode} rejected after technical review: ${rejectionNote}`);
-          return draft;
+          return withDerivedSampleStatuses(draft);
         });
       },
       generateReport(testId, reportKind) {
@@ -3347,7 +3359,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             reportId
           );
           addAudit(draft, "report_approved", "report", reportId, `${report.reportNumber} approved.`);
-          return draft;
+          return withDerivedSampleStatuses(draft);
         });
       },
       rejectReport(reportId, comments) {
@@ -3371,7 +3383,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             addNotification(draft, report.draftedBy, "Report rejected", rejectionMessage, report.testId, reportId);
           }
           addAudit(draft, "report_rejected", "report", reportId, `${report.reportNumber} rejected.`);
-          return draft;
+          return withDerivedSampleStatuses(draft);
         });
       },
       issueReport(reportId, clientEmail, notes) {
@@ -3391,7 +3403,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             auditLog: [...previous.auditLog]
           };
           addAudit(draft, "report_sent_to_client", "report", reportId, `${report.reportNumber} sent to ${clientEmail}.`);
-          return draft;
+          return withDerivedSampleStatuses(draft);
         });
       },
       setReportPdfUrl(reportId, pdfUrl) {
@@ -3428,7 +3440,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           for (const report of approvedReports) {
             addAudit(draft, "report_sent_to_client", "report", report.id, `${report.reportNumber} sent to ${clientEmail}.`);
           }
-          return draft;
+          return withDerivedSampleStatuses(draft);
         });
       },
       createProcedureRevision(input) {

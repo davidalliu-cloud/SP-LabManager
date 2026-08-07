@@ -3,13 +3,18 @@ import type { ReportStatus, SampleStatus, TestStatus } from "./types";
 type Tone = "gray" | "blue" | "amber" | "green" | "purple" | "red" | "darkGreen";
 
 const statusTone: Record<TestStatus | SampleStatus | ReportStatus, Tone> = {
+  // Sample lifecycle stages
   Registered: "gray",
-  "Pending Acceptance": "purple",
-  "Pending Testing": "blue",
+  Accepted: "blue",
+  "In Testing": "amber",
+  "Partially Tested": "amber",
+  Tested: "green",
+  "Report Issued": "darkGreen",
+  Delivered: "darkGreen",
+  // Test statuses
   Pending: "blue",
   Scheduled: "blue",
   "In Progress": "amber",
-  "Partially Tested": "amber",
   Completed: "green",
   "Pending Technical Review": "purple",
   Delayed: "red",

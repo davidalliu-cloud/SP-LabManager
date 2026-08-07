@@ -8,7 +8,7 @@ export type Role =
 
 export type SampleType = string;
 
-export type SampleStatus = "Registered" | "Pending Acceptance" | "Pending Testing" | "In Progress" | "Partially Tested" | "Completed" | "Delayed";
+export type SampleStatus = "Registered" | "Accepted" | "In Testing" | "Partially Tested" | "Tested" | "Report Issued" | "Delivered";
 
 export type TestStatus =
   | "Pending"
