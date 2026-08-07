@@ -32,6 +32,8 @@ export type ReportTask = {
   testType: string;
   person: string; // drafted-by / submitted-by, for context
   note: string;
+  reportDueDate: string;
+  overdue: boolean;
 };
 
 export type ReportTasks = {
@@ -137,7 +139,7 @@ export function computeDueTasks(state: Partial<LabState>, today: string): Techni
 // Report-side work: reports to draft/finalise, reports awaiting approval, and
 // approved reports still to be sent to the client. Not date-filtered — these are
 // pending states that should be cleared regardless of when they arose.
-export function computeReportTasks(state: Partial<LabState>): ReportTasks {
+export function computeReportTasks(state: Partial<LabState>, today: string): ReportTasks {
   const tests = state.tests ?? [];
   const samples = state.samples ?? [];
   const reports = state.reports ?? [];
@@ -153,12 +155,15 @@ export function computeReportTasks(state: Partial<LabState>): ReportTasks {
     if (test.status !== "Approved") continue;
     if (reports.some((report) => report.testId === test.id)) continue;
     const sample = samples.find((row) => row.id === test.sampleId);
+    const reportDueDate = sample?.reportDueDate ?? "";
     toPrepare.push({
       label: "—",
       sampleCode: sample?.sampleCode ?? test.testCode,
       testType: test.testType,
       person: nameOf(test.assignedTechnician),
-      note: "Raport i ri / New report"
+      note: "Raport i ri / New report",
+      reportDueDate,
+      overdue: Boolean(reportDueDate) && reportDueDate < today
     });
   }
 
@@ -166,10 +171,14 @@ export function computeReportTasks(state: Partial<LabState>): ReportTasks {
   for (const report of reports) {
     const sample = samples.find((row) => row.id === report.sampleId);
     const test = tests.find((row) => row.id === report.testId);
+    const reportDueDate = sample?.reportDueDate ?? "";
+    const overdue = Boolean(reportDueDate) && reportDueDate < today;
     const base = {
       label: report.reportNumber || "—",
       sampleCode: sample?.sampleCode ?? "-",
-      testType: test?.testType ?? "-"
+      testType: test?.testType ?? "-",
+      reportDueDate,
+      overdue
     };
     if (report.reportStatus === "Draft" || report.reportStatus === "Report Drafted") {
       toPrepare.push({ ...base, person: nameOf(report.draftedBy), note: "Për t'u finalizuar / To finalise" });
@@ -193,15 +202,19 @@ function escapeHtml(value: string) {
 function reportSectionHtml(title: string, tasks: ReportTask[], accent: string) {
   if (!tasks.length) return "";
   const rows = tasks
-    .map(
-      (task) => `<tr>
+    .map((task) => {
+      const flag = task.overdue
+        ? '<span style="color:#ffffff;background:#FF5757;border-radius:4px;padding:1px 6px;font-size:11px;">Vonuar</span>'
+        : "";
+      return `<tr>
         <td style="padding:6px 10px;border-bottom:1px solid #eee;font-weight:600;">${escapeHtml(task.label)}</td>
         <td style="padding:6px 10px;border-bottom:1px solid #eee;">${escapeHtml(task.sampleCode)}</td>
         <td style="padding:6px 10px;border-bottom:1px solid #eee;">${escapeHtml(task.testType)}</td>
         <td style="padding:6px 10px;border-bottom:1px solid #eee;">${escapeHtml(task.person)}</td>
         <td style="padding:6px 10px;border-bottom:1px solid #eee;">${escapeHtml(task.note)}</td>
-      </tr>`
-    )
+        <td style="padding:6px 10px;border-bottom:1px solid #eee;white-space:nowrap;">${formatEuropeanDate(task.reportDueDate)} ${flag}</td>
+      </tr>`;
+    })
     .join("");
   return `<h3 style="margin:22px 0 6px;color:${accent};font-size:15px;">${escapeHtml(title)} <span style="color:#888;font-weight:400;">(${tasks.length})</span></h3>
     <table style="border-collapse:collapse;width:100%;font-size:13px;color:#222;">
@@ -212,6 +225,7 @@ function reportSectionHtml(title: string, tasks: ReportTask[], accent: string) {
           <th style="padding:6px 10px;border-bottom:2px solid ${accent};">Testi</th>
           <th style="padding:6px 10px;border-bottom:2px solid ${accent};">Personi</th>
           <th style="padding:6px 10px;border-bottom:2px solid ${accent};">Statusi</th>
+          <th style="padding:6px 10px;border-bottom:2px solid ${accent};">Afati</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
@@ -221,7 +235,7 @@ function reportSectionHtml(title: string, tasks: ReportTask[], accent: string) {
 // Build the whole digest: recipients (active employees) + subject + HTML/text.
 export function buildDailyDigest(state: Partial<LabState>, today: string): DailyDigest {
   const groups = computeDueTasks(state, today);
-  const reports = computeReportTasks(state);
+  const reports = computeReportTasks(state, today);
   const testCount = groups.reduce((sum, group) => sum + group.tests.length, 0);
   const reportCount = reports.toPrepare.length + reports.toApprove.length + reports.toSend.length;
   const taskCount = testCount + reportCount;
@@ -314,7 +328,9 @@ export function buildDailyDigest(state: Partial<LabState>, today: string): Daily
         if (!tasks.length) return;
         textLines.push(`${title} (${tasks.length}):`);
         for (const task of tasks) {
-          textLines.push(`  - ${task.label} · ${task.sampleCode} · ${task.testType} · ${task.person} · ${task.note}`);
+          textLines.push(
+            `  - ${task.label} · ${task.sampleCode} · ${task.testType} · ${task.person} · ${task.note} · afati ${formatEuropeanDate(task.reportDueDate)}${task.overdue ? " (VONUAR)" : ""}`
+          );
         }
       };
       addReportBlock("Për t'u përgatitur / To prepare", reports.toPrepare);
