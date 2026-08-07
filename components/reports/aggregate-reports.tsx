@@ -49,13 +49,13 @@ export function AggregateReportPreview({
   return (
     <section className="report-a4 aggregate-gradation-report print-surface relative rounded-md border border-line bg-white p-6 text-[#111] shadow-sm" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
       <header className="border-b-2 border-black pb-1">
-        <div className="grid grid-cols-[132px_1fr_112px] items-start gap-4">
-          <img src="/brand/sarp-logo.png" alt="SARP" className="mt-1 h-auto w-[112px]" />
+        <div className="grid grid-cols-[140px_1fr_72px] items-start gap-4">
+          <img src="/brand/sarp-logo.png" alt="SARP" className="mt-1 h-auto w-[128px]" />
           <div className="pt-3 text-center">
             <div className="text-[13px] font-bold uppercase leading-tight">RAPORT TESTIM / TEST REPORT</div>
             <div className="mt-5 text-[8.5px] font-bold">Nr. / No. <span className="text-red-600">{report.reportNumber}</span></div>
           </div>
-          <img src="/brand/da-accreditation.png" alt="DA accreditation LT 069 09 06 21" className="ml-auto mt-0.5 h-auto w-[90px]" />
+          <img src="/brand/da-accreditation.png" alt="DA accreditation Testim S SH ISO/IEC 17025 LT 069" className="ml-auto mt-0.5 h-auto w-[56px]" />
         </div>
         <div className="mt-1 flex justify-between text-[7.5px] italic leading-tight">
           <div>

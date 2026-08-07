@@ -25,9 +25,9 @@ export function ReportHeader({
 }) {
   return (
     <header className="border-b border-line pb-5">
-      <div className="grid items-center gap-4 sm:grid-cols-[150px_1fr_132px]">
+      <div className="grid items-center gap-4 sm:grid-cols-[170px_1fr_92px]">
         <div className="flex items-center">
-          <img src="/brand/sarp-logo.png" alt="SARP" className="h-auto w-36" />
+          <img src="/brand/sarp-logo.png" alt="SARP" className="h-auto w-[158px]" />
         </div>
         <div className="text-center">
           <div className="text-lg font-semibold uppercase tracking-wide text-ink">{title}</div>
@@ -36,7 +36,7 @@ export function ReportHeader({
           <div className="mt-2 text-xs text-muted">Nr. / No. {report.reportNumber} · Faqe / Page: {report.reportSequence} / {report.totalReports}</div>
         </div>
         <div className="flex justify-end">
-          <img src="/brand/da-accreditation.png" alt="DA accreditation LT 069 09 06 21" className="h-auto w-28" />
+          <img src="/brand/da-accreditation.png" alt="DA accreditation Testim S SH ISO/IEC 17025 LT 069" className="h-auto w-[82px]" />
         </div>
       </div>
       <div className="mt-3 flex justify-end no-print">
@@ -127,13 +127,13 @@ export function OfficialReportShell({
   return (
     <section className={`report-a4 official-report print-surface relative rounded-md border border-line bg-white p-4 leading-tight text-black shadow-sm ${className}`}>
       <header className="border-b-2 border-black pb-1">
-        <div className="grid grid-cols-[130px_1fr_115px] items-start gap-4">
-          <img src="/brand/sarp-logo.png" alt="SARP" className="mt-1 h-auto w-[112px]" />
+        <div className="grid grid-cols-[140px_1fr_78px] items-start gap-4">
+          <img src="/brand/sarp-logo.png" alt="SARP" className="mt-1 h-auto w-[130px]" />
           <div className="pt-3 text-center">
             <div className="text-[15pt] font-bold uppercase leading-tight">{title}</div>
             <div className="mt-2 text-[10pt] font-bold text-red-600">Nr. / No. {report.reportNumber}</div>
           </div>
-          <img src="/brand/da-accreditation.png" alt="DA accreditation LT 069 09 06 21" className="ml-auto mt-1 h-auto w-[88px]" />
+          <img src="/brand/da-accreditation.png" alt="DA accreditation Testim S SH ISO/IEC 17025 LT 069" className="ml-auto mt-1 h-auto w-[68px]" />
         </div>
         <div className="mt-1 text-[9pt] italic leading-tight">
           <div>Kodi / Code: {code}</div>

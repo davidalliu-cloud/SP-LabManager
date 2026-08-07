@@ -342,13 +342,13 @@ export function ConcreteCoreReportPreview({
   return (
     <section className="report-a4 concrete-core-report print-surface relative rounded-md border border-line bg-white p-4 text-[12pt] leading-[1.12] text-black shadow-sm" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
       <header className="border-b-2 border-black pb-1">
-        <div className="grid grid-cols-[125px_1fr_102px] items-start gap-4">
-          <img src="/brand/sarp-logo.png" alt="SARP" className="mt-1 h-auto w-[110px]" />
+        <div className="grid grid-cols-[140px_1fr_72px] items-start gap-4">
+          <img src="/brand/sarp-logo.png" alt="SARP" className="mt-1 h-auto w-[128px]" />
           <div className="pt-2 text-center">
             <div className="text-[14pt] font-bold uppercase">RAPORT TESTIMI / TEST REPORT</div>
             <div className="mt-5 text-[9.5pt] font-bold">Nr. / No. {report.reportNumber}</div>
           </div>
-          <img src="/brand/da-accreditation.png" alt="DA accreditation LT 069 09 06 21" className="ml-auto h-auto w-[86px]" />
+          <img src="/brand/da-accreditation.png" alt="DA accreditation Testim S SH ISO/IEC 17025 LT 069" className="ml-auto h-auto w-[65px]" />
         </div>
         <div className="mt-1 text-[8.5pt] italic leading-tight">
           <div>Kodi / Code: {reportCode}</div>
