@@ -175,7 +175,11 @@ function WorkflowRow({
   const report = test ? store.reports.find((item) => item.testId === test.id) : undefined;
   const overdue = test ? isOverdue(test.requiredTestDate, test.status) : false;
   const approaching = test ? isApproaching(test.requiredTestDate) : false;
-  const status = test ? (overdue ? "Delayed" : test.status) : sample ? deriveSampleStage(sample, store.tests, store.reports) : "Registered";
+  // "Faza" is the sample's lifecycle stage (one of the agreed seven), derived
+  // from its tests + reports — the same for every test row of a sample.
+  // Timeliness (late / at-risk) is shown by the row colour, and the per-report
+  // state stays in the "Raporti" column.
+  const status = sample ? deriveSampleStage(sample, store.tests, store.reports) : "Registered";
   const unit = sample?.sampleType.includes("Rebar") || sample?.sampleType.includes("Shufër Çeliku") ? "mostra" : "mostra";
   const quantity = test ? `${test.cubeCount} ${unit}${test.scheduledAgeDays ? ` / ${test.scheduledAgeDays} ditë` : ""}` : `${sample?.quantity ?? "-"} ${unit}`;
 
