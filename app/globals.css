@@ -502,7 +502,34 @@ textarea {
 
 .concrete-cube-report.pdf-capture .cube-table th,
 .concrete-cube-report.pdf-capture .cube-table td {
-  padding: 2px 3px !important;
+  padding: 5px 3px !important;
+  vertical-align: middle !important;
+}
+
+/* html2canvas ignores `vertical-align: middle` when a table row has an explicit
+   `height`: it top-aligns the text, so in the exported PDF the text sits on the
+   upper grid line instead of centred in the cell. In the capture only, drop the
+   forced row heights and let symmetric top/bottom padding size the row — which
+   html2canvas DOES honour, so each line lands in the middle of its box. The
+   on-screen preview and browser print keep their fixed-height rows untouched. */
+.pdf-capture .cube-table thead tr,
+.pdf-capture .cube-table tbody tr,
+.pdf-capture .cement-table thead tr,
+.pdf-capture .cement-table tbody tr,
+.pdf-capture .mortar-report table thead tr,
+.pdf-capture .mortar-report table tbody tr {
+  height: auto !important;
+}
+
+.pdf-capture .cube-table th,
+.pdf-capture .cube-table td,
+.pdf-capture .cement-table th,
+.pdf-capture .cement-table td,
+.pdf-capture .mortar-report table th,
+.pdf-capture .mortar-report table td {
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  line-height: 1.15 !important;
   vertical-align: middle !important;
 }
 
