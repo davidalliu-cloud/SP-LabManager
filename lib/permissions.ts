@@ -1,4 +1,4 @@
-import type { Role, TestStatus } from "./types";
+import type { ReportStatus, Role, TestStatus } from "./types";
 
 export function isSuperAdmin(role?: Role) {
   return role === "Admin / Managing Director";
@@ -6,6 +6,18 @@ export function isSuperAdmin(role?: Role) {
 
 export function canReviewTests(role?: Role) {
   return isSuperAdmin(role) || role === "Chief of Lab";
+}
+
+// Who may reject a report, and from which state. A report awaiting approval can
+// be rejected by any reviewer (Chief of Lab or superadmin). Beyond that, the
+// superadmin can override-reject a report that was already approved, issued or
+// sent to the client but turns out to be incorrect, sending it back for
+// correction.
+export function canRejectReport(role?: Role, status?: ReportStatus) {
+  if (!status) return false;
+  if (status === "Pending Approval") return canReviewTests(role);
+  if (["Approved", "Issued", "Sent to Client"].includes(status)) return isSuperAdmin(role);
+  return false;
 }
 
 export function canManageClients(role?: Role) {

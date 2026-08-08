@@ -5,7 +5,7 @@ import { useRef, useState } from "react";
 import { ReportPreview } from "@/components/reports/report-preview";
 import { PageHeader } from "@/components/ui/page-header";
 import { useLabStore } from "@/lib/lab-store";
-import { canReviewTests } from "@/lib/permissions";
+import { canRejectReport, canReviewTests } from "@/lib/permissions";
 import { generateAndStoreReportPdf } from "@/lib/pdf";
 
 export default function ReportDetailPage() {
@@ -51,6 +51,10 @@ export default function ReportDetailPage() {
   const aggregateSoundness = store.aggregateSoundnessTests.find((item) => item.testId === activeReport.testId);
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
   const canReviewReport = canReviewTests(currentUser?.role);
+  const canReject = canRejectReport(currentUser?.role, activeReport.reportStatus);
+  // A superadmin rejecting a report that was already approved/issued/sent is an
+  // override (the normal flow only rejects while "Pending Approval").
+  const isRejectOverride = canReject && activeReport.reportStatus !== "Pending Approval";
   const recipientEmail = issueEmail || client?.email || "";
 
   function downloadApprovedPdf() {
@@ -133,11 +137,16 @@ export default function ReportDetailPage() {
               />
               <button
                 onClick={() => store.rejectReport(activeReport.id, comments || "Ju lutemi korrigjoni të dhënat e raportit dhe dërgojeni përsëri për miratim.")}
-                disabled={activeReport.reportStatus !== "Pending Approval" || !canReviewReport}
+                disabled={!canReject}
                 className="w-full rounded-md border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-lab-red transition hover:bg-red-50 disabled:cursor-not-allowed disabled:border-line disabled:text-slate-400"
               >
                 Refuzo raportin
               </button>
+              {isRejectOverride ? (
+                <p className="text-xs text-lab-red">
+                  Si Administrator, mund ta refuzoni këtë raport edhe pse është <span className="font-semibold">{activeReport.reportStatus === "Approved" ? "miratuar" : "dërguar"}</span>. Raporti kthehet për korrigjim.
+                </p>
+              ) : null}
             </div>
           </div>
 
