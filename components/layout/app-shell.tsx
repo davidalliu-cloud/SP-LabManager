@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
+import { useEffect } from "react";
 import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 import { NotificationDropdown } from "@/components/notifications/notification-dropdown";
 import { useAuth } from "@/lib/auth";
@@ -31,8 +32,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const store = useLabStore();
   const { t } = useI18n();
   const isLoginPage = pathname === "/login";
+  const isTechRoute = pathname === "/tech" || pathname.startsWith("/tech/");
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
   const showClientIdentityNav = canViewClientIdentity(currentUser?.role);
+  const isTechnician = currentUser?.role === "Technician";
+
+  // Technicians always land in the simplified mobile experience, on any
+  // device; everyone else always gets the full desktop app. Runs on every
+  // render (not just right after login) so it also protects deep-links,
+  // refreshes, and back/forward navigation.
+  useEffect(() => {
+    if (isLoginPage) return;
+    if (!currentUser) return;
+    if (isTechnician && !isTechRoute) router.replace("/tech");
+    if (!isTechnician && isTechRoute) router.replace("/");
+  }, [isLoginPage, isTechnician, isTechRoute, currentUser, router]);
 
   if (isLoginPage) return <>{children}</>;
 
@@ -52,6 +66,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     router.replace("/login");
     return null;
   }
+
+  if (isTechRoute) return <>{children}</>;
 
   return (
     <div className="min-h-screen">

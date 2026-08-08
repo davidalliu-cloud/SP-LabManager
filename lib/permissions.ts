@@ -70,3 +70,10 @@ export function canGenerateReportForTest(role?: Role, status?: TestStatus, hasRe
   if (hasReport) return true;
   return status === "Approved";
 }
+
+// Mobile-only guardrail: a technician on the /tech experience may only see and
+// open tests assigned to them. This is a UI-layer restriction, not enforced by
+// the store or Supabase RLS (the desktop app remains advisory-only, unchanged).
+export function canTechnicianAccessTest(currentUserId: string, test: { assignedTechnician: string }) {
+  return test.assignedTechnician === currentUserId;
+}
