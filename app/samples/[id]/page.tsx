@@ -46,7 +46,7 @@ export default function SampleDetailPage() {
       : sample.concretingDate;
   const reports = store.reports.filter((item) => item.sampleId === sample.id);
   const stage = deriveSampleStage(sample, store.tests, store.reports);
-  const finishedStatuses = ["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"];
+  const finishedStatuses = ["Completed", "Report Drafted", "Pending Approval", "Approved", "Report Approved", "Issued", "Sent to Client"];
   const completedCubes = tests
     .filter((test) => finishedStatuses.includes(test.status))
     .reduce((sum, test) => sum + test.cubeCount, 0);

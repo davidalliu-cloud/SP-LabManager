@@ -7,6 +7,7 @@ const FINISHED_TEST_STATUSES = new Set([
   "Report Drafted",
   "Pending Approval",
   "Approved",
+  "Report Approved",
   "Issued",
   "Sent to Client"
 ]);

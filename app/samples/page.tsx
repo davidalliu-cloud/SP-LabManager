@@ -15,7 +15,7 @@ import type { SampleStatus, TestStatus } from "@/lib/types";
 
 const TESTING_COMPLETE_STAGES: SampleStatus[] = ["Tested", "Report Issued", "Delivered"];
 
-const FINISHED_TEST_STATUSES: TestStatus[] = ["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"];
+const FINISHED_TEST_STATUSES: TestStatus[] = ["Completed", "Report Drafted", "Pending Approval", "Approved", "Report Approved", "Issued", "Sent to Client"];
 
 export default function SamplesPage() {
   const store = useLabStore();

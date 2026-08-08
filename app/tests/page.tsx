@@ -13,7 +13,7 @@ import { isApproaching, isOverdue } from "@/lib/status";
 import { canViewClientIdentity } from "@/lib/permissions";
 import type { TestStatus } from "@/lib/types";
 
-const DONE_STATUSES: TestStatus[] = ["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"];
+const DONE_STATUSES: TestStatus[] = ["Completed", "Report Drafted", "Pending Approval", "Approved", "Report Approved", "Issued", "Sent to Client"];
 
 export default function TestsPage() {
   const store = useLabStore();

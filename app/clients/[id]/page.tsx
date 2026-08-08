@@ -95,7 +95,7 @@ export default function ClientDetailPage() {
   });
 
   const waitingTests = rows.filter(({ test }) => waitingStatuses.includes(test.status)).length;
-  const completedTests = rows.filter(({ test }) => ["Completed", "Report Drafted", "Pending Approval", "Approved", "Rejected", "Issued", "Sent to Client"].includes(test.status)).length;
+  const completedTests = rows.filter(({ test }) => ["Completed", "Report Drafted", "Pending Approval", "Approved", "Report Approved", "Rejected", "Issued", "Sent to Client"].includes(test.status)).length;
   const sentReports = clientReports.filter((report) => ["Sent to Client", "Issued"].includes(report.reportStatus)).length;
 
   function clearFilters() {

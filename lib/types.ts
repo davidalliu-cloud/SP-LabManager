@@ -20,6 +20,7 @@ export type TestStatus =
   | "Report Drafted"
   | "Pending Approval"
   | "Approved"
+  | "Report Approved"
   | "Rejected"
   | "Issued"
   | "Sent to Client";

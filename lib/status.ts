@@ -21,6 +21,7 @@ const statusTone: Record<TestStatus | SampleStatus | ReportStatus, Tone> = {
   "Report Drafted": "purple",
   "Pending Approval": "purple",
   Approved: "green",
+  "Report Approved": "green",
   Rejected: "red",
   Issued: "darkGreen",
   "Sent to Client": "darkGreen",
@@ -32,7 +33,7 @@ export function getStatusTone(status: TestStatus | SampleStatus | ReportStatus) 
 }
 
 export function isOverdue(date: string, status: TestStatus) {
-  const doneStatuses: TestStatus[] = ["Completed", "Report Drafted", "Pending Approval", "Approved", "Issued", "Sent to Client"];
+  const doneStatuses: TestStatus[] = ["Completed", "Report Drafted", "Pending Approval", "Approved", "Report Approved", "Issued", "Sent to Client"];
   if (doneStatuses.includes(status)) return false;
   const due = new Date(`${date}T23:59:59`).getTime();
   return due < Date.now();

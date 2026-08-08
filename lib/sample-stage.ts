@@ -37,6 +37,7 @@ function testTestingRank(status: LabTest["status"]): number {
     case "Report Drafted":
     case "Pending Approval":
     case "Approved":
+    case "Report Approved":
     case "Issued":
     case "Sent to Client":
       return 2;

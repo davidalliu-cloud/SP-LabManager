@@ -1081,7 +1081,18 @@ function mergeWithInitialState(saved: Partial<LabState>): LabState {
         return sample.status === nextStatus ? sample : { ...sample, status: nextStatus };
       });
     })(),
-    tests: saved.tests ?? initialState.tests,
+    // Distinguish a report-approved test from a test whose data was just
+    // approved: a test still marked "Approved" whose report is already approved
+    // becomes "Report Approved" (shown as "Raporti i miratuar"). Idempotent.
+    tests: (() => {
+      const rawTests = saved.tests ?? initialState.tests;
+      const rawReports = saved.reports ?? initialState.reports;
+      return rawTests.map((test) =>
+        test.status === "Approved" && rawReports.some((report) => report.testId === test.id && report.reportStatus === "Approved")
+          ? { ...test, status: "Report Approved" as const }
+          : test
+      );
+    })(),
     concreteTests: saved.concreteTests ?? initialState.concreteTests,
     concreteWaterPenetrationTests: saved.concreteWaterPenetrationTests ?? initialState.concreteWaterPenetrationTests,
     concreteFlexuralTests: saved.concreteFlexuralTests ?? initialState.concreteFlexuralTests,
@@ -3345,7 +3356,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
                 ? { ...row, reportStatus: "Approved", approvedBy: currentUserId, approvedAt: new Date().toISOString() }
                 : row
             ),
-            tests: previous.tests.map((row) => (row.id === report.testId ? { ...row, status: "Approved" } : row)),
+            tests: previous.tests.map((row) => (row.id === report.testId ? { ...row, status: "Report Approved" } : row)),
             notifications: [...previous.notifications],
             auditLog: [...previous.auditLog]
           };
