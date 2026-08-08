@@ -14,10 +14,11 @@ export function canReviewTests(role?: Role) {
 // sent to the client but turns out to be incorrect, sending it back for
 // correction.
 export function canRejectReport(role?: Role, status?: ReportStatus) {
-  if (!status) return false;
+  if (!status || status === "Rejected") return false;
   if (status === "Pending Approval") return canReviewTests(role);
-  if (["Approved", "Issued", "Sent to Client"].includes(status)) return isSuperAdmin(role);
-  return false;
+  // The superadmin can reject a report at any other stage — drafted, approved,
+  // issued or already sent — sending it back for correction.
+  return isSuperAdmin(role);
 }
 
 export function canManageClients(role?: Role) {

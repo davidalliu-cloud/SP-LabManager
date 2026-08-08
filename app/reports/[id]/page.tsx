@@ -144,7 +144,7 @@ export default function ReportDetailPage() {
               </button>
               {isRejectOverride ? (
                 <p className="text-xs text-lab-red">
-                  Si Administrator, mund ta refuzoni këtë raport edhe pse është <span className="font-semibold">{activeReport.reportStatus === "Approved" ? "miratuar" : "dërguar"}</span>. Raporti kthehet për korrigjim.
+                  Si Administrator, mund ta refuzoni këtë raport dhe ta ktheni për korrigjim.
                 </p>
               ) : null}
             </div>
