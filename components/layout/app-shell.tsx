@@ -36,22 +36,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
   const showClientIdentityNav = canViewClientIdentity(currentUser?.role);
   const isTechnician = currentUser?.role === "Technician";
-  const hasAssignedTests = store.tests.some((test) => test.assignedTechnician === store.currentUserId);
-  const canUseTechExperience = isTechnician || hasAssignedTests;
 
   // Technicians always land in the simplified mobile experience, on any
-  // device. Anyone else who has a test assigned to them (engineers, other
-  // roles picked from the "assigned technician" dropdown) may open the
-  // mobile experience too, but isn't forced into it — they keep their
-  // normal desktop landing. Runs on every render (not just right after
-  // login) so it also protects deep-links, refreshes, and back/forward
-  // navigation.
+  // device. Every other employee can still open it directly (any active
+  // employee can be assigned a test, not just role === "Technician") — the
+  // /tech page itself only ever shows tests assigned to the current user,
+  // so it's a harmless empty list for someone with nothing assigned yet.
+  // Runs on every render (not just right after login) so it also protects
+  // deep-links, refreshes, and back/forward navigation.
   useEffect(() => {
     if (isLoginPage) return;
     if (!currentUser) return;
     if (isTechnician && !isTechRoute) router.replace("/tech");
-    if (!canUseTechExperience && isTechRoute) router.replace("/");
-  }, [isLoginPage, isTechnician, canUseTechExperience, isTechRoute, currentUser, router]);
+  }, [isLoginPage, isTechnician, isTechRoute, currentUser, router]);
 
   if (isLoginPage) return <>{children}</>;
 
