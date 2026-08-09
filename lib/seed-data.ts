@@ -48,27 +48,8 @@ export const initialState: LabState = {
     { id: "p-1", clientId: "c-1", projectName: "Riverside Tower", location: "Beirut", description: "High-rise concrete works" },
     { id: "p-2", clientId: "c-2", projectName: "Harbor Access Road", location: "Tripoli", description: "Road and drainage package" }
   ],
-  // TEMP: demo sample/test so the new /tech mobile flow has something to show
-  // on any device that opens a preview build with no Supabase configured.
-  // Remove before merging tech-mobile-pwa into main.
-  samples: [
-    {
-      id: "s-demo-1", sampleCode: "SMP-DEMO-001", clientId: "c-1", projectId: "p-1",
-      sampleType: "Kubike Betoni / Concrete Cubes", sampleDescription: "Concrete cubes for demo test",
-      quantity: 3, dateReceived: now.slice(0, 10), timeReceived: "09:00",
-      collectionMethod: "Delivered by client", requestedTestType: "Përcaktimi i rezistencës në shtypje",
-      standard: "BS EN 12390-3:2019", requiredTestDate: now.slice(0, 10), reportDueDate: now.slice(0, 10),
-      status: "In Testing", assignedTechnician: "u-tech", createdBy: "u-ops", createdAt: now
-    }
-  ],
-  tests: [
-    {
-      id: "t-demo-1", testCode: "TC-DEMO-001", sampleId: "s-demo-1", clientId: "c-1", projectId: "p-1",
-      testType: "Përcaktimi i rezistencës në shtypje", standard: "BS EN 12390-3:2019",
-      assignedTechnician: "u-tech", cubeCount: 3, scheduledAgeDays: 28,
-      requiredTestDate: now.slice(0, 10), dueDate: now.slice(0, 10), status: "Pending", priority: "Normal", createdAt: now
-    }
-  ],
+  samples: [],
+  tests: [],
   concreteTests: [],
   concreteWaterPenetrationTests: [],
   concreteFlexuralTests: [],
