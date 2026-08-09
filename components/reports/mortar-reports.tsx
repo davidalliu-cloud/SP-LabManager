@@ -5,7 +5,7 @@ import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest,
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
-import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, Signature } from "./report-shared";
+import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, Signature, SignatureStamp } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
 
 export function MortarReportPreview({
@@ -372,8 +372,8 @@ export function MortarNotesAndFooter({
       </div>
       <div className="mortar-footer-cluster">
         <div className="mortar-signatures mt-4 grid grid-cols-2 gap-16 text-center text-[7.3pt]">
-          <div><div className="font-bold">TESTUESI / <span className="italic font-normal">TESTED BY</span></div><div className="mt-[6mm] font-bold">{testedBy || "Ing./Eng."}</div></div>
-          <div><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic font-normal">LABORATORY RESPONSIBLE</span></div><div className="mt-[6mm] font-bold">{headOfLabName(responsible)}</div></div>
+          <div className="relative"><div className="font-bold">TESTUESI / <span className="italic font-normal">TESTED BY</span></div><SignatureStamp name={testedBy} heightMm={11} /><div className="mt-[6mm] font-bold">{testedBy || "Ing./Eng."}</div></div>
+          <div className="relative"><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic font-normal">LABORATORY RESPONSIBLE</span></div><SignatureStamp name={headOfLabName(responsible)} heightMm={11} /><div className="mt-[6mm] font-bold">{headOfLabName(responsible)}</div></div>
         </div>
         <div className="mt-3 space-y-0.5 text-[5.7pt] leading-tight">
           <p>Rezultatet në këtë raport testimi i përkasin vetëm mostrës së testuar. / <span className="italic">The results relate only to the items tested.</span></p>

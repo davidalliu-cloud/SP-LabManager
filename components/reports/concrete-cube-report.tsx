@@ -5,7 +5,7 @@ import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest,
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
-import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, Signature } from "./report-shared";
+import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, Signature, SignatureStamp } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
 
 export function ConcreteCubeReportPreview({
@@ -188,8 +188,8 @@ export function ConcreteCubeReportPreview({
       </div>
 
       <div className="report-signatures mt-5 grid grid-cols-2 gap-16 text-center">
-        <div><div className="font-bold">TESTUESI / <span className="italic">TESTED BY</span></div><div className="signature-name mt-[9mm] font-bold">{concrete?.technicianName || report.draftedBy}</div></div>
-        <div><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic">LABORATORY RESPONSIBLE</span></div><div className="signature-name mt-[9mm] font-bold">{headOfLabName()}</div></div>
+        <div className="relative"><div className="font-bold">TESTUESI / <span className="italic">TESTED BY</span></div><SignatureStamp name={concrete?.technicianName || report.draftedBy} heightMm={15} /><div className="signature-name mt-[9mm] font-bold">{concrete?.technicianName || report.draftedBy}</div></div>
+        <div className="relative"><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic">LABORATORY RESPONSIBLE</span></div><SignatureStamp name={headOfLabName()} heightMm={15} /><div className="signature-name mt-[9mm] font-bold">{headOfLabName()}</div></div>
       </div>
 
       <div className="report-disclaimers mt-6 space-y-0.5 text-[9pt] leading-tight">

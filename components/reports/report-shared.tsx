@@ -12,6 +12,48 @@ export function headOfLabName(preferred?: string) {
   return preferred?.trim() || HEAD_OF_LAB_NAME;
 }
 
+// Stored signature images, matched by a lowercase substring of the name shown
+// in a report's signature block (technician, checked-by, or lab responsible —
+// wherever that name ends up). Add more entries here as more employees'
+// signatures are collected.
+const SIGNATURE_IMAGES: { match: string; src: string }[] = [{ match: "astrit", src: "/signatures/astrit-alliu.png" }];
+
+function signatureImageFor(name?: string) {
+  if (!name) return undefined;
+  const normalized = name.toLowerCase();
+  return SIGNATURE_IMAGES.find((entry) => normalized.includes(entry.match))?.src;
+}
+
+// Overlays a stored signature image on a report's signature block. Must be
+// placed inside a `position: relative` ancestor (the name cell) — see
+// `.signature-stamp` in globals.css for the shared positioning rule.
+// `heightMm` is tuned per call site to roughly match the blank space each
+// report layout reserves above the printed name (a few report types reserve
+// very little, so the stamp there necessarily overlaps the name/label more).
+// `align` should be "start" when the name it sits above is left-aligned
+// rather than centered, so the stamp lines up over the text itself instead
+// of the middle of a wide cell.
+export function SignatureStamp({
+  name,
+  heightMm = 10,
+  align = "center"
+}: {
+  name?: string;
+  heightMm?: number;
+  align?: "center" | "start";
+}) {
+  const src = signatureImageFor(name);
+  if (!src) return null;
+  return (
+    <img
+      src={src}
+      alt=""
+      className={`signature-stamp${align === "start" ? " signature-stamp-start" : ""}`}
+      style={{ height: `${heightMm}mm` }}
+    />
+  );
+}
+
 export function ReportHeader({
   report,
   code,
@@ -209,8 +251,8 @@ export function OfficialNotesAndFooter({
       </div>
       <div className="official-footer-cluster">
         <div className="official-signatures grid grid-cols-2 gap-16 text-center text-[9.5pt]">
-          <div><div className="font-bold">TESTUAR NGA / <span className="italic font-normal">TESTED BY</span></div><div className="mt-[7mm] font-bold">{testedBy || "-"}</div></div>
-          <div><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic font-normal">LABORATORY RESPONSIBLE</span></div><div className="mt-[7mm] font-bold">{headOfLabName(responsible)}</div></div>
+          <div className="relative"><div className="font-bold">TESTUAR NGA / <span className="italic font-normal">TESTED BY</span></div><SignatureStamp name={testedBy} heightMm={12} /><div className="mt-[7mm] font-bold">{testedBy || "-"}</div></div>
+          <div className="relative"><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic font-normal">LABORATORY RESPONSIBLE</span></div><SignatureStamp name={headOfLabName(responsible)} heightMm={12} /><div className="mt-[7mm] font-bold">{headOfLabName(responsible)}</div></div>
         </div>
         <div className="official-disclaimers mt-2 space-y-0.5 text-[7.5pt] leading-tight">
           <p>Rezultatet në këtë raport testimi i përkasin vetëm mostrës së testuar. / <span className="italic">The results relate only to the items tested.</span></p>
@@ -301,8 +343,9 @@ export function ChemicalReportRow({ no, parameter, unit, method, result }: { no:
 
 export function Signature({ label, value }: { label: string; value?: string }) {
   return (
-    <div className="border-t border-slate-300 pt-3">
+    <div className="relative border-t border-slate-300 pt-3">
       <div className="text-xs font-medium uppercase tracking-wide text-muted">{label}</div>
+      <SignatureStamp name={value} heightMm={8} align="start" />
       <div className="mt-2 text-sm font-semibold text-ink">{value ?? "Signature"}</div>
     </div>
   );

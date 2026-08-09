@@ -42,6 +42,33 @@ textarea {
   font: inherit;
 }
 
+/* A technician's stored signature image, overlaid on the blank space above
+   their printed name in a report's "Tested by" block. Sits inside a
+   `position: relative` name cell (see SignatureStamp in report-shared.tsx),
+   anchored to the bottom of that cell so it sits just above (and slightly
+   over) the name — the same spot a pen signature would go. Renders in both
+   the on-screen preview and the html2canvas PDF capture, since it's a plain
+   image with no .no-print class. */
+.signature-stamp {
+  position: absolute;
+  left: 50%;
+  bottom: -1mm;
+  transform: translateX(-50%);
+  height: 13mm;
+  width: auto;
+  max-width: none;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Used where the name it sits above is left-aligned rather than centered
+   (the aggregate reports' bordered "Signature" block), so the stamp lines
+   up over the start of the text instead of the middle of a wide cell. */
+.signature-stamp-start {
+  left: 0;
+  transform: none;
+}
+
 @media print {
   @page {
     size: A4;
