@@ -372,8 +372,8 @@ export function MortarNotesAndFooter({
       </div>
       <div className="mortar-footer-cluster">
         <div className="mortar-signatures mt-4 grid grid-cols-2 gap-16 text-center text-[7.3pt]">
-          <div className="relative"><div className="font-bold">TESTUESI / <span className="italic font-normal">TESTED BY</span></div><SignatureStamp name={testedBy} heightMm={11} /><div className="mt-[6mm] font-bold">{testedBy || "Ing./Eng."}</div></div>
-          <div className="relative"><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic font-normal">LABORATORY RESPONSIBLE</span></div><SignatureStamp name={headOfLabName(responsible)} heightMm={11} /><div className="mt-[6mm] font-bold">{headOfLabName(responsible)}</div></div>
+          <div className="relative"><div className="font-bold">TESTUESI / <span className="italic font-normal">TESTED BY</span></div><SignatureStamp name={testedBy} heightMm={14} /><div className="mt-[6mm] font-bold">{testedBy || "Ing./Eng."}</div></div>
+          <div className="relative"><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic font-normal">LABORATORY RESPONSIBLE</span></div><SignatureStamp name={headOfLabName(responsible)} heightMm={14} /><div className="mt-[6mm] font-bold">{headOfLabName(responsible)}</div></div>
         </div>
         <div className="mt-3 space-y-0.5 text-[5.7pt] leading-tight">
           <p>Rezultatet në këtë raport testimi i përkasin vetëm mostrës së testuar. / <span className="italic">The results relate only to the items tested.</span></p>

@@ -188,8 +188,8 @@ export function ConcreteCubeReportPreview({
       </div>
 
       <div className="report-signatures mt-5 grid grid-cols-2 gap-16 text-center">
-        <div className="relative"><div className="font-bold">TESTUESI / <span className="italic">TESTED BY</span></div><SignatureStamp name={concrete?.technicianName || report.draftedBy} heightMm={15} /><div className="signature-name mt-[9mm] font-bold">{concrete?.technicianName || report.draftedBy}</div></div>
-        <div className="relative"><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic">LABORATORY RESPONSIBLE</span></div><SignatureStamp name={headOfLabName()} heightMm={15} /><div className="signature-name mt-[9mm] font-bold">{headOfLabName()}</div></div>
+        <div className="relative"><div className="font-bold">TESTUESI / <span className="italic">TESTED BY</span></div><SignatureStamp name={concrete?.technicianName || report.draftedBy} heightMm={19} /><div className="signature-name mt-[9mm] font-bold">{concrete?.technicianName || report.draftedBy}</div></div>
+        <div className="relative"><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic">LABORATORY RESPONSIBLE</span></div><SignatureStamp name={headOfLabName()} heightMm={19} /><div className="signature-name mt-[9mm] font-bold">{headOfLabName()}</div></div>
       </div>
 
       <div className="report-disclaimers mt-6 space-y-0.5 text-[9pt] leading-tight">

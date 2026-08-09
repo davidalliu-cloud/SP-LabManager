@@ -251,8 +251,8 @@ export function OfficialNotesAndFooter({
       </div>
       <div className="official-footer-cluster">
         <div className="official-signatures grid grid-cols-2 gap-16 text-center text-[9.5pt]">
-          <div className="relative"><div className="font-bold">TESTUAR NGA / <span className="italic font-normal">TESTED BY</span></div><SignatureStamp name={testedBy} heightMm={12} /><div className="mt-[7mm] font-bold">{testedBy || "-"}</div></div>
-          <div className="relative"><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic font-normal">LABORATORY RESPONSIBLE</span></div><SignatureStamp name={headOfLabName(responsible)} heightMm={12} /><div className="mt-[7mm] font-bold">{headOfLabName(responsible)}</div></div>
+          <div className="relative"><div className="font-bold">TESTUAR NGA / <span className="italic font-normal">TESTED BY</span></div><SignatureStamp name={testedBy} heightMm={15} /><div className="mt-[7mm] font-bold">{testedBy || "-"}</div></div>
+          <div className="relative"><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic font-normal">LABORATORY RESPONSIBLE</span></div><SignatureStamp name={headOfLabName(responsible)} heightMm={15} /><div className="mt-[7mm] font-bold">{headOfLabName(responsible)}</div></div>
         </div>
         <div className="official-disclaimers mt-2 space-y-0.5 text-[7.5pt] leading-tight">
           <p>Rezultatet në këtë raport testimi i përkasin vetëm mostrës së testuar. / <span className="italic">The results relate only to the items tested.</span></p>
@@ -345,7 +345,7 @@ export function Signature({ label, value }: { label: string; value?: string }) {
   return (
     <div className="relative border-t border-slate-300 pt-3">
       <div className="text-xs font-medium uppercase tracking-wide text-muted">{label}</div>
-      <SignatureStamp name={value} heightMm={8} align="start" />
+      <SignatureStamp name={value} heightMm={11} align="start" />
       <div className="mt-2 text-sm font-semibold text-ink">{value ?? "Signature"}</div>
     </div>
   );

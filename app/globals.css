@@ -59,6 +59,7 @@ textarea {
   max-width: none;
   pointer-events: none;
   user-select: none;
+  z-index: 5;
 }
 
 /* Used where the name it sits above is left-aligned rather than centered

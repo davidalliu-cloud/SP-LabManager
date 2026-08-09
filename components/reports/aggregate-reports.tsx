@@ -234,7 +234,7 @@ export function SignatureCompact({ label, value }: { label: string; value?: stri
   return (
     <div className="relative">
       <div className="font-bold">{label}</div>
-      <SignatureStamp name={value} heightMm={9} />
+      <SignatureStamp name={value} heightMm={12} />
       <div className="mt-[5mm] font-bold">{value || "-"}</div>
     </div>
   );

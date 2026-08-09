@@ -421,8 +421,8 @@ export function ConcreteCoreReportPreview({
       </div>
 
       <div className="report-signatures mt-5 grid grid-cols-2 gap-16 text-center text-[8.8pt]">
-        <div className="relative"><div className="font-bold">TESTUAR NGA / <span className="italic font-normal">TESTED BY</span></div><SignatureStamp name={concreteCore.technicianName || report.draftedBy} heightMm={15} /><div className="signature-name mt-[9mm] font-bold">{concreteCore.technicianName || report.draftedBy || "-"}</div></div>
-        <div className="relative"><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic font-normal">LABORATORY RESPONSIBLE</span></div><SignatureStamp name={headOfLabName(concreteCore.checkedBy)} heightMm={15} /><div className="signature-name mt-[9mm] font-bold">{headOfLabName(concreteCore.checkedBy)}</div></div>
+        <div className="relative"><div className="font-bold">TESTUAR NGA / <span className="italic font-normal">TESTED BY</span></div><SignatureStamp name={concreteCore.technicianName || report.draftedBy} heightMm={19} /><div className="signature-name mt-[9mm] font-bold">{concreteCore.technicianName || report.draftedBy || "-"}</div></div>
+        <div className="relative"><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic font-normal">LABORATORY RESPONSIBLE</span></div><SignatureStamp name={headOfLabName(concreteCore.checkedBy)} heightMm={19} /><div className="signature-name mt-[9mm] font-bold">{headOfLabName(concreteCore.checkedBy)}</div></div>
       </div>
 
       <div className="report-disclaimers mt-7 space-y-0.5 text-[7.4pt] leading-tight">
