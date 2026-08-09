@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { ServiceWorkerRegistration } from "@/components/pwa/service-worker-registration";
 import { useAuth } from "@/lib/auth";
@@ -22,15 +23,23 @@ export default function TechLayout({ children }: { children: React.ReactNode }) 
               <div className="text-sm font-semibold text-ink">{currentUser?.fullName ?? "Technician"}</div>
             </div>
           </div>
-          {auth.isConfigured ? (
-            <button
-              type="button"
-              onClick={() => auth.signOut()}
+          <div className="flex items-center gap-2">
+            <Link
+              href="/"
               className="rounded-md border border-line bg-white px-3 py-2 text-xs font-semibold text-ink"
             >
-              Dil / Sign out
-            </button>
-          ) : null}
+              Versioni Desktop / Desktop view
+            </Link>
+            {auth.isConfigured ? (
+              <button
+                type="button"
+                onClick={() => auth.signOut()}
+                className="rounded-md border border-line bg-white px-3 py-2 text-xs font-semibold text-ink"
+              >
+                Dil / Sign out
+              </button>
+            ) : null}
+          </div>
         </div>
         <InstallPrompt />
       </header>

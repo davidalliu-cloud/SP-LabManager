@@ -37,18 +37,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const showClientIdentityNav = canViewClientIdentity(currentUser?.role);
   const isTechnician = currentUser?.role === "Technician";
 
-  // Technicians always land in the simplified mobile experience, on any
-  // device. Every other employee can still open it directly (any active
-  // employee can be assigned a test, not just role === "Technician") — the
-  // /tech page itself only ever shows tests assigned to the current user,
-  // so it's a harmless empty list for someone with nothing assigned yet.
-  // Runs on every render (not just right after login) so it also protects
-  // deep-links, refreshes, and back/forward navigation.
+  // Technicians land in the simplified mobile experience by default (only
+  // when they hit the bare dashboard root, e.g. right after login) — but
+  // from there they're free to open any desktop page too, same as everyone
+  // else. Mobile and desktop are both always available to every employee;
+  // this only picks a sensible starting point, it never locks anyone out of
+  // either mode. Every employee can open /tech directly regardless of role
+  // (any active employee can be assigned a test) — the /tech page itself
+  // only ever shows tests assigned to the current user, so it's a harmless
+  // empty list for someone with nothing assigned yet.
   useEffect(() => {
     if (isLoginPage) return;
     if (!currentUser) return;
-    if (isTechnician && !isTechRoute) router.replace("/tech");
-  }, [isLoginPage, isTechnician, isTechRoute, currentUser, router]);
+    if (isTechnician && pathname === "/") router.replace("/tech");
+  }, [isLoginPage, isTechnician, pathname, currentUser, router]);
 
   if (isLoginPage) return <>{children}</>;
 
@@ -111,6 +113,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <Link
+                href="/tech"
+                className="hidden rounded-md border border-line bg-white px-3 py-2 text-xs font-semibold text-ink transition hover:border-lab-burgundy hover:bg-lab-burgundy hover:text-white sm:inline-flex"
+              >
+                Versioni Mobil / Mobile view
+              </Link>
               <LanguageSwitcher />
               <NotificationDropdown />
               {auth.isConfigured ? (
