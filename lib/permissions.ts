@@ -4,6 +4,13 @@ export function isSuperAdmin(role?: Role) {
   return role === "Admin / Managing Director";
 }
 
+// Chief Technician is Technician with a distinct title (e.g. for a senior/lead
+// technician) but identical rights everywhere in the app — always check both
+// together via this helper rather than "Technician" alone.
+export function isTechnicianRole(role?: Role) {
+  return role === "Technician" || role === "Chief Technician";
+}
+
 export function canReviewTests(role?: Role) {
   return isSuperAdmin(role) || role === "Chief of Lab";
 }
@@ -38,7 +45,7 @@ export function canRegisterSamples(role?: Role) {
     isSuperAdmin(role) ||
     role === "Chief of Lab" ||
     role === "Operations Manager" ||
-    role === "Technician" ||
+    isTechnicianRole(role) ||
     role === "Quality Manager"
   );
 }
@@ -52,7 +59,7 @@ export function canDeleteSamples(role?: Role) {
 }
 
 export function canEditSampleAfterRegistration(role?: Role) {
-  return isSuperAdmin(role) || role === "Chief of Lab" || role === "Operations Manager" || role === "Technician";
+  return isSuperAdmin(role) || role === "Chief of Lab" || role === "Operations Manager" || isTechnicianRole(role);
 }
 
 export function canEditTestData(role?: Role, status?: TestStatus) {

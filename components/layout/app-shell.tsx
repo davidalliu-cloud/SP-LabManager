@@ -9,7 +9,7 @@ import { NotificationDropdown } from "@/components/notifications/notification-dr
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { useLabStore } from "@/lib/lab-store";
-import { canViewClientIdentity } from "@/lib/permissions";
+import { canViewClientIdentity, isTechnicianRole } from "@/lib/permissions";
 
 const navItems = [
   ["nav.dashboard", "/"],
@@ -35,7 +35,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isTechRoute = pathname === "/tech" || pathname.startsWith("/tech/");
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
   const showClientIdentityNav = canViewClientIdentity(currentUser?.role);
-  const isTechnician = currentUser?.role === "Technician";
+  const isTechnician = isTechnicianRole(currentUser?.role);
 
   // Technicians land in the simplified mobile experience by default (only
   // when they hit the bare dashboard root, e.g. right after login) — but

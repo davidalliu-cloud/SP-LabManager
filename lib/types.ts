@@ -4,7 +4,8 @@ export type Role =
   | "Quality Manager"
   | "Operations Manager"
   | "Document Controller"
-  | "Technician";
+  | "Technician"
+  | "Chief Technician";
 
 export type SampleType = string;
 

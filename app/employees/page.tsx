@@ -14,7 +14,8 @@ const roles: Role[] = [
   "Quality Manager",
   "Operations Manager",
   "Document Controller",
-  "Technician"
+  "Technician",
+  "Chief Technician"
 ];
 
 const roleLabels: Record<Role, string> = {
@@ -23,7 +24,8 @@ const roleLabels: Record<Role, string> = {
   "Quality Manager": "Menaxher i Cilësisë",
   "Operations Manager": "Menaxher Operacional",
   "Document Controller": "Kontrollues Dokumentesh",
-  Technician: "Teknik"
+  Technician: "Teknik",
+  "Chief Technician": "Kryetekniku"
 };
 
 const workAreaOptions = [
