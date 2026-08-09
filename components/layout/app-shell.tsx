@@ -75,6 +75,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen">
+      <Link
+        href="/tech"
+        className="no-print fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full bg-lab-burgundy px-4 py-3 text-xs font-semibold text-white shadow-lg transition hover:bg-[#4F1535] lg:hidden"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 shrink-0">
+          <rect x="7" y="2" width="10" height="20" rx="2" />
+          <line x1="11" y1="18" x2="13" y2="18" />
+        </svg>
+        Versioni Mobil
+      </Link>
       <aside className="no-print fixed inset-y-0 left-0 z-30 hidden w-72 overflow-hidden border-r border-line bg-white lg:block">
         <div className="border-b border-line px-6 py-8">
           <img src="/brand/sarp-logo.png" alt="SARP" className="h-auto w-40" />
