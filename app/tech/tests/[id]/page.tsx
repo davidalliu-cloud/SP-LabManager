@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { AggregateGranulometryMobileForm } from "@/components/tech/worksheets/aggregate-granulometry-mobile-form";
 import { AggregateSandEquivalentMobileForm } from "@/components/tech/worksheets/aggregate-sand-equivalent-mobile-form";
 import { ConcreteCompressiveMobileForm } from "@/components/tech/worksheets/concrete-compressive-mobile-form";
@@ -31,6 +31,7 @@ import { canEditTestData, canTechnicianAccessTest } from "@/lib/permissions";
 
 export default function MobileTestDetailPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const store = useLabStore();
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
   const test = store.tests.find((item) => item.id === params.id);
@@ -50,7 +51,11 @@ export default function MobileTestDetailPage() {
 
   const sample = store.samples.find((item) => item.id === test.sampleId);
   const canEdit = canEditTestData(currentUser?.role, test.status);
-  const onComplete = () => canEdit && store.markTestCompleted(test.id);
+  const onComplete = () => {
+    if (!canEdit) return;
+    store.markTestCompleted(test.id);
+    router.push("/tech");
+  };
 
   const isWaterPenetration = isConcreteWaterPenetrationAccreditedTest(test.testType);
   const isFlexural = isConcreteFlexuralAccreditedTest(test.testType);
