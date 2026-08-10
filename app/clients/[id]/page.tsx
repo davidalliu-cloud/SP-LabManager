@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { StageCell } from "@/components/ui/stage-cell";
+import { testLifecycle } from "@/lib/sample-stage";
 import { SummaryCard } from "@/components/ui/summary-card";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { useLabStore } from "@/lib/lab-store";
@@ -251,8 +252,7 @@ export default function ClientDetailPage() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="space-y-2">
-                      <StatusBadge status={test.status} />
-                      {reports.map((report) => <StatusBadge key={report.id} status={report.reportStatus} />)}
+                      <StageCell lifecycle={testLifecycle(test, store.reports)} />
                     </div>
                   </td>
                   <td className="px-4 py-3">

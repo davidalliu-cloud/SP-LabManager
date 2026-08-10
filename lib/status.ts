@@ -9,6 +9,7 @@ const statusTone: Record<TestStatus | SampleStatus | ReportStatus, Tone> = {
   "In Testing": "amber",
   "Partially Tested": "amber",
   Tested: "green",
+  "In Reporting": "purple",
   "Report Issued": "darkGreen",
   Delivered: "darkGreen",
   // Test statuses

@@ -10,10 +10,10 @@ import { useI18n } from "@/lib/i18n";
 import { useLabStore } from "@/lib/lab-store";
 import { isApproaching, isOverdue } from "@/lib/status";
 import { canDeleteSamples, canViewClientIdentity } from "@/lib/permissions";
-import { deriveSampleStage, sampleStageIndex } from "@/lib/sample-stage";
+import { deriveSampleStage, reportLifecycle, sampleStageIndex } from "@/lib/sample-stage";
 import type { SampleStatus, TestStatus } from "@/lib/types";
 
-const TESTING_COMPLETE_STAGES: SampleStatus[] = ["Tested", "Report Issued", "Delivered"];
+const TESTING_COMPLETE_STAGES: SampleStatus[] = ["Tested", "In Reporting", "Report Issued", "Delivered"];
 
 const FINISHED_TEST_STATUSES: TestStatus[] = ["Completed", "Report Drafted", "Pending Approval", "Approved", "Report Approved", "Issued", "Sent to Client"];
 
@@ -141,7 +141,7 @@ export default function SamplesPage() {
                     <td className="px-4 py-3">{formatEuropeanDate(nextTest?.dueDate ?? sample.reportDueDate)}</td>
                     <td className="px-4 py-3"><StatusBadge status={stage} /></td>
                     <td className="px-4 py-3">{store.users.find((item) => item.id === (nextTest?.assignedTechnician ?? sample.assignedTechnician))?.fullName ?? "-"}</td>
-                    <td className="px-4 py-3">{report ? <StatusBadge status={report.reportStatus} /> : "-"}</td>
+                    <td className="px-4 py-3">{report ? <StatusBadge status={reportLifecycle(report).stage} /> : "-"}</td>
                     <td className="px-3 py-2">
                       <div className="flex w-28 flex-col gap-1.5">
                         <Link href={`/samples/${sample.id}`} className="rounded-md border border-line bg-lab-mist px-2 py-1 text-center text-[11px] font-semibold leading-tight text-lab-navy hover:border-lab-steel">

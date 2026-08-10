@@ -9,7 +9,8 @@ import { SummaryCard } from "@/components/ui/summary-card";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { useLabStore } from "@/lib/lab-store";
 import { canAssignSampleClient, canEditSampleAfterRegistration, canReviewTests, canViewClientIdentity } from "@/lib/permissions";
-import { deriveSampleStage } from "@/lib/sample-stage";
+import { deriveSampleStage, reportLifecycle, testLifecycle } from "@/lib/sample-stage";
+import { StageCell } from "@/components/ui/stage-cell";
 import { SampleStageStepper } from "@/components/samples/sample-stage-stepper";
 
 export default function SampleDetailPage() {
@@ -261,7 +262,7 @@ export default function SampleDetailPage() {
                       <td className="px-4 py-3">{formatEuropeanDate(test.concretingDate)}</td>
                       <td className="px-4 py-3">{formatEuropeanDate(test.requiredTestDate)}</td>
                       <td className="px-4 py-3">{formatEuropeanDate(test.dueDate)}</td>
-                      <td className="px-4 py-3"><StatusBadge status={test.status} /></td>
+                      <td className="px-4 py-3"><StageCell lifecycle={testLifecycle(test, store.reports)} /></td>
                       <td className="px-4 py-3"><Link href={`/tests/${test.id}`} className="font-semibold text-lab-burgundy hover:text-lab-purple">Hap</Link></td>
                     </tr>
                   )) : (
@@ -371,7 +372,7 @@ export default function SampleDetailPage() {
                   <Link key={report.id} href={`/reports/${report.id}`} className="block rounded-md border border-line p-3 hover:bg-lab-mist">
                     <div className="flex items-center justify-between gap-3">
                       <div className="font-semibold text-ink">{report.reportNumber}</div>
-                      <StatusBadge status={report.reportStatus} />
+                      <StageCell lifecycle={reportLifecycle(report)} />
                     </div>
                     <div className="mt-2 text-xs text-muted">
                       Pjesa {report.reportSequence} nga {report.totalReports} / {report.specimenCodes.join(", ")}

@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { StageCell } from "@/components/ui/stage-cell";
 import { SortableTh, sortRows, useSort } from "@/components/ui/sortable-header";
 import { useLabStore } from "@/lib/lab-store";
+import { reportLifecycle, sampleStageIndex } from "@/lib/sample-stage";
 import type { ReportStatus } from "@/lib/types";
 
 const reportStatusLabels: Record<Exclude<ReportStatus, "Draft">, string> = {
@@ -62,7 +63,7 @@ export default function ReportsPage() {
       case "specimens": return report.specimenCodes.join(", ");
       case "client": return client?.clientName;
       case "project": return project?.projectName;
-      case "status": return report.reportStatus;
+      case "status": return sampleStageIndex(reportLifecycle(report).stage);
       default: return report.reportNumber;
     }
   }, sort);
@@ -243,7 +244,7 @@ export default function ReportsPage() {
                 <td className="px-4 py-3">{report.specimenCodes.join(", ")}</td>
                 <td className="px-4 py-3">{client?.clientName}</td>
                 <td className="px-4 py-3">{project?.projectName}</td>
-                <td className="px-4 py-3"><StatusBadge status={report.reportStatus} /></td>
+                <td className="px-4 py-3"><StageCell lifecycle={reportLifecycle(report)} /></td>
                 <td className="px-4 py-3"><Link href={`/reports/${report.id}`} className="font-semibold text-lab-burgundy hover:text-lab-purple">Hap</Link></td>
               </tr>
             ))}

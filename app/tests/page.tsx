@@ -4,13 +4,14 @@ import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { SimpleTable } from "@/components/ui/simple-table";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { StageCell } from "@/components/ui/stage-cell";
 import { SortableTh, sortRows, useSort } from "@/components/ui/sortable-header";
 import { useI18n } from "@/lib/i18n";
 import { useLabStore } from "@/lib/lab-store";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { isApproaching, isOverdue } from "@/lib/status";
 import { canViewClientIdentity } from "@/lib/permissions";
+import { sampleStageIndex, testLifecycle } from "@/lib/sample-stage";
 import type { TestStatus } from "@/lib/types";
 
 const DONE_STATUSES: TestStatus[] = ["Completed", "Report Drafted", "Pending Approval", "Approved", "Report Approved", "Issued", "Sent to Client"];
@@ -35,7 +36,8 @@ export default function TestsPage() {
       const number = sample?.sampleCode ?? test.testCode;
       const clientLabel = showClientIdentity ? client?.clientName ?? "-" : client?.clientCode ?? "Klient në pritje";
       const projectLabel = showClientIdentity ? project?.projectName ?? "-" : "I kufizuar";
-      return { test, sample, technician, late, risk, number, clientLabel, projectLabel };
+      const lifecycle = testLifecycle(test, store.reports);
+      return { test, sample, technician, late, risk, number, clientLabel, projectLabel, lifecycle };
     });
     const valueFor = (row: (typeof enriched)[number]) => {
       switch (sort.key) {
@@ -44,7 +46,7 @@ export default function TestsPage() {
         case "test": return row.test.testType;
         case "required": return row.test.requiredTestDate;
         case "technician": return row.technician?.fullName ?? "";
-        case "status": return row.late ? "Delayed" : row.test.status;
+        case "status": return sampleStageIndex(row.lifecycle.stage);
         default: return row.number;
       }
     };
@@ -82,7 +84,7 @@ export default function TestsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
-              {rows.map(({ test, sample, technician, late, risk, number, clientLabel, projectLabel }) => {
+              {rows.map(({ test, sample, technician, late, risk, number, clientLabel, projectLabel, lifecycle }) => {
                 const rowClass = late
                   ? "bg-brand-late hover:bg-[#ff3d3d]"
                   : risk
@@ -104,7 +106,7 @@ export default function TestsPage() {
                     <td className="px-4 py-3 whitespace-nowrap">{formatEuropeanDate(test.requiredTestDate)}</td>
                     <td className="px-4 py-3">{technician?.fullName ?? t("test.unassigned")}</td>
                     <td className="px-4 py-3">
-                      <StatusBadge status={late ? "Delayed" : test.status} />
+                      <StageCell lifecycle={lifecycle} late={late} />
                     </td>
                   </tr>
                 );

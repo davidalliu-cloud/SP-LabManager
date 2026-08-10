@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Dispatch, FormEvent, SetStateAction, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { StageCell } from "@/components/ui/stage-cell";
+import { testLifecycle } from "@/lib/sample-stage";
 import { getMortarTestKind, isAggregateAcvAccreditedTest, isAggregateBulkDensityAccreditedTest, isAggregateChemicalAccreditedTest, isAggregateDensityAbsorptionAccreditedTest, isAggregateElongationIndexAccreditedTest, isAggregateFillerDensityAccreditedTest, isAggregateFlakinessIndexAccreditedTest, isAggregateFreezeThawAccreditedTest, isAggregateGranulometrySampleType, isAggregateLosAngelesAccreditedTest, isAggregateSandEquivalentAccreditedTest, isAggregateShapeIndexAccreditedTest, isAggregateSoundnessAccreditedTest, isAsphaltAccreditedTest, isCementBlaineAstmAccreditedTest, isCementBlaineBsEnAccreditedTest, isCementConsistencyAccreditedTest, isCementStrengthAccreditedTest, isConcreteCoreAccreditedTest, isConcreteDensityAccreditedTest, isConcreteFlexuralAccreditedTest, isConcreteIndirectTensileAccreditedTest, isConcreteWaterPenetrationAccreditedTest, isMortarAccreditedTest, isSteelSampleType, isThermalInsulationAccreditedTest } from "@/lib/accredited-tests";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { useLabStore } from "@/lib/lab-store";
@@ -976,7 +977,7 @@ export default function TestDetailPage() {
   if (isThermalInsulationTest) {
     return (
       <>
-        <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Thermal insulation`} action={<StatusBadge status={activeTest.status} />} />
+        <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Thermal insulation`} action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />} />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
           <form onSubmit={submitThermalInsulation} className="surface-card">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4">
@@ -1053,7 +1054,7 @@ export default function TestDetailPage() {
   if (isCementConsistencyTest) {
     return (
       <>
-        <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Cement consistency, setting, expansion`} action={<StatusBadge status={activeTest.status} />} />
+        <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Cement consistency, setting, expansion`} action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />} />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
           <form onSubmit={submitCementConsistency} className="surface-card">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4">
@@ -1131,7 +1132,7 @@ export default function TestDetailPage() {
     ];
     return (
       <>
-        <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Cement strength`} action={<StatusBadge status={activeTest.status} />} />
+        <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Cement strength`} action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />} />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
           <form onSubmit={submitCementStrength} className="surface-card">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4">
@@ -1191,7 +1192,7 @@ export default function TestDetailPage() {
     const method = isCementBlaineAstmTest ? "ASTM" : "BS EN";
     return (
       <>
-        <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Blaine ${method}`} action={<StatusBadge status={activeTest.status} />} />
+        <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Blaine ${method}`} action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />} />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
           <form onSubmit={(event) => submitCementBlaine(event, method)} className="surface-card">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4">
@@ -1279,7 +1280,7 @@ export default function TestDetailPage() {
   if (isMortarTest) {
     return (
       <>
-        <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / ${activeTest.testType}`} action={<StatusBadge status={activeTest.status} />} />
+        <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / ${activeTest.testType}`} action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />} />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
           <form onSubmit={submitMortar} className="surface-card">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4">
@@ -1320,7 +1321,7 @@ export default function TestDetailPage() {
   if (isConcreteDensityTest) {
     return (
       <>
-        <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Hardened concrete density`} action={<StatusBadge status={activeTest.status} />} />
+        <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Hardened concrete density`} action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />} />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
           <form onSubmit={submitConcreteDensity} className="surface-card">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4"><div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div><h2 className="mt-1 text-lg font-semibold text-ink">Pesha volumore e betonit të ngurtësuar</h2><p className="mt-1 text-sm text-muted">BS EN 12390-7:2019. For regular specimens use D = m / V; for irregular specimens the volume can be calculated from air and water mass.</p></div>
@@ -1360,7 +1361,7 @@ export default function TestDetailPage() {
   if (isConcreteCoreTest) {
     return (
       <>
-        <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Karrota betoni`} action={<StatusBadge status={activeTest.status} />} />
+        <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Karrota betoni`} action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />} />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
           <form onSubmit={submitConcreteCore} className="surface-card">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4">
@@ -1457,7 +1458,7 @@ export default function TestDetailPage() {
     };
     return (
       <>
-        <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Asfaltobeton`} action={<StatusBadge status={activeTest.status} />} />
+        <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Asfaltobeton`} action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />} />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
           <form onSubmit={submitAsphalt} className="surface-card">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4">
@@ -1583,7 +1584,7 @@ export default function TestDetailPage() {
   if (isIndirectTensileTest) {
     return (
       <>
-        <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Indirect tensile`} action={<StatusBadge status={activeTest.status} />} />
+        <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Indirect tensile`} action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />} />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
           <form onSubmit={submitConcreteIndirectTensile} className="surface-card">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4"><div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div><h2 className="mt-1 text-lg font-semibold text-ink">Rezistenca në tërheqje indirekte</h2><p className="mt-1 text-sm text-muted">BS EN 12390-6:2009. fct = 2F / (π x L x d), with F in N.</p></div>
@@ -1624,7 +1625,7 @@ export default function TestDetailPage() {
   if (isWaterPenetrationTest) {
     return (
       <>
-        <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Water penetration`} action={<StatusBadge status={activeTest.status} />} />
+        <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Water penetration`} action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />} />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
           <form onSubmit={submitConcreteWaterPenetration} className="surface-card">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4"><div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div><h2 className="mt-1 text-lg font-semibold text-ink">Depërtimi i ujit në betonin e ngurtësuar</h2><p className="mt-1 text-sm text-muted">BS EN 12390-8:2019. Record the maximum depth of water penetration for up to three specimens.</p></div>
@@ -1670,7 +1671,7 @@ export default function TestDetailPage() {
   if (isFlexuralTest) {
     return (
       <>
-        <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Flexural strength`} action={<StatusBadge status={activeTest.status} />} />
+        <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Flexural strength`} action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />} />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
           <form onSubmit={submitConcreteFlexural} className="surface-card">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4"><div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div><h2 className="mt-1 text-lg font-semibold text-ink">Rezistenca në përkulje / Flexural Strength</h2><p className="mt-1 text-sm text-muted">BS EN 12390-5:2019. Two-point apparatus formula: f = F x l / (d1 x d2²).</p></div>
@@ -1710,7 +1711,7 @@ export default function TestDetailPage() {
   if (isSoundnessTest) {
     return (
       <>
-        <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Soundness`} action={<StatusBadge status={activeTest.status} />} />
+        <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Soundness`} action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />} />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
           <form onSubmit={submitSoundness} className="surface-card">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4">
@@ -1780,7 +1781,7 @@ export default function TestDetailPage() {
   if (isSandEquivalentTest) {
     return (
       <>
-        <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Sand equivalent`} action={<StatusBadge status={activeTest.status} />} />
+        <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Sand equivalent`} action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />} />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
           <form onSubmit={submitSandEquivalent} className="surface-card">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4">
@@ -1839,7 +1840,7 @@ export default function TestDetailPage() {
   if (isBulkDensityTest) {
     return (
       <>
-        <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Bulk density`} action={<StatusBadge status={activeTest.status} />} />
+        <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Bulk density`} action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />} />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
           <form onSubmit={submitBulkDensity} className="surface-card">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4"><div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div><h2 className="mt-1 text-lg font-semibold text-ink">Pesha volumore e agregateve / Bulk Density</h2><p className="mt-1 text-sm text-muted">BS EN 1097-3:1998. Bulk density = (m2 - m1) / V, reported in Mg/m3.</p></div>
@@ -1878,7 +1879,7 @@ export default function TestDetailPage() {
     const defaults = ["4/8 mm", "8/16 mm", "16/31.5 mm", "31.5/63 mm"];
     return (
       <>
-        <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Elongation index`} action={<StatusBadge status={activeTest.status} />} />
+        <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Elongation index`} action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />} />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
           <form onSubmit={submitElongationIndex} className="surface-card">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4"><div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div><h2 className="mt-1 text-lg font-semibold text-ink">Indeksi i zgjatimit / Elongation Index</h2><p className="mt-1 text-sm text-muted">BS 812-105.2:1980. EI = elongated particle mass / retained mass x 100.</p></div>
@@ -1936,7 +1937,7 @@ export default function TestDetailPage() {
         <PageHeader
           title={activeTest.testCode}
           description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Flakiness index`}
-          action={<StatusBadge status={activeTest.status} />}
+          action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />}
         />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
           <form onSubmit={submitFlakinessIndex} className="surface-card">
@@ -2054,7 +2055,7 @@ export default function TestDetailPage() {
         <PageHeader
           title={activeTest.testCode}
           description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Shape index`}
-          action={<StatusBadge status={activeTest.status} />}
+          action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />}
         />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
           <form onSubmit={submitShapeIndex} className="surface-card">
@@ -2160,7 +2161,7 @@ export default function TestDetailPage() {
         <PageHeader
           title={activeTest.testCode}
           description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Filler specific density`}
-          action={<StatusBadge status={activeTest.status} />}
+          action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />}
         />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
           <form onSubmit={submitFillerDensity} className="surface-card">
@@ -2268,7 +2269,7 @@ export default function TestDetailPage() {
         <PageHeader
           title={activeTest.testCode}
           description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / ${sample?.sampleType ?? ""} / Density and absorption`}
-          action={<StatusBadge status={activeTest.status} />}
+          action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />}
         />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
           <form onSubmit={submitDensityAbsorption} className="surface-card">
@@ -2385,7 +2386,7 @@ export default function TestDetailPage() {
         <PageHeader
           title={activeTest.testCode}
           description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / ${sample?.sampleType ?? ""} / ACV`}
-          action={<StatusBadge status={activeTest.status} />}
+          action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />}
         />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
           <form onSubmit={submitAcv} className="surface-card">
@@ -2483,7 +2484,7 @@ export default function TestDetailPage() {
         <PageHeader
           title={activeTest.testCode}
           description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / ${sample?.sampleType ?? ""} / Freeze-thaw cycles`}
-          action={<StatusBadge status={activeTest.status} />}
+          action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />}
         />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
           <form onSubmit={submitFreezeThaw} className="surface-card">
@@ -2604,7 +2605,7 @@ export default function TestDetailPage() {
         <PageHeader
           title={activeTest.testCode}
           description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / ${sample?.sampleType ?? ""} / Los Angeles`}
-          action={<StatusBadge status={activeTest.status} />}
+          action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />}
         />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
           <form onSubmit={submitLosAngeles} className="surface-card">
@@ -2717,7 +2718,7 @@ export default function TestDetailPage() {
         <PageHeader
           title={activeTest.testCode}
           description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / ${sample?.sampleType ?? ""} / Klorure dhe sulfate në agregate`}
-          action={<StatusBadge status={activeTest.status} />}
+          action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />}
         />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
           <form onSubmit={submitAggregateChemical} className="surface-card">
@@ -2813,7 +2814,7 @@ export default function TestDetailPage() {
         <PageHeader
           title={activeTest.testCode}
           description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / ${sample?.sampleType ?? ""} / Granulometri sipas BS EN`}
-          action={<StatusBadge status={activeTest.status} />}
+          action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />}
         />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
           <form onSubmit={submitAggregate} className="surface-card">
@@ -2918,7 +2919,7 @@ export default function TestDetailPage() {
         <PageHeader
           title={activeTest.testCode}
           description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / ${sample?.quantity ?? activeTest.cubeCount} rebar specimen${(sample?.quantity ?? activeTest.cubeCount) === 1 ? "" : "s"}`}
-          action={<StatusBadge status={activeTest.status} />}
+          action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />}
         />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
           <form onSubmit={submitSteel} className="surface-card">
@@ -3078,7 +3079,7 @@ export default function TestDetailPage() {
       <PageHeader
         title={activeTest.testCode}
         description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / ${activeTest.cubeCount} cube${activeTest.cubeCount === 1 ? "" : "s"} at ${activeTest.scheduledAgeDays} days`}
-        action={<StatusBadge status={activeTest.status} />}
+        action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />}
       />
       <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
         <form onSubmit={submit} className="surface-card">

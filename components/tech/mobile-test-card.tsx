@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { StageCell } from "@/components/ui/stage-cell";
 import { formatEuropeanDate } from "@/lib/date-format";
+import { testLifecycle } from "@/lib/sample-stage";
 import type { LabTest, Sample } from "@/lib/types";
 
 export function MobileTestCard({ test, sample }: { test: LabTest; sample?: Sample }) {
@@ -15,7 +16,7 @@ export function MobileTestCard({ test, sample }: { test: LabTest; sample?: Sampl
           <div className="mt-1 text-sm font-semibold text-ink">{test.testType}</div>
           <div className="mt-1 text-xs text-muted">{sample?.sampleCode ?? "-"} &middot; {sample?.sampleType ?? "-"}</div>
         </div>
-        <StatusBadge status={test.status} />
+        <StageCell lifecycle={testLifecycle(test, [])} />
       </div>
       <div className="mt-3 flex items-center justify-between text-xs text-muted">
         <span>Due {formatEuropeanDate(test.requiredTestDate)}</span>

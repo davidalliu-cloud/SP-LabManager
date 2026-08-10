@@ -1,5 +1,6 @@
-import { StatusBadge } from "@/components/ui/status-badge";
+import { StageCell } from "@/components/ui/stage-cell";
 import { formatEuropeanDate } from "@/lib/date-format";
+import { testLifecycle } from "@/lib/sample-stage";
 import type { LabTest, Sample } from "@/lib/types";
 
 export function MobileTestFormShell({
@@ -29,7 +30,7 @@ export function MobileTestFormShell({
           <h1 className="mt-1 text-lg font-bold text-ink">{title}</h1>
           {description ? <p className="mt-1 text-sm text-muted">{description}</p> : null}
         </div>
-        <StatusBadge status={test.status} />
+        <StageCell lifecycle={testLifecycle(test, [])} />
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3 rounded-lg border border-line bg-white p-4 text-sm">

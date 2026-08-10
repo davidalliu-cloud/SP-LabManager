@@ -2,8 +2,10 @@ import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { isApproaching, isOverdue } from "@/lib/status";
+import { useLabStore } from "@/lib/lab-store";
+import { testLifecycle } from "@/lib/sample-stage";
 import type { Client, LabTest, Project, Sample, LabUser } from "@/lib/types";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { StageCell } from "@/components/ui/stage-cell";
 
 export function TestCard({
   test,
@@ -21,6 +23,7 @@ export function TestCard({
   showClientIdentity?: boolean;
 }) {
   const { t } = useI18n();
+  const store = useLabStore();
   const overdue = isOverdue(test.requiredTestDate, test.status);
   const soon = isApproaching(test.requiredTestDate);
   const unitLabel = sample?.sampleType.includes("Rebar") || sample?.sampleType.includes("Shufër Çeliku") ? "mostra" : t("test.cubes");
@@ -37,7 +40,7 @@ export function TestCard({
           <div className="text-sm font-semibold text-ink">{sample?.sampleCode ?? test.testCode}</div>
           <div className="mt-1 text-xs text-muted">{showClientIdentity ? client?.clientName : client?.clientCode ?? "Klient në pritje"}</div>
         </div>
-        <StatusBadge status={overdue ? "Delayed" : test.status} />
+        <StageCell lifecycle={testLifecycle(test, store.reports)} late={overdue} />
       </div>
       <div className="mt-3 text-sm text-ink">{test.testType}</div>
       <div className="mt-1 text-xs text-muted">{showClientIdentity ? project?.projectName : "Identiteti i klientit është i kufizuar"}</div>

@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { StageCell } from "@/components/ui/stage-cell";
 import { SummaryCard } from "@/components/ui/summary-card";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { useI18n } from "@/lib/i18n";
 import { useLabStore } from "@/lib/lab-store";
 import { canViewClientIdentity } from "@/lib/permissions";
-import { deriveSampleStage } from "@/lib/sample-stage";
+import { sampleLifecycle, testLifecycle } from "@/lib/sample-stage";
 import { isApproaching, isOverdue } from "@/lib/status";
 import type { LabTest, Sample } from "@/lib/types";
 
@@ -122,7 +122,6 @@ export default function DashboardPage() {
                   <th className="px-4 py-3">Data e testimit</th>
                   <th className="px-4 py-3">Afati i raportit</th>
                   <th className="px-4 py-3">Tekniku</th>
-                  <th className="px-4 py-3">Raporti</th>
                   <th className="px-4 py-3">Veprim</th>
                 </tr>
               </thead>
@@ -137,7 +136,7 @@ export default function DashboardPage() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={11} className="px-4 py-6 text-center text-sm text-muted">{t("dashboard.noTests")}</td>
+                    <td colSpan={10} className="px-4 py-6 text-center text-sm text-muted">{t("dashboard.noTests")}</td>
                   </tr>
                 )}
               </tbody>
@@ -172,20 +171,27 @@ function WorkflowRow({
   const client = store.clients.find((item) => item.id === (test?.clientId ?? sample?.clientId));
   const project = store.projects.find((item) => item.id === (test?.projectId ?? sample?.projectId));
   const technician = store.users.find((item) => item.id === (test?.assignedTechnician ?? sample?.assignedTechnician));
-  const report = test ? store.reports.find((item) => item.testId === test.id) : undefined;
   const overdue = test ? isOverdue(test.requiredTestDate, test.status) : false;
   const approaching = test ? isApproaching(test.requiredTestDate) : false;
-  // "Faza" is the sample's lifecycle stage (one of the agreed seven), derived
-  // from its tests + reports — the same for every test row of a sample.
-  // Timeliness (late / at-risk) is shown by the row colour, and the per-report
-  // state stays in the "Raporti" column.
-  const status = sample ? deriveSampleStage(sample, store.tests, store.reports) : "Registered";
+  // One lifecycle status per row: the test's own stage for a test row, the
+  // sample's aggregate stage for a sample row. The muted sub-detail is the
+  // "what's pending" reason, shown in red when the row is late.
+  const lifecycle = test
+    ? testLifecycle(test, store.reports)
+    : sample
+      ? sampleLifecycle(sample, store.tests, store.reports)
+      : { stage: "Registered" as const, detail: "registered" as const };
+  const dueDate = test?.requiredTestDate;
+  const daysLate = overdue && dueDate ? Math.floor((Date.now() - new Date(`${dueDate}T23:59:59`).getTime()) / 86_400_000) : 0;
   const unit = sample?.sampleType.includes("Rebar") || sample?.sampleType.includes("Shufër Çeliku") ? "mostra" : "mostra";
   const quantity = test ? `${test.cubeCount} ${unit}${test.scheduledAgeDays ? ` / ${test.scheduledAgeDays} ditë` : ""}` : `${sample?.quantity ?? "-"} ${unit}`;
 
   return (
     <tr className={`${overdue ? "bg-red-50/70" : approaching ? "bg-amber-50/60" : "hover:bg-[rgba(91,25,63,0.04)]"}`}>
-      <td className="px-4 py-3"><StatusBadge status={status} /></td>
+      <td className="px-4 py-3">
+        <StageCell lifecycle={lifecycle} late={overdue} />
+        {overdue ? <div className="mt-0.5 text-[11px] font-semibold text-brand-late">{daysLate} ditë vonesë</div> : null}
+      </td>
       <td className="px-4 py-3 font-semibold text-ink">{sample?.sampleCode ?? test?.testCode}</td>
       <td className="px-4 py-3 font-semibold text-ink">{client?.clientCode ?? "Në pritje"}</td>
       <td className="px-4 py-3">{showClientIdentity ? project?.projectName ?? "Në pritje" : "I kufizuar"}</td>
@@ -194,7 +200,6 @@ function WorkflowRow({
       <td className="px-4 py-3">{formatEuropeanDate(test?.requiredTestDate ?? sample?.requiredTestDate)}</td>
       <td className="px-4 py-3">{formatEuropeanDate(test?.dueDate ?? sample?.reportDueDate)}</td>
       <td className="px-4 py-3">{technician?.fullName ?? "-"}</td>
-      <td className="px-4 py-3">{report ? <StatusBadge status={report.reportStatus} /> : "-"}</td>
       <td className="px-4 py-3">
         <Link href={test ? `/tests/${test.id}` : `/samples/${sample?.id}`} className="font-semibold text-lab-burgundy hover:text-lab-purple">
           {test ? "Hap testin" : "Hap kampionin"}
