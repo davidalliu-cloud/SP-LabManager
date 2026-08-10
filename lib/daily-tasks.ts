@@ -1,16 +1,5 @@
 import type { LabState, LabTest } from "./types";
-
-// A test still counts as "to be completed" until its testing is finished. These
-// statuses mean the lab work is done, so they are excluded from the daily list.
-const FINISHED_TEST_STATUSES = new Set([
-  "Completed",
-  "Report Drafted",
-  "Pending Approval",
-  "Approved",
-  "Report Approved",
-  "Issued",
-  "Sent to Client"
-]);
+import { testLifecycle } from "./sample-stage";
 
 export type TechnicianTasks = {
   technicianId: string | null;
@@ -27,29 +16,33 @@ export type TechnicianTasks = {
   }>;
 };
 
-export type ReportTask = {
-  label: string; // report number, or the sample code when no report exists yet
+// A flat action item for the non-technician-grouped sections (approvals, report
+// preparation). `label` is the report number, or the test code when no report
+// exists yet.
+export type ActionItem = {
+  label: string;
   sampleCode: string;
   testType: string;
-  person: string; // drafted-by / submitted-by, for context
+  person: string;
   note: string;
-  reportDueDate: string;
+  dueDate: string;
   overdue: boolean;
 };
 
-export type ReportTasks = {
-  toPrepare: ReportTask[]; // needs a report drafted / finalised
-  toApprove: ReportTask[]; // waiting for the Chief of Lab to approve
-  toSend: ReportTask[]; // approved, ready to send to the client
+// Everything that needs doing, grouped by the action required. Reports that are
+// already approved and only waiting to be sent to the client are intentionally
+// excluded — that follows the client's own schedule, not the daily to-do list.
+export type ActionBuckets = {
+  testsToDo: TechnicianTasks[]; // undertake / finish testing (due today or overdue), by technician
+  techApprovals: ActionItem[]; // tested, awaiting the Chief of Lab's technical approval
+  reportsToPrepare: ActionItem[]; // report to be produced / finalised (incl. rejected)
+  reportsToApprove: ActionItem[]; // report awaiting approval
 };
 
 export type DailyDigest = {
   date: string;
   taskCount: number;
-  testCount: number;
-  reportCount: number;
-  groups: TechnicianTasks[];
-  reports: ReportTasks;
+  buckets: ActionBuckets;
   recipients: string[];
   subject: string;
   html: string;
@@ -82,153 +75,146 @@ function formatEuropeanDate(value?: string) {
   return year && month && day ? `${day}/${month}/${year}` : value;
 }
 
-// Every unfinished test due on/before `today`, grouped by assigned technician.
-export function computeDueTasks(state: Partial<LabState>, today: string): TechnicianTasks[] {
+// Sort every test into the action it needs, using the shared lifecycle. Tests
+// still needing testing work are grouped by technician and limited to those due
+// today or overdue; approvals and report preparation are listed in full (they
+// should be cleared as soon as they arise, not on a due date). Report-approved
+// (ready to send) and delivered tests are excluded.
+export function computeActionBuckets(state: Partial<LabState>, today: string): ActionBuckets {
   const tests = state.tests ?? [];
   const samples = state.samples ?? [];
   const clients = state.clients ?? [];
   const projects = state.projects ?? [];
   const users = state.users ?? [];
+  const reports = state.reports ?? [];
+  const nameOf = (id?: string) => users.find((user) => user.id === id)?.fullName ?? "-";
 
-  const due = tests.filter((test: LabTest) => {
-    if (FINISHED_TEST_STATUSES.has(test.status)) return false;
-    return (test.requiredTestDate ?? "") <= today;
-  });
+  const testGroups = new Map<string, TechnicianTasks>();
+  const techApprovals: ActionItem[] = [];
+  const reportsToPrepare: ActionItem[] = [];
+  const reportsToApprove: ActionItem[] = [];
 
-  const groups = new Map<string, TechnicianTasks>();
-  for (const test of due) {
-    const technicianId = test.assignedTechnician ?? null;
-    const key = technicianId ?? "__unassigned__";
-    if (!groups.has(key)) {
-      const technician = users.find((user) => user.id === technicianId);
-      groups.set(key, {
-        technicianId,
-        technicianName: technician?.fullName ?? "Pa teknik / Unassigned",
-        tests: []
-      });
-    }
+  for (const test of tests) {
+    const { detail } = testLifecycle(test, reports);
     const sample = samples.find((row) => row.id === test.sampleId);
     const client = clients.find((row) => row.id === test.clientId);
     const project = projects.find((row) => row.id === test.projectId);
-    const unit = sample?.sampleType?.includes("Çeliku") || sample?.sampleType?.includes("Rebar") ? "mostra" : "mostra";
-    groups.get(key)!.tests.push({
-      testCode: test.testCode,
+    const testReport = reports.find((row) => row.testId === test.id);
+    const reportDueDate = sample?.reportDueDate ?? "";
+    const reportOverdue = Boolean(reportDueDate) && reportDueDate < today;
+
+    const addTestToDo = () => {
+      const technicianId = test.assignedTechnician ?? null;
+      const key = technicianId ?? "__unassigned__";
+      if ((test.requiredTestDate ?? "") > today) return; // not due yet
+      if (!testGroups.has(key)) {
+        testGroups.set(key, {
+          technicianId,
+          technicianName: nameOf(technicianId) === "-" ? "Pa teknik / Unassigned" : nameOf(technicianId),
+          tests: []
+        });
+      }
+      const unit = "mostra";
+      testGroups.get(key)!.tests.push({
+        testCode: test.testCode,
+        sampleCode: sample?.sampleCode ?? test.testCode,
+        testType: test.testType,
+        clientLabel: client?.clientCode ?? client?.clientName ?? "-",
+        projectLabel: project?.projectName ?? "-",
+        requiredTestDate: test.requiredTestDate ?? "",
+        batch: test.scheduledAgeDays ? `${test.cubeCount} ${unit} / ${test.scheduledAgeDays}d` : `${test.cubeCount} ${unit}`,
+        overdue: (test.requiredTestDate ?? "") < today
+      });
+    };
+
+    const reportItem = (person: string, note: string): ActionItem => ({
+      label: testReport?.reportNumber || "—",
       sampleCode: sample?.sampleCode ?? test.testCode,
       testType: test.testType,
-      clientLabel: client?.clientCode ?? client?.clientName ?? "-",
-      projectLabel: project?.projectName ?? "-",
-      requiredTestDate: test.requiredTestDate ?? "",
-      batch: test.scheduledAgeDays ? `${test.cubeCount} ${unit} / ${test.scheduledAgeDays}d` : `${test.cubeCount} ${unit}`,
-      overdue: (test.requiredTestDate ?? "") < today
+      person,
+      note,
+      dueDate: reportDueDate,
+      overdue: reportOverdue
     });
+
+    switch (detail) {
+      case "awaitTesting":
+      case "testing":
+        addTestToDo();
+        break;
+      case "rejected":
+        // A rejected report is report work; a rejected test-result is redone.
+        if (testReport) reportsToPrepare.push(reportItem(nameOf(testReport.draftedBy), "Refuzuar – për korrigjim / Rejected – fix"));
+        else addTestToDo();
+        break;
+      case "awaitTechApproval":
+        techApprovals.push({
+          label: test.testCode,
+          sampleCode: sample?.sampleCode ?? test.testCode,
+          testType: test.testType,
+          person: nameOf(test.assignedTechnician),
+          note: "Pret aprovim teknik / Awaiting technical approval",
+          dueDate: test.requiredTestDate ?? "",
+          overdue: (test.requiredTestDate ?? "") < today
+        });
+        break;
+      case "awaitReport":
+        reportsToPrepare.push(reportItem(nameOf(test.assignedTechnician), "Raport i ri / New report"));
+        break;
+      case "reportPreparing":
+        reportsToPrepare.push(reportItem(nameOf(testReport?.draftedBy), "Për t'u finalizuar / To finalise"));
+        break;
+      case "reportAwaitApproval":
+        reportsToApprove.push(reportItem(nameOf(testReport?.checkedBy || testReport?.draftedBy), "Pret aprovim / Awaiting approval"));
+        break;
+      default:
+        break; // reportApproved (ready to send) / delivered → excluded
+    }
   }
 
-  // Sort each technician's tests by required date, and technicians by name
-  // (unassigned last).
-  const result = Array.from(groups.values());
-  for (const group of result) {
+  const testsToDo = Array.from(testGroups.values());
+  for (const group of testsToDo) {
     group.tests.sort((left, right) => left.requiredTestDate.localeCompare(right.requiredTestDate));
   }
-  result.sort((left, right) => {
+  testsToDo.sort((left, right) => {
     if (!left.technicianId) return 1;
     if (!right.technicianId) return -1;
     return left.technicianName.localeCompare(right.technicianName);
   });
-  return result;
-}
 
-// Report-side work: reports to draft/finalise, reports awaiting approval, and
-// approved reports still to be sent to the client. Not date-filtered — these are
-// pending states that should be cleared regardless of when they arose.
-export function computeReportTasks(state: Partial<LabState>, today: string): ReportTasks {
-  const tests = state.tests ?? [];
-  const samples = state.samples ?? [];
-  const reports = state.reports ?? [];
-  const users = state.users ?? [];
-  const nameOf = (id?: string) => users.find((user) => user.id === id)?.fullName ?? "-";
-
-  const toPrepare: ReportTask[] = [];
-  const toApprove: ReportTask[] = [];
-  const toSend: ReportTask[] = [];
-
-  // 1) Technically-approved tests that have no report drafted yet.
-  for (const test of tests) {
-    if (test.status !== "Approved") continue;
-    if (reports.some((report) => report.testId === test.id)) continue;
-    const sample = samples.find((row) => row.id === test.sampleId);
-    const reportDueDate = sample?.reportDueDate ?? "";
-    toPrepare.push({
-      label: "—",
-      sampleCode: sample?.sampleCode ?? test.testCode,
-      testType: test.testType,
-      person: nameOf(test.assignedTechnician),
-      note: "Raport i ri / New report",
-      reportDueDate,
-      overdue: Boolean(reportDueDate) && reportDueDate < today
-    });
-  }
-
-  // 2) Reports already open in the workflow.
-  for (const report of reports) {
-    const sample = samples.find((row) => row.id === report.sampleId);
-    const test = tests.find((row) => row.id === report.testId);
-    const reportDueDate = sample?.reportDueDate ?? "";
-    const overdue = Boolean(reportDueDate) && reportDueDate < today;
-    const base = {
-      label: report.reportNumber || "—",
-      sampleCode: sample?.sampleCode ?? "-",
-      testType: test?.testType ?? "-",
-      reportDueDate,
-      overdue
-    };
-    if (report.reportStatus === "Draft" || report.reportStatus === "Report Drafted") {
-      toPrepare.push({ ...base, person: nameOf(report.draftedBy), note: "Për t'u finalizuar / To finalise" });
-    } else if (report.reportStatus === "Rejected") {
-      toPrepare.push({ ...base, person: nameOf(report.draftedBy), note: "Refuzuar – për korrigjim / Rejected – fix" });
-    } else if (report.reportStatus === "Pending Approval") {
-      toApprove.push({ ...base, person: nameOf(report.checkedBy || report.draftedBy), note: "Në pritje miratimi / Awaiting approval" });
-    } else if (report.reportStatus === "Approved") {
-      // Sending to the client follows the client's own schedule (weekly, monthly,
-      // or as soon as ready) rather than the internal report due date, so this
-      // bucket is a plain count/list and never flagged overdue.
-      toSend.push({ ...base, overdue: false, person: nameOf(report.approvedBy), note: "Miratuar – gati për dërgim / Approved – ready to send" });
-    }
-  }
-
-  return { toPrepare, toApprove, toSend };
+  return { testsToDo, techApprovals, reportsToPrepare, reportsToApprove };
 }
 
 function escapeHtml(value: string) {
   return value.replace(/[&<>"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[char] ?? char));
 }
 
-// Render a flat list of report tasks (report number, sample, test, person).
-function reportSectionHtml(title: string, tasks: ReportTask[], accent: string) {
-  if (!tasks.length) return "";
-  const rows = tasks
-    .map((task) => {
-      const flag = task.overdue
-        ? '<span style="color:#ffffff;background:#FF5757;border-radius:4px;padding:1px 6px;font-size:11px;">Vonuar</span>'
-        : "";
-      return `<tr>
-        <td style="padding:6px 10px;border-bottom:1px solid #eee;font-weight:600;">${escapeHtml(task.label)}</td>
-        <td style="padding:6px 10px;border-bottom:1px solid #eee;">${escapeHtml(task.sampleCode)}</td>
-        <td style="padding:6px 10px;border-bottom:1px solid #eee;">${escapeHtml(task.testType)}</td>
-        <td style="padding:6px 10px;border-bottom:1px solid #eee;">${escapeHtml(task.person)}</td>
-        <td style="padding:6px 10px;border-bottom:1px solid #eee;">${escapeHtml(task.note)}</td>
-        <td style="padding:6px 10px;border-bottom:1px solid #eee;white-space:nowrap;">${formatEuropeanDate(task.reportDueDate)} ${flag}</td>
-      </tr>`;
-    })
+const lateFlag = '<span style="color:#ffffff;background:#FF5757;border-radius:4px;padding:1px 6px;font-size:11px;">Vonuar</span>';
+
+// A flat action table (approvals / report preparation).
+function actionSectionHtml(title: string, items: ActionItem[], accent: string) {
+  if (!items.length) return "";
+  const rows = items
+    .map(
+      (item) => `<tr>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee;font-weight:600;">${escapeHtml(item.label)}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee;">${escapeHtml(item.sampleCode)}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee;">${escapeHtml(item.testType)}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee;">${escapeHtml(item.person)}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee;">${escapeHtml(item.note)}</td>
+        <td style="padding:6px 10px;border-bottom:1px solid #eee;white-space:nowrap;">${formatEuropeanDate(item.dueDate)} ${item.overdue ? lateFlag : ""}</td>
+      </tr>`
+    )
     .join("");
-  return `<h3 style="margin:22px 0 6px;color:${accent};font-size:15px;">${escapeHtml(title)} <span style="color:#888;font-weight:400;">(${tasks.length})</span></h3>
+  return `<h3 style="margin:22px 0 6px;color:${accent};font-size:15px;">${escapeHtml(title)} <span style="color:#888;font-weight:400;">(${items.length})</span></h3>
     <table style="border-collapse:collapse;width:100%;font-size:13px;color:#222;">
       <thead>
         <tr style="text-align:left;color:${accent};">
-          <th style="padding:6px 10px;border-bottom:2px solid ${accent};">Raporti</th>
+          <th style="padding:6px 10px;border-bottom:2px solid ${accent};">Raporti / Testi</th>
           <th style="padding:6px 10px;border-bottom:2px solid ${accent};">Kampioni</th>
           <th style="padding:6px 10px;border-bottom:2px solid ${accent};">Testi</th>
           <th style="padding:6px 10px;border-bottom:2px solid ${accent};">Personi</th>
-          <th style="padding:6px 10px;border-bottom:2px solid ${accent};">Statusi</th>
+          <th style="padding:6px 10px;border-bottom:2px solid ${accent};">Veprimi</th>
           <th style="padding:6px 10px;border-bottom:2px solid ${accent};">Afati</th>
         </tr>
       </thead>
@@ -238,11 +224,9 @@ function reportSectionHtml(title: string, tasks: ReportTask[], accent: string) {
 
 // Build the whole digest: recipients (active employees) + subject + HTML/text.
 export function buildDailyDigest(state: Partial<LabState>, today: string): DailyDigest {
-  const groups = computeDueTasks(state, today);
-  const reports = computeReportTasks(state, today);
-  const testCount = groups.reduce((sum, group) => sum + group.tests.length, 0);
-  const reportCount = reports.toPrepare.length + reports.toApprove.length + reports.toSend.length;
-  const taskCount = testCount + reportCount;
+  const buckets = computeActionBuckets(state, today);
+  const testCount = buckets.testsToDo.reduce((sum, group) => sum + group.tests.length, 0);
+  const taskCount = testCount + buckets.techApprovals.length + buckets.reportsToPrepare.length + buckets.reportsToApprove.length;
   const recipients = Array.from(
     new Set(
       (state.users ?? [])
@@ -255,21 +239,18 @@ export function buildDailyDigest(state: Partial<LabState>, today: string): Daily
   const prettyDate = formatEuropeanDate(today);
   const subject = `Detyrat e ditës / Daily tasks – ${prettyDate} (${taskCount})`;
 
-  const groupsHtml = groups
+  const testsToDoHtml = buckets.testsToDo
     .map((group) => {
       const rows = group.tests
-        .map((task) => {
-          const flag = task.overdue
-            ? '<span style="color:#ffffff;background:#FF5757;border-radius:4px;padding:1px 6px;font-size:11px;">Vonuar</span>'
-            : "";
-          return `<tr>
+        .map(
+          (task) => `<tr>
             <td style="padding:6px 10px;border-bottom:1px solid #eee;font-weight:600;">${escapeHtml(task.sampleCode)}</td>
             <td style="padding:6px 10px;border-bottom:1px solid #eee;">${escapeHtml(task.testType)}</td>
             <td style="padding:6px 10px;border-bottom:1px solid #eee;">${escapeHtml(task.clientLabel)}</td>
             <td style="padding:6px 10px;border-bottom:1px solid #eee;white-space:nowrap;">${escapeHtml(task.batch)}</td>
-            <td style="padding:6px 10px;border-bottom:1px solid #eee;white-space:nowrap;">${formatEuropeanDate(task.requiredTestDate)} ${flag}</td>
-          </tr>`;
-        })
+            <td style="padding:6px 10px;border-bottom:1px solid #eee;white-space:nowrap;">${formatEuropeanDate(task.requiredTestDate)} ${task.overdue ? lateFlag : ""}</td>
+          </tr>`
+        )
         .join("");
       return `<h3 style="margin:22px 0 6px;color:#373455;font-size:15px;">${escapeHtml(group.technicianName)} <span style="color:#888;font-weight:400;">(${group.tests.length})</span></h3>
         <table style="border-collapse:collapse;width:100%;font-size:13px;color:#222;">
@@ -287,26 +268,23 @@ export function buildDailyDigest(state: Partial<LabState>, today: string): Daily
     })
     .join("");
 
-  const testsSectionHtml = testCount
-    ? `<h2 style="margin:20px 0 4px;color:#5b193f;font-size:16px;">Teste / Tests <span style="color:#888;font-weight:400;">(${testCount})</span></h2>
-       <p style="font-size:12px;color:#666;margin:0 0 4px;">Teste të papërfunduara me afat sot ose të kaluar, sipas teknikut. / Unfinished tests due today or overdue, by technician.</p>
-       ${groupsHtml}`
-    : "";
-
-  const reportsSectionHtml =
-    reportCount
-      ? `<h2 style="margin:26px 0 4px;color:#5b193f;font-size:16px;">Raporte / Reports <span style="color:#888;font-weight:400;">(${reportCount})</span></h2>
-         ${reportSectionHtml("Për t'u përgatitur / To prepare", reports.toPrepare, "#7c7d4e")}
-         ${reportSectionHtml("Për miratim / To approve", reports.toApprove, "#d8a13b")}
-         ${reportSectionHtml("Gati për dërgim / Ready to send", reports.toSend, "#10BB82")}`
-      : "";
+  const sections = [
+    testCount
+      ? `<h2 style="margin:20px 0 4px;color:#5b193f;font-size:16px;">Teste për të kryer / Tests to carry out <span style="color:#888;font-weight:400;">(${testCount})</span></h2>
+         <p style="font-size:12px;color:#666;margin:0 0 4px;">Për të nisur ose përfunduar, me afat sot ose të kaluar, sipas teknikut. / To start or finish, due today or overdue, by technician.</p>
+         ${testsToDoHtml}`
+      : "",
+    actionSectionHtml("Për aprovim teknik / Technical approval", buckets.techApprovals, "#d8a13b"),
+    actionSectionHtml("Raporte për të përgatitur / Reports to prepare", buckets.reportsToPrepare, "#7c7d4e"),
+    actionSectionHtml("Raporte për aprovim / Reports to approve", buckets.reportsToApprove, "#6baead")
+  ].join("");
 
   const html = `<div style="font-family:Arial,Helvetica,sans-serif;max-width:720px;margin:0 auto;padding:20px;">
     <div style="border-bottom:3px solid #5b193f;padding-bottom:10px;margin-bottom:6px;">
       <div style="font-size:18px;font-weight:700;color:#5b193f;">SARP Laboratory</div>
       <div style="font-size:14px;color:#373455;">Detyrat për ${prettyDate} / Tasks for ${prettyDate}</div>
     </div>
-    ${taskCount ? `${testsSectionHtml}${reportsSectionHtml}` : '<p style="font-size:14px;color:#10BB82;font-weight:600;">Nuk ka detyra për sot. / No tasks due today.</p>'}
+    ${taskCount ? sections : '<p style="font-size:14px;color:#10BB82;font-weight:600;">Nuk ka detyra për sot. / No tasks due today.</p>'}
     <p style="margin-top:24px;font-size:11px;color:#999;">Ky email u dërgua automatikisht nga sistemi i laboratorit. / Sent automatically by the lab system.</p>
   </div>`;
 
@@ -315,34 +293,27 @@ export function buildDailyDigest(state: Partial<LabState>, today: string): Daily
     textLines.push("Nuk ka detyra për sot. / No tasks due today.");
   } else {
     if (testCount) {
-      textLines.push(`TESTE / TESTS (${testCount})`);
-      for (const group of groups) {
+      textLines.push(`TESTE PËR TË KRYER / TESTS TO CARRY OUT (${testCount})`);
+      for (const group of buckets.testsToDo) {
         textLines.push(`${group.technicianName} (${group.tests.length}):`);
         for (const task of group.tests) {
-          textLines.push(
-            `  - ${task.sampleCode} · ${task.testType} · ${task.clientLabel} · ${task.batch} · afati ${formatEuropeanDate(task.requiredTestDate)}${task.overdue ? " (VONUAR)" : ""}`
-          );
+          textLines.push(`  - ${task.sampleCode} · ${task.testType} · ${task.clientLabel} · ${task.batch} · afati ${formatEuropeanDate(task.requiredTestDate)}${task.overdue ? " (VONUAR)" : ""}`);
         }
       }
       textLines.push("");
     }
-    if (reportCount) {
-      textLines.push(`RAPORTE / REPORTS (${reportCount})`);
-      const addReportBlock = (title: string, tasks: ReportTask[]) => {
-        if (!tasks.length) return;
-        textLines.push(`${title} (${tasks.length}):`);
-        for (const task of tasks) {
-          textLines.push(
-            `  - ${task.label} · ${task.sampleCode} · ${task.testType} · ${task.person} · ${task.note} · afati ${formatEuropeanDate(task.reportDueDate)}${task.overdue ? " (VONUAR)" : ""}`
-          );
-        }
-      };
-      addReportBlock("Për t'u përgatitur / To prepare", reports.toPrepare);
-      addReportBlock("Për miratim / To approve", reports.toApprove);
-      addReportBlock("Gati për dërgim / Ready to send", reports.toSend);
+    const addFlat = (title: string, items: ActionItem[]) => {
+      if (!items.length) return;
+      textLines.push(`${title} (${items.length})`);
+      for (const item of items) {
+        textLines.push(`  - ${item.label} · ${item.sampleCode} · ${item.testType} · ${item.person} · ${item.note} · afati ${formatEuropeanDate(item.dueDate)}${item.overdue ? " (VONUAR)" : ""}`);
+      }
       textLines.push("");
-    }
+    };
+    addFlat("PËR APROVIM TEKNIK / TECHNICAL APPROVAL", buckets.techApprovals);
+    addFlat("RAPORTE PËR TË PËRGATITUR / REPORTS TO PREPARE", buckets.reportsToPrepare);
+    addFlat("RAPORTE PËR APROVIM / REPORTS TO APPROVE", buckets.reportsToApprove);
   }
 
-  return { date: today, taskCount, testCount, reportCount, groups, reports, recipients, subject, html, text: textLines.join("\n") };
+  return { date: today, taskCount, buckets, recipients, subject, html, text: textLines.join("\n") };
 }

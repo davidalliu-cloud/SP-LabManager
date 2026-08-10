@@ -117,12 +117,9 @@ export async function GET(request: Request) {
       dryRun: true,
       date: digest.date,
       taskCount: digest.taskCount,
-      testCount: digest.testCount,
-      reportCount: digest.reportCount,
       recipients: digest.recipients,
       subject: digest.subject,
-      groups: digest.groups,
-      reports: digest.reports
+      buckets: digest.buckets
     });
   }
 
