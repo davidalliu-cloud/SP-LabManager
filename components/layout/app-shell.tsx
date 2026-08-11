@@ -37,20 +37,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const showClientIdentityNav = canViewClientIdentity(currentUser?.role);
   const isTechnician = isTechnicianRole(currentUser?.role);
 
-  // Technicians land in the simplified mobile experience by default (only
-  // when they hit the bare dashboard root, e.g. right after login) — but
-  // from there they're free to open any desktop page too, same as everyone
-  // else. Mobile and desktop are both always available to every employee;
-  // this only picks a sensible starting point, it never locks anyone out of
-  // either mode. Every employee can open /tech directly regardless of role
-  // (any active employee can be assigned a test) — the /tech page itself
-  // only ever shows tests assigned to the current user, so it's a harmless
-  // empty list for someone with nothing assigned yet.
+  // Technician-role employees are mobile-only: their entire job is completing the
+  // tests assigned to them, which they do in the simplified /tech experience.
+  // They are locked out of the desktop app — any non-/tech route sends them back
+  // to /tech. (The /tech page only ever shows the current user's assigned tests.)
+  // Everyone else keeps full desktop + optional mobile access.
   useEffect(() => {
-    if (isLoginPage) return;
-    if (!currentUser) return;
-    if (isTechnician && pathname === "/") router.replace("/tech");
-  }, [isLoginPage, isTechnician, pathname, currentUser, router]);
+    if (isLoginPage || !currentUser) return;
+    if (isTechnician && !isTechRoute) router.replace("/tech");
+  }, [isLoginPage, isTechnician, isTechRoute, currentUser, router]);
 
   if (isLoginPage) return <>{children}</>;
 
@@ -72,6 +67,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   if (isTechRoute) return <>{children}</>;
+
+  // Mobile-only technicians never see the desktop shell; the effect above
+  // redirects them to /tech, so render nothing in the meantime.
+  if (isTechnician) return null;
 
   return (
     <div className="min-h-screen">

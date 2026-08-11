@@ -5,11 +5,14 @@ import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { ServiceWorkerRegistration } from "@/components/pwa/service-worker-registration";
 import { useAuth } from "@/lib/auth";
 import { useLabStore } from "@/lib/lab-store";
+import { isTechnicianRole } from "@/lib/permissions";
 
 export default function TechLayout({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
   const store = useLabStore();
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
+  // Technician-role employees are mobile-only, so they don't get the desktop link.
+  const isTechnician = isTechnicianRole(currentUser?.role);
 
   return (
     <div className="min-h-screen bg-lab-porcelain">
@@ -24,12 +27,14 @@ export default function TechLayout({ children }: { children: React.ReactNode }) 
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Link
-              href="/"
-              className="rounded-md border border-line bg-white px-3 py-2 text-xs font-semibold text-ink"
-            >
-              Versioni Desktop / Desktop view
-            </Link>
+            {!isTechnician ? (
+              <Link
+                href="/"
+                className="rounded-md border border-line bg-white px-3 py-2 text-xs font-semibold text-ink"
+              >
+                Versioni Desktop / Desktop view
+              </Link>
+            ) : null}
             {auth.isConfigured ? (
               <button
                 type="button"
