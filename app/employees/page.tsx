@@ -5,8 +5,26 @@ import { PageHeader } from "@/components/ui/page-header";
 import { SimpleTable } from "@/components/ui/simple-table";
 import { useI18n } from "@/lib/i18n";
 import { useLabStore } from "@/lib/lab-store";
-import { canManageEmployees } from "@/lib/permissions";
+import { canManageEmployees, isSuperAdmin } from "@/lib/permissions";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { LabUser, Role } from "@/lib/types";
+
+// Ask the secure server route (service-role key) to create or reset an employee's
+// login. Sends the current admin's session token so the server can verify them.
+async function setEmployeeLogin(email: string, password: string) {
+  const supabase = createSupabaseBrowserClient();
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) throw new Error("Duhet të jeni i identifikuar për të vendosur kredencialet.");
+  const response = await fetch("/api/admin/employee-login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ email, password })
+  });
+  const result = await response.json().catch(() => ({ ok: false, error: "Përgjigje e pavlefshme nga serveri." }));
+  if (!result.ok) throw new Error(result.error ?? "Veprimi dështoi.");
+  return result.action as "created" | "updated";
+}
 
 const roles: Role[] = [
   "Admin / Managing Director",
@@ -48,6 +66,8 @@ export default function EmployeesPage() {
   const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
   const canEditEmployees = canManageEmployees(currentUser?.role);
+  const canManageLogins = isSuperAdmin(currentUser?.role);
+  const [formMessage, setFormMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
 
   function openCreate() {
     if (!canEditEmployees) return;
@@ -67,7 +87,7 @@ export default function EmployeesPage() {
     setSelectedAreas((areas) => (areas.includes(area) ? areas.filter((item) => item !== area) : [...areas, area]));
   }
 
-  function submit(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const input = {
@@ -79,11 +99,26 @@ export default function EmployeesPage() {
       workAreas: selectedAreas,
       isActive: form.get("isActive") === "on"
     };
+    const password = String(form.get("password") ?? "");
+    setFormMessage(null);
 
     if (editing) {
       store.updateEmployee(editing.id, input);
     } else {
       store.createEmployee(input);
+    }
+
+    // If a password was entered when adding someone, create their login too.
+    if (!editing && canManageLogins && password) {
+      try {
+        await setEmployeeLogin(input.email, password);
+        setFormMessage({ tone: "ok", text: `Llogaria e hyrjes u krijua për ${input.email}.` });
+      } catch (error) {
+        setFormMessage({ tone: "error", text: `Punonjësi u ruajt, por krijimi i hyrjes dështoi: ${(error as Error).message}` });
+        setEditing(null);
+        setSelectedAreas([]);
+        return;
+      }
     }
 
     setShowForm(false);
@@ -115,6 +150,12 @@ export default function EmployeesPage() {
         </div>
       ) : null}
 
+      {formMessage ? (
+        <div className={`mb-4 rounded-md border px-4 py-3 text-sm font-medium ${formMessage.tone === "ok" ? "border-emerald-200 bg-emerald-50 text-emerald-900" : "border-red-200 bg-red-50 text-lab-red"}`}>
+          {formMessage.text}
+        </div>
+      ) : null}
+
       {canEditEmployees && showForm ? (
         <form onSubmit={submit} className="surface-card mb-5 grid gap-4 p-5 lg:grid-cols-2">
           <Field label={t("employees.fullName")}>
@@ -138,6 +179,11 @@ export default function EmployeesPage() {
             <input name="isActive" type="checkbox" defaultChecked={editing?.isActive ?? true} className="h-4 w-4 rounded border-line" />
             {t("employees.active")}
           </label>
+          {canManageLogins && !editing ? (
+            <Field label="Fjalëkalimi i hyrjes (opsional) / Login password (optional)">
+              <input name="password" type="text" minLength={8} className="input" placeholder="Të paktën 8 karaktere — krijon llogarinë e hyrjes" autoComplete="new-password" />
+            </Field>
+          ) : null}
           <div className="lg:col-span-2">
             <div className="mb-2 text-sm font-medium text-ink">{t("employees.workAreas")}</div>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -184,6 +230,7 @@ export default function EmployeesPage() {
               <th className="px-4 py-3">{t("employees.email")}</th>
               <th className="px-4 py-3">{t("employees.workAreas")}</th>
               <th className="px-4 py-3">{t("employees.status")}</th>
+              {canManageLogins ? <th className="px-4 py-3">Hyrja / Login</th> : null}
               {canEditEmployees ? <th className="px-4 py-3">{t("employees.actions")}</th> : null}
             </tr>
           </thead>
@@ -201,6 +248,11 @@ export default function EmployeesPage() {
                     {employee.isActive === false ? t("employees.inactiveStatus") : t("employees.activeStatus")}
                   </span>
                 </td>
+                {canManageLogins ? (
+                  <td className="px-4 py-3">
+                    <LoginControl email={employee.email} />
+                  </td>
+                ) : null}
                 {canEditEmployees ? (
                   <td className="px-3 py-2">
                     <div className="flex w-24 flex-col gap-1.5">
@@ -237,5 +289,55 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       {label}
       <div className="mt-1">{children}</div>
     </label>
+  );
+}
+
+// Super-admin control to create or reset the login password for one employee.
+function LoginControl({ email }: { email: string }) {
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
+
+  async function save() {
+    if (password.length < 8) {
+      setMessage({ tone: "error", text: "Të paktën 8 karaktere." });
+      return;
+    }
+    setBusy(true);
+    setMessage(null);
+    try {
+      const action = await setEmployeeLogin(email, password);
+      setMessage({ tone: "ok", text: action === "created" ? "Llogaria u krijua." : "Fjalëkalimi u ndryshua." });
+      setPassword("");
+    } catch (error) {
+      setMessage({ tone: "error", text: (error as Error).message });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!email) return <span className="text-xs text-muted">Pa email</span>;
+  return (
+    <div className="flex w-56 flex-col gap-1">
+      <div className="flex gap-1.5">
+        <input
+          type="text"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          placeholder="Fjalëkalim i ri"
+          autoComplete="new-password"
+          className="input h-8 py-1 text-xs"
+        />
+        <button
+          type="button"
+          onClick={save}
+          disabled={busy}
+          className="shrink-0 rounded-md bg-lab-burgundy px-2 py-1 text-[11px] font-semibold text-white hover:bg-[#4F1535] disabled:cursor-not-allowed disabled:bg-slate-300"
+        >
+          {busy ? "..." : "Ruaj"}
+        </button>
+      </div>
+      {message ? <span className={`text-[11px] ${message.tone === "ok" ? "text-lab-green" : "text-lab-red"}`}>{message.text}</span> : null}
+    </div>
   );
 }
