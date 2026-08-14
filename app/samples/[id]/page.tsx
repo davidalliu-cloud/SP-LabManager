@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { SummaryCard } from "@/components/ui/summary-card";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { useLabStore } from "@/lib/lab-store";
+import { accreditedSampleTypes } from "@/lib/accredited-tests";
 import { canAssignSampleClient, canEditSampleAfterRegistration, canReviewTests, canViewClientIdentity } from "@/lib/permissions";
 import { deriveSampleStage, reportLifecycle, testLifecycle } from "@/lib/sample-stage";
 import { StageCell } from "@/components/ui/stage-cell";
@@ -40,6 +41,9 @@ export default function SampleDetailPage() {
   const editProjects = store.projects.filter((item) => item.clientId === selectedEditClientId);
   const selectedEditProjectId = assignmentProjectId || sample.projectId || editProjects[0]?.id || "";
   const tests = store.tests.filter((item) => item.sampleId === sample.id);
+  const sampleTypeOptions = accreditedSampleTypes.includes(sample.sampleType)
+    ? accreditedSampleTypes
+    : [sample.sampleType, ...accreditedSampleTypes];
   const plannedCastingDates = Array.from(new Set((sample.testSchedules ?? []).map((row) => row.concretingDate).filter(Boolean)));
   const sampleCastingSummary =
     plannedCastingDates.length > 1
@@ -175,7 +179,13 @@ export default function SampleDetailPage() {
                     </Field>
                   </>
                 ) : null}
-                <Field label="Tipi i kampionit"><input name="sampleType" defaultValue={sample.sampleType} className="input" /></Field>
+                <Field label="Tipi i kampionit">
+                  <select name="sampleType" defaultValue={sample.sampleType} className="input">
+                    {sampleTypeOptions.map((type) => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                </Field>
                 <Field label="Sasia e pranuar"><input name="quantity" type="number" min="1" defaultValue={sample.quantity} className="input" /></Field>
                 <Field label="Data e pranimit"><input name="dateReceived" type="date" defaultValue={sample.dateReceived} className="input" /></Field>
                 <Field label="Ora e pranimit"><input name="timeReceived" type="time" defaultValue={sample.timeReceived} className="input" /></Field>
