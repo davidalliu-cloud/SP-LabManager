@@ -8,7 +8,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { SummaryCard } from "@/components/ui/summary-card";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { useLabStore } from "@/lib/lab-store";
-import { accreditedSampleTypes } from "@/lib/accredited-tests";
+import { accreditedSampleTypes, getAccreditedTestById, getAccreditedTestsForSampleType } from "@/lib/accredited-tests";
 import { canAssignSampleClient, canEditSampleAfterRegistration, canReviewTests, canViewClientIdentity } from "@/lib/permissions";
 import { deriveSampleStage, reportLifecycle, testLifecycle } from "@/lib/sample-stage";
 import { StageCell } from "@/components/ui/stage-cell";
@@ -20,6 +20,8 @@ export default function SampleDetailPage() {
   const [isEditingDetails, setIsEditingDetails] = useState(false);
   const [assignmentClientId, setAssignmentClientId] = useState("");
   const [assignmentProjectId, setAssignmentProjectId] = useState("");
+  const [editSampleType, setEditSampleType] = useState("");
+  const [editAccreditedTestId, setEditAccreditedTestId] = useState("");
   const sample = store.samples.find((item) => item.id === params.id);
 
   if (!sample) {
@@ -41,9 +43,13 @@ export default function SampleDetailPage() {
   const editProjects = store.projects.filter((item) => item.clientId === selectedEditClientId);
   const selectedEditProjectId = assignmentProjectId || sample.projectId || editProjects[0]?.id || "";
   const tests = store.tests.filter((item) => item.sampleId === sample.id);
+  const retargetableTests = tests.filter((item) => ["Pending", "Scheduled"].includes(item.status));
+  const lockedTests = tests.filter((item) => !["Pending", "Scheduled"].includes(item.status));
   const sampleTypeOptions = accreditedSampleTypes.includes(sample.sampleType)
     ? accreditedSampleTypes
     : [sample.sampleType, ...accreditedSampleTypes];
+  const editTestOptions = getAccreditedTestsForSampleType(editSampleType);
+  const editSelectedTest = getAccreditedTestById(editAccreditedTestId) ?? editTestOptions[0];
   const plannedCastingDates = Array.from(new Set((sample.testSchedules ?? []).map((row) => row.concretingDate).filter(Boolean)));
   const sampleCastingSummary =
     plannedCastingDates.length > 1
@@ -69,6 +75,19 @@ export default function SampleDetailPage() {
     store.assignSampleClient(sample.id, String(form.get("clientId")), String(form.get("projectId")));
   }
 
+  function openEdit() {
+    if (!sample) return;
+    setEditSampleType(sample.sampleType);
+    const matchingTest = getAccreditedTestsForSampleType(sample.sampleType).find((test) => test.testName === sample.requestedTestType);
+    setEditAccreditedTestId(matchingTest?.id ?? getAccreditedTestsForSampleType(sample.sampleType)[0]?.id ?? "");
+    setIsEditingDetails(true);
+  }
+
+  function changeEditSampleType(nextSampleType: string) {
+    setEditSampleType(nextSampleType);
+    setEditAccreditedTestId(getAccreditedTestsForSampleType(nextSampleType)[0]?.id ?? "");
+  }
+
   function submitEdit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!sample) return;
@@ -76,7 +95,7 @@ export default function SampleDetailPage() {
     store.updateSample(sample.id, {
       clientId: canAssignClient ? String(form.get("clientId") || sample.clientId) : sample.clientId,
       projectId: canAssignClient ? String(form.get("projectId") || sample.projectId) : sample.projectId,
-      sampleType: String(form.get("sampleType") || sample.sampleType),
+      sampleType: editSampleType || sample.sampleType,
       sampleDescription: String(form.get("sampleDescription") || ""),
       quantity: Number(form.get("quantity") || sample.quantity),
       dateReceived: String(form.get("dateReceived") || sample.dateReceived),
@@ -85,8 +104,8 @@ export default function SampleDetailPage() {
       deliveredBy: String(form.get("deliveredBy") || ""),
       collectedBy: String(form.get("collectedBy") || ""),
       concretingDate: String(form.get("concretingDate") || ""),
-      requestedTestType: String(form.get("requestedTestType") || sample.requestedTestType),
-      standard: String(form.get("standard") || sample.standard),
+      requestedTestType: editSelectedTest?.testName ?? sample.requestedTestType,
+      standard: editSelectedTest?.standard || sample.standard,
       requiredTestDate: hasMultipleSchedules ? sample.requiredTestDate : String(form.get("requiredTestDate") || sample.requiredTestDate),
       reportDueDate: hasMultipleSchedules ? sample.reportDueDate : String(form.get("reportDueDate") || sample.reportDueDate),
       assignedTechnician: String(form.get("assignedTechnician") || ""),
@@ -141,7 +160,7 @@ export default function SampleDetailPage() {
             <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
               <h2 className="text-base font-semibold text-ink">Informacioni i kampionit</h2>
               {canEditSample ? (
-                <button type="button" onClick={() => setIsEditingDetails((current) => !current)} className="btn-secondary px-3">
+                <button type="button" onClick={() => (isEditingDetails ? setIsEditingDetails(false) : openEdit())} className="btn-secondary px-3">
                   {isEditingDetails ? "Mbyll modifikimin" : "Modifiko të dhënat"}
                 </button>
               ) : null}
@@ -180,7 +199,7 @@ export default function SampleDetailPage() {
                   </>
                 ) : null}
                 <Field label="Tipi i kampionit">
-                  <select name="sampleType" defaultValue={sample.sampleType} className="input">
+                  <select name="sampleType" value={editSampleType} onChange={(event) => changeEditSampleType(event.target.value)} className="input">
                     {sampleTypeOptions.map((type) => (
                       <option key={type} value={type}>{type}</option>
                     ))}
@@ -208,8 +227,16 @@ export default function SampleDetailPage() {
                     ))}
                   </select>
                 </Field>
-                <Field label="Testi i kërkuar"><input name="requestedTestType" defaultValue={sample.requestedTestType} className="input" /></Field>
-                <Field label="Standardi"><input name="standard" defaultValue={sample.standard} className="input" /></Field>
+                <Field label="Testi i akredituar i kërkuar">
+                  <select value={editAccreditedTestId} onChange={(event) => setEditAccreditedTestId(event.target.value)} className="input">
+                    {editTestOptions.map((test) => (
+                      <option key={test.id} value={test.id}>{test.testName}</option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Standardi përkatës"><input value={editSelectedTest?.standard || "Standardi nuk është përcaktuar në listën e akreditimit"} readOnly className="input bg-lab-porcelain" /></Field>
+                <Field label="Intervali i akredituar i matjes"><input value={editSelectedTest?.measurementRange || "-"} readOnly className="input bg-lab-porcelain" /></Field>
+                <Field label="Standardi i kampionimit"><input value={editSelectedTest?.samplingStandard || "-"} readOnly className="input bg-lab-porcelain" /></Field>
                 {!hasMultipleSchedules ? <Field label="Data e kërkuar për testim"><input name="requiredTestDate" type="date" defaultValue={sample.requiredTestDate} className="input" /></Field> : null}
                 {!hasMultipleSchedules ? <Field label="Afati i raportit"><input name="reportDueDate" type="date" defaultValue={sample.reportDueDate} className="input" /></Field> : null}
                 <div className="md:col-span-3">
@@ -220,7 +247,11 @@ export default function SampleDetailPage() {
                 </div>
                 {tests.length ? (
                   <div className="soft-panel p-4 text-sm text-muted md:col-span-3">
-                    Korrigjimi i kampionit nuk ndryshon grupet e testeve që janë krijuar tashmë. Për testet ekzistuese përditësohen kodi i klientit/projekti, standardi dhe tekniku i caktuar.
+                    Korrigjimi i kampionit nuk ndryshon grupet e testeve (kube/mostra, moshat) që janë krijuar tashmë. Kodi i klientit/projekti, standardi dhe tekniku i caktuar përditësohen për të gjitha testet e lidhura.
+                    {" "}
+                    {retargetableTests.length ? `${retargetableTests.length} test ende pa filluar do të kalojnë automatikisht te "${editSelectedTest?.testName ?? sample.requestedTestType}".` : null}
+                    {" "}
+                    {lockedTests.length ? `${lockedTests.length} test tashmë në proces mban llojin e vet origjinal - kontrolloje veç e veç nëse duhet ricaktuar ose rikrijuar.` : null}
                   </div>
                 ) : null}
                 {hasMultipleSchedules ? (

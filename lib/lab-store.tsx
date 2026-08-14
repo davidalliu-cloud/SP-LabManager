@@ -1786,6 +1786,10 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
                   }
                 : row
             ),
+            // A test whose data entry hasn't started yet (Pending/Scheduled) is safe to
+            // retarget at the corrected test type - nothing would be orphaned. A test
+            // already In Progress or beyond keeps its original testType so any data
+            // already entered under the old assumption stays reachable.
             tests: previous.tests.map((row) =>
               row.sampleId === sampleId
                 ? {
@@ -1793,6 +1797,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
                     clientId: input.clientId,
                     projectId: input.projectId,
                     standard: input.standard,
+                    testType: ["Pending", "Scheduled"].includes(row.status) ? input.requestedTestType : row.testType,
                     assignedTechnician: normalizedAssignedTechnician || row.assignedTechnician
                   }
                 : row
@@ -1802,12 +1807,16 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             ),
             auditLog: [...previous.auditLog]
           };
+          const retargeted = linkedTests.filter((row) => ["Pending", "Scheduled"].includes(row.status));
+          const heldBack = linkedTests.filter((row) => !["Pending", "Scheduled"].includes(row.status));
           addAudit(
             draft,
             "sample_updated",
             "sample",
             sampleId,
-            `Sample ${sample.sampleCode} details updated after registration${linkedTests.length ? ` with ${linkedTests.length} linked test batch${linkedTests.length === 1 ? "" : "es"} preserved.` : "."}`
+            `Sample ${sample.sampleCode} details updated after registration.` +
+              (retargeted.length ? ` ${retargeted.length} linked test${retargeted.length === 1 ? "" : "s"} retargeted to "${input.requestedTestType}".` : "") +
+              (heldBack.length ? ` ${heldBack.length} linked test${heldBack.length === 1 ? "" : "s"} already in progress kept its original test type - review manually.` : "")
           );
           return draft;
         });
