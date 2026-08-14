@@ -1751,7 +1751,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       updateSample(sampleId, input) {
         setState((previous) => {
-          if (!canEditSampleAfterRegistration(currentRole)) return previous;
+          if (!canEditSampleAfterRegistration(currentUser?.email)) return previous;
           const sample = previous.samples.find((row) => row.id === sampleId);
           if (!sample) return previous;
           const normalizedDeliveredBy = input.deliveredBy?.trim() || undefined;

@@ -58,8 +58,14 @@ export function canDeleteSamples(role?: Role) {
   return isSuperAdmin(role) || role === "Chief of Lab";
 }
 
-export function canEditSampleAfterRegistration(role?: Role) {
-  return isSuperAdmin(role) || role === "Chief of Lab" || role === "Operations Manager" || isTechnicianRole(role);
+// Editing a sample's details after it has been registered (including its sample
+// type) is deliberately locked to these two people by name, not by role - a
+// mistake here can misdirect testing/reporting, so it isn't opened up to every
+// Chief of Lab / Operations Manager / Technician the way registration itself is.
+const SAMPLE_EDIT_ALLOWED_EMAILS = ["d.alliu@sarpandlab.al", "a.duzha@sarpandlab.al"];
+
+export function canEditSampleAfterRegistration(email?: string) {
+  return Boolean(email && SAMPLE_EDIT_ALLOWED_EMAILS.includes(email.trim().toLowerCase()));
 }
 
 export function canEditTestData(role?: Role, status?: TestStatus) {

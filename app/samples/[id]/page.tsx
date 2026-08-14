@@ -30,7 +30,7 @@ export default function SampleDetailPage() {
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
   const showClientIdentity = canViewClientIdentity(currentUser?.role);
   const canAssignClient = canAssignSampleClient(currentUser?.role);
-  const canEditSample = canEditSampleAfterRegistration(currentUser?.role);
+  const canEditSample = canEditSampleAfterRegistration(currentUser?.email);
   const canAcceptSample = canReviewTests(currentUser?.role);
   const activeEmployees = store.users.filter((user) => user.isActive !== false);
   const selectedAssignmentClientId = assignmentClientId || sample.clientId || store.clients[0]?.id || "";
