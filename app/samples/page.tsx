@@ -134,7 +134,14 @@ export default function SamplesPage() {
                     <td className="px-4 py-3">{formatEuropeanDate(sample.dateReceived)}</td>
                     <td className="px-4 py-3 font-semibold text-ink">{store.clients.find((item) => item.id === sample.clientId)?.clientCode ?? "Në pritje"}</td>
                     <td className="px-4 py-3">{showClientIdentity ? store.projects.find((item) => item.id === sample.projectId)?.projectName ?? "Në pritje caktimi" : "I kufizuar"}</td>
-                    <td className="px-4 py-3">{sample.sampleType}</td>
+                    <td className="px-4 py-3">
+                      {sample.sampleType}
+                      {sample.sampleGroupId ? (
+                        <span title="Pjesë e një dorëzimi me disa materiale" className="ml-1.5 inline-flex items-center rounded-full border border-line bg-lab-mist px-1.5 py-0.5 text-[10px] font-semibold text-muted">
+                          grup
+                        </span>
+                      ) : null}
+                    </td>
                     <td className="px-4 py-3" title={schedule}>{sample.quantity}</td>
                     <td className="px-4 py-3">{sample.requestedTestType}</td>
                     <td className="px-4 py-3">{formatEuropeanDate(nextTest?.requiredTestDate ?? sample.requiredTestDate)}</td>

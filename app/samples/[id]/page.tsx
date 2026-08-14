@@ -46,6 +46,9 @@ export default function SampleDetailPage() {
       ? `${plannedCastingDates.map((date) => formatEuropeanDate(date)).join(", ")}`
       : sample.concretingDate;
   const reports = store.reports.filter((item) => item.sampleId === sample.id);
+  const linkedSamples = sample.sampleGroupId
+    ? store.samples.filter((item) => item.sampleGroupId === sample.sampleGroupId && item.id !== sample.id)
+    : [];
   const stage = deriveSampleStage(sample, store.tests, store.reports);
   const finishedStatuses = ["Completed", "Report Drafted", "Pending Approval", "Approved", "Report Approved", "Issued", "Sent to Client"];
   const completedCubes = tests
@@ -104,6 +107,22 @@ export default function SampleDetailPage() {
       <div className="mb-5">
         <SampleStageStepper status={stage} />
       </div>
+
+      {linkedSamples.length ? (
+        <div className="soft-panel mb-5 p-4">
+          <div className="text-sm font-semibold text-ink">Kampionë të lidhur nga i njëjti dorëzim</div>
+          <p className="mt-1 text-sm text-muted">
+            Këto kampionë u regjistruan së bashku sepse klienti dorëzoi disa materiale njëherësh. Secili ka kodin, testet dhe raportin e vet.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {linkedSamples.map((item) => (
+              <Link key={item.id} href={`/samples/${item.id}`} className="rounded-md border border-line bg-white px-3 py-2 text-sm font-semibold text-lab-burgundy hover:bg-lab-mist">
+                {item.sampleCode} · {item.sampleType}
+              </Link>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <section className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <SummaryCard label="Total kube të pranuara" value={sample.quantity} />
