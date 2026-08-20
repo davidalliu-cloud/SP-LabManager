@@ -42,14 +42,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // They are locked out of the desktop app — any non-/tech route sends them back
   // to /tech. (The /tech page only ever shows the current user's assigned tests.)
   // Everyone else keeps full desktop + optional mobile access.
+  //
+  // Must wait for store.isReady: until then, currentUser is resolved against
+  // the hardcoded seed data (real accounts haven't loaded from Supabase yet),
+  // which can misidentify anyone as the seed's default Technician and redirect
+  // them to /tech — and since /tech routes never re-check once there, that
+  // wrong redirect sticks for the rest of the session even after the real
+  // (correct) role loads a moment later.
   useEffect(() => {
-    if (isLoginPage || !currentUser) return;
+    if (isLoginPage || !currentUser || !store.isReady) return;
     if (isTechnician && !isTechRoute) router.replace("/tech");
-  }, [isLoginPage, isTechnician, isTechRoute, currentUser, router]);
+  }, [isLoginPage, isTechnician, isTechRoute, currentUser, router, store.isReady]);
 
   if (isLoginPage) return <>{children}</>;
 
-  if (auth.isConfigured && auth.isLoading) {
+  if ((auth.isConfigured && auth.isLoading) || !store.isReady) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white px-6">
         <div className="w-full max-w-sm rounded-lg border border-line bg-white p-6 text-center">

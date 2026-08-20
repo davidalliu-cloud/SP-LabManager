@@ -851,6 +851,13 @@ interface ProcedureRevisionInput {
 
 interface LabStoreValue extends LabState {
   currentUserId: string;
+  // False until local storage has been read AND (when Supabase is configured)
+  // the shared online state has been fetched. Before that, `state.users` is
+  // still the hardcoded seed/demo data, which doesn't contain real accounts —
+  // any role check against currentUser during that window can resolve to the
+  // wrong role. Consumers that redirect based on role (see AppShell) must
+  // wait for this before deciding.
+  isReady: boolean;
   createEmployee: (input: EmployeeInput) => string;
   updateEmployee: (id: string, input: EmployeeInput) => void;
   removeEmployee: (id: string) => void;
@@ -1471,6 +1478,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
     return {
       ...state,
       currentUserId,
+      isReady: isHydrated && (isRemoteChecked || !hasSupabaseConfig()),
       createEmployee(input) {
         const employeeId = crypto.randomUUID();
         setState((previous) => {
