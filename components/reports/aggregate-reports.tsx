@@ -48,8 +48,8 @@ export function AggregateReportPreview({
   const sampleLabel = sample?.sampleDescription || sample?.sampleType;
   return (
     <section className="report-a4 aggregate-gradation-report print-surface relative rounded-md border border-line bg-white p-6 text-[#111] shadow-sm" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
-      <header className="border-b-2 border-black pb-1">
-        <div className="grid grid-cols-[140px_1fr_72px] items-start gap-4">
+      <header>
+        <div className="grid grid-cols-[140px_1fr_72px] items-start gap-4 border-b-2 border-black pb-1">
           <img src="/brand/sarp-logo.png" alt="SARP" className="mt-1 h-auto w-[128px]" />
           <div className="pt-3 text-center">
             <div className="text-[13px] font-bold uppercase leading-tight">RAPORT TESTIM / TEST REPORT</div>
