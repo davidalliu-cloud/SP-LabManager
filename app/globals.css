@@ -113,8 +113,12 @@ textarea {
     padding: 5mm 8mm !important;
   }
 
-  .simple-report header.border-b {
+  .simple-report header > div.border-b {
     padding-bottom: 4px !important;
+  }
+
+  .simple-report header .italic.leading-tight {
+    margin-top: 2px !important;
   }
 
   .simple-report header img {

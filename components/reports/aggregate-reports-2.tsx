@@ -5,7 +5,7 @@ import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest,
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
-import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair, samplingOperator } from "./report-shared";
+import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair, samplingOperator, SimpleReportLegalFooter } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
 
 export function AggregateDensityReportPreview({
@@ -23,6 +23,7 @@ export function AggregateDensityReportPreview({
   project?: Project;
   aggregateDensity: AggregateDensityAbsorptionTest;
 }) {
+  const issueDate = report.issuedAt || report.approvedAt || aggregateDensity.testEndDate || sample?.reportDueDate;
   const sampleValues = (selector: (index: number) => number) => [selector(0), selector(1)];
   return (
     <section className="report-a4 simple-report print-surface rounded-md border border-line bg-white p-8 shadow-sm">
@@ -105,6 +106,7 @@ export function AggregateDensityReportPreview({
         align="start"
         bordered
       />
+      <SimpleReportLegalFooter issueDate={issueDate} />
     </section>
   );
 }
@@ -124,6 +126,7 @@ export function AggregateFillerDensityReportPreview({
   project?: Project;
   aggregateFillerDensity: AggregateFillerDensityTest;
 }) {
+  const issueDate = report.issuedAt || report.approvedAt || aggregateFillerDensity.testEndDate || sample?.reportDueDate;
   const values = (selector: (index: number) => number) => [selector(0), selector(1)];
   return (
     <section className="report-a4 simple-report print-surface rounded-md border border-line bg-white p-8 shadow-sm">
@@ -204,6 +207,7 @@ export function AggregateFillerDensityReportPreview({
         align="start"
         bordered
       />
+      <SimpleReportLegalFooter issueDate={issueDate} />
     </section>
   );
 }
@@ -223,6 +227,7 @@ export function AggregateSoundnessReportPreview({
   project?: Project;
   aggregateSoundness: AggregateSoundnessTest;
 }) {
+  const issueDate = report.issuedAt || report.approvedAt || aggregateSoundness.testEndDate || sample?.reportDueDate;
   return (
     <section className="report-a4 simple-report print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader report={report} code="SL-RA-AG-7.8/1.11" title="RAPORT TESTIMI / TEST REPORT" subtitle="Magnesium Sulfate Soundness Test" />
@@ -277,6 +282,7 @@ export function AggregateSoundnessReportPreview({
         align="start"
         bordered
       />
+      <SimpleReportLegalFooter issueDate={issueDate} />
     </section>
   );
 }
@@ -296,6 +302,7 @@ export function AggregateElongationReportPreview({
   project?: Project;
   aggregateElongation: AggregateElongationIndexTest;
 }) {
+  const issueDate = report.issuedAt || report.approvedAt || aggregateElongation.testEndDate || sample?.reportDueDate;
   return (
     <section className="report-a4 simple-report print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader report={report} code="SL-RA-AG-7.8/1.5" title="RAPORT TESTIMI / TEST REPORT" subtitle="Elongation Index of aggregates" />
@@ -335,6 +342,7 @@ export function AggregateElongationReportPreview({
         align="start"
         bordered
       />
+      <SimpleReportLegalFooter issueDate={issueDate} />
     </section>
   );
 }
@@ -354,6 +362,7 @@ export function AggregateBulkDensityReportPreview({
   project?: Project;
   aggregateBulkDensity: AggregateBulkDensityTest;
 }) {
+  const issueDate = report.issuedAt || report.approvedAt || aggregateBulkDensity.testEndDate || sample?.reportDueDate;
   return (
     <section className="report-a4 simple-report print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader report={report} code="SL-RA-AG-7.8/1.7" title="RAPORT TESTIMI / TEST REPORT" subtitle="Loose bulk density and voids of aggregate" />
@@ -390,6 +399,7 @@ export function AggregateBulkDensityReportPreview({
         align="start"
         bordered
       />
+      <SimpleReportLegalFooter issueDate={issueDate} />
     </section>
   );
 }
@@ -409,6 +419,7 @@ export function AggregateSandEquivalentReportPreview({
   project?: Project;
   aggregateSandEquivalent: AggregateSandEquivalentTest;
 }) {
+  const issueDate = report.issuedAt || report.approvedAt || aggregateSandEquivalent.testEndDate || sample?.reportDueDate;
   return (
     <section className="report-a4 simple-report print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader report={report} code="SL-RA-AG-7.8/1.8" title="RAPORT TESTIMI / TEST REPORT" subtitle="Sand Equivalent test" />
@@ -444,6 +455,7 @@ export function AggregateSandEquivalentReportPreview({
         align="start"
         bordered
       />
+      <SimpleReportLegalFooter issueDate={issueDate} />
     </section>
   );
 }
@@ -463,6 +475,7 @@ export function AggregateShapeIndexReportPreview({
   project?: Project;
   aggregateShapeIndex: AggregateShapeIndexTest;
 }) {
+  const issueDate = report.issuedAt || report.approvedAt || aggregateShapeIndex.testEndDate || sample?.reportDueDate;
   return (
     <section className="report-a4 simple-report print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader
@@ -538,6 +551,7 @@ export function AggregateShapeIndexReportPreview({
         align="start"
         bordered
       />
+      <SimpleReportLegalFooter issueDate={issueDate} />
     </section>
   );
 }
@@ -557,6 +571,7 @@ export function AggregateFlakinessReportPreview({
   project?: Project;
   aggregateFlakiness: AggregateFlakinessIndexTest;
 }) {
+  const issueDate = report.issuedAt || report.approvedAt || aggregateFlakiness.testEndDate || sample?.reportDueDate;
   return (
     <section className="report-a4 simple-report print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader
@@ -640,6 +655,7 @@ export function AggregateFlakinessReportPreview({
         align="start"
         bordered
       />
+      <SimpleReportLegalFooter issueDate={issueDate} />
     </section>
   );
 }

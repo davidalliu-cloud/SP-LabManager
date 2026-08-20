@@ -5,7 +5,7 @@ import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest,
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
-import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair, samplingOperator } from "./report-shared";
+import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair, samplingOperator, SimpleReportLegalFooter } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
 
 export function AggregateReportPreview({
@@ -251,6 +251,7 @@ export function AggregateChemicalReportPreview({
   aggregateChemical: AggregateChemicalTest;
 }) {
   const results = aggregateChemical.results;
+  const issueDate = report.issuedAt || report.approvedAt || aggregateChemical.testEndDate || sample?.reportDueDate;
 
   return (
     <section className="report-a4 simple-report print-surface rounded-md border border-line bg-white p-8 shadow-sm">
@@ -319,6 +320,7 @@ export function AggregateChemicalReportPreview({
         align="start"
         bordered
       />
+      <SimpleReportLegalFooter issueDate={issueDate} />
     </section>
   );
 }
@@ -338,6 +340,7 @@ export function AggregateLosAngelesReportPreview({
   project?: Project;
   aggregateLosAngeles: AggregateLosAngelesTest;
 }) {
+  const issueDate = report.issuedAt || report.approvedAt || aggregateLosAngeles.testEndDate || sample?.reportDueDate;
   return (
     <section className="report-a4 simple-report print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader
@@ -433,6 +436,7 @@ export function AggregateLosAngelesReportPreview({
         align="start"
         bordered
       />
+      <SimpleReportLegalFooter issueDate={issueDate} />
     </section>
   );
 }
@@ -452,6 +456,7 @@ export function AggregateFreezeThawReportPreview({
   project?: Project;
   aggregateFreezeThaw: AggregateFreezeThawTest;
 }) {
+  const issueDate = report.issuedAt || report.approvedAt || aggregateFreezeThaw.testEndDate || sample?.reportDueDate;
   return (
     <section className="report-a4 simple-report print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader
@@ -553,6 +558,7 @@ export function AggregateFreezeThawReportPreview({
         align="start"
         bordered
       />
+      <SimpleReportLegalFooter issueDate={issueDate} />
     </section>
   );
 }
@@ -572,6 +578,7 @@ export function AggregateAcvReportPreview({
   project?: Project;
   aggregateAcv: AggregateAcvTest;
 }) {
+  const issueDate = report.issuedAt || report.approvedAt || aggregateAcv.testEndDate || sample?.reportDueDate;
   return (
     <section className="report-a4 simple-report print-surface rounded-md border border-line bg-white p-8 shadow-sm">
       <ReportHeader
@@ -667,6 +674,7 @@ export function AggregateAcvReportPreview({
         align="start"
         bordered
       />
+      <SimpleReportLegalFooter issueDate={issueDate} />
     </section>
   );
 }

@@ -122,25 +122,53 @@ export function ReportHeader({
   subtitle: string;
 }) {
   return (
-    <header className="border-b border-line pb-5">
-      <div className="grid items-center gap-4 sm:grid-cols-[170px_1fr_92px]">
+    <header>
+      <div className="grid items-start gap-4 border-b border-line pb-3 sm:grid-cols-[170px_1fr_92px]">
         <div className="flex items-center">
           <img src="/brand/sarp-logo.png" alt="SARP" className="h-auto w-[158px]" />
         </div>
-        <div className="text-center">
+        <div className="pt-2 text-center">
           <div className="text-lg font-semibold uppercase tracking-wide text-ink">{title}</div>
-          <div className="mt-2 text-xs font-semibold text-muted">Kodi / Code: {code}</div>
           <div className="mt-1 text-sm font-semibold text-lab-burgundy">{subtitle}</div>
-          <div className="mt-2 text-xs text-muted">Nr. / No. {report.reportNumber} · Faqe / Page: {report.reportSequence} / {report.totalReports}</div>
+          <div className="mt-2 text-xs font-semibold text-ink">Nr. / No. {report.reportNumber}</div>
         </div>
         <div className="flex justify-end">
           <img src="/brand/da-accreditation.png" alt="DA accreditation Testim S SH ISO/IEC 17025 LT 069" className="h-auto w-[82px]" />
         </div>
       </div>
-      <div className="mt-3 flex justify-end no-print">
+      <div className="mt-1 text-[6.4px] italic leading-tight text-muted">
+        <div>Kodi / Code: {code}</div>
+        <div>Faqe / Page: {report.reportSequence} / {report.totalReports}</div>
+      </div>
+      <div className="mt-2 flex justify-end no-print">
         <StatusBadge status={reportLifecycle(report).stage} />
       </div>
     </header>
+  );
+}
+
+// The legal disclaimers, issue date and company address block that every
+// other report family already has (see OfficialNotesAndFooter) — the
+// ReportHeader-based "simple-report" family (aggregate reports) never had
+// one; this brings it in line, at the same small scale.
+export function SimpleReportLegalFooter({ issueDate }: { issueDate?: string }) {
+  return (
+    <>
+      <div className="mt-3 space-y-0.5 text-[6.4px] leading-tight text-ink">
+        <p>Rezultatet në këtë raport testimi i përkasin vetëm mostrës së testuar. / <span className="italic">The results relate only to the items tested.</span></p>
+        <p>Ky raport testimi nuk mund të riprodhohet në mënyrë të pjesshme pa aprovimin me shkrim të laboratorit. / <span className="italic">The test report shall not be reproduced except in full without the written approval of the laboratory.</span></p>
+        <p>Laboratori nuk është përgjegjës për fazën e kampionmarrjes. / <span className="italic">The laboratory is not responsible for the sampling phase.</span></p>
+        <p>Deklaroj që testi është kryer në përputhje me standardin. / <span className="italic">I declare that the test was performed in accordance with the standard.</span></p>
+      </div>
+      <div className="mt-2 grid grid-cols-[220px_140px] items-end gap-4 text-[6.4px]">
+        <div>Data e lëshimit të Raportit të Testimit / <span className="italic">Test Report Issue Date:</span></div>
+        <div className="border-b border-black text-center">{formatEuropeanDate(issueDate)}</div>
+      </div>
+      <footer className="mt-2 text-center text-[6.4px] leading-tight text-blue-700">
+        <div className="font-bold text-[#5b193f]">SARP &amp; LAB</div>
+        <div>Adresa: Autostrada Tiranë-Durrës, km 29, Fshati Vrrin-Komuna Rrashbull, Durrës Shqipëri. Mob: +355 67 20 22 609; Web: www.sarpandlab.al; Email: d.alliu@sarpandlab.al; NIPT: L 41526502 B</div>
+      </footer>
+    </>
   );
 }
 
