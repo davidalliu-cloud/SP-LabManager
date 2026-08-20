@@ -9,15 +9,18 @@ import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
 
 const HEAD_OF_LAB_NAME = "Adela Duzha";
 
-export function headOfLabName(preferred?: string) {
-  return preferred?.trim() || HEAD_OF_LAB_NAME;
+export function headOfLabName(_preferred?: string) {
+  return HEAD_OF_LAB_NAME;
 }
 
 // Stored signature images, matched by a lowercase substring of the name shown
 // in a report's signature block (technician, checked-by, or lab responsible —
 // wherever that name ends up). Add more entries here as more employees'
 // signatures are collected.
-const SIGNATURE_IMAGES: { match: string; src: string }[] = [{ match: "astrit", src: "/signatures/astrit-alliu.png" }];
+const SIGNATURE_IMAGES: { match: string; src: string }[] = [
+  { match: "astrit", src: "/signatures/astrit-alliu.png" },
+  { match: "adela", src: "/signatures/adela-duzha.png" }
+];
 
 function signatureImageFor(name?: string) {
   if (!name) return undefined;
