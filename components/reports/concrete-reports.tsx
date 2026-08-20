@@ -435,7 +435,7 @@ export function ConcreteCoreReportPreview({
         heightMm={38}
       />
 
-      <div className="report-disclaimers mt-7 space-y-0.5 text-[7.4pt] leading-tight">
+      <div className="report-disclaimers mt-7 space-y-0.5 text-[6pt] leading-tight">
         <p>Rezultatet në këtë raport testimi i përkasin vetëm mostrës së testuar. / <span className="italic">The results relate only to the items tested.</span></p>
         <p>Ky raport testimi nuk mund të riprodhohet në mënyrë të pjesshme pa aprovimin me shkrim të laboratorit. / <span className="italic">The test report shall not be reproduced except in full without the written approval of the laboratory.</span></p>
       </div>

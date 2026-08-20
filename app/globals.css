@@ -759,13 +759,13 @@ textarea {
     display: flex !important;
     flex-direction: column !important;
     font-family: "Times New Roman", Times, serif !important;
-    font-size: 9.3pt !important;
-    line-height: 1.1 !important;
+    font-size: 8.9pt !important;
+    line-height: 1.08 !important;
   }
 
   /* Uniformly tighten the spacing between the report's stacked sections. */
   .concrete-cube-report > * {
-    margin-top: 4px !important;
+    margin-top: 3px !important;
   }
 
   .concrete-cube-report > header {
@@ -773,10 +773,21 @@ textarea {
     padding-bottom: 3px !important;
   }
 
+  /* The enlarged on-screen logos read well in the preview but cost real
+     height on this fixed 296mm page — print them closer to their original
+     size. */
+  .concrete-cube-report > header img[alt="SARP"] {
+    width: 128px !important;
+  }
+
+  .concrete-cube-report > header img[alt^="DA accreditation"] {
+    width: 66px !important;
+  }
+
   /* Metadata block */
   .concrete-cube-report .cube-meta {
-    font-size: 9.3pt !important;
-    line-height: 1.1 !important;
+    font-size: 8.9pt !important;
+    line-height: 1.08 !important;
     row-gap: 1px !important;
   }
 
@@ -799,7 +810,7 @@ textarea {
      is pushed to the bottom of the page (flex-column auto margin) so the SARP
      & LAB footer sits at the foot of the sheet. */
   .concrete-cube-report .report-signatures {
-    margin-top: auto !important;
+    margin-top: 3px !important;
   }
 
   .concrete-cube-report .report-disclaimers {
@@ -815,6 +826,14 @@ textarea {
 
   .concrete-cube-report .report-disclaimers p {
     line-height: 1.15 !important;
+  }
+
+  /* The signature block is normal-flow here (unlike the official-report
+     family's absolutely-positioned footer), so its on-screen size — big
+     enough to read clearly there — is real height taken out of this fixed
+     296mm page. Print at a smaller, page-safe size instead. */
+  .concrete-cube-report .signature-block-img {
+    height: 20mm !important;
   }
 
   /* Concrete core report: clean single-A4 page (same approach as the cube). */
@@ -843,6 +862,14 @@ textarea {
     margin-top: 0 !important;
   }
 
+  .concrete-core-report > header img[alt="SARP"] {
+    width: 128px !important;
+  }
+
+  .concrete-core-report > header img[alt^="DA accreditation"] {
+    width: 66px !important;
+  }
+
   .concrete-core-report .official-table {
     font-size: 7.8pt !important;
   }
@@ -853,7 +880,7 @@ textarea {
   }
 
   .concrete-core-report .report-signatures {
-    margin-top: auto !important;
+    margin-top: 3px !important;
   }
 
   .concrete-core-report .report-disclaimers {
@@ -865,6 +892,10 @@ textarea {
   .concrete-core-report footer {
     position: static !important;
     margin-top: 4px !important;
+  }
+
+  .concrete-core-report .signature-block-img {
+    height: 12mm !important;
   }
 }
 
