@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { FormEvent, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { SimpleTable } from "@/components/ui/simple-table";
 import { futureErpClients } from "@/lib/client-directory";
@@ -71,6 +71,7 @@ export default function ClientsPage() {
   const [clientDraft, setClientDraft] = useState<ClientDraft>(emptyClientDraft);
   const [deleteMessage, setDeleteMessage] = useState("");
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
   const canViewClients = canViewClientIdentity(currentUser?.role);
@@ -93,6 +94,9 @@ export default function ClientsPage() {
     setEditingClientId("");
     setSelectedErpId("");
     setClientDraft(emptyClientDraft);
+    // Drop ?edit=<id> so closing (including after a save) doesn't just
+    // reopen the form again via the effect below watching searchParams.
+    if (searchParams.get("edit")) router.replace("/clients");
   }
 
   function selectDirectoryClient(erpId: string) {
@@ -137,6 +141,16 @@ export default function ClientsPage() {
     });
     setShowForm(true);
   }
+
+  // Lets the read-only client detail page (/clients/[id]) link straight into
+  // this list's edit form via ?edit=<clientId> — that page has no editing UI
+  // of its own, so without this a link there could only ever open the form
+  // empty. Re-runs once store.clients is hydrated, in case this fires before
+  // client data has loaded.
+  useEffect(() => {
+    const editId = searchParams.get("edit");
+    if (editId && canEditClients) editClient(editId);
+  }, [searchParams, store.clients, canEditClients]);
 
   function deleteClient(clientId: string) {
     const client = store.clients.find((item) => item.id === clientId);

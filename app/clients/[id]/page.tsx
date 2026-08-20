@@ -9,7 +9,7 @@ import { testLifecycle } from "@/lib/sample-stage";
 import { SummaryCard } from "@/components/ui/summary-card";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { useLabStore } from "@/lib/lab-store";
-import { canViewClientIdentity } from "@/lib/permissions";
+import { canManageClients, canViewClientIdentity } from "@/lib/permissions";
 import { getTestResultSummary } from "@/lib/test-result-summary";
 import type { ReportStatus, TestStatus } from "@/lib/types";
 
@@ -37,6 +37,7 @@ export default function ClientDetailPage() {
   const store = useLabStore();
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
   const canSeeClients = canViewClientIdentity(currentUser?.role);
+  const canEditClient = canManageClients(currentUser?.role);
   const [projectId, setProjectId] = useState("all");
   const [testType, setTestType] = useState("all");
   const [reportStatus, setReportStatus] = useState<ReportStatus | "No Report" | "all">("all");
@@ -121,7 +122,12 @@ export default function ClientDetailPage() {
       <PageHeader
         title={`${client.clientCode} - ${client.clientName}`}
         description="Pasqyra e testeve, kampionëve dhe raporteve për këtë klient."
-        action={<Link href="/clients" className="btn-secondary">Kthehu te klientët</Link>}
+        action={
+          <div className="flex gap-2">
+            {canEditClient ? <Link href={`/clients?edit=${client.id}`} className="btn-primary">Ndrysho klientin</Link> : null}
+            <Link href="/clients" className="btn-secondary">Kthehu te klientët</Link>
+          </div>
+        }
       />
 
       <section className="mb-5 grid gap-4 md:grid-cols-4">
