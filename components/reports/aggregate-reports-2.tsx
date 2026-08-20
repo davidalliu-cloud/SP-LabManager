@@ -5,7 +5,7 @@ import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest,
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
-import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, Signature } from "./report-shared";
+import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
 
 export function AggregateDensityReportPreview({
@@ -94,10 +94,16 @@ export function AggregateDensityReportPreview({
         <p className="mt-1">{aggregateDensity.notes || "Results relate only to the items tested. The laboratory is not responsible for the sampling phase."}</p>
       </div>
 
-      <div className="mt-10 grid gap-6 sm:grid-cols-2">
-        <Signature label="TESTUESI / TESTED BY" value={aggregateDensity.technicianName || report.draftedBy} />
-        <Signature label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={headOfLabName(aggregateDensity.checkedBy)} />
-      </div>
+      <SignaturePair
+        wrapperClassName="mt-10"
+        columnClassName="grid gap-6 sm:grid-cols-2"
+        testedByLabel="TESTUESI / TESTED BY"
+        testedByName={aggregateDensity.technicianName || report.draftedBy}
+        responsibleLabel="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE"
+        responsibleName={headOfLabName(aggregateDensity.checkedBy)}
+        align="start"
+        bordered
+      />
     </section>
   );
 }
@@ -186,10 +192,16 @@ export function AggregateFillerDensityReportPreview({
         <p className="mt-1">{aggregateFillerDensity.notes || "Results relate only to the items tested. The laboratory is not responsible for the sampling phase."}</p>
       </div>
 
-      <div className="mt-10 grid gap-6 sm:grid-cols-2">
-        <Signature label="TESTUESI / TESTED BY" value={aggregateFillerDensity.technicianName || report.draftedBy} />
-        <Signature label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={headOfLabName(aggregateFillerDensity.checkedBy)} />
-      </div>
+      <SignaturePair
+        wrapperClassName="mt-10"
+        columnClassName="grid gap-6 sm:grid-cols-2"
+        testedByLabel="TESTUESI / TESTED BY"
+        testedByName={aggregateFillerDensity.technicianName || report.draftedBy}
+        responsibleLabel="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE"
+        responsibleName={headOfLabName(aggregateFillerDensity.checkedBy)}
+        align="start"
+        bordered
+      />
     </section>
   );
 }
@@ -252,7 +264,16 @@ export function AggregateSoundnessReportPreview({
         <Info label="Particles after" value={String(aggregateSoundness.totalParticlesAfter || "-")} />
       </div>
       <div className="mt-8 soft-panel p-4 text-sm text-ink"><div className="font-semibold">Notes / Shënime</div><p className="mt-1">{aggregateSoundness.notes || "Results relate only to the items tested. The laboratory is not responsible for the sampling phase."}</p></div>
-      <div className="mt-10 grid gap-6 sm:grid-cols-2"><Signature label="TESTUAR NGA / TESTED BY" value={aggregateSoundness.technicianName || report.draftedBy} /><Signature label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={headOfLabName(aggregateSoundness.checkedBy)} /></div>
+      <SignaturePair
+        wrapperClassName="mt-10"
+        columnClassName="grid gap-6 sm:grid-cols-2"
+        testedByLabel="TESTUAR NGA / TESTED BY"
+        testedByName={aggregateSoundness.technicianName || report.draftedBy}
+        responsibleLabel="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE"
+        responsibleName={headOfLabName(aggregateSoundness.checkedBy)}
+        align="start"
+        bordered
+      />
     </section>
   );
 }
@@ -300,7 +321,16 @@ export function AggregateElongationReportPreview({
         </div>
       </div>
       <div className="mt-8 soft-panel p-4 text-sm text-ink"><div className="font-semibold">Notes / Shënime</div><p className="mt-1">{aggregateElongation.notes || "This test report belongs only to the tested sample."}</p></div>
-      <div className="mt-10 grid gap-6 sm:grid-cols-2"><Signature label="TESTUAR NGA / TESTED BY" value={aggregateElongation.technicianName || report.draftedBy} /><Signature label="PËRGJEGJËSI I LABORATORIT / HEAD OF LABORATORY" value={headOfLabName(aggregateElongation.checkedBy)} /></div>
+      <SignaturePair
+        wrapperClassName="mt-10"
+        columnClassName="grid gap-6 sm:grid-cols-2"
+        testedByLabel="TESTUAR NGA / TESTED BY"
+        testedByName={aggregateElongation.technicianName || report.draftedBy}
+        responsibleLabel="PËRGJEGJËSI I LABORATORIT / HEAD OF LABORATORY"
+        responsibleName={headOfLabName(aggregateElongation.checkedBy)}
+        align="start"
+        bordered
+      />
     </section>
   );
 }
@@ -345,7 +375,16 @@ export function AggregateBulkDensityReportPreview({
         </table>
       </div>
       <div className="mt-8 soft-panel p-4 text-sm text-ink"><div className="font-semibold">Notes / Shënime</div><p className="mt-1">{aggregateBulkDensity.notes || "Results relate only to the items tested."}</p></div>
-      <div className="mt-10 grid gap-6 sm:grid-cols-2"><Signature label="TESTUAR NGA / TESTED BY" value={aggregateBulkDensity.technicianName || report.draftedBy} /><Signature label="PËRGJEGJËSI I LABORATORIT / HEAD OF LABORATORY" value={headOfLabName(aggregateBulkDensity.checkedBy)} /></div>
+      <SignaturePair
+        wrapperClassName="mt-10"
+        columnClassName="grid gap-6 sm:grid-cols-2"
+        testedByLabel="TESTUAR NGA / TESTED BY"
+        testedByName={aggregateBulkDensity.technicianName || report.draftedBy}
+        responsibleLabel="PËRGJEGJËSI I LABORATORIT / HEAD OF LABORATORY"
+        responsibleName={headOfLabName(aggregateBulkDensity.checkedBy)}
+        align="start"
+        bordered
+      />
     </section>
   );
 }
@@ -389,7 +428,16 @@ export function AggregateSandEquivalentReportPreview({
         </table>
       </div>
       <div className="mt-8 soft-panel p-4 text-sm text-ink"><div className="font-semibold">Notes / Shënime</div><p className="mt-1">{aggregateSandEquivalent.notes || "This test report belongs only to the tested sample."}</p></div>
-      <div className="mt-10 grid gap-6 sm:grid-cols-2"><Signature label="TESTUAR NGA / TESTED BY" value={aggregateSandEquivalent.technicianName || report.draftedBy} /><Signature label="PËRGJEGJËSI I LABORATORIT / HEAD OF LABORATORY" value={headOfLabName(aggregateSandEquivalent.checkedBy)} /></div>
+      <SignaturePair
+        wrapperClassName="mt-10"
+        columnClassName="grid gap-6 sm:grid-cols-2"
+        testedByLabel="TESTUAR NGA / TESTED BY"
+        testedByName={aggregateSandEquivalent.technicianName || report.draftedBy}
+        responsibleLabel="PËRGJEGJËSI I LABORATORIT / HEAD OF LABORATORY"
+        responsibleName={headOfLabName(aggregateSandEquivalent.checkedBy)}
+        align="start"
+        bordered
+      />
     </section>
   );
 }
@@ -473,10 +521,16 @@ export function AggregateShapeIndexReportPreview({
         <p className="mt-1">{aggregateShapeIndex.notes || "Results relate only to the items tested. The laboratory is not responsible for the sampling phase."}</p>
       </div>
 
-      <div className="mt-10 grid gap-6 sm:grid-cols-2">
-        <Signature label="TESTUESI / TESTED BY" value={aggregateShapeIndex.technicianName || report.draftedBy} />
-        <Signature label="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE" value={headOfLabName(aggregateShapeIndex.checkedBy)} />
-      </div>
+      <SignaturePair
+        wrapperClassName="mt-10"
+        columnClassName="grid gap-6 sm:grid-cols-2"
+        testedByLabel="TESTUESI / TESTED BY"
+        testedByName={aggregateShapeIndex.technicianName || report.draftedBy}
+        responsibleLabel="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE"
+        responsibleName={headOfLabName(aggregateShapeIndex.checkedBy)}
+        align="start"
+        bordered
+      />
     </section>
   );
 }
@@ -568,10 +622,16 @@ export function AggregateFlakinessReportPreview({
         <p className="mt-1">{aggregateFlakiness.notes || "This test report belongs only to the tested sample."}</p>
       </div>
 
-      <div className="mt-10 grid gap-6 sm:grid-cols-2">
-        <Signature label="TESTUAR NGA / TESTED BY" value={aggregateFlakiness.technicianName || report.draftedBy} />
-        <Signature label="PËRGJEGJËSI I LABORATORIT / HEAD OF LABORATORY" value={headOfLabName(aggregateFlakiness.checkedBy)} />
-      </div>
+      <SignaturePair
+        wrapperClassName="mt-10"
+        columnClassName="grid gap-6 sm:grid-cols-2"
+        testedByLabel="TESTUAR NGA / TESTED BY"
+        testedByName={aggregateFlakiness.technicianName || report.draftedBy}
+        responsibleLabel="PËRGJEGJËSI I LABORATORIT / HEAD OF LABORATORY"
+        responsibleName={headOfLabName(aggregateFlakiness.checkedBy)}
+        align="start"
+        bordered
+      />
     </section>
   );
 }

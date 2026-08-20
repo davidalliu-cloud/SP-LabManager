@@ -28,35 +28,74 @@ function signatureImageFor(name?: string) {
   return SIGNATURE_IMAGES.find((entry) => normalized.includes(entry.match))?.src;
 }
 
-// A signature block: name in normal document flow at a configurable distance
-// below the label (so it can be lined up with the sibling signature block
-// next to it), then a big signature/stamp image below the name — for
-// whichever employees have one on file, via signatureImageFor. Used for both
-// signatories in a report so their names land on the same line and their
-// signatures share one visual scale.
-export function SignatureBlock({
+function SignatureImg({
   name,
-  align = "center",
-  heightMm = 30,
-  nameMarginClass = "mt-1"
+  heightMm,
+  align
 }: {
   name?: string;
-  align?: "center" | "start";
-  heightMm?: number;
-  nameMarginClass?: string;
+  heightMm: number;
+  align: "center" | "start";
 }) {
   const src = signatureImageFor(name);
+  if (!src) return null;
   return (
-    <div>
-      <div className={`${nameMarginClass} font-bold`}>{name || "-"}</div>
-      {src && (
-        <img
-          src={src}
-          alt=""
-          className={`mt-1.5 h-auto${align === "start" ? "" : " mx-auto"}`}
-          style={{ height: `${heightMm}mm` }}
-        />
-      )}
+    <img
+      src={src}
+      alt=""
+      className={`h-auto${align === "start" ? "" : " mx-auto"}`}
+      style={{ height: `${heightMm}mm` }}
+    />
+  );
+}
+
+// A report's two signatories (tested-by, lab-responsible), laid out as three
+// stacked two-column rows — label row, name row, image row — rather than two
+// independent columns each stacking their own label+name+image. CSS grid
+// sizes each row to its tallest cell across BOTH columns, so a label that
+// wraps to two lines in one column doesn't push that column's name (or
+// signature) down relative to the other one: both names, and both signature
+// images (for whichever employees have one on file, via signatureImageFor),
+// are always level with each other.
+export function SignaturePair({
+  wrapperClassName,
+  columnClassName = "grid grid-cols-2 gap-16 text-center",
+  testedByLabel,
+  testedByName,
+  responsibleLabel,
+  responsibleName,
+  heightMm = 22,
+  align = "center",
+  bordered = false
+}: {
+  wrapperClassName?: string;
+  columnClassName?: string;
+  testedByLabel: ReactNode;
+  testedByName?: string;
+  responsibleLabel: ReactNode;
+  responsibleName?: string;
+  heightMm?: number;
+  align?: "center" | "start";
+  bordered?: boolean;
+}) {
+  const labelClass = bordered
+    ? "border-t border-slate-300 pt-3 text-xs font-medium uppercase tracking-wide text-muted"
+    : "font-bold";
+  const nameClass = bordered ? "text-sm font-semibold text-ink" : "font-bold";
+  return (
+    <div className={wrapperClassName}>
+      <div className={columnClassName}>
+        <div className={labelClass}>{testedByLabel}</div>
+        <div className={labelClass}>{responsibleLabel}</div>
+      </div>
+      <div className={`mt-2 ${columnClassName}`}>
+        <div className={nameClass}>{testedByName || "-"}</div>
+        <div className={nameClass}>{responsibleName || "-"}</div>
+      </div>
+      <div className={`mt-1.5 ${columnClassName}`}>
+        <SignatureImg name={testedByName} heightMm={heightMm} align={align} />
+        <SignatureImg name={responsibleName} heightMm={heightMm} align={align} />
+      </div>
     </div>
   );
 }
@@ -257,10 +296,15 @@ export function OfficialNotesAndFooter({
         <div className="min-h-4 border-b border-black">{notes}</div>
       </div>
       <div className="official-footer-cluster">
-        <div className="official-signatures grid grid-cols-2 gap-16 text-center text-[9.5pt]">
-          <div><div className="font-bold">TESTUAR NGA / <span className="italic font-normal">TESTED BY</span></div><SignatureBlock name={testedBy} heightMm={30} nameMarginClass="mt-[7mm]" /></div>
-          <div><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic font-normal">LABORATORY RESPONSIBLE</span></div><SignatureBlock name={headOfLabName(responsible)} heightMm={30} nameMarginClass="mt-[7mm]" /></div>
-        </div>
+        <SignaturePair
+          wrapperClassName="official-signatures"
+          columnClassName="grid grid-cols-2 gap-16 text-center text-[9.5pt]"
+          testedByLabel={<>TESTUAR NGA / <span className="italic font-normal">TESTED BY</span></>}
+          testedByName={testedBy}
+          responsibleLabel={<>PËRGJEGJËSI I LABORATORIT / <span className="italic font-normal">LABORATORY RESPONSIBLE</span></>}
+          responsibleName={headOfLabName(responsible)}
+          heightMm={30}
+        />
         <div className="official-disclaimers mt-2 space-y-0.5 text-[7.5pt] leading-tight">
           <p>Rezultatet në këtë raport testimi i përkasin vetëm mostrës së testuar. / <span className="italic">The results relate only to the items tested.</span></p>
           <p>Ky raport testimi nuk mund të riprodhohet në mënyrë të pjesshme pa aprovimin me shkrim të laboratorit. / <span className="italic">The test report shall not be reproduced except in full without the written approval of the laboratory.</span></p>
@@ -348,11 +392,3 @@ export function ChemicalReportRow({ no, parameter, unit, method, result }: { no:
   );
 }
 
-export function Signature({ label, value }: { label: string; value?: string }) {
-  return (
-    <div className="border-t border-slate-300 pt-3">
-      <div className="text-xs font-medium uppercase tracking-wide text-muted">{label}</div>
-      <SignatureBlock name={value ?? "Signature"} align="start" heightMm={22} nameMarginClass="mt-2" />
-    </div>
-  );
-}

@@ -5,7 +5,7 @@ import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest,
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
-import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, Signature, SignatureBlock } from "./report-shared";
+import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
 
 export function MortarReportPreview({
@@ -371,10 +371,15 @@ export function MortarNotesAndFooter({
         <div className="min-h-3 border-b border-black" />
       </div>
       <div className="mortar-footer-cluster">
-        <div className="mortar-signatures mt-4 grid grid-cols-2 gap-16 text-center text-[7.3pt]">
-          <div><div className="font-bold">TESTUESI / <span className="italic font-normal">TESTED BY</span></div><SignatureBlock name={testedBy || "Ing./Eng."} heightMm={28} nameMarginClass="mt-[6mm]" /></div>
-          <div><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic font-normal">LABORATORY RESPONSIBLE</span></div><SignatureBlock name={headOfLabName(responsible)} heightMm={28} nameMarginClass="mt-[6mm]" /></div>
-        </div>
+        <SignaturePair
+          wrapperClassName="mortar-signatures mt-4"
+          columnClassName="grid grid-cols-2 gap-16 text-center text-[7.3pt]"
+          testedByLabel={<>TESTUESI / <span className="italic font-normal">TESTED BY</span></>}
+          testedByName={testedBy || "Ing./Eng."}
+          responsibleLabel={<>PËRGJEGJËSI I LABORATORIT / <span className="italic font-normal">LABORATORY RESPONSIBLE</span></>}
+          responsibleName={headOfLabName(responsible)}
+          heightMm={28}
+        />
         <div className="mt-3 space-y-0.5 text-[5.7pt] leading-tight">
           <p>Rezultatet në këtë raport testimi i përkasin vetëm mostrës së testuar. / <span className="italic">The results relate only to the items tested.</span></p>
           <p>Ky raport testimi nuk mund të riprodhohet në mënyrë të pjesshme pa aprovimin me shkrim të laboratorit. / <span className="italic">The test report shall not be reproduced except in full without the written approval of the laboratory.</span></p>
