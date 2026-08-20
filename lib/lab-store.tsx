@@ -137,6 +137,9 @@ interface ConcreteInput {
   machineUsed: string;
   technicianName: string;
   notes?: string;
+  element?: string;
+  otherData?: string;
+  strengthClass?: string;
   specimens: Array<{
     specimenCode: string;
     ageDays: number;

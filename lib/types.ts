@@ -149,6 +149,9 @@ export interface ConcreteCompressiveTest {
   machineUsed: string;
   technicianName: string;
   notes?: string;
+  element?: string;
+  otherData?: string;
+  strengthClass?: string;
   specimens?: ConcreteCubeSpecimen[];
   createdAt: string;
 }

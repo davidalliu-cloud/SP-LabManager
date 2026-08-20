@@ -51,11 +51,11 @@ export function ConcreteCubeReportPreview({
     const volumeM3 = (specimen.lengthMm * specimen.widthMm * specimen.heightMm) / 1_000_000_000;
     return volumeM3 ? round(specimen.weightKg / volumeM3, 0) : 0;
   };
-  const strengthClass = sample?.notes?.match(new RegExp("C\\d+/\\d+"))?.[0];
+  const strengthClass = concrete?.strengthClass || sample?.notes?.match(new RegExp("C\\d+/\\d+"))?.[0];
 
   const paddedSpecimens = [reportSpecimens[0], reportSpecimens[1], reportSpecimens[2]];
   const issueDate = report.issuedAt || report.approvedAt || concrete?.testEndDate || concrete?.testDate || sample?.reportDueDate;
-  const otherData = sample?.notes
+  const otherData = concrete?.otherData || sample?.notes
     ?.split("|")
     .find((note) => !note.includes("Intervali i akredituar") && !note.includes("Standardi i kampionimit") && !note.match(new RegExp("C\\d+/\\d+")))
     ?.trim();
@@ -83,7 +83,7 @@ export function ConcreteCubeReportPreview({
         <ConcreteCubeMeta label="ADRESA / ADDRESS:" value={client?.address} />
         <ConcreteCubeMeta label="KONTAKTET / CONTACT:" value={client?.phone || client?.email} />
         <ConcreteCubeMeta label="OBJEKTI / OBJECT:" value={project?.projectName} />
-        <ConcreteCubeMeta label="ELEMENTI / ELEMENT:" value={sample?.sampleDescription} />
+        <ConcreteCubeMeta label="ELEMENTI / ELEMENT:" value={concrete?.element || sample?.sampleDescription} />
         <ConcreteCubeMeta label="TË DHËNA TË TJERA / OTHER DATA:" value={otherData} />
         <ConcreteCubeMeta label="KAMPIONI / SAMPLE:" value="KUBIKË BETONI / CONCRETE CUBE" />
         <ConcreteCubeMeta label="KLASA E REZISTENCËS / STRENGTH CLASS:" value={strengthClass || "-"} />
