@@ -62,14 +62,14 @@ export function ConcreteCubeReportPreview({
 
   return (
     <section className="report-a4 concrete-cube-report print-surface relative rounded-md border border-line bg-white p-4 text-[11pt] leading-[1.16] text-black shadow-sm" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
-      <header className="border-b border-black pb-1">
-        <div className="grid grid-cols-[142px_1fr_74px] items-start gap-3">
-          <img src="/brand/sarp-logo.png" alt="SARP" className="mt-1 h-auto w-[134px]" />
+      <header>
+        <div className="grid grid-cols-[158px_1fr_82px] items-start gap-3 border-b border-black pb-1">
+          <img src="/brand/sarp-logo.png" alt="SARP" className="mt-1 h-auto w-[156px]" />
           <div className="pt-2 text-center">
             <div className="font-bold uppercase">RAPORT TESTIM / TEST REPORT</div>
             <div className="mt-3 text-[10pt] font-bold">Nr. / No. {report.reportNumber}</div>
           </div>
-          <img src="/brand/da-accreditation.png" alt="DA accreditation Testim S SH ISO/IEC 17025 LT 069" className="ml-auto h-auto w-[68px]" />
+          <img src="/brand/da-accreditation.png" alt="DA accreditation Testim S SH ISO/IEC 17025 LT 069" className="ml-auto h-auto w-[80px]" />
         </div>
         <div className="mt-1 text-[9pt] italic leading-tight">
           <div>Kodi / Code: SL-RA-B-7.8/1.3</div>

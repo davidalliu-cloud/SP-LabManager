@@ -214,14 +214,14 @@ export function OfficialReportShell({
 }) {
   return (
     <section className={`report-a4 official-report print-surface relative rounded-md border border-line bg-white p-4 leading-tight text-black shadow-sm ${className}`}>
-      <header className="border-b-2 border-black pb-1">
-        <div className="grid grid-cols-[140px_1fr_78px] items-start gap-4">
-          <img src="/brand/sarp-logo.png" alt="SARP" className="mt-1 h-auto w-[130px]" />
+      <header>
+        <div className="grid grid-cols-[152px_1fr_82px] items-start gap-4 border-b-2 border-black pb-1">
+          <img src="/brand/sarp-logo.png" alt="SARP" className="mt-1 h-auto w-[150px]" />
           <div className="pt-3 text-center">
             <div className="text-[15pt] font-bold uppercase leading-tight">{title}</div>
             <div className="mt-2 text-[10pt] font-bold text-red-600">Nr. / No. {report.reportNumber}</div>
           </div>
-          <img src="/brand/da-accreditation.png" alt="DA accreditation Testim S SH ISO/IEC 17025 LT 069" className="ml-auto mt-1 h-auto w-[68px]" />
+          <img src="/brand/da-accreditation.png" alt="DA accreditation Testim S SH ISO/IEC 17025 LT 069" className="ml-auto mt-1 h-auto w-[80px]" />
         </div>
         <div className="mt-1 text-[9pt] italic leading-tight">
           <div>Kodi / Code: {code}</div>
