@@ -68,7 +68,7 @@ export function MortarReportPreview({
           </div>
           <img src="/brand/da-accreditation.png" alt="DA accreditation Testim S SH ISO/IEC 17025 LT 069" className="ml-auto mt-0.5 h-auto w-[56px]" />
         </div>
-        <div className="mt-0.5 text-[7.4pt] italic leading-tight">
+        <div className="mt-0.5 text-[5.7pt] italic leading-tight">
           <div>Kodi / Code: {codeByKind[mortar.testKind]}</div>
           <div>Faqe / Page: 1/1</div>
         </div>

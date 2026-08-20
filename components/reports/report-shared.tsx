@@ -233,7 +233,7 @@ export function OfficialReportShell({
           </div>
           <img src="/brand/da-accreditation.png" alt="DA accreditation Testim S SH ISO/IEC 17025 LT 069" className="ml-auto mt-1 h-auto w-[80px]" />
         </div>
-        <div className="mt-1 text-[9pt] italic leading-tight">
+        <div className="mt-1 text-[6pt] italic leading-tight">
           <div>Kodi / Code: {code}</div>
           <div>Faqe / Page: 1/1</div>
         </div>

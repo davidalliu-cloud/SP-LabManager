@@ -71,7 +71,7 @@ export function ConcreteCubeReportPreview({
           </div>
           <img src="/brand/da-accreditation.png" alt="DA accreditation Testim S SH ISO/IEC 17025 LT 069" className="ml-auto h-auto w-[80px]" />
         </div>
-        <div className="mt-1 text-[9pt] italic leading-tight">
+        <div className="mt-1 text-[7pt] italic leading-tight">
           <div>Kodi / Code: SL-RA-B-7.8/1.3</div>
           <div>Faqe / Page: 1/1</div>
         </div>
