@@ -5,7 +5,7 @@ import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest,
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
-import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair } from "./report-shared";
+import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair, samplingOperator } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
 
 export function ConcreteWaterPenetrationReportPreview({
@@ -36,7 +36,8 @@ export function ConcreteWaterPenetrationReportPreview({
         { sq: "KAMPIONI", en: "SAMPLE", value: sample?.sampleDescription || sample?.sampleType },
         { sq: "PËRSHKRIMI I KAMPIONËVE (FORMA DHE DIMENSIONET)", en: "DESCRIPTION OF THE SPECIMEN (SHAPE AND DIMENSIONS)", value: `${sampleDimensions(specimens)} mm` },
         { sq: "DATA E PËRGATITJES SË KAMPIONËVE", en: "DATE OF CASTING", value: concreteWater.castingDate },
-        { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: sample?.dateReceived }
+        { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: sample?.dateReceived },
+        { sq: "OPERATORI I MARRJES SË KAMPIONIT", en: "SAMPLING OPERATOR", value: samplingOperator(sample) }
       ]} />
       <div className="mt-1 grid grid-cols-[315px_1fr] gap-x-8 gap-y-1 text-[10pt] leading-[1.15]">
         <OfficialTestingDates start={concreteWater.testStartDate} end={concreteWater.testEndDate} />
@@ -97,7 +98,8 @@ export function ConcreteFlexuralReportPreview({
         { sq: "ELEMENTI", en: "ELEMENT", value: sample?.sampleDescription },
         { sq: "KAMPIONI", en: "SAMPLE", value: sample?.sampleType },
         { sq: "DATA E PËRGATITJES SË MOSTRËS", en: "DATE OF CASTING", value: concreteFlexural.castingDate },
-        { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: sample?.dateReceived }
+        { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: sample?.dateReceived },
+        { sq: "OPERATORI I MARRJES SË KAMPIONIT", en: "SAMPLING OPERATOR", value: samplingOperator(sample) }
       ]} />
       <div className="mt-1 grid grid-cols-[315px_1fr] gap-x-8 gap-y-1 text-[10pt] leading-[1.15]">
         <OfficialTestingDates start={concreteFlexural.testStartDate} end={concreteFlexural.testEndDate} />
@@ -178,7 +180,8 @@ export function ConcreteDensityReportPreview({
         { sq: "PËRSHKRIMI I KAMPIONËVE (FORMA DHE DIMENSIONET)", en: "DESCRIPTION OF THE SPECIMEN (SHAPE AND DIMENSIONS)", value: sample?.sampleDescription || sample?.sampleType },
         { sq: "KUSHTET E KAMPIONIT NË KOHËN E TESTIMIT", en: "CONDITION OF SPECIMEN AT TIME OF TEST", value: concreteDensity.specimenCondition },
         { sq: "METODA E PËRCAKTIMIT TË VOLUMIT", en: "METHOD OF DETERMINATION OF VOLUME", value: concreteDensity.volumeMethod },
-        { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: sample?.dateReceived }
+        { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: sample?.dateReceived },
+        { sq: "OPERATORI I MARRJES SË KAMPIONIT", en: "SAMPLING OPERATOR", value: samplingOperator(sample) }
       ]} />
       <div className="mt-1 grid grid-cols-[315px_1fr] gap-x-8 gap-y-1 text-[10pt] leading-[1.15]">
         <OfficialTestingDates start={concreteDensity.testStartDate} end={concreteDensity.testEndDate} />
@@ -237,7 +240,8 @@ export function ConcreteIndirectTensileReportPreview({
         { sq: "ELEMENTI", en: "ELEMENT", value: sample?.sampleDescription },
         { sq: "KAMPIONI", en: "SAMPLE", value: sample?.sampleType },
         { sq: "DATA E BETONIMIT", en: "CASTING DATE", value: concreteIndirectTensile.castingDate },
-        { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: sample?.dateReceived }
+        { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: sample?.dateReceived },
+        { sq: "OPERATORI I MARRJES SË KAMPIONIT", en: "SAMPLING OPERATOR", value: samplingOperator(sample) }
       ]} />
       <div className="mt-1 grid grid-cols-[315px_1fr] gap-x-8 gap-y-1 text-[10pt] leading-[1.15]">
         <OfficialTestingDates start={concreteIndirectTensile.testStartDate} end={concreteIndirectTensile.testEndDate} />
@@ -365,6 +369,7 @@ export function ConcreteCoreReportPreview({
         <CoreMetaRow sq="ELEMENTI" en="ELEMENT" value={concreteCore.element || sample?.sampleDescription} />
         <CoreMetaRow sq="KAMPIONI" en="SAMPLE" value="CILINDËR BETONI / CONCRETE CORE DRILL" />
         <CoreMetaRow sq="DATA E MARRJES SË KAMPIONIT" en="SAMPLING DATE" value={concreteCore.samplingDate || sample?.dateReceived} />
+        <CoreMetaRow sq="OPERATORI I MARRJES SË KAMPIONIT" en="SAMPLING OPERATOR" value={samplingOperator(sample)} />
         <CoreMetaRow sq="DATA E BETONIMIT" en="CASTING DATE" value={concreteCore.castingDate || sample?.concretingDate} />
         <div className="font-bold uppercase">DATA E TESTIMIT / <span className="italic font-normal normal-case">TESTING DATE</span></div>
         <div className="grid grid-cols-[88px_1fr] gap-x-5 font-semibold">

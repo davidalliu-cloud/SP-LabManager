@@ -5,7 +5,7 @@ import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest,
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
-import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair } from "./report-shared";
+import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair, samplingOperator } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
 
 export function ConcreteCubeReportPreview({
@@ -88,6 +88,7 @@ export function ConcreteCubeReportPreview({
         <ConcreteCubeMeta label="KAMPIONI / SAMPLE:" value="KUBIKË BETONI / CONCRETE CUBE" />
         <ConcreteCubeMeta label="KLASA E REZISTENCËS / STRENGTH CLASS:" value={strengthClass || "-"} />
         <ConcreteCubeMeta label="DATA E PRANIMIT TË KAMPIONIT NË LABORATOR / SAMPLE'S RECEIVING DATE:" value={formatEuropeanDate(sample?.dateReceived)} />
+        <ConcreteCubeMeta label="OPERATORI I MARRJES SË KAMPIONIT / SAMPLING OPERATOR:" value={samplingOperator(sample)} />
         <div className="contents">
           <div className="font-bold">DATA E TESTIMIT / <span className="italic">TESTING DATE</span></div>
           <div className="grid grid-cols-[105px_1fr] gap-x-3">

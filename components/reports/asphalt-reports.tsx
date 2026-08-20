@@ -5,7 +5,7 @@ import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest,
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
-import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow } from "./report-shared";
+import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, samplingOperator } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
 
 export function AsphaltReportPreview({
@@ -47,7 +47,8 @@ export function AsphaltReportPreview({
     { sq: "OBJEKTI", en: "OBJECT", value: project?.projectName },
     { sq: "KAMPIONI", en: "SAMPLE", value: `${asphalt.mixtureKind} / Bituminous mixture` },
     { sq: "VENDI I MARRJES SË KAMPIONIT", en: "SAMPLING LOCATION", value: asphalt.samplingLocation },
-    { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: sample?.dateReceived }
+    { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: sample?.dateReceived },
+    { sq: "OPERATORI I MARRJES SË KAMPIONIT", en: "SAMPLING OPERATOR", value: samplingOperator(sample) }
   ];
   return (
     <OfficialReportShell report={report} code={codeMap[kind] ?? "SL-RA-AS-7.8/1"} className="compact-official-report">

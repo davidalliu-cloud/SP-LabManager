@@ -5,7 +5,7 @@ import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest,
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
-import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair } from "./report-shared";
+import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair, samplingOperator } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
 
 export function AggregateReportPreview({
@@ -74,6 +74,7 @@ export function AggregateReportPreview({
         <AggregateMeta label="KAMPIONI / SAMPLE:" value={sampleLabel} />
         <AggregateMeta label="DATA E MARRJES SË KAMPIONIT / SAMPLING DATE:" value={sample?.dateReceived} />
         <AggregateMeta label="DATA E PRANIMIT TË KAMPIONIT NË LABORATOR / DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY:" value={sample?.dateReceived} />
+        <AggregateMeta label="OPERATORI I MARRJES SË KAMPIONIT / SAMPLING OPERATOR:" value={samplingOperator(sample)} />
         <div className="contents">
           <div className="font-bold uppercase">DATA E TESTIMIT / <span className="italic">TESTING DATE</span>:</div>
           <div className="grid grid-cols-[90px_1fr] gap-x-3">
@@ -269,6 +270,7 @@ export function AggregateChemicalReportPreview({
         <Info label="Sample" value={sample?.sampleDescription || sample?.sampleType} />
         <Info label="Sampling date" value={sample?.dateReceived} />
         <Info label="Receipt date" value={sample?.dateReceived} />
+        <Info label="Sampling operator" value={samplingOperator(sample)} />
         <Info label="Testing start" value={aggregateChemical.testStartDate} />
         <Info label="Testing end" value={aggregateChemical.testEndDate} />
         <Info label="Test standard" value={test?.standard || "BS EN 1744-1:2009+A1:2012"} />
@@ -354,6 +356,7 @@ export function AggregateLosAngelesReportPreview({
         <Info label="Sample" value={sample?.sampleDescription || sample?.sampleType} />
         <Info label="Sampling date" value={sample?.dateReceived} />
         <Info label="Receipt date" value={sample?.dateReceived} />
+        <Info label="Sampling operator" value={samplingOperator(sample)} />
         <Info label="Testing start" value={aggregateLosAngeles.testStartDate} />
         <Info label="Testing end" value={aggregateLosAngeles.testEndDate} />
         <Info label="Test standard" value={test?.standard || "BS EN 1097-2:2020"} />
@@ -467,6 +470,7 @@ export function AggregateFreezeThawReportPreview({
         <Info label="Sample" value={sample?.sampleDescription || sample?.sampleType} />
         <Info label="Sampling date" value={sample?.dateReceived} />
         <Info label="Receipt date" value={sample?.dateReceived} />
+        <Info label="Sampling operator" value={samplingOperator(sample)} />
         <Info label="Testing start" value={aggregateFreezeThaw.testStartDate} />
         <Info label="Testing end" value={aggregateFreezeThaw.testEndDate} />
         <Info label="Freeze-thaw cycles No." value={String(aggregateFreezeThaw.totalCycles || "-")} />
@@ -586,6 +590,7 @@ export function AggregateAcvReportPreview({
         <Info label="Sample" value={sample?.sampleDescription || sample?.sampleType} />
         <Info label="Sampling date" value={sample?.dateReceived} />
         <Info label="Receipt date" value={sample?.dateReceived} />
+        <Info label="Sampling operator" value={samplingOperator(sample)} />
         <Info label="Testing start" value={aggregateAcv.testStartDate} />
         <Info label="Testing end" value={aggregateAcv.testEndDate} />
         <Info label="Test standard" value={test?.standard || "BS EN 1097-2:2020"} />

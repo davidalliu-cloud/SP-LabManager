@@ -5,7 +5,7 @@ import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest,
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
-import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow } from "./report-shared";
+import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, samplingOperator } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
 
 // Metadata rows shared by every cement report (register, client, sample, dates).
@@ -20,7 +20,7 @@ function cementBaseMeta(sample?: Sample, client?: Client, project?: Project): Of
     { sq: "KAMPIONI", en: "SAMPLE", value: "ÇIMENTO / CEMENT" },
     { sq: "DATA E MARRJES SË KAMPIONIT", en: "SAMPLING DATE", value: receiptDate },
     { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: receiptDate },
-    { sq: "OPERATORI I MARRJES SË KAMPIONIT", en: "SAMPLING OPERATOR", value: "KLIENTI / CLIENT" }
+    { sq: "OPERATORI I MARRJES SË KAMPIONIT", en: "SAMPLING OPERATOR", value: samplingOperator(sample) }
   ];
 }
 
@@ -138,7 +138,7 @@ export function CementStrengthReportPreview({
         { sq: "KAMPIONI", en: "SAMPLE", value: "ÇIMENTO / CEMENT" },
         { sq: "DATA E MARRJES SË KAMPIONIT", en: "SAMPLING DATE", value: receiptDate },
         { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: receiptDate },
-        { sq: "OPERATORI I MARRJES SË KAMPIONIT", en: "SAMPLING OPERATOR", value: "KLIENTI / CLIENT" },
+        { sq: "OPERATORI I MARRJES SË KAMPIONIT", en: "SAMPLING OPERATOR", value: samplingOperator(sample) },
         { sq: "TESTIMI", en: "TEST", value: "PËRCAKTIMI I REZISTENCËS NË SHTYPJE DHE PËRKULJE TË ÇIMENTOS* / DETERMINATION OF STRENGTH*" },
         { sq: "STANDARDET E TESTIMIT", en: "TEST STANDARDS", value: test?.standard || "BS EN 196-1:2016" },
         { sq: "VENDI KU ËSHTË PERFORMUAR TESTI", en: "LABORATORY LOCATION", value: cementStrength.testingLocation || "01/A Laboratori Fiziko-Mekanik / Physical-Mechanical laboratory" }

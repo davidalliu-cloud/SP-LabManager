@@ -5,7 +5,7 @@ import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest,
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
-import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow } from "./report-shared";
+import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, samplingOperator } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
 
 export function ThermalInsulationReportPreview({
@@ -38,7 +38,8 @@ export function ThermalInsulationReportPreview({
         { sq: "FORMA E PRODUKTIT TË DORËZUAR NË LABORATOR", en: "THE FORM IN WHICH THE PRODUCT ARRIVED AT THE LABORATORY", value: thermalInsulation.deliveredForm },
         { sq: "PRANIA E DEFEKTEVE NË PRODUKT", en: "PRESENCE OF DEFECTS ON THE TEST SPECIMENS", value: thermalInsulation.defects },
         { sq: "DATA E MARRJES SË KAMPIONIT", en: "SAMPLING DATE", value: sample?.dateReceived },
-        { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: sample?.dateReceived }
+        { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: sample?.dateReceived },
+        { sq: "OPERATORI I MARRJES SË KAMPIONIT", en: "SAMPLING OPERATOR", value: samplingOperator(sample) }
       ]} />
       <div className="mt-1 grid grid-cols-[315px_1fr] gap-x-8 gap-y-1 text-[10pt] leading-[1.15]">
         <OfficialTestingDates start={thermalInsulation.testStartDate} end={thermalInsulation.testEndDate} />
@@ -111,7 +112,8 @@ export function SteelReportPreview({
         { sq: "OBJEKTI", en: "OBJECT", value: project?.projectName },
         { sq: "KAMPIONI", en: "SAMPLE", value: `${sample?.sampleDescription || sample?.sampleType || "Shufër çeliku / Steel rebar"}${diameter ? ` - Ø ${diameter} mm` : ""}` },
         { sq: "DATA E MARRJES SË KAMPIONIT", en: "SAMPLING DATE", value: sample?.dateReceived },
-        { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: sample?.dateReceived }
+        { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: sample?.dateReceived },
+        { sq: "OPERATORI I MARRJES SË KAMPIONIT", en: "SAMPLING OPERATOR", value: samplingOperator(sample) }
       ]} />
       <div className="mt-1 grid grid-cols-[315px_1fr] gap-x-8 gap-y-1 text-[10pt] leading-[1.15]">
         <OfficialTestingDates start={steel.testStartDate} end={steel.testEndDate} />

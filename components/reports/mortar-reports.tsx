@@ -5,7 +5,7 @@ import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest,
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
-import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair } from "./report-shared";
+import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair, samplingOperator } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
 
 export function MortarReportPreview({
@@ -86,6 +86,7 @@ export function MortarReportPreview({
         {mortar.flowValue ? <MortarMeta label="VLERA E RRJEDHSHMËRISË SË LLAÇIT TË TESTIMIT / FLOW VALUE OF THE TEST MORTAR" value={mortar.flowValue} /> : null}
         <MortarMeta label="DATA E MARRJES SË KAMPIONIT / SAMPLING DATE" value={sample?.dateReceived} />
         <MortarMeta label="DATA E PRANIMIT TË KAMPIONIT NË LABORATOR / DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY" value={sample?.dateReceived} />
+        <MortarMeta label="OPERATORI I MARRJES SË KAMPIONIT / SAMPLING OPERATOR" value={samplingOperator(sample)} />
         <div className="contents">
           <div className="font-bold uppercase">DATA E TESTIMIT / <span className="italic font-normal normal-case">TESTING DATE</span>:</div>
           <div className="grid grid-cols-[92px_1fr] gap-x-3 font-semibold">

@@ -5,7 +5,7 @@ import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest,
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
-import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair } from "./report-shared";
+import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair, samplingOperator } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
 
 export function AggregateDensityReportPreview({
@@ -42,6 +42,7 @@ export function AggregateDensityReportPreview({
         <Info label="Sample" value={sample?.sampleDescription || sample?.sampleType} />
         <Info label="Sampling date" value={sample?.dateReceived} />
         <Info label="Receipt date" value={sample?.dateReceived} />
+        <Info label="Sampling operator" value={samplingOperator(sample)} />
         <Info label="Testing start" value={aggregateDensity.testStartDate} />
         <Info label="Testing end" value={aggregateDensity.testEndDate} />
         <Info label="Test method" value={aggregateDensity.testMethod || "Metoda me piknometer / Pycnometer method"} />
@@ -142,6 +143,7 @@ export function AggregateFillerDensityReportPreview({
         <Info label="Sample" value={sample?.sampleDescription || sample?.sampleType} />
         <Info label="Sampling date" value={sample?.dateReceived} />
         <Info label="Receipt date" value={sample?.dateReceived} />
+        <Info label="Sampling operator" value={samplingOperator(sample)} />
         <Info label="Testing start" value={aggregateFillerDensity.testStartDate} />
         <Info label="Testing end" value={aggregateFillerDensity.testEndDate} />
         <Info label="Test method" value={aggregateFillerDensity.testMethod || "METODA ME PIKNOMETER / PYCNOMETER METHOD"} />
@@ -233,6 +235,7 @@ export function AggregateSoundnessReportPreview({
         <Info label="Sample" value={sample?.sampleDescription || sample?.sampleType} />
         <Info label="Sampling date" value={sample?.dateReceived} />
         <Info label="Receipt date" value={sample?.dateReceived} />
+        <Info label="Sampling operator" value={samplingOperator(sample)} />
         <Info label="Testing start" value={aggregateSoundness.testStartDate} />
         <Info label="Testing end" value={aggregateSoundness.testEndDate} />
         <Info label="Test standard" value={test?.standard || "BS EN 1367-2:2009"} />
@@ -302,6 +305,7 @@ export function AggregateElongationReportPreview({
         <Info label="Object / Project" value={project?.projectName} />
         <Info label="Sample" value={sample?.sampleDescription || sample?.sampleType} />
         <Info label="Sampling date" value={sample?.dateReceived} />
+        <Info label="Sampling operator" value={samplingOperator(sample)} />
         <Info label="Testing date" value={aggregateElongation.testStartDate} />
         <Info label="Test standard" value={test?.standard || "BS 812-105.2:1980"} />
         <Info label="Testing place" value={aggregateElongation.testingLocation || "Laboratori Fiziko-Mekanik / Physical-mechanical laboratory"} />
@@ -359,6 +363,7 @@ export function AggregateBulkDensityReportPreview({
         <Info label="Object / Project" value={project?.projectName} />
         <Info label="Sample" value={sample?.sampleDescription || sample?.sampleType} />
         <Info label="Receipt date" value={sample?.dateReceived} />
+        <Info label="Sampling operator" value={samplingOperator(sample)} />
         <Info label="Testing date" value={aggregateBulkDensity.testStartDate} />
         <Info label="Test standard" value={test?.standard || "BS EN 1097-3:1998"} />
         <Info label="Specific density" value={`${aggregateBulkDensity.specificDensityMgM3 || "-"} Mg/m3`} />
@@ -413,6 +418,7 @@ export function AggregateSandEquivalentReportPreview({
         <Info label="Object / Project" value={project?.projectName} />
         <Info label="Sample" value={sample?.sampleDescription || sample?.sampleType} />
         <Info label="Receipt date" value={sample?.dateReceived} />
+        <Info label="Sampling operator" value={samplingOperator(sample)} />
         <Info label="Testing date" value={aggregateSandEquivalent.testStartDate} />
         <Info label="Test standard" value={test?.standard || "BS EN 933-8:2012+A1:2015"} />
         <Info label="Testing place" value={aggregateSandEquivalent.testingLocation} />
@@ -475,6 +481,7 @@ export function AggregateShapeIndexReportPreview({
         <Info label="Sample" value={sample?.sampleDescription || sample?.sampleType} />
         <Info label="Sampling date" value={sample?.dateReceived} />
         <Info label="Receipt date" value={sample?.dateReceived} />
+        <Info label="Sampling operator" value={samplingOperator(sample)} />
         <Info label="Testing start" value={aggregateShapeIndex.testStartDate} />
         <Info label="Testing end" value={aggregateShapeIndex.testEndDate} />
         <Info label="Test standard" value={test?.standard || "BS EN 933-4:2008"} />
@@ -565,6 +572,7 @@ export function AggregateFlakinessReportPreview({
         <Info label="Object / Project" value={project?.projectName} />
         <Info label="Sample" value={sample?.sampleDescription || sample?.sampleType} />
         <Info label="Sampling date" value={sample?.dateReceived} />
+        <Info label="Sampling operator" value={samplingOperator(sample)} />
         <Info label="Testing date" value={aggregateFlakiness.testStartDate} />
         <Info label="Test standard" value={test?.standard || "BS EN 933-3:2012"} />
         <Info label="Testing place" value={aggregateFlakiness.testingLocation || "Laboratori Fiziko-Mekanik / Physical-mechanical laboratory"} />

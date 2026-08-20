@@ -13,6 +13,16 @@ export function headOfLabName(_preferred?: string) {
   return HEAD_OF_LAB_NAME;
 }
 
+// Whoever physically handed the sample to the lab: the client's own person if
+// they delivered it, or the lab technician who went and collected it, per
+// Sample.collectionMethod — set at sample registration, shown here so it
+// reaches the report. Distinct from who ran the test ("tested by") and from
+// the lab-responsible signoff (headOfLabName).
+export function samplingOperator(sample?: Sample) {
+  if (!sample) return undefined;
+  return sample.collectionMethod === "Collected by lab technician" ? sample.collectedBy : sample.deliveredBy;
+}
+
 // Stored signature images, matched by a lowercase substring of the name shown
 // in a report's signature block (technician, checked-by, or lab responsible —
 // wherever that name ends up). Add more entries here as more employees'
