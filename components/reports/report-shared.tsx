@@ -28,54 +28,27 @@ function signatureImageFor(name?: string) {
   return SIGNATURE_IMAGES.find((entry) => normalized.includes(entry.match))?.src;
 }
 
-// Overlays a stored signature image on a report's signature block. Must be
-// placed inside a `position: relative` ancestor (the name cell) — see
-// `.signature-stamp` in globals.css for the shared positioning rule.
-// `heightMm` is tuned per call site to roughly match the blank space each
-// report layout reserves above the printed name (a few report types reserve
-// very little, so the stamp there necessarily overlaps the name/label more).
-// `align` should be "start" when the name it sits above is left-aligned
-// rather than centered, so the stamp lines up over the text itself instead
-// of the middle of a wide cell.
-export function SignatureStamp({
-  name,
-  heightMm = 10,
-  align = "center"
-}: {
-  name?: string;
-  heightMm?: number;
-  align?: "center" | "start";
-}) {
-  const src = signatureImageFor(name);
-  if (!src) return null;
-  return (
-    <img
-      src={src}
-      alt=""
-      className={`signature-stamp${align === "start" ? " signature-stamp-start" : ""}`}
-      style={{ height: `${heightMm}mm` }}
-    />
-  );
-}
-
-// The "Laboratory Responsible" field always shows Adela (see headOfLabName),
-// so unlike SignatureStamp it doesn't need to sit as an absolute overlay
-// squeezed above a name that could belong to anyone — the name renders right
-// under the label, then this renders her signature large below it, in normal
-// document flow.
-export function LabResponsibleSignature({
+// A signature block: name in normal document flow at a configurable distance
+// below the label (so it can be lined up with the sibling signature block
+// next to it), then a big signature/stamp image below the name — for
+// whichever employees have one on file, via signatureImageFor. Used for both
+// signatories in a report so their names land on the same line and their
+// signatures share one visual scale.
+export function SignatureBlock({
   name,
   align = "center",
-  heightMm = 30
+  heightMm = 30,
+  nameMarginClass = "mt-1"
 }: {
-  name: string;
+  name?: string;
   align?: "center" | "start";
   heightMm?: number;
+  nameMarginClass?: string;
 }) {
   const src = signatureImageFor(name);
   return (
     <div>
-      <div className="mt-1 font-bold">{name}</div>
+      <div className={`${nameMarginClass} font-bold`}>{name || "-"}</div>
       {src && (
         <img
           src={src}
@@ -285,8 +258,8 @@ export function OfficialNotesAndFooter({
       </div>
       <div className="official-footer-cluster">
         <div className="official-signatures grid grid-cols-2 gap-16 text-center text-[9.5pt]">
-          <div className="relative"><div className="font-bold">TESTUAR NGA / <span className="italic font-normal">TESTED BY</span></div><SignatureStamp name={testedBy} heightMm={15} /><div className="mt-[7mm] font-bold">{testedBy || "-"}</div></div>
-          <div><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic font-normal">LABORATORY RESPONSIBLE</span></div><LabResponsibleSignature name={headOfLabName(responsible)} heightMm={30} /></div>
+          <div><div className="font-bold">TESTUAR NGA / <span className="italic font-normal">TESTED BY</span></div><SignatureBlock name={testedBy} heightMm={30} nameMarginClass="mt-[7mm]" /></div>
+          <div><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic font-normal">LABORATORY RESPONSIBLE</span></div><SignatureBlock name={headOfLabName(responsible)} heightMm={30} nameMarginClass="mt-[7mm]" /></div>
         </div>
         <div className="official-disclaimers mt-2 space-y-0.5 text-[7.5pt] leading-tight">
           <p>Rezultatet në këtë raport testimi i përkasin vetëm mostrës së testuar. / <span className="italic">The results relate only to the items tested.</span></p>
@@ -376,19 +349,10 @@ export function ChemicalReportRow({ no, parameter, unit, method, result }: { no:
 }
 
 export function Signature({ label, value }: { label: string; value?: string }) {
-  if (value === headOfLabName()) {
-    return (
-      <div className="border-t border-slate-300 pt-3">
-        <div className="text-xs font-medium uppercase tracking-wide text-muted">{label}</div>
-        <LabResponsibleSignature name={value} align="start" heightMm={22} />
-      </div>
-    );
-  }
   return (
-    <div className="relative border-t border-slate-300 pt-3">
+    <div className="border-t border-slate-300 pt-3">
       <div className="text-xs font-medium uppercase tracking-wide text-muted">{label}</div>
-      <SignatureStamp name={value} heightMm={11} align="start" />
-      <div className="mt-2 text-sm font-semibold text-ink">{value ?? "Signature"}</div>
+      <SignatureBlock name={value ?? "Signature"} align="start" heightMm={22} nameMarginClass="mt-2" />
     </div>
   );
 }
