@@ -439,11 +439,11 @@ export function ConcreteCoreReportPreview({
         <p>Rezultatet në këtë raport testimi i përkasin vetëm mostrës së testuar. / <span className="italic">The results relate only to the items tested.</span></p>
         <p>Ky raport testimi nuk mund të riprodhohet në mënyrë të pjesshme pa aprovimin me shkrim të laboratorit. / <span className="italic">The test report shall not be reproduced except in full without the written approval of the laboratory.</span></p>
       </div>
-      <div className="report-issue-date mt-5 grid grid-cols-[300px_150px] items-end gap-4 text-[8.8pt]">
+      <div className="report-issue-date mt-5 grid grid-cols-[300px_150px] items-end gap-4 text-[6pt]">
         <div>Data e Lëshimit të Raportit të Testimit / <span className="italic">Test Report Issue Date:</span></div>
         <div className="border-b border-black text-center">{formatEuropeanDate(issueDate)}</div>
       </div>
-      <footer className="mt-4 text-center text-[6.5pt] leading-tight text-blue-700">
+      <footer className="mt-4 text-center text-[6pt] leading-tight text-blue-700">
         <div className="font-bold">SARP&amp;LAB</div>
         <div>Adresa: Autostrada Tiranë-Durrës, km 29, Fshati Vrrin-Komuna Rrashbull, Durrës Shqipëri. Mob: +355 67 20 74 571; Web: www.sarpandlab.al; Email: d.alliu@sarpandlab.al; NIPT: L 41526502 B</div>
       </footer>

@@ -210,12 +210,12 @@ export function AggregateReportPreview({
           <p>Laboratori nuk është përgjegjës për fazën e kampionmarrjes. / <span className="italic">The laboratory is not responsible for the sampling phase.</span></p>
         </div>
 
-        <div className="mt-2 grid grid-cols-[250px_160px] items-end gap-4 text-[7px]">
+        <div className="mt-2 grid grid-cols-[250px_160px] items-end gap-4 text-[6.4px]">
           <div>Data e Lëshimit të Raportit të Testimit / <span className="italic">Test Report Issue Date:</span></div>
           <div className="border-b border-black text-center">{formatEuropeanDate(issueDate)}</div>
         </div>
 
-        <footer className="mt-2 text-center text-[6.2px] leading-tight text-blue-700">
+        <footer className="mt-2 text-center text-[6.4px] leading-tight text-blue-700">
           <div className="font-bold text-[#5b193f]">SARP &amp; LAB</div>
           <div>Adresa: Autostrada Tiranë-Durrës, km 29, Fshati Vrrin-Komuna Rrashbull, Durrës Shqipëri. Mob: +355 67 20 22 609; Web: www.sarpandlab.al; Email: d.alliu@sarpandlab.al; NIPT: L 41526502 B</div>
         </footer>

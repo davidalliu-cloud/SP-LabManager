@@ -204,11 +204,11 @@ export function ConcreteCubeReportPreview({
         <p>Laboratori nuk është përgjegjës për fazën e kampionmarrjes. / <span className="italic">The laboratory is not responsible for the sampling phase.</span></p>
         <p>Deklaroj që testi është kryer në përputhje me standardin. / <span className="italic">I declare that the test was performed in accordance with the standard.</span></p>
       </div>
-      <div className="report-issue-date mt-4 grid grid-cols-[300px_150px] items-end gap-4 text-[10pt]">
+      <div className="report-issue-date mt-4 grid grid-cols-[300px_150px] items-end gap-4 text-[7pt]">
         <div>Data e lëshimit të Raportit të Testimit / <span className="italic">Test Report Issue Date:</span></div>
         <div className="border-b border-black text-center">{formatEuropeanDate(issueDate)}</div>
       </div>
-      <footer className="mt-3 text-center text-[8pt] leading-tight">
+      <footer className="mt-3 text-center text-[7pt] leading-tight">
         <div className="font-bold">SARP &amp; LAB</div>
         <div>Adresa: Autostrada Tiranë-Durrës, km 29, Fshati Vrrin-Komuna Rrashbull, Durrës Shqipëri. Mob: +355 67 20 22 609; Web: www.sarpandlab.al; Email: d.alliu@sarpandlab.al; NIPT: L 41526502 B</div>
       </footer>
