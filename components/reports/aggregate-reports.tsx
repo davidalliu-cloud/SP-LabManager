@@ -5,7 +5,7 @@ import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest,
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
-import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, Signature, SignatureStamp } from "./report-shared";
+import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, Signature, SignatureStamp, LabResponsibleSignature } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
 
 export function AggregateReportPreview({
@@ -231,6 +231,14 @@ export function AggregateMeta({ label, value }: { label: string; value?: string 
 // formatReportNumber and formatSieveSize moved to report-shared.tsx (reused by the mortar report too).
 
 export function SignatureCompact({ label, value }: { label: string; value?: string }) {
+  if (value === headOfLabName()) {
+    return (
+      <div>
+        <div className="font-bold">{label}</div>
+        <LabResponsibleSignature name={value} heightMm={24} />
+      </div>
+    );
+  }
   return (
     <div className="relative">
       <div className="font-bold">{label}</div>

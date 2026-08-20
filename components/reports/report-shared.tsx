@@ -58,6 +58,36 @@ export function SignatureStamp({
   );
 }
 
+// The "Laboratory Responsible" field always shows Adela (see headOfLabName),
+// so unlike SignatureStamp it doesn't need to sit as an absolute overlay
+// squeezed above a name that could belong to anyone — the name renders right
+// under the label, then this renders her signature large below it, in normal
+// document flow.
+export function LabResponsibleSignature({
+  name,
+  align = "center",
+  heightMm = 30
+}: {
+  name: string;
+  align?: "center" | "start";
+  heightMm?: number;
+}) {
+  const src = signatureImageFor(name);
+  return (
+    <div>
+      <div className="mt-1 font-bold">{name}</div>
+      {src && (
+        <img
+          src={src}
+          alt=""
+          className={`mt-1.5 h-auto${align === "start" ? "" : " mx-auto"}`}
+          style={{ height: `${heightMm}mm` }}
+        />
+      )}
+    </div>
+  );
+}
+
 export function ReportHeader({
   report,
   code,
@@ -256,7 +286,7 @@ export function OfficialNotesAndFooter({
       <div className="official-footer-cluster">
         <div className="official-signatures grid grid-cols-2 gap-16 text-center text-[9.5pt]">
           <div className="relative"><div className="font-bold">TESTUAR NGA / <span className="italic font-normal">TESTED BY</span></div><SignatureStamp name={testedBy} heightMm={15} /><div className="mt-[7mm] font-bold">{testedBy || "-"}</div></div>
-          <div className="relative"><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic font-normal">LABORATORY RESPONSIBLE</span></div><SignatureStamp name={headOfLabName(responsible)} heightMm={15} /><div className="mt-[7mm] font-bold">{headOfLabName(responsible)}</div></div>
+          <div><div className="font-bold">PËRGJEGJËSI I LABORATORIT / <span className="italic font-normal">LABORATORY RESPONSIBLE</span></div><LabResponsibleSignature name={headOfLabName(responsible)} heightMm={30} /></div>
         </div>
         <div className="official-disclaimers mt-2 space-y-0.5 text-[7.5pt] leading-tight">
           <p>Rezultatet në këtë raport testimi i përkasin vetëm mostrës së testuar. / <span className="italic">The results relate only to the items tested.</span></p>
@@ -346,6 +376,14 @@ export function ChemicalReportRow({ no, parameter, unit, method, result }: { no:
 }
 
 export function Signature({ label, value }: { label: string; value?: string }) {
+  if (value === headOfLabName()) {
+    return (
+      <div className="border-t border-slate-300 pt-3">
+        <div className="text-xs font-medium uppercase tracking-wide text-muted">{label}</div>
+        <LabResponsibleSignature name={value} align="start" heightMm={22} />
+      </div>
+    );
+  }
   return (
     <div className="relative border-t border-slate-300 pt-3">
       <div className="text-xs font-medium uppercase tracking-wide text-muted">{label}</div>
