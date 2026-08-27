@@ -18,6 +18,18 @@ const reportStatusLabels: Record<Exclude<ReportStatus, "Draft">, string> = {
   "Sent to Client": "Dërguar klientit"
 };
 
+/**
+ * Frozen panes. This register pins two columns rather than one - the selection
+ * checkbox and the report number - so the second needs an explicit left offset,
+ * which means the first needs a fixed width to offset against. w-12 (48px)
+ * matches its natural width: px-4 either side plus the checkbox.
+ */
+const STICKY_HEAD = "sticky top-0 z-20 bg-white";
+const STICKY_CHECKBOX_HEAD = "sticky left-0 top-0 z-30 w-12 min-w-[48px] bg-white";
+const STICKY_NUMBER_HEAD = "sticky left-12 top-0 z-30 bg-white";
+const STICKY_CHECKBOX_CELL = "sticky left-0 z-10 w-12 min-w-[48px] bg-white";
+const STICKY_NUMBER_CELL = "sticky left-12 z-10 bg-white";
+
 export default function ReportsPage() {
   const store = useLabStore();
   const [search, setSearch] = useState("");
@@ -42,7 +54,7 @@ export default function ReportsPage() {
   const sampleTypes = Array.from(new Set(store.samples.map((sample) => sample.sampleType))).sort();
   const testTypes = Array.from(new Set(store.tests.map((test) => test.testType))).sort();
   const filteredRows = reportRows.filter(({ report, sample, test, client, project }) => {
-    const haystack = [report.reportNumber, sample?.sampleCode, sample?.sampleDescription, test?.testCode, test?.testType, client?.clientName, project?.projectName, report.specimenCodes.join(" ")]
+    const haystack = [report.reportNumber, sample?.sampleCode, sample?.sampleDescription, test?.testCode, test?.testType, client?.clientName, project?.projectName, (report.specimenCodes ?? []).join(" ")]
       .filter(Boolean)
       .join(" ")
       .toLowerCase();
@@ -60,7 +72,7 @@ export default function ReportsPage() {
       case "sequence": return report.reportSequence;
       case "sample": return sample?.sampleCode;
       case "test": return test?.testType;
-      case "specimens": return report.specimenCodes.join(", ");
+      case "specimens": return (report.specimenCodes ?? []).join(", ");
       case "client": return client?.clientName;
       case "project": return project?.projectName;
       case "status": return sampleStageIndex(reportLifecycle(report).stage);
@@ -214,34 +226,40 @@ export default function ReportsPage() {
         {sendMessage ? <div className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-900">{sendMessage}</div> : null}
       </section>
       <div className="surface-card overflow-hidden">
+        {/* Scrolls inside itself so the header row, the selection checkbox and
+            the report number stay put while the rest scrolls under them. */}
+        <div className="register-scroll max-h-[70vh] overflow-auto">
         <table className="w-full text-left text-sm">
           <thead className="table-head">
             <tr>
-              <th className="px-4 py-3">
+              <th className={`${STICKY_CHECKBOX_HEAD} px-4 py-3`}>
                 <input type="checkbox" checked={filteredRows.length > 0 && filteredRows.every(({ report }) => selectedReportIds.includes(report.id))} onChange={toggleVisibleReports} aria-label="Zgjidh raportet e dukshme" />
               </th>
-              <SortableTh label="Numri i raportit" sortKey="number" sort={sort} onToggle={toggle} />
-              <SortableTh label="Pjesa" sortKey="sequence" sort={sort} onToggle={toggle} />
-              <SortableTh label="Kampioni" sortKey="sample" sort={sort} onToggle={toggle} />
-              <SortableTh label="Testi" sortKey="test" sort={sort} onToggle={toggle} />
-              <SortableTh label="Mostrat" sortKey="specimens" sort={sort} onToggle={toggle} />
-              <SortableTh label="Klienti" sortKey="client" sort={sort} onToggle={toggle} />
-              <SortableTh label="Projekti" sortKey="project" sort={sort} onToggle={toggle} />
-              <SortableTh label="Statusi" sortKey="status" sort={sort} onToggle={toggle} />
-              <th className="px-4 py-3">Veprime</th>
+              <SortableTh label="Numri i raportit" sortKey="number" sort={sort} onToggle={toggle} className={`${STICKY_NUMBER_HEAD} px-4 py-3`} />
+              <SortableTh label="Pjesa" sortKey="sequence" sort={sort} onToggle={toggle} className={`${STICKY_HEAD} px-4 py-3`} />
+              <SortableTh label="Kampioni" sortKey="sample" sort={sort} onToggle={toggle} className={`${STICKY_HEAD} px-4 py-3`} />
+              <SortableTh label="Testi" sortKey="test" sort={sort} onToggle={toggle} className={`${STICKY_HEAD} px-4 py-3`} />
+              <SortableTh label="Mostrat" sortKey="specimens" sort={sort} onToggle={toggle} className={`${STICKY_HEAD} px-4 py-3`} />
+              <SortableTh label="Klienti" sortKey="client" sort={sort} onToggle={toggle} className={`${STICKY_HEAD} px-4 py-3`} />
+              <SortableTh label="Projekti" sortKey="project" sort={sort} onToggle={toggle} className={`${STICKY_HEAD} px-4 py-3`} />
+              <SortableTh label="Statusi" sortKey="status" sort={sort} onToggle={toggle} className={`${STICKY_HEAD} px-4 py-3`} />
+              <th className={`${STICKY_HEAD} px-4 py-3`}>Veprime</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
             {sortedRows.map(({ report, sample, test, client, project }) => (
-              <tr key={report.id} className="hover:bg-lab-mist/60">
-                <td className="px-4 py-3">
+              <tr key={report.id} className="bg-white hover:bg-lab-mist/60">
+                <td className={`${STICKY_CHECKBOX_CELL} px-4 py-3`}>
                   <input type="checkbox" checked={selectedReportIds.includes(report.id)} onChange={() => toggleReport(report.id)} aria-label={`Zgjidh ${report.reportNumber}`} />
                 </td>
-                <td className="px-4 py-3 font-semibold text-ink">{report.reportNumber}</td>
+                <td className={`${STICKY_NUMBER_CELL} px-4 py-3 font-semibold text-ink`}>{report.reportNumber}</td>
                 <td className="px-4 py-3">{report.reportSequence} / {report.totalReports}</td>
                 <td className="px-4 py-3">{sample?.sampleCode}</td>
                 <td className="px-4 py-3">{test?.testType}</td>
-                <td className="px-4 py-3">{report.specimenCodes.join(", ")}</td>
+                {/* Guarded: specimenCodes arrives from the app_state JSON with
+                    no schema behind it, and one report missing the field used
+                    to throw and white-screen the entire register. */}
+                <td className="px-4 py-3">{(report.specimenCodes ?? []).join(", ")}</td>
                 <td className="px-4 py-3">{client?.clientName}</td>
                 <td className="px-4 py-3">{project?.projectName}</td>
                 <td className="px-4 py-3"><StageCell lifecycle={reportLifecycle(report)} /></td>
@@ -250,6 +268,7 @@ export default function ReportsPage() {
             ))}
           </tbody>
         </table>
+        </div>
         {!store.reports.length ? <div className="p-6 text-sm text-muted">Nuk ka ende raporte të përgatitura. Përfundoni një test dhe më pas gjeneroni raportin.</div> : null}
         {store.reports.length > 0 && !filteredRows.length ? <div className="p-6 text-sm text-muted">Asnjë raport nuk përputhet me filtrat e zgjedhur.</div> : null}
       </div>

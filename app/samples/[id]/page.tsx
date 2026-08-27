@@ -435,7 +435,7 @@ export default function SampleDetailPage() {
                       <StageCell lifecycle={reportLifecycle(report)} />
                     </div>
                     <div className="mt-2 text-xs text-muted">
-                      Pjesa {report.reportSequence} nga {report.totalReports} / {report.specimenCodes.join(", ")}
+                      Pjesa {report.reportSequence} nga {report.totalReports} / {(report.specimenCodes ?? []).join(", ")}
                     </div>
                   </Link>
                 ))
