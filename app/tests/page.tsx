@@ -7,6 +7,7 @@ import { StageCell } from "@/components/ui/stage-cell";
 import { SortableTh, sortRows, useSort } from "@/components/ui/sortable-header";
 import { DEFAULT_PAGE_SIZE, Pagination, paginate, useTablePage } from "@/components/ui/pagination";
 import { DateRangeField, FilterChips, FilterField, useParamState } from "@/components/ui/filter-bar";
+import { SavedViews } from "@/components/ui/saved-views";
 import type { FilterChip } from "@/components/ui/filter-bar";
 import { useI18n } from "@/lib/i18n";
 import { useLabStore } from "@/lib/lab-store";
@@ -261,6 +262,18 @@ export default function TestsPage() {
         </div>
       ) : (
         <>
+          <SavedViews
+            basePath="/tests"
+            views={[
+              { key: "open", label: t("views.openWork"), params: {} },
+              ...(currentUser ? [{ key: "mine", label: t("views.myTests"), params: { tech: currentUser.id } }] : []),
+              { key: "overdue", label: t("views.overdue"), params: { overdue: "1" } },
+              { key: "review", label: t("views.awaitingReview"), params: { status: "Pending Technical Review" } },
+              { key: "rejected", label: t("views.rejected"), params: { status: "Rejected" } },
+              { key: "notech", label: t("views.unassigned"), params: { tech: UNASSIGNED } }
+            ]}
+          />
+
           <section className="surface-card no-print mb-4 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="sm:col-span-2">
               <FilterField label={t("filters.search")}>

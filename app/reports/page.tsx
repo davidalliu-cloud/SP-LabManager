@@ -7,6 +7,7 @@ import { StageCell } from "@/components/ui/stage-cell";
 import { SortableTh, sortRows, useSort } from "@/components/ui/sortable-header";
 import { DEFAULT_PAGE_SIZE, Pagination, paginate, useTablePage } from "@/components/ui/pagination";
 import { useParamState } from "@/components/ui/filter-bar";
+import { SavedViews } from "@/components/ui/saved-views";
 import { useLabStore } from "@/lib/lab-store";
 import { reportLifecycle, sampleStageIndex } from "@/lib/sample-stage";
 import type { ReportStatus } from "@/lib/types";
@@ -155,6 +156,16 @@ export default function ReportsPage() {
   return (
     <>
       <PageHeader title="Raportet" description="Filtro, zgjidh, mirato, shkarko dhe përgatit raporte në grup për dërgim te klienti." />
+      <SavedViews
+        basePath="/reports"
+        views={[
+          { key: "all", label: "Të gjitha", params: {} },
+          { key: "approval", label: "Pret miratim", params: { status: "Pending Approval" } },
+          { key: "rejected", label: "Refuzuar", params: { status: "Rejected" } },
+          { key: "ready", label: "Miratuar, pa dërguar", params: { status: "Approved" } },
+          { key: "sent", label: "Dërguar klientit", params: { status: "Sent to Client" } }
+        ]}
+      />
       {completedWithoutReport.length ? (
         <section className="mb-5 rounded-md border border-fuchsia-100 bg-fuchsia-50 p-4">
           <h2 className="text-sm font-semibold text-lab-purple">Raporte për përgatitje</h2>

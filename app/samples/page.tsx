@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { SortableTh, sortRows, useSort } from "@/components/ui/sortable-header";
 import { DEFAULT_PAGE_SIZE, Pagination, paginate, useTablePage } from "@/components/ui/pagination";
 import { DateRangeField, FilterChips, FilterField, useParamState } from "@/components/ui/filter-bar";
+import { SavedViews } from "@/components/ui/saved-views";
 import type { FilterChip } from "@/components/ui/filter-bar";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { useI18n } from "@/lib/i18n";
@@ -207,7 +208,7 @@ export default function SamplesPage() {
       (status === "all" || row.stage === status) &&
       (sampleType === "all" || row.sample.sampleType === sampleType) &&
       (technician === "all" || (technician === UNASSIGNED ? !row.technicianId : row.technicianId === technician)) &&
-      (clientId === "all" || row.sample.clientId === clientId) &&
+      (clientId === "all" || (clientId === UNASSIGNED ? !row.sample.clientId : row.sample.clientId === clientId)) &&
       (!receivedFrom || row.sample.dateReceived >= receivedFrom) &&
       (!receivedTo || row.sample.dateReceived <= receivedTo) &&
       (!dueFrom || (!!row.reportDue && row.reportDue >= dueFrom)) &&
@@ -247,8 +248,10 @@ export default function SamplesPage() {
     chips.push({ key: "tech", label: `${t("filters.technician")}: ${name}`, onRemove: () => setTechnician("all") });
   }
   if (clientId !== "all") {
-    const client = store.clients.find((item) => item.id === clientId);
-    chips.push({ key: "client", label: `${t("filters.client")}: ${client?.clientCode ?? clientId}`, onRemove: () => setClientId("all") });
+    const label = clientId === UNASSIGNED
+      ? t("filters.noClient")
+      : store.clients.find((item) => item.id === clientId)?.clientCode ?? clientId;
+    chips.push({ key: "client", label: `${t("filters.client")}: ${label}`, onRemove: () => setClientId("all") });
   }
   if (receivedFrom || receivedTo) {
     const range = `${receivedFrom ? formatEuropeanDate(receivedFrom) : "…"} – ${receivedTo ? formatEuropeanDate(receivedTo) : "…"}`;
@@ -284,6 +287,18 @@ export default function SamplesPage() {
         title={t("samples.title")}
         description={t("samples.description")}
         action={<Link href="/samples/new" className="btn-primary">{t("samples.new")}</Link>}
+      />
+
+      <SavedViews
+        basePath="/samples"
+        views={[
+          { key: "open", label: t("views.openWork"), params: {} },
+          { key: "overdue", label: t("views.overdue"), params: { overdue: "1" } },
+          { key: "awaiting", label: t("views.awaitingAcceptance"), params: { status: "Registered" } },
+          { key: "noclient", label: t("views.noClient"), params: { client: UNASSIGNED } },
+          { key: "notech", label: t("views.unassigned"), params: { tech: UNASSIGNED } },
+          { key: "all", label: t("views.allHistory"), params: { window: "all" } }
+        ]}
       />
 
       <section className="surface-card no-print mb-4 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -325,6 +340,9 @@ export default function SamplesPage() {
         <FilterField label={t("filters.client")}>
           <select value={clientId} onChange={(event) => setClientId(event.target.value)} className="input mt-1">
             <option value="all">{t("filters.all")}</option>
+            {/* Samples are registered before the paperwork catches up, so
+                "no client yet" is a real queue, not an error state. */}
+            <option value={UNASSIGNED}>{t("filters.noClient")}</option>
             {clientOptions.map((client) => (
               <option key={client.id} value={client.id}>
                 {showClientIdentity ? `${client.clientCode} — ${client.clientName}` : client.clientCode}
