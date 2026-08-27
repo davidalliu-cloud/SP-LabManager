@@ -9,6 +9,7 @@ import { DEFAULT_PAGE_SIZE, Pagination, paginate, useTablePage } from "@/compone
 import { useParamState } from "@/components/ui/filter-bar";
 import { SavedViews } from "@/components/ui/saved-views";
 import { useLabStore } from "@/lib/lab-store";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { canSendReportsToClient } from "@/lib/permissions";
 import { reportLifecycle, sampleStageIndex } from "@/lib/sample-stage";
 import type { ReportStatus } from "@/lib/types";
@@ -48,6 +49,10 @@ export default function ReportsPage() {
   const { sort, toggle } = useSort("number");
   const [batchEmail, setBatchEmail] = useState("");
   const [sendMessage, setSendMessage] = useState("");
+  const [sending, setSending] = useState(false);
+  // Lets the sender post the exact message to themselves first, attachments and
+  // all, before anything reaches a client. Report statuses are left untouched.
+  const [testToSelf, setTestToSelf] = useState(false);
   const completedWithoutReport = store.tests.filter((test) => test.status === "Completed" && !store.reports.some((report) => report.testId === test.id));
   const reportRows = useMemo(() => store.reports.map((report) => {
     const sample = store.samples.find((item) => item.id === report.sampleId);
@@ -148,29 +153,56 @@ export default function ReportsPage() {
     setTestType("all");
   }
 
-  function sendSelectedReports() {
-    if (!canSendSelected) return;
+  /**
+   * Sends the selected reports with the PDFs actually attached, via the Graph
+   * route. mailto: cannot carry files, so this does not open a mail client -
+   * the message goes from njoftime@sarpandlab.al with Reply-To set to whoever
+   * pressed the button.
+   */
+  async function sendSelectedReports() {
+    if (!canSendSelected || sending) return;
     const reportIds = selectedApprovedRows.map(({ report }) => report.id);
     const reportNumbers = selectedApprovedRows.map(({ report }) => report.reportNumber);
-    // The stored PDF's signed URL, not `${origin}/reports/${id}`. The latter is
-    // a page inside this app behind a login, so every client who ever received
-    // one got a link they could not open. The signed URL downloads the actual
-    // PDF. Attachments proper need Microsoft Graph - mailto: cannot carry files.
-    const reportLinks = selectedApprovedRows.map(({ report }) => report.pdfUrl ?? "");
     const subject = `Raportet laboratorike SARP LAB - ${selectedClient?.clientCode ?? ""}`;
     const body = [
       "Pershendetje,",
       "",
-      "Ju lutemi gjeni raportet laboratorike te miratuara:",
-      ...reportNumbers.map((number, index) => `- ${number}: ${reportLinks[index]}`),
+      "Bashkengjitur gjeni raportet laboratorike te miratuara:",
+      ...reportNumbers.map((number) => `- ${number}`),
       "",
       "Me respekt,",
       "SARP LAB"
     ].join("\n");
-    window.location.href = `mailto:${encodeURIComponent(selectedEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    store.sendReportsToClient(reportIds, selectedEmail, `Dërguar me email: ${reportNumbers.join(", ")}`);
-    setSendMessage(`${reportNumbers.length} raport${reportNumbers.length === 1 ? "" : "e"} u shënuan si Dërguar klientit për ${selectedEmail}.`);
-    setSelectedReportIds([]);
+
+    setSending(true);
+    setSendMessage("");
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { data } = await supabase.auth.getSession();
+      const accessToken = data.session?.access_token;
+      const response = await fetch("/api/reports/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken ?? ""}` },
+        body: JSON.stringify({ reportIds, to: selectedEmail, subject, body, testToSelf })
+      });
+      const result = (await response.json()) as { ok: boolean; error?: string; sentTo?: string; attached?: string[] };
+      if (!result.ok) {
+        setSendMessage(`Nuk u dërgua: ${result.error ?? "gabim i panjohur"}`);
+        return;
+      }
+      if (testToSelf) {
+        setSendMessage(`Kopje testuese u dërgua te ${result.sentTo} me ${result.attached?.length ?? 0} PDF bashkëngjitur. Statusi i raporteve nuk u ndryshua.`);
+        return;
+      }
+      // Only now is the report actually with the client.
+      store.sendReportsToClient(reportIds, selectedEmail, `Dërguar me email: ${reportNumbers.join(", ")}`);
+      setSendMessage(`${reportNumbers.length} raport${reportNumbers.length === 1 ? "" : "e"} u dërguan te ${result.sentTo} me PDF bashkëngjitur.`);
+      setSelectedReportIds([]);
+    } catch (error) {
+      setSendMessage(`Nuk u dërgua: ${error instanceof Error ? error.message : "gabim rrjeti"}`);
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
@@ -265,13 +297,25 @@ export default function ReportsPage() {
               />
               <button
                 type="button"
-                onClick={sendSelectedReports}
-                disabled={!canSendSelected}
+                onClick={() => void sendSelectedReports()}
+                disabled={!canSendSelected || sending}
                 className="btn-primary px-4 py-2 disabled:cursor-not-allowed disabled:bg-slate-300"
               >
-                Dërgo te klienti
+                {sending ? "Duke dërguar…" : testToSelf ? "Dërgo kopje testuese" : "Dërgo te klienti"}
               </button>
             </div>
+            <label className="mt-3 inline-flex items-center gap-2 text-xs font-medium text-ink">
+              <input
+                type="checkbox"
+                checked={testToSelf}
+                onChange={(event) => setTestToSelf(event.target.checked)}
+                className="h-4 w-4 accent-lab-burgundy"
+              />
+              Dërgo fillimisht një kopje testuese te vetja ({currentUser?.email})
+            </label>
+            <p className="mt-1 text-[11px] text-muted">
+              Emaili niset nga njoftime@sarpandlab.al me PDF-të bashkëngjitur; përgjigjet e klientit kthehen te ju.
+            </p>
             {!selectedHasOnlyApproved ? <div className="mt-2 text-xs font-medium text-lab-red">Dërgimi lejohet vetëm pasi raportet të jenë Miratuar.</div> : null}
             {selectedClientIds.length > 1 ? <div className="mt-2 text-xs font-medium text-lab-red">Zgjidhni raporte nga një klient i vetëm për dërgim në grup.</div> : null}
             {clientHasNoEmailOnRecord ? (
