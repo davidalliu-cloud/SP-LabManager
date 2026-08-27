@@ -86,9 +86,18 @@ function testRank(test: LabTest, reports: Report[]): number {
 
 // A single test's position in the lifecycle + the pending detail.
 export function testLifecycle(test: LabTest, reports: Report[] = []): Lifecycle {
-  const stage = RANK_STAGE[testRank(test, reports)] ?? "Accepted";
+  return { stage: RANK_STAGE[testRank(test, reports)] ?? "Accepted", detail: detailForTestStatus(test.status) };
+}
+
+/** Indexed twin of `testLifecycle`. Same answer, but the caller supplies the
+ *  test's own reports, so the full report list is never scanned per row. */
+export function testLifecycleFrom(test: LabTest, testReports: Report[]): Lifecycle {
+  return { stage: RANK_STAGE[rankFromReports(test, testReports)] ?? "Accepted", detail: detailForTestStatus(test.status) };
+}
+
+function detailForTestStatus(status: LabTest["status"]): LifecycleDetail {
   let detail: LifecycleDetail;
-  switch (test.status) {
+  switch (status) {
     case "In Progress":
       detail = "testing";
       break;
@@ -121,7 +130,7 @@ export function testLifecycle(test: LabTest, reports: Report[] = []): Lifecycle 
     default:
       detail = "awaitTesting"; // Pending / Scheduled
   }
-  return { stage, detail };
+  return detail;
 }
 
 // A single report's position in the lifecycle + the pending detail.

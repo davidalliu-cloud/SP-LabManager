@@ -79,17 +79,20 @@ export type FilterChip = {
 export function FilterChips({
   chips,
   resultCount,
-  onClearAll
+  onClearAll,
+  countLabel
 }: {
   chips: FilterChip[];
   resultCount: number;
   onClearAll: () => void;
+  /** What is being counted. Defaults to samples. */
+  countLabel?: string;
 }) {
   const { t } = useI18n();
   return (
     <div className="no-print mb-4 flex flex-wrap items-center gap-2">
       <span className="text-xs font-semibold text-ink" aria-live="polite">
-        {resultCount} {t("filters.results")}
+        {resultCount} {countLabel ?? t("filters.results")}
       </span>
       {chips.map((chip) => (
         <button

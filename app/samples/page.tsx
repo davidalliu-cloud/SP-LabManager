@@ -103,7 +103,7 @@ export default function SamplesPage() {
 
   const index = useMemo(
     () => buildLabIndex(store),
-    [store.tests, store.reports, store.clients, store.projects, store.users]
+    [store.samples, store.tests, store.reports, store.clients, store.projects, store.users]
   );
 
   const allRows = useMemo<SampleRow[]>(

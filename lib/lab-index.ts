@@ -1,4 +1,4 @@
-import type { Client, LabTest, LabUser, Project, Report } from "./types";
+import type { Client, LabTest, LabUser, Project, Report, Sample } from "./types";
 
 /**
  * Lookup maps for the registers.
@@ -15,6 +15,7 @@ export type LabIndex = {
   testsBySample: Map<string, LabTest[]>;
   reportsBySample: Map<string, Report[]>;
   reportsByTest: Map<string, Report[]>;
+  sampleById: Map<string, Sample>;
   clientById: Map<string, Client>;
   projectById: Map<string, Project>;
   userById: Map<string, LabUser>;
@@ -39,6 +40,7 @@ function keyById<T extends { id: string }>(rows: T[]): Map<string, T> {
 }
 
 export function buildLabIndex(source: {
+  samples: Sample[];
   tests: LabTest[];
   reports: Report[];
   clients: Client[];
@@ -49,6 +51,7 @@ export function buildLabIndex(source: {
     testsBySample: groupBy(source.tests, (test) => test.sampleId),
     reportsBySample: groupBy(source.reports, (report) => report.sampleId),
     reportsByTest: groupBy(source.reports, (report) => report.testId),
+    sampleById: keyById(source.samples),
     clientById: keyById(source.clients),
     projectById: keyById(source.projects),
     userById: keyById(source.users)
