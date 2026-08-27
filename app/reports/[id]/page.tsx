@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useRef, useState } from "react";
 import { ReportPreview } from "@/components/reports/report-preview";
@@ -55,7 +56,12 @@ export default function ReportDetailPage() {
   // A superadmin rejecting a report that was already approved/issued/sent is an
   // override (the normal flow only rejects while "Pending Approval").
   const isRejectOverride = canReject && activeReport.reportStatus !== "Pending Approval";
-  const recipientEmail = issueEmail || client?.email || "";
+  // The client record is the source of truth for where reports go. Sending is
+  // blocked until it has an email, rather than letting a one-off typed address
+  // paper over it - 80 of 129 clients had none, and every send that worked
+  // around it left the gap in place.
+  const clientHasEmail = Boolean(client?.email);
+  const recipientEmail = clientHasEmail ? issueEmail || client?.email || "" : "";
 
   function downloadApprovedPdf() {
     const originalTitle = document.title;
@@ -87,10 +93,14 @@ export default function ReportDetailPage() {
     const body = [
       "Pershendetje,",
       "",
-      `Raporti ${activeReport.reportNumber} eshte miratuar dhe gati per shqyrtim:`,
-      `${window.location.origin}/reports/${activeReport.id}`,
-      activeReport.pdfUrl ? "" : null,
-      activeReport.pdfUrl ? `PDF-ja e raportit: ${activeReport.pdfUrl}` : null,
+      `Raporti ${activeReport.reportNumber} eshte miratuar dhe gati per shqyrtim.`,
+      "",
+      // Only the stored PDF's signed URL. `${origin}/reports/${id}` used to be
+      // included too, but that is a page inside this app behind a login - a
+      // client receiving it could never open it.
+      activeReport.pdfUrl
+        ? `Shkarkoni PDF-ne e raportit: ${activeReport.pdfUrl}`
+        : "PDF-ja e raportit do te dergohet ne nje email vijues.",
       "",
       "Me respekt,",
       "SARP LAB"
@@ -169,12 +179,26 @@ export default function ReportDetailPage() {
               <button onClick={downloadApprovedPdf} className="w-full text-xs font-medium text-muted underline hover:text-lab-burgundy">
                 Ose printo/shfaq për printim manual
               </button>
-              <input
-                value={issueEmail}
-                onChange={(event) => setIssueEmail(event.target.value)}
-                placeholder={client?.email ?? "Email i klientit"}
-                className="input"
-              />
+              {clientHasEmail ? (
+                <input
+                  value={issueEmail}
+                  onChange={(event) => setIssueEmail(event.target.value)}
+                  placeholder={client?.email ?? "Email i klientit"}
+                  className="input"
+                />
+              ) : (
+                <div className="rounded-md border border-[#ff3d3d] bg-brand-late p-3 text-xs text-ink">
+                  <div className="font-semibold">Klienti nuk ka email të regjistruar</div>
+                  <p className="mt-1">
+                    Raportet dërgohen te adresa e ruajtur në kartelën e klientit. Shtojeni një herë dhe do të përdoret çdo herë tjetër.
+                  </p>
+                  {client ? (
+                    <Link href={`/clients/${client.id}`} className="mt-2 inline-block font-semibold text-lab-burgundy hover:underline">
+                      Shto email për {client.clientCode}
+                    </Link>
+                  ) : null}
+                </div>
+              )}
               <button
                 onClick={sendReportToClient}
                 disabled={activeReport.reportStatus !== "Approved" || !recipientEmail}

@@ -92,7 +92,10 @@ export default function ReportsPage() {
   const selectedHasOnlyApproved = selectedRows.length > 0 && selectedRows.every(({ report }) => report.reportStatus === "Approved");
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
   const canSend = canSendReportsToClient(currentUser?.email);
-  const selectedEmail = batchEmail.trim() || selectedClient?.email || "";
+  // The client record is the source of truth for where reports go. A typed
+  // one-off address cannot stand in for a missing one, or the gap never closes.
+  const selectedClientHasEmail = Boolean(selectedClient?.email);
+  const selectedEmail = selectedClientHasEmail ? batchEmail.trim() || selectedClient?.email || "" : "";
   // A report with no stored PDF has nothing to give the client, so flag it
   // rather than sending a link to a file that was never generated.
   const selectedWithoutPdf = selectedApprovedRows.filter(({ report }) => !report.pdfUrl);
@@ -272,8 +275,14 @@ export default function ReportsPage() {
             {!selectedHasOnlyApproved ? <div className="mt-2 text-xs font-medium text-lab-red">Dërgimi lejohet vetëm pasi raportet të jenë Miratuar.</div> : null}
             {selectedClientIds.length > 1 ? <div className="mt-2 text-xs font-medium text-lab-red">Zgjidhni raporte nga një klient i vetëm për dërgim në grup.</div> : null}
             {clientHasNoEmailOnRecord ? (
-              <div className="mt-2 text-xs font-medium text-lab-red">
-                Ky klient nuk ka email të regjistruar. Shtojeni te faqja e klientit që të mos shkruhet çdo herë me dorë.
+              <div className="mt-2 rounded-md border border-[#ff3d3d] bg-brand-late p-3 text-xs text-ink">
+                <div className="font-semibold">Klienti nuk ka email të regjistruar</div>
+                <p className="mt-1">Raportet dërgohen te adresa e ruajtur në kartelën e klientit. Shtojeni një herë dhe përdoret çdo herë tjetër.</p>
+                {selectedClient ? (
+                  <Link href={`/clients/${selectedClient.id}`} className="mt-2 inline-block font-semibold text-lab-burgundy hover:underline">
+                    Shto email për {selectedClient.clientCode}
+                  </Link>
+                ) : null}
               </div>
             ) : null}
             {selectedWithoutPdf.length ? (
