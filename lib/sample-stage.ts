@@ -74,10 +74,14 @@ function reportStatusRank(status: ReportStatus): number {
 
 const RANK_STAGE: SampleStatus[] = ["Accepted", "In Testing", "Tested", "In Reporting", "Report Issued", "Delivered"];
 
-function testRank(test: LabTest, reports: Report[]): number {
-  const testReports = reports.filter((report) => report.testId === test.id);
+// Rank for a test whose reports have already been resolved by the caller.
+function rankFromReports(test: LabTest, testReports: Report[]): number {
   const reportRank = testReports.reduce((max, report) => Math.max(max, reportStatusRank(report.reportStatus)), -1);
   return Math.max(testStatusRank(test.status), reportRank);
+}
+
+function testRank(test: LabTest, reports: Report[]): number {
+  return rankFromReports(test, reports.filter((report) => report.testId === test.id));
 }
 
 // A single test's position in the lifecycle + the pending detail.
@@ -141,10 +145,8 @@ export function reportLifecycle(report: Pick<Report, "reportStatus">): Lifecycle
 // "Registered"; otherwise the sample advances only as far as its least-advanced
 // test, except that a mix of finished and unfinished tests reads as
 // "Partially Tested".
-export function deriveSampleStage(sample: Pick<Sample, "id">, tests: LabTest[], reports: Report[] = []): SampleStatus {
-  const sampleTests = tests.filter((test) => test.sampleId === sample.id);
-  if (sampleTests.length === 0) return "Registered";
-  const ranks = sampleTests.map((test) => testRank(test, reports));
+function stageFromRanks(ranks: number[]): SampleStatus {
+  if (ranks.length === 0) return "Registered";
   if (ranks.every((rank) => rank >= 5)) return "Delivered";
   if (ranks.every((rank) => rank >= 4)) return "Report Issued";
   if (ranks.every((rank) => rank >= 3)) return "In Reporting";
@@ -152,6 +154,19 @@ export function deriveSampleStage(sample: Pick<Sample, "id">, tests: LabTest[], 
   if (ranks.some((rank) => rank >= 2)) return "Partially Tested";
   if (ranks.some((rank) => rank >= 1)) return "In Testing";
   return "Accepted";
+}
+
+export function deriveSampleStage(sample: Pick<Sample, "id">, tests: LabTest[], reports: Report[] = []): SampleStatus {
+  const sampleTests = tests.filter((test) => test.sampleId === sample.id);
+  return stageFromRanks(sampleTests.map((test) => testRank(test, reports)));
+}
+
+/** Indexed twin of `deriveSampleStage`. Same answer, but the caller supplies
+ *  the sample's own tests and a testId → reports map, so nothing is scanned.
+ *  Use this on the registers, where the un-indexed version costs
+ *  O(tests + reports) per row. */
+export function deriveSampleStageFrom(sampleTests: LabTest[], reportsByTest: Map<string, Report[]>): SampleStatus {
+  return stageFromRanks(sampleTests.map((test) => rankFromReports(test, reportsByTest.get(test.id) ?? [])));
 }
 
 // The sample's aggregate stage plus the pending detail of its least-advanced
