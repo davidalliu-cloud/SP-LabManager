@@ -5,6 +5,8 @@ import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { StageCell } from "@/components/ui/stage-cell";
 import { SortableTh, sortRows, useSort } from "@/components/ui/sortable-header";
+import { DEFAULT_PAGE_SIZE, Pagination, paginate, useTablePage } from "@/components/ui/pagination";
+import { useParamState } from "@/components/ui/filter-bar";
 import { useLabStore } from "@/lib/lab-store";
 import { reportLifecycle, sampleStageIndex } from "@/lib/sample-stage";
 import type { ReportStatus } from "@/lib/types";
@@ -32,12 +34,14 @@ const STICKY_NUMBER_CELL = "sticky left-12 z-10 bg-white";
 
 export default function ReportsPage() {
   const store = useLabStore();
-  const [search, setSearch] = useState("");
-  const [clientId, setClientId] = useState("all");
-  const [projectId, setProjectId] = useState("all");
-  const [status, setStatus] = useState<ReportStatus | "all">("all");
-  const [sampleType, setSampleType] = useState("all");
-  const [testType, setTestType] = useState("all");
+  // Seeded from the query string, like the other registers, so a filtered view
+  // can be linked and so the page resets when the filters change.
+  const [search, setSearch] = useParamState("q", "");
+  const [clientId, setClientId] = useParamState("client");
+  const [projectId, setProjectId] = useParamState("project");
+  const [status, setStatus] = useParamState("status");
+  const [sampleType, setSampleType] = useParamState("type");
+  const [testType, setTestType] = useParamState("test");
   const [selectedReportIds, setSelectedReportIds] = useState<string[]>([]);
   const { sort, toggle } = useSort("number");
   const [batchEmail, setBatchEmail] = useState("");
@@ -87,14 +91,35 @@ export default function ReportsPage() {
   const selectedEmail = batchEmail.trim() || selectedClient?.email || "";
   const canSendSelected = selectedRows.length > 0 && selectedHasOnlyApproved && selectedClientIds.length === 1 && Boolean(selectedEmail);
 
+  // Only non-default values reach the URL, and any change here sends the table
+  // back to page 1.
+  const urlParams = {
+    q: search.trim(),
+    client: clientId === "all" ? "" : clientId,
+    project: projectId === "all" ? "" : projectId,
+    status: status === "all" ? "" : status,
+    type: sampleType === "all" ? "" : sampleType,
+    test: testType === "all" ? "" : testType
+  };
+  const { page, pageCount, pageSize, from, to, setPage } = useTablePage(sortedRows.length, DEFAULT_PAGE_SIZE, urlParams);
+  const pageRows = paginate(sortedRows, page, pageSize);
+
   function toggleReport(reportId: string) {
     setSelectedReportIds((selected) => selected.includes(reportId) ? selected.filter((id) => id !== reportId) : [...selected, reportId]);
   }
 
-  function toggleVisibleReports() {
-    const visibleIds = filteredRows.map(({ report }) => report.id);
-    const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedReportIds.includes(id));
-    setSelectedReportIds((selected) => allVisibleSelected ? selected.filter((id) => !visibleIds.includes(id)) : Array.from(new Set([...selected, ...visibleIds])));
+  /**
+   * Selects every row matching the current filters, not just the page on
+   * screen. Batch send acts on the selection, so "all" has to mean all of what
+   * the filters describe - otherwise paging would silently change what a client
+   * receives.
+   */
+  function toggleAllFilteredReports() {
+    const filteredIds = filteredRows.map(({ report }) => report.id);
+    const allSelected = filteredIds.length > 0 && filteredIds.every((id) => selectedReportIds.includes(id));
+    setSelectedReportIds((selected) =>
+      allSelected ? selected.filter((id) => !filteredIds.includes(id)) : Array.from(new Set([...selected, ...filteredIds]))
+    );
   }
 
   function clearFilters() {
@@ -189,7 +214,7 @@ export default function ReportsPage() {
             Shfaqen <span className="font-semibold text-ink">{filteredRows.length}</span> nga <span className="font-semibold text-ink">{store.reports.length}</span> raporte. Të zgjedhura <span className="font-semibold text-ink">{selectedRows.length}</span>.
           </div>
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={toggleVisibleReports} className="btn-secondary px-3 py-2">Zgjidh të dukshmet</button>
+            <button type="button" onClick={toggleAllFilteredReports} className="btn-secondary px-3 py-2">Zgjidh të gjitha të filtruarat</button>
             <button type="button" onClick={() => setSelectedReportIds([])} className="btn-secondary px-3 py-2">Pastro zgjedhjen</button>
             <button type="button" onClick={clearFilters} className="btn-secondary px-3 py-2">Pastro filtrat</button>
           </div>
@@ -233,7 +258,7 @@ export default function ReportsPage() {
           <thead className="table-head">
             <tr>
               <th className={`${STICKY_CHECKBOX_HEAD} px-4 py-3`}>
-                <input type="checkbox" checked={filteredRows.length > 0 && filteredRows.every(({ report }) => selectedReportIds.includes(report.id))} onChange={toggleVisibleReports} aria-label="Zgjidh raportet e dukshme" />
+                <input type="checkbox" checked={filteredRows.length > 0 && filteredRows.every(({ report }) => selectedReportIds.includes(report.id))} onChange={toggleAllFilteredReports} aria-label="Zgjidh të gjitha raportet e filtruara" />
               </th>
               <SortableTh label="Numri i raportit" sortKey="number" sort={sort} onToggle={toggle} className={`${STICKY_NUMBER_HEAD} px-4 py-3`} />
               <SortableTh label="Pjesa" sortKey="sequence" sort={sort} onToggle={toggle} className={`${STICKY_HEAD} px-4 py-3`} />
@@ -247,7 +272,7 @@ export default function ReportsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
-            {sortedRows.map(({ report, sample, test, client, project }) => (
+            {pageRows.map(({ report, sample, test, client, project }) => (
               <tr key={report.id} className="bg-white hover:bg-lab-mist/60">
                 <td className={`${STICKY_CHECKBOX_CELL} px-4 py-3`}>
                   <input type="checkbox" checked={selectedReportIds.includes(report.id)} onChange={() => toggleReport(report.id)} aria-label={`Zgjidh ${report.reportNumber}`} />
@@ -269,6 +294,15 @@ export default function ReportsPage() {
           </tbody>
         </table>
         </div>
+        <Pagination
+          page={page}
+          pageCount={pageCount}
+          from={from}
+          to={to}
+          total={sortedRows.length}
+          unfilteredTotal={store.reports.length}
+          onPage={setPage}
+        />
         {!store.reports.length ? <div className="p-6 text-sm text-muted">Nuk ka ende raporte të përgatitura. Përfundoni një test dhe më pas gjeneroni raportin.</div> : null}
         {store.reports.length > 0 && !filteredRows.length ? <div className="p-6 text-sm text-muted">Asnjë raport nuk përputhet me filtrat e zgjedhur.</div> : null}
       </div>
