@@ -934,8 +934,13 @@ const CLEAN_SLATE_RESET_MARKER = "sarp-lab-clean-slate-2026-08-03";
  *
  * Flip to false only after confirming the tables hold everything - the counts
  * and a field-by-field comparison must both come back clean.
+ *
+ * Set to false on 2026-08-27. At that point app_audit_log held all 1,786
+ * entries and app_notifications all 1,787, verified field by field with zero
+ * mismatches and zero missing rows, and the whole blob was copied to
+ * app_state_backups('pre-point-1-strip') first.
  */
-const KEEP_ACTIVITY_IN_BLOB = true;
+const KEEP_ACTIVITY_IN_BLOB = false;
 
 /** What actually gets persisted, as opposed to what is held in memory. */
 function forPersistence(state: LabState): LabState {
