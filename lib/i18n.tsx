@@ -153,6 +153,8 @@ const translations = {
     "employees.inactiveStatus": "Inactive",
 
     "notifications.alerts": "Alerts"
+    ,"notifications.markAllRead": "Mark all read"
+    ,"notifications.none": "Nothing new"
     ,"test.batch": "Batch"
     ,"test.required": "Required"
     ,"test.technician": "Technician"
@@ -307,6 +309,8 @@ const translations = {
     "employees.inactiveStatus": "Jo aktiv",
 
     "notifications.alerts": "Njoftime"
+    ,"notifications.markAllRead": "Shëno të gjitha si të lexuara"
+    ,"notifications.none": "Asgjë e re"
     ,"test.batch": "Grupi"
     ,"test.required": "Afati"
     ,"test.technician": "Tekniku"

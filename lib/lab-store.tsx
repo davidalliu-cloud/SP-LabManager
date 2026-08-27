@@ -71,6 +71,7 @@ import { canAssignSampleClient, canDeleteSamples, canEditSampleAfterRegistration
 import { initialState } from "./seed-data";
 import { deriveSampleStage, SAMPLE_STAGES } from "./sample-stage";
 import { createSupabaseBrowserClient } from "./supabase/client";
+import { pushAuditEntries, pushNotifications } from "./activity-log";
 import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltMixtureKind, AsphaltReportKind, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabState, LabTest, LabUser, MortarTest, MortarTestKind, Notification, Project, Report, Role, Sample, SampleStatus, SteelTensileTest, ThermalInsulationTest } from "./types";
 
 export interface NewSampleInput {
@@ -919,6 +920,29 @@ const STORAGE_KEY = "sarp-lab-management-state-v2";
 const ONLINE_STATE_ROW_ID = "shared-lab-state";
 const CLEAN_SLATE_RESET_MARKER = "sarp-lab-clean-slate-2026-08-03";
 
+/**
+ * Point 1 cutover switch.
+ *
+ * The audit trail and notifications now live in their own tables
+ * (app_audit_log, app_notifications) and are written there on every change.
+ *
+ *   true  - they are ALSO still kept inside app_state. Nothing is removed, the
+ *           blob keeps a complete copy, and this is fully reversible.
+ *   false - they are written only to their tables and drop out of app_state on
+ *           the next save. Those two arrays are 61% of the payload, so this is
+ *           the change that takes the blob back under the 1 MB Realtime limit.
+ *
+ * Flip to false only after confirming the tables hold everything - the counts
+ * and a field-by-field comparison must both come back clean.
+ */
+const KEEP_ACTIVITY_IN_BLOB = true;
+
+/** What actually gets persisted, as opposed to what is held in memory. */
+function forPersistence(state: LabState): LabState {
+  if (KEEP_ACTIVITY_IN_BLOB) return state;
+  return { ...state, auditLog: [], notifications: [] };
+}
+
 function hasSupabaseConfig() {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 }
@@ -1177,11 +1201,37 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isHydrated) return;
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(forPersistence(state)));
     } catch (error) {
       console.warn("Could not save SARP LAB data.", error);
     }
   }, [isHydrated, state]);
+
+  // Every audit entry and notification is written to its own table as it is
+  // created. Ids already sent are remembered for the session, so a re-render
+  // never re-sends the same row.
+  const flushedActivityRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!isHydrated || !hasSupabaseConfig()) return;
+    const flushed = flushedActivityRef.current;
+    const pendingAudit = state.auditLog.filter((entry) => !flushed.has(entry.id));
+    const pendingNotifications = state.notifications.filter((item) => !flushed.has(item.id));
+    if (pendingAudit.length === 0 && pendingNotifications.length === 0) return;
+
+    let isCancelled = false;
+    void (async () => {
+      const auditOk = await pushAuditEntries(pendingAudit);
+      const notificationsOk = await pushNotifications(pendingNotifications);
+      if (isCancelled) return;
+      // Only remember what actually landed, so a failed flush is retried.
+      if (auditOk) pendingAudit.forEach((entry) => flushed.add(entry.id));
+      if (notificationsOk) pendingNotifications.forEach((item) => flushed.add(item.id));
+    })();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isHydrated, state.auditLog, state.notifications]);
 
   useEffect(() => {
     if (!isHydrated) return;
@@ -1348,7 +1398,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        await attemptSave(remoteUpdatedAtRef.current, state, 0);
+        await attemptSave(remoteUpdatedAtRef.current, forPersistence(state), 0);
       } catch (error) {
         console.warn("Could not save SARP LAB data to Supabase.", error);
       }
