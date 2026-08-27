@@ -68,6 +68,15 @@ export function canEditSampleAfterRegistration(email?: string) {
   return Boolean(email && SAMPLE_EDIT_ALLOWED_EMAILS.includes(email.trim().toLowerCase()));
 }
 
+// Sending a report to a client is the moment a lab result leaves the building,
+// so like sample editing it is locked to these two people by name rather than by
+// role. Nobody else can select reports for sending or trigger the send.
+const REPORT_SEND_ALLOWED_EMAILS = ["d.alliu@sarpandlab.al", "a.duzha@sarpandlab.al"];
+
+export function canSendReportsToClient(email?: string) {
+  return Boolean(email && REPORT_SEND_ALLOWED_EMAILS.includes(email.trim().toLowerCase()));
+}
+
 export function canEditTestData(role?: Role, status?: TestStatus) {
   if (isSuperAdmin(role) || role === "Chief of Lab") return true;
   return Boolean(status && ["Pending", "Scheduled", "In Progress", "Delayed", "Rejected"].includes(status));

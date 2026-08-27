@@ -9,6 +9,7 @@ import { DEFAULT_PAGE_SIZE, Pagination, paginate, useTablePage } from "@/compone
 import { useParamState } from "@/components/ui/filter-bar";
 import { SavedViews } from "@/components/ui/saved-views";
 import { useLabStore } from "@/lib/lab-store";
+import { canSendReportsToClient } from "@/lib/permissions";
 import { reportLifecycle, sampleStageIndex } from "@/lib/sample-stage";
 import type { ReportStatus } from "@/lib/types";
 
@@ -89,8 +90,20 @@ export default function ReportsPage() {
   const selectedClient = selectedClientIds.length === 1 ? store.clients.find((client) => client.id === selectedClientIds[0]) : undefined;
   const selectedApprovedRows = selectedRows.filter(({ report }) => report.reportStatus === "Approved");
   const selectedHasOnlyApproved = selectedRows.length > 0 && selectedRows.every(({ report }) => report.reportStatus === "Approved");
+  const currentUser = store.users.find((user) => user.id === store.currentUserId);
+  const canSend = canSendReportsToClient(currentUser?.email);
   const selectedEmail = batchEmail.trim() || selectedClient?.email || "";
-  const canSendSelected = selectedRows.length > 0 && selectedHasOnlyApproved && selectedClientIds.length === 1 && Boolean(selectedEmail);
+  // A report with no stored PDF has nothing to give the client, so flag it
+  // rather than sending a link to a file that was never generated.
+  const selectedWithoutPdf = selectedApprovedRows.filter(({ report }) => !report.pdfUrl);
+  const clientHasNoEmailOnRecord = selectedClientIds.length === 1 && !selectedClient?.email;
+  const canSendSelected =
+    canSend &&
+    selectedRows.length > 0 &&
+    selectedHasOnlyApproved &&
+    selectedClientIds.length === 1 &&
+    Boolean(selectedEmail) &&
+    selectedWithoutPdf.length === 0;
 
   // Only non-default values reach the URL, and any change here sends the table
   // back to page 1.
@@ -136,7 +149,11 @@ export default function ReportsPage() {
     if (!canSendSelected) return;
     const reportIds = selectedApprovedRows.map(({ report }) => report.id);
     const reportNumbers = selectedApprovedRows.map(({ report }) => report.reportNumber);
-    const reportLinks = selectedApprovedRows.map(({ report }) => `${window.location.origin}/reports/${report.id}`);
+    // The stored PDF's signed URL, not `${origin}/reports/${id}`. The latter is
+    // a page inside this app behind a login, so every client who ever received
+    // one got a link they could not open. The signed URL downloads the actual
+    // PDF. Attachments proper need Microsoft Graph - mailto: cannot carry files.
+    const reportLinks = selectedApprovedRows.map(({ report }) => report.pdfUrl ?? "");
     const subject = `Raportet laboratorike SARP LAB - ${selectedClient?.clientCode ?? ""}`;
     const body = [
       "Pershendetje,",
@@ -254,6 +271,18 @@ export default function ReportsPage() {
             </div>
             {!selectedHasOnlyApproved ? <div className="mt-2 text-xs font-medium text-lab-red">Dërgimi lejohet vetëm pasi raportet të jenë Miratuar.</div> : null}
             {selectedClientIds.length > 1 ? <div className="mt-2 text-xs font-medium text-lab-red">Zgjidhni raporte nga një klient i vetëm për dërgim në grup.</div> : null}
+            {clientHasNoEmailOnRecord ? (
+              <div className="mt-2 text-xs font-medium text-lab-red">
+                Ky klient nuk ka email të regjistruar. Shtojeni te faqja e klientit që të mos shkruhet çdo herë me dorë.
+              </div>
+            ) : null}
+            {selectedWithoutPdf.length ? (
+              <div className="mt-2 text-xs font-medium text-lab-red">
+                {selectedWithoutPdf.length} raport{selectedWithoutPdf.length === 1 ? "" : "e"} pa PDF të ruajtur
+                ({selectedWithoutPdf.map(({ report }) => report.reportNumber).join(", ")}).
+                Gjeneroni PDF-në përpara dërgimit.
+              </div>
+            ) : null}
             <div className="mt-3 flex flex-wrap gap-2">
               {selectedRows.map(({ report }) => <Link key={report.id} href={`/reports/${report.id}`} className="rounded-md bg-white px-2 py-1 text-xs font-semibold text-lab-burgundy ring-1 ring-line">{report.reportNumber}</Link>)}
             </div>
@@ -269,7 +298,7 @@ export default function ReportsPage() {
           <thead className="table-head">
             <tr>
               <th className={`${STICKY_CHECKBOX_HEAD} px-4 py-3`}>
-                <input type="checkbox" checked={filteredRows.length > 0 && filteredRows.every(({ report }) => selectedReportIds.includes(report.id))} onChange={toggleAllFilteredReports} aria-label="Zgjidh të gjitha raportet e filtruara" />
+                <input type="checkbox" disabled={!canSend} checked={filteredRows.length > 0 && filteredRows.every(({ report }) => selectedReportIds.includes(report.id))} onChange={toggleAllFilteredReports} aria-label="Zgjidh të gjitha raportet e filtruara" />
               </th>
               <SortableTh label="Numri i raportit" sortKey="number" sort={sort} onToggle={toggle} className={`${STICKY_NUMBER_HEAD} px-4 py-3`} />
               <SortableTh label="Pjesa" sortKey="sequence" sort={sort} onToggle={toggle} className={`${STICKY_HEAD} px-4 py-3`} />
@@ -286,7 +315,7 @@ export default function ReportsPage() {
             {pageRows.map(({ report, sample, test, client, project }) => (
               <tr key={report.id} className="bg-white hover:bg-lab-mist/60">
                 <td className={`${STICKY_CHECKBOX_CELL} px-4 py-3`}>
-                  <input type="checkbox" checked={selectedReportIds.includes(report.id)} onChange={() => toggleReport(report.id)} aria-label={`Zgjidh ${report.reportNumber}`} />
+                  <input type="checkbox" disabled={!canSend} checked={selectedReportIds.includes(report.id)} onChange={() => toggleReport(report.id)} aria-label={`Zgjidh ${report.reportNumber}`} />
                 </td>
                 <td className={`${STICKY_NUMBER_CELL} px-4 py-3 font-semibold text-ink`}>{report.reportNumber}</td>
                 <td className="px-4 py-3">{report.reportSequence} / {report.totalReports}</td>
