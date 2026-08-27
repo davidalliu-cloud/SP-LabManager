@@ -46,7 +46,10 @@ export default function DashboardPage() {
   const pendingPreparation = store.tests.filter((test) => test.status === "Approved" && !store.reports.some((report) => report.testId === test.id)).length;
   const pendingApproval = store.reports.filter((report) => report.reportStatus === "Pending Approval").length;
   const approvedNotIssued = store.reports.filter((report) => report.reportStatus === "Approved").length;
-  const delayed = store.tests.filter((test) => test.status === "Delayed").length;
+  // Derived from the due date, the same rule the Delayed Items page and the row
+  // colouring use. This counted status === "Delayed" until 2026-08-27 - a status
+  // no code path ever assigns, so the tile could only ever read zero.
+  const delayed = store.tests.filter((test) => isOverdue(test.requiredTestDate, test.status)).length;
   const procedureDrafts = store.procedureRevisions.filter((revision) => revision.status === "Draft" || revision.status === "In Review").length;
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
   const showClientIdentity = canViewClientIdentity(currentUser?.role);

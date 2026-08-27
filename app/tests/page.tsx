@@ -3,7 +3,6 @@
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
-import { SimpleTable } from "@/components/ui/simple-table";
 import { StageCell } from "@/components/ui/stage-cell";
 import { SortableTh, sortRows, useSort } from "@/components/ui/sortable-header";
 import { DEFAULT_PAGE_SIZE, Pagination, paginate, useTablePage } from "@/components/ui/pagination";
@@ -45,6 +44,11 @@ const FILTERABLE_STATUSES: TestStatus[] = [
 const RECENT_WINDOW_DAYS = 90;
 
 const UNASSIGNED = "none";
+
+/** Frozen panes - see the Sample Register for the reasoning. */
+const STICKY_HEAD = "sticky top-0 z-20 bg-white";
+const STICKY_CORNER = "sticky left-0 top-0 z-30 bg-white";
+const STICKY_CELL = "sticky left-0 z-10";
 
 type TestRow = {
   test: LabTest;
@@ -358,18 +362,21 @@ export default function TestsPage() {
             <span className="inline-flex items-center gap-2"><span className="h-3 w-5 rounded-sm border border-line bg-white" /> Në kohë / On time</span>
           </div>
 
-          <SimpleTable>
+          <div className="surface-card overflow-hidden">
+            {/* Scrolls inside itself so the header row and the sample code stay
+                put while the other columns scroll under them. */}
+            <div className="register-scroll max-h-[70vh] overflow-auto">
             <table className="w-full min-w-[1080px] text-left text-sm">
               <thead className="table-head">
                 <tr>
-                  <SortableTh label="Kampioni" sortKey="number" sort={sort} onToggle={toggle} />
-                  <SortableTh label="Klienti" sortKey="client" sort={sort} onToggle={toggle} />
-                  <SortableTh label="Objekti / Projekti" sortKey="project" sort={sort} onToggle={toggle} />
-                  <SortableTh label="Testi" sortKey="test" sort={sort} onToggle={toggle} />
-                  <th className="px-4 py-3">{t("test.batch")}</th>
-                  <SortableTh label={t("test.required")} sortKey="required" sort={sort} onToggle={toggle} />
-                  <SortableTh label={t("test.technician")} sortKey="technician" sort={sort} onToggle={toggle} />
-                  <SortableTh label="Statusi" sortKey="status" sort={sort} onToggle={toggle} />
+                  <SortableTh label="Kampioni" sortKey="number" sort={sort} onToggle={toggle} className={`${STICKY_CORNER} px-4 py-3`} />
+                  <SortableTh label="Klienti" sortKey="client" sort={sort} onToggle={toggle} className={`${STICKY_HEAD} px-4 py-3`} />
+                  <SortableTh label="Objekti / Projekti" sortKey="project" sort={sort} onToggle={toggle} className={`${STICKY_HEAD} px-4 py-3`} />
+                  <SortableTh label="Testi" sortKey="test" sort={sort} onToggle={toggle} className={`${STICKY_HEAD} px-4 py-3`} />
+                  <th className={`${STICKY_HEAD} px-4 py-3`}>{t("test.batch")}</th>
+                  <SortableTh label={t("test.required")} sortKey="required" sort={sort} onToggle={toggle} className={`${STICKY_HEAD} px-4 py-3`} />
+                  <SortableTh label={t("test.technician")} sortKey="technician" sort={sort} onToggle={toggle} className={`${STICKY_HEAD} px-4 py-3`} />
+                  <SortableTh label="Statusi" sortKey="status" sort={sort} onToggle={toggle} className={`${STICKY_HEAD} px-4 py-3`} />
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
@@ -395,6 +402,8 @@ export default function TestsPage() {
                     : risk
                       ? "bg-brand-risk hover:bg-[#f5ad3d]"
                       : "bg-white hover:bg-slate-100";
+                  // The pinned cell needs its own opaque background.
+                  const rowBg = late ? "bg-brand-late" : risk ? "bg-brand-risk" : "bg-white";
                   const unitLabel = sample?.sampleType.includes("Rebar") || sample?.sampleType.includes("Shufër Çeliku") ? "mostra" : t("test.cubes");
                   const batchLabel = test.scheduledAgeDays ? `${test.cubeCount} ${unitLabel} / ${test.scheduledAgeDays}d` : `${test.cubeCount} ${unitLabel}`;
                   return (
@@ -403,7 +412,7 @@ export default function TestsPage() {
                       onClick={() => router.push(`/tests/${test.id}`)}
                       className={`cursor-pointer transition-colors ${rowClass}`}
                     >
-                      <td className="px-4 py-3 font-semibold text-ink">{number}</td>
+                      <td className={`${STICKY_CELL} ${rowBg} px-4 py-3 font-semibold text-ink`}>{number}</td>
                       <td className="px-4 py-3">{clientLabel}</td>
                       <td className="px-4 py-3">{projectLabel}</td>
                       <td className="px-4 py-3">{test.testType}</td>
@@ -418,6 +427,7 @@ export default function TestsPage() {
                 })}
               </tbody>
             </table>
+            </div>
             <Pagination
               page={page}
               pageCount={pageCount}
@@ -427,7 +437,7 @@ export default function TestsPage() {
               unfilteredTotal={store.tests.length}
               onPage={setPage}
             />
-          </SimpleTable>
+          </div>
         </>
       )}
     </>

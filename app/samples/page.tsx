@@ -31,6 +31,12 @@ const RECENT_WINDOW_DAYS = 90;
 /** Sentinel for "assigned to nobody" in the technician filter. */
 const UNASSIGNED = "none";
 
+/** Frozen panes. The header row pins to the top of the scroll area, the sample
+ *  code pins to the left, and the top-left cell has to beat both. */
+const STICKY_HEAD = "sticky top-0 z-20 bg-white";
+const STICKY_CORNER = "sticky left-0 top-0 z-30 bg-white";
+const STICKY_CELL = "sticky left-0 z-10";
+
 /** Everything a single register row needs, resolved once. Building this up
  *  front - instead of re-deriving inside the sort comparator and again inside
  *  the row - is what keeps the register flat as the sample count grows. */
@@ -369,23 +375,26 @@ export default function SamplesPage() {
       </div>
 
       <div className="surface-card overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Scrolls inside itself so the header row and the sample code stay put.
+            Thirteen columns wide: without this you scroll right to read the
+            report due date and no longer know which sample you are looking at. */}
+        <div className="register-scroll max-h-[70vh] overflow-auto">
           <table className="w-full min-w-[1100px] text-left text-sm">
             <thead className="table-head">
               <tr>
-                <SortableTh label={t("samples.sampleCode")} sortKey="number" sort={sort} onToggle={toggle} />
-                <SortableTh label={t("samples.dateReceived")} sortKey="date" sort={sort} onToggle={toggle} />
-                <SortableTh label={t("samples.clientCode")} sortKey="client" sort={sort} onToggle={toggle} />
-                <SortableTh label={t("samples.project")} sortKey="project" sort={sort} onToggle={toggle} />
-                <SortableTh label={t("samples.sampleType")} sortKey="type" sort={sort} onToggle={toggle} />
-                <SortableTh label={t("samples.qty")} sortKey="qty" sort={sort} onToggle={toggle} />
-                <SortableTh label={t("samples.requestedTest")} sortKey="requested" sort={sort} onToggle={toggle} />
-                <SortableTh label={t("samples.requiredDate")} sortKey="required" sort={sort} onToggle={toggle} />
-                <SortableTh label={t("samples.reportDue")} sortKey="reportDue" sort={sort} onToggle={toggle} />
-                <SortableTh label={t("samples.status")} sortKey="status" sort={sort} onToggle={toggle} />
-                <SortableTh label={t("samples.assignedTechnician")} sortKey="technician" sort={sort} onToggle={toggle} />
-                <SortableTh label={t("samples.reportStatus")} sortKey="reportStatus" sort={sort} onToggle={toggle} />
-                <th className="px-4 py-3 font-semibold">{t("samples.actions")}</th>
+                <SortableTh label={t("samples.sampleCode")} sortKey="number" sort={sort} onToggle={toggle} className={`${STICKY_CORNER} px-4 py-3`} />
+                <SortableTh label={t("samples.dateReceived")} sortKey="date" sort={sort} onToggle={toggle} className={`${STICKY_HEAD} px-4 py-3`} />
+                <SortableTh label={t("samples.clientCode")} sortKey="client" sort={sort} onToggle={toggle} className={`${STICKY_HEAD} px-4 py-3`} />
+                <SortableTh label={t("samples.project")} sortKey="project" sort={sort} onToggle={toggle} className={`${STICKY_HEAD} px-4 py-3`} />
+                <SortableTh label={t("samples.sampleType")} sortKey="type" sort={sort} onToggle={toggle} className={`${STICKY_HEAD} px-4 py-3`} />
+                <SortableTh label={t("samples.qty")} sortKey="qty" sort={sort} onToggle={toggle} className={`${STICKY_HEAD} px-4 py-3`} />
+                <SortableTh label={t("samples.requestedTest")} sortKey="requested" sort={sort} onToggle={toggle} className={`${STICKY_HEAD} px-4 py-3`} />
+                <SortableTh label={t("samples.requiredDate")} sortKey="required" sort={sort} onToggle={toggle} className={`${STICKY_HEAD} px-4 py-3`} />
+                <SortableTh label={t("samples.reportDue")} sortKey="reportDue" sort={sort} onToggle={toggle} className={`${STICKY_HEAD} px-4 py-3`} />
+                <SortableTh label={t("samples.status")} sortKey="status" sort={sort} onToggle={toggle} className={`${STICKY_HEAD} px-4 py-3`} />
+                <SortableTh label={t("samples.assignedTechnician")} sortKey="technician" sort={sort} onToggle={toggle} className={`${STICKY_HEAD} px-4 py-3`} />
+                <SortableTh label={t("samples.reportStatus")} sortKey="reportStatus" sort={sort} onToggle={toggle} className={`${STICKY_HEAD} px-4 py-3`} />
+                <th className={`${STICKY_HEAD} px-4 py-3 font-semibold`}>{t("samples.actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
@@ -411,9 +420,12 @@ export default function SamplesPage() {
                   .map((item) => `${item.scheduledAgeDays}d: ${item.cubeCount} mostra (${formatEuropeanDate(item.requiredTestDate)})`)
                   .join("; ") || sample.testSchedules?.map((item) => `${item.ageDays || "-"}d: ${item.cubeCount} mostra (${formatEuropeanDate(item.requiredTestDate)})`).join("; ");
                 const rowClass = row.late ? "bg-brand-late hover:bg-[#ff3d3d]" : row.risk ? "bg-brand-risk hover:bg-[#f5ad3d]" : "hover:bg-lab-mist/60";
+                // The pinned cell needs its own opaque background, or the
+                // columns it overlaps show through it as they scroll past.
+                const rowBg = row.late ? "bg-brand-late" : row.risk ? "bg-brand-risk" : "bg-white";
                 return (
                   <tr key={sample.id} className={`transition-colors ${rowClass}`}>
-                    <td className="px-4 py-3 font-semibold text-ink">{sample.sampleCode}</td>
+                    <td className={`${STICKY_CELL} ${rowBg} px-4 py-3 font-semibold text-ink`}>{sample.sampleCode}</td>
                     <td className="px-4 py-3">{formatEuropeanDate(sample.dateReceived)}</td>
                     <td className="px-4 py-3 font-semibold text-ink">{row.clientCode || "Në pritje"}</td>
                     <td className="px-4 py-3">{showClientIdentity ? row.projectName || "Në pritje caktimi" : "I kufizuar"}</td>

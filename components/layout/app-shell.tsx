@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 import { NotificationDropdown } from "@/components/notifications/notification-dropdown";
+import { SaveStatus } from "@/components/layout/save-status";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { useLabStore } from "@/lib/lab-store";
@@ -139,6 +140,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </svg>
                 <span className="hidden sm:inline">Versioni Mobil / Mobile view</span>
               </Link>
+              <SaveStatus />
               <LanguageSwitcher />
               <NotificationDropdown />
               {auth.isConfigured ? (

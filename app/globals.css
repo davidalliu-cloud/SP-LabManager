@@ -62,6 +62,20 @@ textarea {
     display: none !important;
   }
 
+  /* The registers scroll inside a fixed-height box so the header row and the
+     sample code can stay pinned. On paper there is no scrolling: release the
+     height and drop the sticky positioning, or the print clips to whatever
+     happened to be visible on screen. */
+  .register-scroll {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .register-scroll th,
+  .register-scroll td {
+    position: static !important;
+  }
+
   /* Strip the app-shell content padding so a full-page report sits flush at
      the top-left of the sheet instead of being offset (which pushed it onto
      a second page). */

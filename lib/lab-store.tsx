@@ -852,6 +852,8 @@ interface ProcedureRevisionInput {
 
 interface LabStoreValue extends LabState {
   currentUserId: string;
+  /** Whether the most recent change actually reached the server. */
+  saveState: SaveState;
   // False until local storage has been read AND (when Supabase is configured)
   // the shared online state has been fetched. Before that, `state.users` is
   // still the hardcoded seed/demo data, which doesn't contain real accounts —
@@ -946,6 +948,32 @@ const KEEP_ACTIVITY_IN_BLOB = false;
 function forPersistence(state: LabState): LabState {
   if (KEEP_ACTIVITY_IN_BLOB) return state;
   return { ...state, auditLog: [], notifications: [] };
+}
+
+/**
+ * Whether the last change actually reached the server.
+ *
+ * Every failure path used to end in console.warn, so a technician could type a
+ * full set of results, watch them appear on screen, close the laptop and lose
+ * them - with the interface showing nothing but success the whole time.
+ *
+ *   saved    - in sync with the server
+ *   saving   - a write is in flight
+ *   offline  - no connection; the change is held locally and will retry
+ *   error    - the server rejected the write
+ *   conflict - someone else saved first and we could not merge; nothing was
+ *              written, because overwriting their work is not ours to decide
+ */
+export type SaveState =
+  | { kind: "saved" }
+  | { kind: "saving" }
+  | { kind: "offline" }
+  | { kind: "error"; message?: string }
+  | { kind: "conflict" };
+
+/** True while the change is not safely on the server. */
+export function isSavePending(state: SaveState) {
+  return state.kind !== "saved";
 }
 
 function hasSupabaseConfig() {
@@ -1175,6 +1203,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<LabState>(() => mergeOfficialClientCodes2026(initialState));
   const [isHydrated, setIsHydrated] = useState(false);
   const [isRemoteChecked, setIsRemoteChecked] = useState(false);
+  const [saveState, setSaveState] = useState<SaveState>({ kind: "saved" });
   const lastSavedOnlineJson = useRef<string | null>(null);
   const remoteUpdatedAtRef = useRef<string | null>(null);
   const lastSyncedStateRef = useRef<LabState | null>(null);
@@ -1211,6 +1240,28 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       console.warn("Could not save SARP LAB data.", error);
     }
   }, [isHydrated, state]);
+
+  // Closing the tab with a change that never reached the server is the failure
+  // that loses a technician's results, so make the browser ask first.
+  useEffect(() => {
+    if (!isSavePending(saveState)) return;
+    function warn(event: BeforeUnloadEvent) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [saveState]);
+
+  // Coming back online should retry rather than sit in the offline state.
+  useEffect(() => {
+    function onOnline() {
+      setSaveState((current) => (current.kind === "offline" ? { kind: "saving" } : current));
+      setState((current) => ({ ...current }));
+    }
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, []);
 
   // Every audit entry and notification is written to its own table as it is
   // created. Ids already sent are remembered for the session, so a re-render
@@ -1322,8 +1373,17 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
 
     const timer = window.setTimeout(async () => {
       const json = JSON.stringify(state);
-      if (lastSavedOnlineJson.current === json) return;
+      if (lastSavedOnlineJson.current === json) {
+        setSaveState({ kind: "saved" });
+        return;
+      }
 
+      if (typeof navigator !== "undefined" && navigator.onLine === false) {
+        setSaveState({ kind: "offline" });
+        return;
+      }
+
+      setSaveState({ kind: "saving" });
       const supabase = createSupabaseBrowserClient();
 
       // Conditional save: only write if remote hasn't moved since we last synced
@@ -1341,23 +1401,17 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
 
         if (error) {
           console.warn("Could not save online SARP LAB data.", error.message);
+          setSaveState({ kind: "error", message: error.message });
           return;
         }
 
         if (!data || data.length === 0) {
           if (attempt >= 3) {
-            const { error: forceError } = await supabase.from("app_state").upsert({
-              id: ONLINE_STATE_ROW_ID,
-              state: stateToSave,
-              updated_at: nowIso
-            });
-            if (!forceError) {
-              remoteUpdatedAtRef.current = nowIso;
-              lastSyncedStateRef.current = stateToSave;
-              lastSavedOnlineJson.current = JSON.stringify(stateToSave);
-            } else {
-              console.warn("Could not save SARP LAB data to Supabase after retries.", forceError.message);
-            }
+            // Previously this force-upserted, which silently overwrote whatever
+            // the other person had just saved. Three failed compare-and-swaps in
+            // a row means we cannot reconcile safely, so we stop and say so
+            // rather than deciding on the user's behalf whose work survives.
+            setSaveState({ kind: "conflict" });
             return;
           }
 
@@ -1369,6 +1423,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
 
           if (fetchError) {
             console.warn("Could not reconcile online SARP LAB data.", fetchError.message);
+            setSaveState({ kind: "error", message: fetchError.message });
             return;
           }
 
@@ -1379,10 +1434,13 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
               state: stateToSave,
               updated_at: nowIso
             });
-            if (!insertError) {
+            if (insertError) {
+              setSaveState({ kind: "error", message: insertError.message });
+            } else {
               remoteUpdatedAtRef.current = nowIso;
               lastSyncedStateRef.current = stateToSave;
               lastSavedOnlineJson.current = JSON.stringify(stateToSave);
+              setSaveState({ kind: "saved" });
             }
             return;
           }
@@ -1400,12 +1458,17 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
         remoteUpdatedAtRef.current = nowIso;
         lastSyncedStateRef.current = stateToSave;
         lastSavedOnlineJson.current = JSON.stringify(stateToSave);
+        setSaveState({ kind: "saved" });
       }
 
       try {
         await attemptSave(remoteUpdatedAtRef.current, forPersistence(state), 0);
       } catch (error) {
         console.warn("Could not save SARP LAB data to Supabase.", error);
+        setSaveState({
+          kind: navigator.onLine === false ? "offline" : "error",
+          message: error instanceof Error ? error.message : String(error)
+        });
       }
     }, 800);
 
@@ -1533,6 +1596,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
     return {
       ...state,
       currentUserId,
+      saveState,
       isReady: isHydrated && (isRemoteChecked || !hasSupabaseConfig()),
       createEmployee(input) {
         const employeeId = crypto.randomUUID();
@@ -3708,7 +3772,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
         });
       }
     };
-  }, [state, currentUserId, currentRole]);
+  }, [state, currentUserId, currentRole, saveState]);
 
   return <LabStoreContext.Provider value={value}>{children}</LabStoreContext.Provider>;
 }
