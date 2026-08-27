@@ -12,6 +12,7 @@ import type { FilterChip } from "@/components/ui/filter-bar";
 import { useI18n } from "@/lib/i18n";
 import { useLabStore } from "@/lib/lab-store";
 import { buildLabIndex, NO_REPORTS } from "@/lib/lab-index";
+import { buildHaystack, matchesHaystack, tokeniseQuery } from "@/lib/search";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { isApproaching, isOverdue } from "@/lib/status";
 import { canViewClientIdentity } from "@/lib/permissions";
@@ -115,7 +116,8 @@ export default function TestsPage() {
         const number = sample?.sampleCode ?? test.testCode;
         const clientLabel = showClientIdentity ? client?.clientName ?? "-" : client?.clientCode ?? "Klient në pritje";
         const projectLabel = showClientIdentity ? project?.projectName ?? "-" : "I kufizuar";
-        const lifecycle = testLifecycleFrom(test, index.reportsByTest.get(test.id) ?? NO_REPORTS);
+        const testReports = index.reportsByTest.get(test.id) ?? NO_REPORTS;
+        const lifecycle = testLifecycleFrom(test, testReports);
         return {
           test,
           sample,
@@ -128,7 +130,17 @@ export default function TestsPage() {
           projectLabel,
           sampleType: sample?.sampleType ?? "",
           lifecycle,
-          haystack: `${number} ${test.testCode ?? ""} ${test.testType} ${clientLabel} ${projectLabel} ${technicianName}`.toLowerCase()
+          haystack: buildHaystack([
+            number,
+            test.testCode,
+            test.testType,
+            sample?.sampleType,
+            // clientLabel/projectLabel are already permission-aware.
+            clientLabel,
+            projectLabel,
+            technicianName,
+            ...testReports.map((report) => report.reportNumber)
+          ])
         };
       }),
     [index, store.tests, showClientIdentity]
@@ -162,9 +174,9 @@ export default function TestsPage() {
       ? allRows
       : allRows.filter((row) => row.lifecycle.stage !== "Delivered" || row.test.requiredTestDate >= windowStart);
 
-    const needle = query.trim().toLowerCase();
+    const queryTokens = tokeniseQuery(query);
     const filtered = windowed.filter((row) =>
-      (!needle || row.haystack.includes(needle)) &&
+      (queryTokens.length === 0 || matchesHaystack(row.haystack, queryTokens)) &&
       (status === "all" || row.test.status === status) &&
       (testType === "all" || row.test.testType === testType) &&
       (sampleType === "all" || row.sampleType === sampleType) &&

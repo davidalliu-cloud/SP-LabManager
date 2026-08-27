@@ -12,6 +12,7 @@ import { formatEuropeanDate } from "@/lib/date-format";
 import { useI18n } from "@/lib/i18n";
 import { useLabStore } from "@/lib/lab-store";
 import { buildLabIndex, NO_REPORTS, NO_TESTS } from "@/lib/lab-index";
+import { buildHaystack, matchesHaystack, tokeniseQuery } from "@/lib/search";
 import { isApproaching, isOverdue } from "@/lib/status";
 import { canDeleteSamples, canViewClientIdentity } from "@/lib/permissions";
 import { deriveSampleStageFrom, reportLifecycle, SAMPLE_STAGES, sampleStageIndex } from "@/lib/sample-stage";
@@ -113,7 +114,8 @@ export default function SamplesPage() {
         const nextTest = tests.find((item) => ACTIVE_TEST_STATUSES.includes(item.status)) ?? tests[0];
         const report = (index.reportsBySample.get(sample.id) ?? NO_REPORTS)[0];
         const stage = deriveSampleStageFrom(tests, index.reportsByTest);
-        const clientCode = index.clientById.get(sample.clientId)?.clientCode ?? "";
+        const client = index.clientById.get(sample.clientId);
+        const clientCode = client?.clientCode ?? "";
         // Restricted users neither see nor search nor sort by project name.
         const projectName = showClientIdentity ? index.projectById.get(sample.projectId)?.projectName ?? "" : "";
         const technicianId = nextTest?.assignedTechnician ?? sample.assignedTechnician ?? "";
@@ -149,7 +151,19 @@ export default function SamplesPage() {
           reportDue: nextTest?.dueDate ?? sample.reportDueDate,
           late,
           risk,
-          haystack: `${sample.sampleCode} ${clientCode} ${projectName} ${sample.sampleType}`.toLowerCase()
+          haystack: buildHaystack([
+            sample.sampleCode,
+            clientCode,
+            // Client and project names stay out of the index for users who are
+            // not allowed to see them - otherwise search leaks what the table hides.
+            showClientIdentity ? client?.clientName : undefined,
+            projectName,
+            sample.sampleType,
+            sample.requestedTestType,
+            sample.sampleDescription,
+            technicianName,
+            report?.reportNumber
+          ])
         };
       }),
     [index, store.samples, showClientIdentity]
@@ -181,9 +195,9 @@ export default function SamplesPage() {
       ? allRows
       : allRows.filter((row) => row.stage !== "Delivered" || row.sample.dateReceived >= windowStart);
 
-    const needle = query.trim().toLowerCase();
+    const queryTokens = tokeniseQuery(query);
     const filtered = windowed.filter((row) =>
-      (!needle || row.haystack.includes(needle)) &&
+      (queryTokens.length === 0 || matchesHaystack(row.haystack, queryTokens)) &&
       (status === "all" || row.stage === status) &&
       (sampleType === "all" || row.sample.sampleType === sampleType) &&
       (technician === "all" || (technician === UNASSIGNED ? !row.technicianId : row.technicianId === technician)) &&
