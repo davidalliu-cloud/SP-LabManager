@@ -111,3 +111,74 @@ Nothing else was unmapped: `extra` is now empty on every row.
 2. RLS policies per role, using `app_users.auth_user_id` mapped by email.
 3. Migrate `/tech` first — narrowest query, biggest win.
 4. Dual-write, run in parallel, then stop reading the blob.
+
+---
+
+## Increment 2 — auth mapping, RLS, and the live mirror (2026-08-27)
+
+Migrations: `phase_1_auth_mapping_and_rls`, `phase_1_table_policies`,
+`phase_1_fix_technician_role_check`, `phase_1_relax_reference_data_reads`,
+`phase_1_blob_to_tables_sync`.
+
+**The app still reads the blob.** Nothing user-facing changed.
+
+### Auth mapping
+
+All 9 app users matched a Supabase Auth account by email; `app_users.auth_user_id`
+is populated. `current_app_user()`, `is_active_staff()`, `is_technician()` and
+`can_view_client_identity()` are SECURITY DEFINER helpers so policies can
+resolve the caller without granting everyone read on `app_users`.
+
+### RLS, mirroring lib/permissions.ts
+
+`is_technician()` initially checked `role = 'Technician'` alone. That inverted
+the rule in production: **Astrit Prethi is a `Chief Technician` carrying 192 of
+194 tests** and was treated as unrestricted, while the three users whose role is
+literally `Technician` hold zero tests between them. `permissions.ts` warns about
+this in a comment. Fixed to `role in ('Technician','Chief Technician')`.
+
+Verified by impersonating real accounts:
+
+| Who | tests | samples | clients | reports |
+|---|---:|---:|---:|---:|
+| Chief Technician (192 assigned) | **192** | 80 | 129 | 182 |
+| Admin | 194 | 82 | — | — |
+| Quality Manager | 194 | 82 | — | — |
+| Anonymous | 0 | 0 | — | — |
+
+Clients, projects and reports stay readable by all active staff **on purpose**:
+the registers show client *code* to everyone and only the *name* is privileged,
+and RLS cannot hide a single column. Column-level restriction needs a view, and
+tightening the Reports register is a policy decision for the lab. Keeping them
+open means no screen loses data when pages migrate.
+
+No DELETE policy exists on any table. Deleting a sample is what orphaned
+`TEST-2026-0001/0002` and `LAB-R-2026-0017`.
+
+### The mirror
+
+`sync_app_state_to_tables()` runs on every `app_state` update and upserts the
+whole blob into the tables. The blob stays the source of truth while pages move
+across one at a time, so a migrated page can never show data frozen at
+migration time — and no store mutation had to be rewritten to dual-write.
+
+**Upsert only, never delete.** A sync that removed rows because one client's
+stale state omitted them is precisely how 2026-08-003 lost its sample.
+
+Cost: ~117 ms per save at current volume. It re-upserts everything each time, so
+it scales linearly with total rows — a bridge, not a destination. It retires
+when the last page stops reading the blob.
+
+It immediately proved itself: reports 180 → 182 and results 112 → 118, real work
+created since the first migration, mirrored automatically.
+
+### Standing gap
+
+tests 194/196 and reports 182/183 — the orphans of `2026-08-003`, still held
+back by the foreign keys and awaiting a decision.
+
+### Next
+
+Data-access layer, then migrate `/tech` first. Note before migrating desktop
+pages: RLS will limit a Chief Technician to their assigned tests (192 of 194),
+which is stricter than today's desktop behaviour and needs a nod first.
