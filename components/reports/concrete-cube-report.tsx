@@ -5,7 +5,7 @@ import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest,
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
-import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair, samplingOperator } from "./report-shared";
+import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair, samplingOperator, BiText } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
 
 export function ConcreteCubeReportPreview({
@@ -66,14 +66,14 @@ export function ConcreteCubeReportPreview({
         <div className="grid grid-cols-[158px_1fr_82px] items-start gap-3 border-b border-black pb-1">
           <img src="/brand/sarp-logo.png" alt="SARP" className="mt-1 h-auto w-[156px]" />
           <div className="pt-2 text-center">
-            <div className="font-bold uppercase">RAPORT TESTIM / TEST REPORT</div>
+            <div className="font-bold uppercase"><BiText>RAPORT TESTIM / TEST REPORT</BiText></div>
             <div className="mt-3 text-[10pt] font-bold">Nr. / No. {report.reportNumber}</div>
           </div>
           <img src="/brand/da-accreditation.png" alt="DA accreditation Testim S SH ISO/IEC 17025 LT 069" className="ml-auto h-auto w-[80px]" />
         </div>
-        <div className="mt-1 text-[7pt] italic leading-tight">
-          <div>Kodi / Code: SL-RA-B-7.8/1.3</div>
-          <div>Faqe / Page: 1/1</div>
+        <div className="mt-1 text-[7pt] leading-tight">
+          <div>Kodi / <span className="italic">Code</span>: SL-RA-B-7.8/1.3</div>
+          <div>Faqe / <span className="italic">Page</span>: 1/1</div>
         </div>
       </header>
 
@@ -154,7 +154,7 @@ export function ConcreteCubeReportPreview({
             <th className="border border-black p-0.5">Rezistenca në shtypje e kubit<br /><span className="font-normal italic">Cubes compressive strength</span></th>
           </tr>
           <tr>
-            <th className="border border-black p-0.5">nº</th><th className="border border-black p-0.5">(dd/mm/vv)</th><th className="border border-black p-0.5">(dd/mm/vv)</th><th className="border border-black p-0.5">(ditë / days)</th><th className="border border-black p-0.5"></th><th className="border border-black p-0.5">(kN)</th><th className="border border-black p-0.5">(MPa)</th>
+            <th className="border border-black p-0.5">nº</th><th className="border border-black p-0.5">(dd/mm/vv)</th><th className="border border-black p-0.5">(dd/mm/vv)</th><th className="border border-black p-0.5"><BiText>(ditë / days)</BiText></th><th className="border border-black p-0.5"></th><th className="border border-black p-0.5">(kN)</th><th className="border border-black p-0.5">(MPa)</th>
           </tr>
         </thead>
         <tbody>

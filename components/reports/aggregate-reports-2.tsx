@@ -5,7 +5,7 @@ import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest,
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
-import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair, samplingOperator, SimpleReportLegalFooter } from "./report-shared";
+import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair, samplingOperator, SimpleReportLegalFooter, BiText } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
 
 export function AggregateDensityReportPreview({
@@ -54,7 +54,7 @@ export function AggregateDensityReportPreview({
       </div>
 
       <div className="mt-8">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">Test results / Rezultatet e testimit</h3>
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-ink"><BiText>Test results / Rezultatet e testimit</BiText></h3>
         <div className="mt-3 overflow-x-auto rounded-md border border-line">
           <table className="w-full min-w-[980px] text-left text-sm">
             <thead className="table-head">
@@ -92,7 +92,7 @@ export function AggregateDensityReportPreview({
       </div>
 
       <div className="mt-8 soft-panel p-4 text-sm text-ink">
-        <div className="font-semibold">Notes / Shënime</div>
+        <div className="font-semibold"><BiText>Notes / Shënime</BiText></div>
         <p className="mt-1">{aggregateDensity.notes || "Results relate only to the items tested. The laboratory is not responsible for the sampling phase."}</p>
       </div>
 
@@ -193,7 +193,7 @@ export function AggregateFillerDensityReportPreview({
       </div>
 
       <div className="mt-8 soft-panel p-4 text-sm text-ink">
-        <div className="font-semibold">Notes / Shënime</div>
+        <div className="font-semibold"><BiText>Notes / Shënime</BiText></div>
         <p className="mt-1">{aggregateFillerDensity.notes || "Results relate only to the items tested. The laboratory is not responsible for the sampling phase."}</p>
       </div>
 
@@ -271,7 +271,7 @@ export function AggregateSoundnessReportPreview({
         <Info label="Flaked after" value={String(aggregateSoundness.flakedParticles || "-")} />
         <Info label="Particles after" value={String(aggregateSoundness.totalParticlesAfter || "-")} />
       </div>
-      <div className="mt-8 soft-panel p-4 text-sm text-ink"><div className="font-semibold">Notes / Shënime</div><p className="mt-1">{aggregateSoundness.notes || "Results relate only to the items tested. The laboratory is not responsible for the sampling phase."}</p></div>
+      <div className="mt-8 soft-panel p-4 text-sm text-ink"><div className="font-semibold"><BiText>Notes / Shënime</BiText></div><p className="mt-1">{aggregateSoundness.notes || "Results relate only to the items tested. The laboratory is not responsible for the sampling phase."}</p></div>
       <SignaturePair
         wrapperClassName="mt-10"
         columnClassName="grid gap-6 sm:grid-cols-2"
@@ -320,18 +320,18 @@ export function AggregateElongationReportPreview({
         <Info label="Humidity" value={aggregateElongation.humidity} />
       </div>
       <div className="mt-8">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">Elongation analysis / Analiza e indeksit të zgjatimit</h3>
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-ink"><BiText>Elongation analysis / Analiza e indeksit të zgjatimit</BiText></h3>
         <div className="mt-3 overflow-x-auto rounded-md border border-line">
           <table className="w-full min-w-[820px] text-left text-sm">
             <thead className="table-head"><tr><th className="px-3 py-2">Fraction</th><th className="px-3 py-2">Retained mass [g]</th><th className="px-3 py-2">Elongated mass [g]</th><th className="px-3 py-2">EI [%]</th></tr></thead>
             <tbody className="divide-y divide-line">
               {aggregateElongation.rows.map((row, index) => <tr key={`${row.fractionLabel}-${index}`}><td className="px-3 py-2 font-semibold text-ink">{row.fractionLabel}</td><td className="px-3 py-2">{row.retainedMassG}</td><td className="px-3 py-2">{row.elongatedMassG}</td><td className="px-3 py-2 font-semibold text-ink">{row.elongationPercent}</td></tr>)}
-              <tr className="bg-lab-porcelain"><td className="px-3 py-2 font-semibold text-ink">Total / Indeksi i zgjatimit</td><td className="px-3 py-2 font-semibold text-ink">{aggregateElongation.totalRetainedMassG}</td><td className="px-3 py-2 font-semibold text-ink">{aggregateElongation.totalElongatedMassG}</td><td className="px-3 py-2 font-semibold text-ink">{aggregateElongation.elongationIndexPercent}</td></tr>
+              <tr className="bg-lab-porcelain"><td className="px-3 py-2 font-semibold text-ink"><BiText>Total / Indeksi i zgjatimit</BiText></td><td className="px-3 py-2 font-semibold text-ink">{aggregateElongation.totalRetainedMassG}</td><td className="px-3 py-2 font-semibold text-ink">{aggregateElongation.totalElongatedMassG}</td><td className="px-3 py-2 font-semibold text-ink">{aggregateElongation.elongationIndexPercent}</td></tr>
             </tbody>
           </table>
         </div>
       </div>
-      <div className="mt-8 soft-panel p-4 text-sm text-ink"><div className="font-semibold">Notes / Shënime</div><p className="mt-1">{aggregateElongation.notes || "This test report belongs only to the tested sample."}</p></div>
+      <div className="mt-8 soft-panel p-4 text-sm text-ink"><div className="font-semibold"><BiText>Notes / Shënime</BiText></div><p className="mt-1">{aggregateElongation.notes || "This test report belongs only to the tested sample."}</p></div>
       <SignaturePair
         wrapperClassName="mt-10"
         columnClassName="grid gap-6 sm:grid-cols-2"
@@ -388,7 +388,7 @@ export function AggregateBulkDensityReportPreview({
           </tbody>
         </table>
       </div>
-      <div className="mt-8 soft-panel p-4 text-sm text-ink"><div className="font-semibold">Notes / Shënime</div><p className="mt-1">{aggregateBulkDensity.notes || "Results relate only to the items tested."}</p></div>
+      <div className="mt-8 soft-panel p-4 text-sm text-ink"><div className="font-semibold"><BiText>Notes / Shënime</BiText></div><p className="mt-1">{aggregateBulkDensity.notes || "Results relate only to the items tested."}</p></div>
       <SignaturePair
         wrapperClassName="mt-10"
         columnClassName="grid gap-6 sm:grid-cols-2"
@@ -444,7 +444,7 @@ export function AggregateSandEquivalentReportPreview({
           </tbody>
         </table>
       </div>
-      <div className="mt-8 soft-panel p-4 text-sm text-ink"><div className="font-semibold">Notes / Shënime</div><p className="mt-1">{aggregateSandEquivalent.notes || "This test report belongs only to the tested sample."}</p></div>
+      <div className="mt-8 soft-panel p-4 text-sm text-ink"><div className="font-semibold"><BiText>Notes / Shënime</BiText></div><p className="mt-1">{aggregateSandEquivalent.notes || "This test report belongs only to the tested sample."}</p></div>
       <SignaturePair
         wrapperClassName="mt-10"
         columnClassName="grid gap-6 sm:grid-cols-2"
@@ -504,7 +504,7 @@ export function AggregateShapeIndexReportPreview({
       </div>
 
       <div className="mt-8">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">Determination of shape index / Përcaktimi i indeksit të formës</h3>
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-ink"><BiText>Determination of shape index / Përcaktimi i indeksit të formës</BiText></h3>
         <div className="mt-3 overflow-x-auto rounded-md border border-line">
           <table className="w-full min-w-[820px] text-left text-sm">
             <thead className="table-head">
@@ -525,7 +525,7 @@ export function AggregateShapeIndexReportPreview({
                 </tr>
               ))}
               <tr className="bg-lab-porcelain">
-                <td className="px-3 py-2 font-semibold text-ink">Total / Indeksi i formës</td>
+                <td className="px-3 py-2 font-semibold text-ink"><BiText>Total / Indeksi i formës</BiText></td>
                 <td className="px-3 py-2 font-semibold text-ink">{aggregateShapeIndex.totalTestPortionMassG}</td>
                 <td className="px-3 py-2 font-semibold text-ink">{aggregateShapeIndex.totalNonCubicalMassG}</td>
                 <td className="px-3 py-2 font-semibold text-ink">{aggregateShapeIndex.shapeIndexPercent}</td>
@@ -537,7 +537,7 @@ export function AggregateShapeIndexReportPreview({
       </div>
 
       <div className="mt-8 soft-panel p-4 text-sm text-ink">
-        <div className="font-semibold">Notes / Shënime</div>
+        <div className="font-semibold"><BiText>Notes / Shënime</BiText></div>
         <p className="mt-1">{aggregateShapeIndex.notes || "Results relate only to the items tested. The laboratory is not responsible for the sampling phase."}</p>
       </div>
 
@@ -596,7 +596,7 @@ export function AggregateFlakinessReportPreview({
       </div>
 
       <div className="mt-8">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">Flakiness analysis / Analiza e indeksit të petëzimit</h3>
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-ink"><BiText>Flakiness analysis / Analiza e indeksit të petëzimit</BiText></h3>
         <div className="mt-3 overflow-x-auto rounded-md border border-line">
           <table className="w-full min-w-[1180px] text-left text-sm">
             <thead className="table-head">
@@ -641,7 +641,7 @@ export function AggregateFlakinessReportPreview({
       </div>
 
       <div className="mt-8 soft-panel p-4 text-sm text-ink">
-        <div className="font-semibold">Notes / Shënime</div>
+        <div className="font-semibold"><BiText>Notes / Shënime</BiText></div>
         <p className="mt-1">{aggregateFlakiness.notes || "This test report belongs only to the tested sample."}</p>
       </div>
 

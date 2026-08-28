@@ -5,7 +5,7 @@ import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest,
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
-import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, samplingOperator } from "./report-shared";
+import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, samplingOperator, BiText } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
 
 export function ThermalInsulationReportPreview({
@@ -128,7 +128,7 @@ export function SteelReportPreview({
       <table className="official-table official-classification mt-5 mx-auto w-[82%] border-collapse text-center text-[8.5pt]">
         <thead>
           <tr><th colSpan={6}>Klasifikimi / <span>Classification</span></th></tr>
-          <tr><th>Grade / Grada</th><th>Forca maksimale e ushtruar / Upper yield strength Re<br />[MPa]</th><th>Forca e tërheqjes / Tensile strength Rm<br />[MPa]</th><th>Rm / Re<br />Ratio</th><th>Përqindja e zgjatimit pas këputjes / Percentage elongation after fracture A<br />[%]</th><th>Pesha njësi e kampionit / Unit weight of sample Pn<br />[kg/ml]</th></tr>
+          <tr><th><BiText>Grade / Grada</BiText></th><th><BiText>Forca maksimale e ushtruar / Upper yield strength Re</BiText><br />[MPa]</th><th><BiText>Forca e tërheqjes / Tensile strength Rm</BiText><br />[MPa]</th><th>Rm / Re<br />Ratio</th><th><BiText>Përqindja e zgjatimit pas këputjes / Percentage elongation after fracture A</BiText><br />[%]</th><th><BiText>Pesha njësi e kampionit / Unit weight of sample Pn</BiText><br />[kg/ml]</th></tr>
         </thead>
         <tbody>
           {["B500B", "B500C", "B450C", "B500S", "S500MC"].map((grade) => <tr key={grade}><td className="font-bold">{grade}</td><td>&gt; 500</td><td>{grade === "B450C" ? "> 540" : "-"}</td><td>{grade === "B500C" ? "1.15 - 1.35" : "> 1.06"}</td><td>{grade === "B500C" ? "> 14" : "-"}</td><td>{reportSpecimens.map((s) => s.unitWeightKgPerM).filter(Boolean).join("   ")}</td></tr>)}

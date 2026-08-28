@@ -5,7 +5,7 @@ import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest,
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
-import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair, samplingOperator, SimpleReportLegalFooter } from "./report-shared";
+import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair, samplingOperator, SimpleReportLegalFooter, BiText } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
 
 export function AggregateReportPreview({
@@ -52,15 +52,15 @@ export function AggregateReportPreview({
         <div className="grid grid-cols-[140px_1fr_72px] items-start gap-4 border-b-2 border-black pb-1">
           <img src="/brand/sarp-logo.png" alt="SARP" className="mt-1 h-auto w-[128px]" />
           <div className="pt-3 text-center">
-            <div className="text-[13px] font-bold uppercase leading-tight">RAPORT TESTIM / TEST REPORT</div>
+            <div className="text-[13px] font-bold uppercase leading-tight"><BiText>RAPORT TESTIM / TEST REPORT</BiText></div>
             <div className="mt-5 text-[8.5px] font-bold">Nr. / No. <span className="text-red-600">{report.reportNumber}</span></div>
           </div>
           <img src="/brand/da-accreditation.png" alt="DA accreditation Testim S SH ISO/IEC 17025 LT 069" className="ml-auto mt-0.5 h-auto w-[56px]" />
         </div>
-        <div className="mt-1 flex justify-between text-[6.4px] italic leading-tight">
+        <div className="mt-1 flex justify-between text-[6.4px] leading-tight">
           <div>
-            <div>Kodi / Code: SL-RA-AG-7.8/1.1.a</div>
-            <div>Faqe / Page: 1/1</div>
+            <div>Kodi / <span className="italic">Code</span>: SL-RA-AG-7.8/1.1.a</div>
+            <div>Faqe / <span className="italic">Page</span>: 1/1</div>
           </div>
         </div>
       </header>
@@ -281,16 +281,16 @@ export function AggregateChemicalReportPreview({
       </div>
 
       <div className="mt-8">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">Tests for chemical properties of aggregates / Chemical analysis</h3>
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-ink"><BiText>Tests for chemical properties of aggregates / Chemical analysis</BiText></h3>
         <div className="mt-3 overflow-x-auto rounded-md border border-line">
           <table className="w-full min-w-[980px] text-left text-sm">
             <thead className="table-head">
               <tr>
                 <th className="px-3 py-2">No.</th>
-                <th className="px-3 py-2">Testing parameter / Parametri i testimit</th>
+                <th className="px-3 py-2"><BiText>Testing parameter / Parametri i testimit</BiText></th>
                 <th className="px-3 py-2">Unit</th>
-                <th className="px-3 py-2">Method / Metoda</th>
-                <th className="px-3 py-2">Result / Rezultati</th>
+                <th className="px-3 py-2"><BiText>Method / Metoda</BiText></th>
+                <th className="px-3 py-2"><BiText>Result / Rezultati</BiText></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
@@ -306,7 +306,7 @@ export function AggregateChemicalReportPreview({
       </div>
 
       <div className="mt-8 soft-panel p-4 text-sm text-ink">
-        <div className="font-semibold">Notes / Shënime</div>
+        <div className="font-semibold"><BiText>Notes / Shënime</BiText></div>
         <p className="mt-1">{aggregateChemical.notes || "Results relate only to the items tested. The laboratory is not responsible for the sampling phase."}</p>
       </div>
 
@@ -369,7 +369,7 @@ export function AggregateLosAngelesReportPreview({
       </div>
 
       <div className="mt-8">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">Determination of resistance to fragmentation / Los Angeles test</h3>
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-ink"><BiText>Determination of resistance to fragmentation / Los Angeles test</BiText></h3>
         <div className="mt-3 overflow-x-auto rounded-md border border-line">
           <table className="w-full min-w-[820px] text-left text-sm">
             <thead className="table-head">
@@ -392,25 +392,25 @@ export function AggregateLosAngelesReportPreview({
                 </tr>
               ))}
               <tr className="bg-lab-porcelain">
-                <td className="px-3 py-2 font-semibold text-ink" colSpan={2}>Totali / Total</td>
+                <td className="px-3 py-2 font-semibold text-ink" colSpan={2}><BiText>Totali / Total</BiText></td>
                 <td className="px-3 py-2">g</td>
                 <td className="px-3 py-2 font-semibold text-ink">{aggregateLosAngeles.totalMassG}</td>
                 <td className="px-3 py-2" />
               </tr>
               <tr>
-                <td className="px-3 py-2" colSpan={2}>Masa mbetëse në sitën 1.6 mm / Mass retaining the sieve 1.6 mm</td>
+                <td className="px-3 py-2" colSpan={2}><BiText>Masa mbetëse në sitën 1.6 mm / Mass retaining the sieve 1.6 mm</BiText></td>
                 <td className="px-3 py-2">g</td>
                 <td className="px-3 py-2 font-semibold text-ink">{aggregateLosAngeles.retainedOnOnePointSixMmG}</td>
                 <td className="px-3 py-2" />
               </tr>
               <tr>
-                <td className="px-3 py-2" colSpan={2}>Masa kaluese në sitën 1.6 mm / Mass passing the sieve 1.6 mm</td>
+                <td className="px-3 py-2" colSpan={2}><BiText>Masa kaluese në sitën 1.6 mm / Mass passing the sieve 1.6 mm</BiText></td>
                 <td className="px-3 py-2">g</td>
                 <td className="px-3 py-2 font-semibold text-ink">{aggregateLosAngeles.passingOnePointSixMmG}</td>
                 <td className="px-3 py-2" />
               </tr>
               <tr className="bg-lab-porcelain">
-                <td className="px-3 py-2 font-semibold text-ink" colSpan={2}>Humbjet në fragmentim / Weight loss in fragmentation</td>
+                <td className="px-3 py-2 font-semibold text-ink" colSpan={2}><BiText>Humbjet në fragmentim / Weight loss in fragmentation</BiText></td>
                 <td className="px-3 py-2">%</td>
                 <td className="px-3 py-2 font-semibold text-ink">{aggregateLosAngeles.fragmentationLossPercent}</td>
                 <td className="px-3 py-2" />
@@ -422,7 +422,7 @@ export function AggregateLosAngelesReportPreview({
       </div>
 
       <div className="mt-8 soft-panel p-4 text-sm text-ink">
-        <div className="font-semibold">Notes / Shënime</div>
+        <div className="font-semibold"><BiText>Notes / Shënime</BiText></div>
         <p className="mt-1">{aggregateLosAngeles.notes || "Results relate only to the items tested. The laboratory is not responsible for the sampling phase."}</p>
       </div>
 
@@ -544,7 +544,7 @@ export function AggregateFreezeThawReportPreview({
       </div>
 
       <div className="mt-8 soft-panel p-4 text-sm text-ink">
-        <div className="font-semibold">Notes / Shënime</div>
+        <div className="font-semibold"><BiText>Notes / Shënime</BiText></div>
         <p className="mt-1">{aggregateFreezeThaw.notes || "Results relate only to the items tested. The laboratory is not responsible for the sampling phase."}</p>
       </div>
 
@@ -607,7 +607,7 @@ export function AggregateAcvReportPreview({
       </div>
 
       <div className="mt-8">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">Aggregate Crushing Value / Rezistenca në thërrmim</h3>
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-ink"><BiText>Aggregate Crushing Value / Rezistenca në thërrmim</BiText></h3>
         <div className="mt-3 overflow-x-auto rounded-md border border-line">
           <table className="w-full min-w-[920px] text-left text-sm">
             <thead className="table-head">
@@ -660,7 +660,7 @@ export function AggregateAcvReportPreview({
       </div>
 
       <div className="mt-8 soft-panel p-4 text-sm text-ink">
-        <div className="font-semibold">Notes / Shënime</div>
+        <div className="font-semibold"><BiText>Notes / Shënime</BiText></div>
         <p className="mt-1">{aggregateAcv.notes || "Results relate only to the items tested. The laboratory is not responsible for the sampling phase."}</p>
       </div>
 

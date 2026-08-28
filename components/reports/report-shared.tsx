@@ -1,4 +1,5 @@
 "use client";
+import { splitBilingual } from "@/lib/bilingual";
 
 import type { ReactNode } from "react";
 import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabTest, MortarTest, Project, Report, Sample, SteelTensileTest, ThermalInsulationTest } from "@/lib/types";
@@ -128,17 +129,19 @@ export function ReportHeader({
           <img src="/brand/sarp-logo.png" alt="SARP" className="h-auto w-[158px]" />
         </div>
         <div className="pt-2 text-center">
-          <div className="text-lg font-semibold uppercase tracking-wide text-ink">{title}</div>
-          <div className="mt-1 text-sm font-semibold text-lab-burgundy">{subtitle}</div>
-          <div className="mt-2 text-xs font-semibold text-ink">Nr. / No. {report.reportNumber}</div>
+          <div className="text-lg font-semibold uppercase tracking-wide text-ink"><BiText>{title}</BiText></div>
+          <div className="mt-1 text-sm font-semibold text-lab-burgundy"><BiText>{subtitle}</BiText></div>
+          <div className="mt-2 text-xs font-semibold text-ink">Nr. / <span className="italic">No.</span> {report.reportNumber}</div>
         </div>
         <div className="flex justify-end">
           <img src="/brand/da-accreditation.png" alt="DA accreditation Testim S SH ISO/IEC 17025 LT 069" className="h-auto w-[82px]" />
         </div>
       </div>
-      <div className="mt-1 text-[6.4px] italic leading-tight text-muted">
-        <div>Kodi / Code: {code}</div>
-        <div>Faqe / Page: {report.reportSequence} / {report.totalReports}</div>
+      {/* Was wholly italic, which italicised the Albanian too. Only the English
+          half is inclined now. */}
+      <div className="mt-1 text-[6.4px] leading-tight text-muted">
+        <div>Kodi / <span className="italic">Code</span>: {code}</div>
+        <div>Faqe / <span className="italic">Page</span>: {report.reportSequence} / {report.totalReports}</div>
       </div>
       <div className="mt-2 flex justify-end no-print">
         <StatusBadge status={reportLifecycle(report).stage} />
@@ -205,8 +208,35 @@ export function Info({ label, value }: { label: string; value?: string }) {
       <div className="text-xs font-medium uppercase tracking-wide text-muted">
         {bilingual ? <Bilingual sq={bilingual.sq} en={bilingual.en} /> : label}
       </div>
-      <div className="mt-1 font-medium text-ink">{formatEuropeanDateRange(value)}</div>
+      <div className="mt-1 font-medium text-ink"><BiText>{formatEuropeanDateRange(value)}</BiText></div>
     </div>
+  );
+}
+
+/**
+ * House style for an issued report: Albanian upright, English italic.
+ *
+ * Takes a label or value written as "A / B", works out which half is which, and
+ * italicises the English one while keeping the original word order. Anything
+ * that is not a language pair - a formula like "FI = M2 / M1 x 100", a unit like
+ * "kg/ml", or a label that is English on both sides like "Client / Purchaser" -
+ * is passed through untouched.
+ */
+export function BiText({ children, className }: { children?: string; className?: string }) {
+  if (!children) return null;
+  const parts = splitBilingual(children);
+  if (!parts) return <>{children}</>;
+  if (parts.englishFirst) {
+    return (
+      <>
+        <span className={`italic ${className ?? ""}`}>{parts.en}</span> / {parts.sq}
+      </>
+    );
+  }
+  return (
+    <>
+      {parts.sq} / <span className={`italic ${className ?? ""}`}>{parts.en}</span>
+    </>
   );
 }
 
@@ -225,7 +255,7 @@ export function BilingualInfo({ sq, en, value }: { sq: string; en: string; value
       <div className="text-[10px] uppercase text-muted">
         <Bilingual sq={sq} en={en} />
       </div>
-      <div className="mt-1 font-medium text-ink">{formatEuropeanDateRange(value)}</div>
+      <div className="mt-1 font-medium text-ink"><BiText>{formatEuropeanDateRange(value)}</BiText></div>
     </div>
   );
 }
@@ -256,14 +286,14 @@ export function OfficialReportShell({
         <div className="grid grid-cols-[152px_1fr_82px] items-start gap-4 border-b-2 border-black pb-1">
           <img src="/brand/sarp-logo.png" alt="SARP" className="mt-1 h-auto w-[150px]" />
           <div className="pt-3 text-center">
-            <div className="text-[15pt] font-bold uppercase leading-tight">{title}</div>
+            <div className="text-[15pt] font-bold uppercase leading-tight"><BiText>{title}</BiText></div>
             <div className="mt-2 text-[10pt] font-bold text-red-600">Nr. / No. {report.reportNumber}</div>
           </div>
           <img src="/brand/da-accreditation.png" alt="DA accreditation Testim S SH ISO/IEC 17025 LT 069" className="ml-auto mt-1 h-auto w-[80px]" />
         </div>
-        <div className="mt-1 text-[6pt] italic leading-tight">
-          <div>Kodi / Code: {code}</div>
-          <div>Faqe / Page: 1/1</div>
+        <div className="mt-1 text-[6pt] leading-tight">
+          <div>Kodi / <span className="italic">Code</span>: {code}</div>
+          <div>Faqe / <span className="italic">Page</span>: 1/1</div>
         </div>
       </header>
       {children}
@@ -277,7 +307,7 @@ export function OfficialMetaGrid({ entries, className = "mt-6" }: { entries: Off
       {entries.map((entry) => (
         <div className="contents" key={`${entry.sq}-${entry.en}`}>
           <div className="font-bold uppercase">{entry.sq} / <span className="italic font-normal normal-case">{entry.en}</span>:</div>
-          <div className={`font-semibold ${entry.valueClassName ?? ""}`}>{formatEuropeanDateRange(entry.value?.toString()) || "-"}</div>
+          <div className={`font-semibold ${entry.valueClassName ?? ""}`}><BiText>{formatEuropeanDateRange(entry.value?.toString()) || "-"}</BiText></div>
         </div>
       ))}
     </div>
@@ -330,7 +360,7 @@ export function OfficialNotesAndFooter({
   return (
     <>
       <div className="mt-4 grid grid-cols-[120px_1fr] items-end gap-2 text-[9.5pt]">
-        <div className="pl-14 italic">Shënime / Notes:</div>
+        <div className="pl-14">Shënime / <span className="italic">Notes</span>:</div>
         <div className="min-h-4 border-b border-black">{notes}</div>
       </div>
       <div className="official-footer-cluster">
@@ -373,7 +403,7 @@ export function ReportInfoRow({ label, value }: { label: string; value?: string 
       <div className="bg-lab-porcelain px-3 py-2 font-semibold text-ink">
         {bilingual ? <Bilingual sq={bilingual.sq} en={bilingual.en} /> : `${cleanLabel}:`}
       </div>
-      <div className="px-3 py-2 font-medium text-ink">{formatEuropeanDateRange(value)}</div>
+      <div className="px-3 py-2 font-medium text-ink"><BiText>{formatEuropeanDateRange(value)}</BiText></div>
     </div>
   );
 }

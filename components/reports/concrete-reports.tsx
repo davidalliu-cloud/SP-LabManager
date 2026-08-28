@@ -5,7 +5,7 @@ import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest,
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
-import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair, samplingOperator } from "./report-shared";
+import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair, samplingOperator, BiText } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
 
 export function ConcreteWaterPenetrationReportPreview({
@@ -349,14 +349,14 @@ export function ConcreteCoreReportPreview({
         <div className="grid grid-cols-[150px_1fr_78px] items-start gap-4 border-b-2 border-black pb-1">
           <img src="/brand/sarp-logo.png" alt="SARP" className="mt-1 h-auto w-[148px]" />
           <div className="pt-2 text-center">
-            <div className="text-[14pt] font-bold uppercase">RAPORT TESTIMI / TEST REPORT</div>
+            <div className="text-[14pt] font-bold uppercase"><BiText>RAPORT TESTIMI / TEST REPORT</BiText></div>
             <div className="mt-5 text-[9.5pt] font-bold">Nr. / No. {report.reportNumber}</div>
           </div>
           <img src="/brand/da-accreditation.png" alt="DA accreditation Testim S SH ISO/IEC 17025 LT 069" className="ml-auto h-auto w-[76px]" />
         </div>
-        <div className="mt-1 text-[6pt] italic leading-tight">
-          <div>Kodi / Code: {reportCode}</div>
-          <div>Faqe / Page: 1/1</div>
+        <div className="mt-1 text-[6pt] leading-tight">
+          <div>Kodi / <span className="italic">Code</span>: {reportCode}</div>
+          <div>Faqe / <span className="italic">Page</span>: 1/1</div>
         </div>
       </header>
 
@@ -419,7 +419,7 @@ export function ConcreteCoreReportPreview({
       <div className="mt-1 text-[8.2pt] leading-tight">Yll (*) tregon që testi është i akredituar / <span className="italic">Asterisk (*) means that the laboratory is accredited for this test</span></div>
 
       <div className="mt-4 grid grid-cols-[105px_1fr] items-end gap-2 text-[9pt]">
-        <div className="pl-5 italic">Shënime / Notes:</div>
+        <div className="pl-5">Shënime / <span className="italic">Notes</span>:</div>
         <div className="min-h-4 border-b border-dotted border-black">{concreteCore.notes}</div>
         <div />
         <div className="min-h-4 border-b border-dotted border-black" />
