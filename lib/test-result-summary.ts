@@ -14,6 +14,21 @@ function formatNumber(value?: number, digits = 2) {
 }
 
 export function getTestResultSummary(store: LabState, test: LabTest): TestResultSummary {
+  const admixture = store.admixtureDryMaterialTests.find((item) => item.testId === test.id);
+  if (admixture) {
+    const completed = admixture.determinations.filter((row) => typeof row.dryMaterialPercent === "number").length;
+    return {
+      testStartDate: admixture.testStartDate,
+      testEndDate: admixture.testEndDate,
+      technicianName: admixture.technicianName,
+      // States how many determinations the mean is actually over, so a partial
+      // test cannot read like a complete one.
+      result: admixture.averageDryMaterialPercent !== undefined
+        ? `Lënda e thatë: ${formatNumber(admixture.averageDryMaterialPercent)} % (${completed} përcaktim${completed === 1 ? "" : "e"})`
+        : "Lënda e thatë: pa përcaktime të plotësuara"
+    };
+  }
+
   const concrete = store.concreteTests.find((item) => item.testId === test.id);
   if (concrete) {
     const specimens = concrete.specimens ?? [];

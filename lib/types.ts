@@ -554,6 +554,49 @@ export interface CementStrengthAverages {
   compressive28DayMpa: number;
 }
 
+/**
+ * One drying determination for a concrete admixture, to BS EN 480-8.
+ *
+ * The dish is weighed empty, again with the admixture in it, and again after
+ * drying at 105 °C to constant mass. Everything else is derived, so a
+ * technician only ever types the three weighings.
+ */
+export interface AdmixtureDryMaterialDetermination {
+  /** Free text so a lab reference like "A" or "1/3" both work. */
+  label: string;
+  dishMassG?: number;
+  dishPlusSampleMassG?: number;
+  dishPlusDriedMassG?: number;
+  /** Derived: dishPlusSampleMassG - dishMassG */
+  sampleMassG?: number;
+  /** Derived: dishPlusDriedMassG - dishMassG */
+  driedMassG?: number;
+  /** Derived: driedMassG / sampleMassG * 100 */
+  dryMaterialPercent?: number;
+}
+
+export interface AdmixtureDryMaterialTest {
+  id: string;
+  testId: string;
+  testStartDate?: string;
+  testEndDate?: string;
+  temperature?: string;
+  humidity?: string;
+  testingLocation?: string;
+  technicianName: string;
+  checkedBy?: string;
+  notes?: string;
+  /** Product name/type as supplied, e.g. "Superplasticiser, liquid". */
+  productDescription?: string;
+  /** Declared dry material content, when the supplier states one, so the
+   *  measured value can be reported against it. */
+  declaredDryMaterialPercent?: number;
+  dryingTemperatureC?: number;
+  determinations: AdmixtureDryMaterialDetermination[];
+  /** Mean of the determinations that were actually filled in. */
+  averageDryMaterialPercent?: number;
+}
+
 export interface CementBlaineTest {
   id: string;
   testId: string;
@@ -1274,6 +1317,7 @@ export interface LabState {
   cementConsistencyTests: CementConsistencyTest[];
   cementStrengthTests: CementStrengthTest[];
   cementBlaineTests: CementBlaineTest[];
+  admixtureDryMaterialTests: AdmixtureDryMaterialTest[];
   mortarTests: MortarTest[];
   steelTests: SteelTensileTest[];
   aggregateTests: AggregateGradationTest[];

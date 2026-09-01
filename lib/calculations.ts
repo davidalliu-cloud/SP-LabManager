@@ -415,3 +415,60 @@ export function round(value: number, decimals = 2) {
   const factor = 10 ** decimals;
   return Math.round(value * factor) / factor;
 }
+
+/**
+ * BS EN 480-8 — conventional dry material content of a concrete admixture.
+ *
+ * The technician types three weighings per determination; everything else is
+ * derived here rather than in the form, so the arithmetic is in one place and
+ * can be checked.
+ *
+ * A determination only counts toward the mean when it has a real sample mass
+ * and a dried mass. A blank weighing reads as `undefined`, not zero — a cube
+ * test once reported 7.92 MPa instead of 31.69 because empty inputs became
+ * genuine zeros and were averaged in.
+ */
+export function deriveAdmixtureDetermination(input: {
+  dishMassG?: number;
+  dishPlusSampleMassG?: number;
+  dishPlusDriedMassG?: number;
+}) {
+  const { dishMassG, dishPlusSampleMassG, dishPlusDriedMassG } = input;
+  const hasDish = typeof dishMassG === "number" && Number.isFinite(dishMassG);
+
+  const sampleMassG =
+    hasDish && typeof dishPlusSampleMassG === "number" && Number.isFinite(dishPlusSampleMassG)
+      ? round(dishPlusSampleMassG - dishMassG, 4)
+      : undefined;
+
+  const driedMassG =
+    hasDish && typeof dishPlusDriedMassG === "number" && Number.isFinite(dishPlusDriedMassG)
+      ? round(dishPlusDriedMassG - dishMassG, 4)
+      : undefined;
+
+  const dryMaterialPercent =
+    typeof sampleMassG === "number" && sampleMassG > 0 && typeof driedMassG === "number" && driedMassG >= 0
+      ? round((driedMassG / sampleMassG) * 100, 2)
+      : undefined;
+
+  return { sampleMassG, driedMassG, dryMaterialPercent };
+}
+
+/** Mean of the determinations that were actually completed. Returns undefined
+ *  rather than 0 when none were, so a partial test cannot report a number. */
+export function averageAdmixtureDryMaterial(values: Array<number | undefined>) {
+  const usable = values.filter((value): value is number => typeof value === "number" && Number.isFinite(value) && value > 0);
+  if (!usable.length) return undefined;
+  return round(usable.reduce((sum, value) => sum + value, 0) / usable.length, 2);
+}
+
+/**
+ * BS EN 480-8 asks for the determinations to agree. Flags a spread the
+ * technician should look at before the result is reported, rather than
+ * silently averaging two numbers that disagree.
+ */
+export function admixtureDeterminationsDisagree(values: Array<number | undefined>, allowedSpreadPercent = 1) {
+  const usable = values.filter((value): value is number => typeof value === "number" && Number.isFinite(value) && value > 0);
+  if (usable.length < 2) return false;
+  return Math.max(...usable) - Math.min(...usable) > allowedSpreadPercent;
+}

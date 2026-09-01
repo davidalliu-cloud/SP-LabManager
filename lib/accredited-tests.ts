@@ -25,7 +25,10 @@ const sampleTypeDisplayNames: Record<string, string> = {
   "Mortar": "Llaç / Mortar",
   "Tapet": "Tapet / Wearing Course",
   "Binder": "Binder / Binder Course",
-  "Tapet + Binder": "Tapet + Binder / Asphalt Mixture"
+  "Tapet + Binder": "Tapet + Binder / Asphalt Mixture",
+  // Admixtures were in the accredited list but never in these maps, so the
+  // sample type showed as raw Albanian with no English half.
+  "SHTESA PËR BETON (ADITIVË)": "Shtesa për Beton (Aditivë) / Concrete Admixtures"
 };
 
 const sampleTypeAliases: Record<string, string> = {
@@ -58,7 +61,12 @@ const sampleTypeAliases: Record<string, string> = {
   "Tapet + Binder": "Tapet + Binder / Asphalt Mixture",
   "Tapet / Wearing Course": "Tapet / Wearing Course",
   "Binder / Binder Course": "Binder / Binder Course",
-  "Tapet + Binder / Asphalt Mixture": "Tapet + Binder / Asphalt Mixture"
+  "Tapet + Binder / Asphalt Mixture": "Tapet + Binder / Asphalt Mixture",
+  "SHTESA PËR BETON (ADITIVË)": "Shtesa për Beton (Aditivë) / Concrete Admixtures",
+  "Aditiv": "Shtesa për Beton (Aditivë) / Concrete Admixtures",
+  "Aditivë": "Shtesa për Beton (Aditivë) / Concrete Admixtures",
+  "Admixture": "Shtesa për Beton (Aditivë) / Concrete Admixtures",
+  "Shtesa për Beton (Aditivë) / Concrete Admixtures": "Shtesa për Beton (Aditivë) / Concrete Admixtures"
 };
 
 function displaySampleType(sampleType: string) {
@@ -314,6 +322,17 @@ export function isCementBlaineBsEnAccreditedTest(testIdOrType?: string) {
 
 export function isCementBlaineAstmAccreditedTest(testIdOrType?: string) {
   return Boolean(testIdOrType === "AT-CEM-BLAINE-ASTM" || testIdOrType === "Sipërfaqja specifike Blaine sipas ASTM");
+}
+
+/** AT-087 — conventional dry material content of a concrete admixture, BS EN 480-8. */
+export function isAdmixtureDryMaterialAccreditedTest(testIdOrType?: string) {
+  return Boolean(testIdOrType === "AT-087" || testIdOrType === "Përcaktimi i lëndës së thatë");
+}
+
+/** AT-088 — water reduction, BS EN 480-1. Registered here so the test can be
+ *  selected and tracked; its result form is not built yet. */
+export function isAdmixtureWaterReductionAccreditedTest(testIdOrType?: string) {
+  return Boolean(testIdOrType === "AT-088" || testIdOrType === "Përcaktimi i reduktimit të ujit");
 }
 
 export function isMortarSampleType(sampleType: string) {

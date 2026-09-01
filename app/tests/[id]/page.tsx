@@ -6,7 +6,8 @@ import { Dispatch, FormEvent, SetStateAction, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { StageCell } from "@/components/ui/stage-cell";
 import { testLifecycle } from "@/lib/sample-stage";
-import { getMortarTestKind, isAggregateAcvAccreditedTest, isAggregateBulkDensityAccreditedTest, isAggregateChemicalAccreditedTest, isAggregateDensityAbsorptionAccreditedTest, isAggregateElongationIndexAccreditedTest, isAggregateFillerDensityAccreditedTest, isAggregateFlakinessIndexAccreditedTest, isAggregateFreezeThawAccreditedTest, isAggregateGranulometrySampleType, isAggregateLosAngelesAccreditedTest, isAggregateSandEquivalentAccreditedTest, isAggregateShapeIndexAccreditedTest, isAggregateSoundnessAccreditedTest, isAsphaltAccreditedTest, isCementBlaineAstmAccreditedTest, isCementBlaineBsEnAccreditedTest, isCementConsistencyAccreditedTest, isCementStrengthAccreditedTest, isConcreteCoreAccreditedTest, isConcreteDensityAccreditedTest, isConcreteFlexuralAccreditedTest, isConcreteIndirectTensileAccreditedTest, isConcreteWaterPenetrationAccreditedTest, isMortarAccreditedTest, isSteelSampleType, isThermalInsulationAccreditedTest } from "@/lib/accredited-tests";
+import { getMortarTestKind, isAggregateAcvAccreditedTest, isAggregateBulkDensityAccreditedTest, isAggregateChemicalAccreditedTest, isAggregateDensityAbsorptionAccreditedTest, isAggregateElongationIndexAccreditedTest, isAggregateFillerDensityAccreditedTest, isAggregateFlakinessIndexAccreditedTest, isAggregateFreezeThawAccreditedTest, isAggregateGranulometrySampleType, isAggregateLosAngelesAccreditedTest, isAggregateSandEquivalentAccreditedTest, isAggregateShapeIndexAccreditedTest, isAggregateSoundnessAccreditedTest, isAsphaltAccreditedTest, isAdmixtureDryMaterialAccreditedTest, isCementBlaineAstmAccreditedTest, isCementBlaineBsEnAccreditedTest, isCementConsistencyAccreditedTest, isCementStrengthAccreditedTest, isConcreteCoreAccreditedTest, isConcreteDensityAccreditedTest, isConcreteFlexuralAccreditedTest, isConcreteIndirectTensileAccreditedTest, isConcreteWaterPenetrationAccreditedTest, isMortarAccreditedTest, isSteelSampleType, isThermalInsulationAccreditedTest } from "@/lib/accredited-tests";
+import { admixtureDeterminationsDisagree } from "@/lib/calculations";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { useLabStore } from "@/lib/lab-store";
 import { canEditTestData, canGenerateReportForTest, canReviewTests, canViewClientIdentity } from "@/lib/permissions";
@@ -40,6 +41,7 @@ export default function TestDetailPage() {
   const asphalt = store.asphaltTests.find((item) => item.testId === activeTest.id);
   const thermalInsulation = store.thermalInsulationTests.find((item) => item.testId === activeTest.id);
   const cementConsistency = store.cementConsistencyTests.find((item) => item.testId === activeTest.id);
+  const admixtureDryMaterial = store.admixtureDryMaterialTests.find((item) => item.testId === activeTest.id);
   const cementStrength = store.cementStrengthTests.find((item) => item.testId === activeTest.id);
   const cementBlaine = store.cementBlaineTests.find((item) => item.testId === activeTest.id);
   const mortar = store.mortarTests.find((item) => item.testId === activeTest.id);
@@ -278,6 +280,40 @@ export default function TestDetailPage() {
         widthMm: Number(form.get(`waterWidth-${index}`) || 0),
         heightMm: Number(form.get(`waterHeight-${index}`) || 0),
         maxPenetrationMm: Number(form.get(`waterPenetration-${index}`) || 0)
+      }))
+    });
+  }
+
+  /** A blank weighing is not zero. `Number("") === 0`, which is how a cube test
+   *  once reported 7.92 MPa instead of 31.69 — empty fields averaged in as real
+   *  readings. Blank stays undefined here and is excluded from the mean. */
+  function optionalNumber(value: FormDataEntryValue | null) {
+    const text = String(value ?? "").trim();
+    if (!text) return undefined;
+    const parsed = Number(text);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+
+  function submitAdmixtureDryMaterial(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    store.saveAdmixtureDryMaterialTest(activeTest.id, {
+      testStartDate: String(form.get("testStartDate") ?? ""),
+      testEndDate: String(form.get("testEndDate") ?? ""),
+      temperature: String(form.get("temperature") ?? ""),
+      humidity: String(form.get("humidity") ?? ""),
+      testingLocation: String(form.get("testingLocation") ?? ""),
+      technicianName: String(form.get("technicianName") ?? ""),
+      checkedBy: String(form.get("checkedBy") ?? ""),
+      notes: String(form.get("notes") ?? ""),
+      productDescription: String(form.get("productDescription") ?? ""),
+      declaredDryMaterialPercent: optionalNumber(form.get("declaredDryMaterialPercent")),
+      dryingTemperatureC: optionalNumber(form.get("dryingTemperatureC")),
+      determinations: [1, 2, 3].map((index) => ({
+        label: String(form.get(`admixLabel-${index}`) ?? "") || String(index),
+        dishMassG: optionalNumber(form.get(`admixDish-${index}`)),
+        dishPlusSampleMassG: optionalNumber(form.get(`admixDishSample-${index}`)),
+        dishPlusDriedMassG: optionalNumber(form.get(`admixDishDried-${index}`))
       }))
     });
   }
@@ -949,6 +985,7 @@ export default function TestDetailPage() {
   const isAsphaltTest = isAsphaltAccreditedTest(activeTest.testType);
   const isThermalInsulationTest = isThermalInsulationAccreditedTest(activeTest.testType);
   const isCementConsistencyTest = isCementConsistencyAccreditedTest(activeTest.testType);
+  const isAdmixtureDryMaterialTest = isAdmixtureDryMaterialAccreditedTest(activeTest.testType);
   const isCementStrengthTest = isCementStrengthAccreditedTest(activeTest.testType);
   const isCementBlaineBsEnTest = isCementBlaineBsEnAccreditedTest(activeTest.testType);
   const isCementBlaineAstmTest = isCementBlaineAstmAccreditedTest(activeTest.testType);
@@ -1049,6 +1086,103 @@ export default function TestDetailPage() {
             </div>
           </form>
           <TestActionsSidebar ready={Boolean(thermalInsulation)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={thermalInsulation ? `Thermal report data saved with density ${thermalInsulation.averages.apparentDensityKgM3} kg/m3.` : "Save worksheet data first to calculate the report values."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+        </div>
+      </>
+    );
+  }
+
+  if (isAdmixtureDryMaterialTest) {
+    const determinations = admixtureDryMaterial?.determinations ?? [];
+    const percentages = determinations.map((row) => row.dryMaterialPercent);
+    const spreadWarning = admixtureDeterminationsDisagree(percentages);
+    return (
+      <>
+        <PageHeader
+          title={activeTest.testCode}
+          description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Lënda e thatë e aditivit`}
+          action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />}
+        />
+        <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
+          <form onSubmit={submitAdmixtureDryMaterial} className="surface-card">
+            <div className="border-b border-line bg-lab-porcelain px-5 py-4">
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div>
+              <h2 className="mt-1 text-lg font-semibold text-ink">Përcaktimi i lëndës së thatë / <span className="italic font-normal">Conventional dry material content</span></h2>
+              <p className="mt-1 text-sm text-muted">
+                BS EN 480-8. Peshoni enën bosh, me aditivin, dhe pas tharjes. Masa e kampionit, mbetja e thatë dhe përqindja llogariten vetë.
+              </p>
+            </div>
+
+            <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
+              <Field label="Register number"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
+              <Field label="Sample type"><input className="input bg-lab-porcelain" value={sample?.sampleType ?? ""} readOnly /></Field>
+              <Field label="Applied standard"><input className="input bg-lab-porcelain" value={activeTest.standard || "BS EN 480-8:2012"} readOnly /></Field>
+              <Field label="Produkti / Product"><input name="productDescription" defaultValue={admixtureDryMaterial?.productDescription ?? sample?.sampleDescription ?? ""} className="input" /></Field>
+              <Field label="Lënda e thatë e deklaruar [%]"><input name="declaredDryMaterialPercent" type="number" step="0.01" min="0" max="100" defaultValue={admixtureDryMaterial?.declaredDryMaterialPercent ?? ""} className="input" /></Field>
+              <Field label="Temperatura e tharjes [°C]"><input name="dryingTemperatureC" type="number" step="1" min="0" max="300" defaultValue={admixtureDryMaterial?.dryingTemperatureC ?? 105} className="input" /></Field>
+              <Field label="Testing start date"><input name="testStartDate" type="date" defaultValue={admixtureDryMaterial?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
+              <Field label="Testing end date"><input name="testEndDate" type="date" defaultValue={admixtureDryMaterial?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
+              <Field label="Testing location"><input name="testingLocation" defaultValue={admixtureDryMaterial?.testingLocation ?? "01/A Lab. Fiziko-Mekanik / Physical-Mechanical laboratory"} className="input" /></Field>
+              <Field label="Technician"><EmployeeSelect name="technicianName" employees={activeEmployees} required value={admixtureDryMaterial?.technicianName ?? ""} /></Field>
+              <Field label="Checked by"><EmployeeSelect name="checkedBy" employees={activeEmployees} value={admixtureDryMaterial?.checkedBy ?? ""} /></Field>
+              <Field label="Temperature"><input name="temperature" defaultValue={admixtureDryMaterial?.temperature ?? ""} className="input" /></Field>
+              <Field label="Relative humidity"><input name="humidity" defaultValue={admixtureDryMaterial?.humidity ?? ""} className="input" /></Field>
+            </div>
+
+            <div className="p-5">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">Përcaktimet / <span className="italic font-normal normal-case">Determinations</span></h3>
+              <p className="mt-1 text-xs text-muted">Lini bosh një përcaktim që nuk është kryer — nuk llogaritet në mesatare.</p>
+              <div className="mt-3 overflow-x-auto">
+                <table className="w-full min-w-[720px] text-left text-sm">
+                  <thead className="table-head">
+                    <tr>
+                      <th className="px-3 py-2">Nr.</th>
+                      <th className="px-3 py-2">Ena [g]</th>
+                      <th className="px-3 py-2">Ena + kampioni [g]</th>
+                      <th className="px-3 py-2">Ena + e thatë [g]</th>
+                      <th className="px-3 py-2">Kampioni [g]</th>
+                      <th className="px-3 py-2">Mbetja [g]</th>
+                      <th className="px-3 py-2">Lënda e thatë [%]</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line">
+                    {[1, 2, 3].map((index) => {
+                      const row = determinations[index - 1];
+                      return (
+                        <tr key={index}>
+                          <td className="px-3 py-2"><input name={`admixLabel-${index}`} defaultValue={row?.label ?? String(index)} className="input w-16" /></td>
+                          <td className="px-3 py-2"><input name={`admixDish-${index}`} type="number" step="0.0001" min="0" defaultValue={row?.dishMassG ?? ""} className="input" /></td>
+                          <td className="px-3 py-2"><input name={`admixDishSample-${index}`} type="number" step="0.0001" min="0" defaultValue={row?.dishPlusSampleMassG ?? ""} className="input" /></td>
+                          <td className="px-3 py-2"><input name={`admixDishDried-${index}`} type="number" step="0.0001" min="0" defaultValue={row?.dishPlusDriedMassG ?? ""} className="input" /></td>
+                          <td className="px-3 py-2 text-muted">{row?.sampleMassG ?? "-"}</td>
+                          <td className="px-3 py-2 text-muted">{row?.driedMassG ?? "-"}</td>
+                          <td className="px-3 py-2 font-semibold text-ink">{row?.dryMaterialPercent ?? "-"}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {spreadWarning ? (
+                <div className="mt-3 rounded-md border border-[#f0a93a] bg-brand-risk p-3 text-xs font-semibold text-ink">
+                  Përcaktimet ndryshojnë me më shumë se 1 %. Kontrolloni peshimet përpara se rezultati të raportohet.
+                </div>
+              ) : null}
+
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <InfoInline
+                  label="Lënda e thatë mesatare / Mean dry material"
+                  value={admixtureDryMaterial?.averageDryMaterialPercent !== undefined ? `${admixtureDryMaterial.averageDryMaterialPercent} %` : "Ruaj për ta llogaritur"}
+                />
+                <Field label="Notes"><input name="notes" defaultValue={admixtureDryMaterial?.notes ?? ""} className="input" /></Field>
+              </div>
+            </div>
+
+            <div className="flex justify-end border-t border-line p-5">
+              <button type="submit" className="btn-primary">Ruaj rezultatet</button>
+            </div>
+          </form>
+          <TestActionsSidebar ready={Boolean(admixtureDryMaterial)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={admixtureDryMaterial?.averageDryMaterialPercent !== undefined ? `Lënda e thatë mesatare  %.` : "Ruani peshimet për të llogaritur lëndën e thatë."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
     );

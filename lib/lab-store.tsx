@@ -63,7 +63,9 @@ import {
   calculateVoidsPercent,
   calculateWaterSolubleSulfateSo3Percent,
   calculateWaterDemandPercent,
-  calculateUnitWeightKgPerM
+  calculateUnitWeightKgPerM,
+  deriveAdmixtureDetermination,
+  averageAdmixtureDryMaterial
 } from "./calculations";
 import { useAuth } from "./auth";
 import { officialClientCodes2026 } from "./client-directory";
@@ -72,7 +74,7 @@ import { initialState } from "./seed-data";
 import { deriveSampleStage, SAMPLE_STAGES } from "./sample-stage";
 import { createSupabaseBrowserClient } from "./supabase/client";
 import { pushAuditEntries, pushNotifications } from "./activity-log";
-import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltMixtureKind, AsphaltReportKind, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabState, LabTest, LabUser, MortarTest, MortarTestKind, Notification, Project, Report, Role, Sample, SampleStatus, SteelTensileTest, ThermalInsulationTest } from "./types";
+import type { AdmixtureDryMaterialTest, AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltMixtureKind, AsphaltReportKind, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabState, LabTest, LabUser, MortarTest, MortarTestKind, Notification, Project, Report, Role, Sample, SampleStatus, SteelTensileTest, ThermalInsulationTest } from "./types";
 
 export interface NewSampleInput {
   clientId: string;
@@ -398,6 +400,28 @@ interface CementStrengthInput {
     surfaceAreaMm2: number;
     testDate?: string;
     loadKn: number;
+  }>;
+}
+
+/** What the technician actually types for BS EN 480-8. Everything derived —
+ *  sample mass, dried mass, percentage, mean — is computed in the store. */
+interface AdmixtureDryMaterialInput {
+  testStartDate?: string;
+  testEndDate?: string;
+  temperature?: string;
+  humidity?: string;
+  testingLocation?: string;
+  technicianName: string;
+  checkedBy?: string;
+  notes?: string;
+  productDescription?: string;
+  declaredDryMaterialPercent?: number;
+  dryingTemperatureC?: number;
+  determinations: Array<{
+    label: string;
+    dishMassG?: number;
+    dishPlusSampleMassG?: number;
+    dishPlusDriedMassG?: number;
   }>;
 }
 
@@ -886,6 +910,7 @@ interface LabStoreValue extends LabState {
   saveCementConsistencyTest: (testId: string, input: CementConsistencyInput) => void;
   saveCementStrengthTest: (testId: string, input: CementStrengthInput) => void;
   saveCementBlaineTest: (testId: string, input: CementBlaineInput) => void;
+  saveAdmixtureDryMaterialTest: (testId: string, input: AdmixtureDryMaterialInput) => void;
   saveMortarTest: (testId: string, input: MortarInput) => void;
   saveSteelTest: (testId: string, input: SteelInput) => void;
   saveAggregateTest: (testId: string, input: AggregateInput) => void;
@@ -2630,6 +2655,47 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             auditLog: [...previous.auditLog]
           };
           addAudit(draft, "test_data_saved", "test", testId, `Cement Blaine ${input.method} data saved.`);
+          return draft;
+        });
+      },
+      // BS EN 480-8 — conventional dry material content of a concrete admixture.
+      // Every derived figure is computed here from the three weighings, so the
+      // form only ever collects what was actually measured.
+      saveAdmixtureDryMaterialTest(testId, input) {
+        setState((previous) => {
+          if (!canCurrentUserEditTest(previous, testId)) return previous;
+          const determinations = input.determinations.map((row) => ({
+            ...row,
+            ...deriveAdmixtureDetermination(row)
+          }));
+          const admixtureTest: AdmixtureDryMaterialTest = {
+            id: previous.admixtureDryMaterialTests.find((row) => row.testId === testId)?.id ?? crypto.randomUUID(),
+            testId,
+            testStartDate: input.testStartDate,
+            testEndDate: input.testEndDate,
+            temperature: input.temperature,
+            humidity: input.humidity,
+            testingLocation: input.testingLocation,
+            technicianName: input.technicianName,
+            checkedBy: input.checkedBy,
+            notes: input.notes,
+            productDescription: input.productDescription,
+            declaredDryMaterialPercent: input.declaredDryMaterialPercent,
+            dryingTemperatureC: input.dryingTemperatureC,
+            determinations,
+            // Only the determinations actually completed count toward the mean.
+            averageDryMaterialPercent: averageAdmixtureDryMaterial(determinations.map((row) => row.dryMaterialPercent))
+          };
+          const existing = previous.admixtureDryMaterialTests.some((row) => row.testId === testId);
+          const draft: LabState = {
+            ...previous,
+            admixtureDryMaterialTests: existing
+              ? previous.admixtureDryMaterialTests.map((row) => (row.testId === testId ? admixtureTest : row))
+              : [admixtureTest, ...previous.admixtureDryMaterialTests],
+            tests: previous.tests.map((test) => (test.id === testId ? { ...test, status: "In Progress" } : test)),
+            auditLog: [...previous.auditLog]
+          };
+          addAudit(draft, "test_data_saved", "test", testId, "Admixture dry material (EN 480-8) data saved.");
           return draft;
         });
       },
