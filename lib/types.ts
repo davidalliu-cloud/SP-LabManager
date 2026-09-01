@@ -554,30 +554,41 @@ export interface CementStrengthAverages {
   compressive28DayMpa: number;
 }
 
-/**
- * One drying determination for a concrete admixture, to BS EN 480-8.
- *
- * The dish is weighed empty, again with the admixture in it, and again after
- * drying at 105 °C to constant mass. Everything else is derived, so a
- * technician only ever types the three weighings.
- */
-export interface AdmixtureDryMaterialDetermination {
-  /** Free text so a lab reference like "A" or "1/3" both work. */
-  label: string;
-  dishMassG?: number;
-  dishPlusSampleMassG?: number;
-  dishPlusDriedMassG?: number;
-  /** Derived: dishPlusSampleMassG - dishMassG */
-  sampleMassG?: number;
-  /** Derived: dishPlusDriedMassG - dishMassG */
-  driedMassG?: number;
-  /** Derived: driedMassG / sampleMassG * 100 */
-  dryMaterialPercent?: number;
+// Concrete admixture test (physical-chemical characteristics). Combines the two
+// worksheets (chemical properties + water reduction) into one test that produces
+// the SL-RA-AD report. Each sub-determination runs in duplicate (Test 1 / Test 2);
+// any part left blank simply shows blank on the report.
+export interface AdmixtureDensityRun {
+  sampleMassG?: number; // m1 — mass of admixture portion at 20°C
+  waterMassG?: number; // m2 — mass of distilled water at 20°C
+  waterDensity?: number; // ρ — water density at 20°C (default 0.9982)
+  airDensity?: number; // ρa — air density (default 0.0012)
 }
-
-export interface AdmixtureDryMaterialTest {
+export interface AdmixtureDryMassRun {
+  emptyCrucibleG?: number; // m0
+  sampleMassG?: number; // m — portion taken (recorded)
+  beforeG?: number; // m1 — crucible + sample before drying
+  afterG?: number; // m2 — crucible + sample after drying
+}
+export interface AdmixtureWaterMixRun {
+  cementG?: number;
+  sandG?: number;
+  waterMl?: number;
+  admixturePercent?: number;
+  admixtureMl?: number;
+  tableFlowMm?: number;
+}
+export interface AdmixtureResults {
+  dryMass?: number; // %
+  waterReduction?: number; // %
+  density?: number; // g/cm3
+  ph?: number;
+}
+export interface AdmixtureTest {
   id: string;
   testId: string;
+  productIdentity?: string;
+  samplingDate?: string;
   testStartDate?: string;
   testEndDate?: string;
   temperature?: string;
@@ -586,15 +597,18 @@ export interface AdmixtureDryMaterialTest {
   technicianName: string;
   checkedBy?: string;
   notes?: string;
-  /** Product name/type as supplied, e.g. "Superplasticiser, liquid". */
-  productDescription?: string;
-  /** Declared dry material content, when the supplier states one, so the
-   *  measured value can be reported against it. */
-  declaredDryMaterialPercent?: number;
-  dryingTemperatureC?: number;
-  determinations: AdmixtureDryMaterialDetermination[];
-  /** Mean of the determinations that were actually filled in. */
-  averageDryMaterialPercent?: number;
+  density1: AdmixtureDensityRun;
+  density2: AdmixtureDensityRun;
+  ph1?: number;
+  ph2?: number;
+  dryMass1: AdmixtureDryMassRun;
+  dryMass2: AdmixtureDryMassRun;
+  controlMix1: AdmixtureWaterMixRun;
+  controlMix2: AdmixtureWaterMixRun;
+  testMix1: AdmixtureWaterMixRun;
+  testMix2: AdmixtureWaterMixRun;
+  results: AdmixtureResults;
+  createdAt: string;
 }
 
 export interface CementBlaineTest {
@@ -1317,7 +1331,7 @@ export interface LabState {
   cementConsistencyTests: CementConsistencyTest[];
   cementStrengthTests: CementStrengthTest[];
   cementBlaineTests: CementBlaineTest[];
-  admixtureDryMaterialTests: AdmixtureDryMaterialTest[];
+  admixtureTests: AdmixtureTest[];
   mortarTests: MortarTest[];
   steelTests: SteelTensileTest[];
   aggregateTests: AggregateGradationTest[];

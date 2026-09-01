@@ -248,8 +248,7 @@ const accreditedTestRows: Array<[string, string, string, string, string?, string
   ["AT-084", "PRODUKTE TERMOIZOLUESE", "Percaktimi i rezistencës në shtypje pas 10 % deformim", "BS EN ISO 29469:2022", "30÷500 kPa"],
   ["AT-085", "BETON I NGURTËSUAR", "Mostrat e marra nga struktura - Marrja, ekzaminimi dhe testimi në shtypje", "BS EN 12504-1:2019", "< 2000 kN", "BS EN 12504-1:2019"],
   ["AT-086", "NGJITËS PËR PLLAKA QERAMIKE (KOLLA)", "Përcaktimi i rezistencës së ngjitjes", "BS EN 12004-2:2017", "≤ 4 MPa"],
-  ["AT-087", "SHTESA PËR BETON (ADITIVË)", "Përcaktimi i lëndës së thatë", "BS EN 480-8:2012", "0-100 %"],
-  ["AT-088", "SHTESA PËR BETON (ADITIVË)", "Përcaktimi i reduktimit të ujit", "BS EN 480-1:2023", "≤ 50 %"]
+  ["AT-AD-PHYSCHEM", "SHTESA PËR BETON (ADITIVË)", "Përcaktimi i karakteristikave fiziko-kimike të aditivëve për beton", "BS EN 480-8:2012; BS EN 480-1:2023; ISO 758:2011; ISO 4316:2018", "Lënda e thatë, reduktimi i ujit, densiteti, pH"]
 ];
 
 export const accreditedTests: AccreditedTest[] = accreditedTestRows.map(([id, sampleType, testName, standard, measurementRange, samplingStandard]) => ({
@@ -324,15 +323,19 @@ export function isCementBlaineAstmAccreditedTest(testIdOrType?: string) {
   return Boolean(testIdOrType === "AT-CEM-BLAINE-ASTM" || testIdOrType === "Sipërfaqja specifike Blaine sipas ASTM");
 }
 
-/** AT-087 — conventional dry material content of a concrete admixture, BS EN 480-8. */
-export function isAdmixtureDryMaterialAccreditedTest(testIdOrType?: string) {
-  return Boolean(testIdOrType === "AT-087" || testIdOrType === "Përcaktimi i lëndës së thatë");
-}
-
-/** AT-088 — water reduction, BS EN 480-1. Registered here so the test can be
- *  selected and tracked; its result form is not built yet. */
-export function isAdmixtureWaterReductionAccreditedTest(testIdOrType?: string) {
-  return Boolean(testIdOrType === "AT-088" || testIdOrType === "Përcaktimi i reduktimit të ujit");
+/** Combined physical-chemical characteristics of a concrete admixture — dry
+ *  mass (BS EN 480-8), water reduction (BS EN 480-1), density (ISO 758) and pH
+ *  (ISO 4316), one test → one SL-RA-AD report. Also matches the legacy AT-087 /
+ *  AT-088 ids and names so any already-registered admixture test maps here. */
+export function isAdmixtureAccreditedTest(testIdOrType?: string) {
+  return Boolean(
+    testIdOrType?.startsWith("AT-AD") ||
+    testIdOrType === "AT-087" ||
+    testIdOrType === "AT-088" ||
+    testIdOrType === "Përcaktimi i karakteristikave fiziko-kimike të aditivëve për beton" ||
+    testIdOrType === "Përcaktimi i lëndës së thatë" ||
+    testIdOrType === "Përcaktimi i reduktimit të ujit"
+  );
 }
 
 export function isMortarSampleType(sampleType: string) {

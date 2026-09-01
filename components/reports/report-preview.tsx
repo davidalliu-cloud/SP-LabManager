@@ -1,8 +1,8 @@
 "use client";
 
-import type { AdmixtureDryMaterialTest, AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabTest, MortarTest, Project, Report, Sample, SteelTensileTest, ThermalInsulationTest } from "@/lib/types";
+import type { AdmixtureTest, AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabTest, MortarTest, Project, Report, Sample, SteelTensileTest, ThermalInsulationTest } from "@/lib/types";
 import { CementConsistencyReportPreview, CementStrengthReportPreview, CementBlaineReportPreview } from "./cement-reports";
-import { AdmixtureDryMaterialReportPreview } from "./admixture-reports";
+import { AdmixtureReportPreview } from "./admixture-reports";
 import { MortarReportPreview } from "./mortar-reports";
 import { ConcreteCubeReportPreview } from "./concrete-cube-report";
 import {
@@ -49,7 +49,7 @@ export function ReportPreview({
   cementConsistency,
   cementStrength,
   cementBlaine,
-  admixtureDryMaterial,
+  admixture,
   mortar,
   steel,
   aggregate,
@@ -82,7 +82,7 @@ export function ReportPreview({
   cementConsistency?: CementConsistencyTest;
   cementStrength?: CementStrengthTest;
   cementBlaine?: CementBlaineTest;
-  admixtureDryMaterial?: AdmixtureDryMaterialTest;
+  admixture?: AdmixtureTest;
   mortar?: MortarTest;
   steel?: SteelTensileTest;
   aggregate?: AggregateGradationTest;
@@ -111,8 +111,8 @@ export function ReportPreview({
     return <CementStrengthReportPreview report={report} test={test} sample={sample} client={client} project={project} cementStrength={cementStrength} />;
   }
 
-  if (admixtureDryMaterial) {
-    return <AdmixtureDryMaterialReportPreview report={report} test={test} sample={sample} client={client} project={project} admixture={admixtureDryMaterial} />;
+  if (admixture) {
+    return <AdmixtureReportPreview report={report} test={test} sample={sample} client={client} project={project} admixture={admixture} />;
   }
 
   if (cementBlaine) {

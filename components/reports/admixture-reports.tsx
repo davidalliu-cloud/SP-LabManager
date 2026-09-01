@@ -1,28 +1,24 @@
 "use client";
 
-import type { AdmixtureDryMaterialTest, Client, LabTest, Project, Report, Sample } from "@/lib/types";
-import { formatEuropeanDate } from "@/lib/date-format";
+import type { AdmixtureTest, Client, LabTest, Project, Report, Sample } from "@/lib/types";
+import { round } from "@/lib/calculations";
 import {
   OfficialReportShell,
   OfficialMetaGrid,
   OfficialTestingDates,
   OfficialEnvironmental,
   OfficialAsterisk,
-  OfficialNotesAndFooter,
-  headOfLabName,
-  samplingOperator
+  OfficialNotesAndFooter
 } from "./report-shared";
-import type { OfficialMetaEntry } from "./report-shared";
 
-/**
- * BS EN 480-8 — conventional dry material content of a concrete admixture.
- *
- * Reports the three weighings per determination alongside what was derived from
- * them, so a reader can check the arithmetic. Determinations that were not run
- * are shown as blank rather than as zero, and the mean states how many
- * determinations it covers.
- */
-export function AdmixtureDryMaterialReportPreview({
+function fmt(value?: number, digits = 1) {
+  return typeof value === "number" && Number.isFinite(value) ? String(round(value, digits)) : "";
+}
+
+// SL-RA-AD-7.8/1.1 — Physical-chemical characteristics of concrete admixtures.
+// One report fed by the combined admixture worksheet; any characteristic that
+// wasn't measured simply shows blank.
+export function AdmixtureReportPreview({
   report,
   test,
   sample,
@@ -35,81 +31,81 @@ export function AdmixtureDryMaterialReportPreview({
   sample?: Sample;
   client?: Client;
   project?: Project;
-  admixture: AdmixtureDryMaterialTest;
+  admixture: AdmixtureTest;
 }) {
+  const r = admixture.results;
   const issueDate = report.issuedAt || report.approvedAt || admixture.testEndDate || sample?.reportDueDate;
-  const completed = admixture.determinations.filter((row) => typeof row.dryMaterialPercent === "number");
-
-  const entries: OfficialMetaEntry[] = [
-    { sq: "KLIENTI", en: "CLIENT", value: client?.clientName },
-    { sq: "OBJEKTI", en: "OBJECT", value: project?.projectName },
-    { sq: "KAMPIONI", en: "SAMPLE", value: admixture.productDescription || sample?.sampleDescription || sample?.sampleType },
-    { sq: "NR. I REGJISTRIT", en: "REGISTER No", value: sample?.sampleCode },
-    { sq: "DATA E MARRJES SË KAMPIONIT", en: "SAMPLING DATE", value: formatEuropeanDate(sample?.dateReceived) },
-    { sq: "KAMPIONIMI U KRYE NGA", en: "SAMPLING PERFORMED BY", value: samplingOperator(sample) },
-    { sq: "TESTI", en: "TEST", value: "PËRCAKTIMI I LËNDËS SË THATË / DETERMINATION OF CONVENTIONAL DRY MATERIAL CONTENT" },
-    { sq: "STANDARDI", en: "STANDARD", value: test?.standard || "BS EN 480-8:2012" },
-    { sq: "VENDI KU ËSHTË PERFORMUAR TESTI", en: "LAB. LOCATION", value: admixture.testingLocation || "01/A Lab. Fiziko-Mekanik / Physical-Mechanical laboratory" }
-  ];
 
   return (
-    <OfficialReportShell report={report} code="SL-RA-AD-7.8/1" title="RAPORT TESTIMI / TEST REPORT" className="compact-official-report">
-      <OfficialMetaGrid entries={entries} />
-      <OfficialTestingDates start={admixture.testStartDate} end={admixture.testEndDate} />
-      <OfficialEnvironmental temperature={admixture.temperature} humidity={admixture.humidity} />
-
-      <div className="mt-2 text-[7px]">
-        Temperatura e tharjes / <span className="italic">Drying temperature</span>: {admixture.dryingTemperatureC ?? 105} °C
-        {admixture.declaredDryMaterialPercent !== undefined ? (
-          <>
-            {" · "}Vlera e deklaruar / <span className="italic">Declared value</span>: {admixture.declaredDryMaterialPercent} %
-          </>
-        ) : null}
+    <OfficialReportShell report={report} code="SL-RA-AD-7.8/1.1" className="compact-official-report">
+      <OfficialMetaGrid entries={[
+        { sq: "Nr. REGJISTRI", en: "REGISTER No.", value: sample?.sampleCode },
+        { sq: "KLIENTI", en: "PURCHASER", value: client?.clientName },
+        { sq: "ADRESA", en: "ADRESS", value: client?.address },
+        { sq: "KONTAKTET", en: "CONTACT", value: client?.phone || client?.email },
+        { sq: "OBJEKTI", en: "OBJECT", value: project?.projectName },
+        { sq: "KAMPIONI", en: "SAMPLE", value: "ADITIVË PËR BETON / CONCRETE ADDITIVE ADMIXTURES" },
+        { sq: "EMËRTIMI I PRODUKTIT", en: "PRODUCT IDENTITY", value: admixture.productIdentity },
+        { sq: "DATA E MARRJES SË KAMPIONIT", en: "SAMPLING DATE", value: admixture.samplingDate || sample?.dateReceived },
+        { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: sample?.dateReceived }
+      ]} />
+      <div className="mt-1 grid grid-cols-[315px_1fr] gap-x-8 gap-y-1 text-[10pt] leading-[1.15]">
+        <OfficialTestingDates start={admixture.testStartDate} end={admixture.testEndDate} />
+        <OfficialMetaGrid className="contents" entries={[
+          { sq: "OPERATORI I MARRJES SË KAMPIONIT", en: "SAMPLING OPERATOR", value: "KLIENTI / CLIENT" },
+          { sq: "TESTI", en: "TEST", value: "PËRCAKTIMI I KARAKTERISTIKAVE FIZIKO-KIMIKE TË ADITIVËVE PËR BETON / DETERMINATION OF PHYSICAL-CHEMICAL CHARACTERISTICS OF CONCRETE ADMIXTURES" },
+          { sq: "VENDI KU ËSHTË PERFORMUAR TESTI", en: "LAB. LOCATION", value: admixture.testingLocation || "01/B Laboratori kimik / Chemical laboratory" }
+        ]} />
+        <OfficialEnvironmental temperature={admixture.temperature} humidity={admixture.humidity} />
       </div>
-
-      <table className="mt-2 w-full border-collapse text-center text-[7px]">
+      <table className="official-table mt-5 w-full border-collapse text-center text-[10pt]">
         <thead>
           <tr>
-            <th className="border border-black py-0.5 font-bold">Nr.</th>
-            <th className="border border-black py-0.5 font-bold">Masa e enës<br /><span className="font-normal italic">Dish mass</span><br />[g]</th>
-            <th className="border border-black py-0.5 font-bold">Ena + kampioni<br /><span className="font-normal italic">Dish + sample</span><br />[g]</th>
-            <th className="border border-black py-0.5 font-bold">Ena + e thatë<br /><span className="font-normal italic">Dish + dried</span><br />[g]</th>
-            <th className="border border-black py-0.5 font-bold">Masa e kampionit<br /><span className="font-normal italic">Sample mass</span><br />[g]</th>
-            <th className="border border-black py-0.5 font-bold">Mbetja e thatë<br /><span className="font-normal italic">Dried residue</span><br />[g]</th>
-            <th className="border border-black py-0.5 font-bold">Lënda e thatë<br /><span className="font-normal italic">Dry material</span><br />[%]</th>
+            <th>Nr.<br /><span className="italic font-normal">No.</span></th>
+            <th>Karakteristikat<br /><span className="italic font-normal">Characteristics</span></th>
+            <th>Njësia<br /><span className="italic font-normal">Unit</span></th>
+            <th>Standardi<br /><span className="italic font-normal">Standard</span></th>
+            <th>Rezultatet e testimit<br /><span className="italic font-normal">Test Results</span></th>
+            <th>Pasiguria në matje<br /><span className="italic font-normal">Uncertainty of measurement</span></th>
           </tr>
         </thead>
         <tbody>
-          {admixture.determinations.map((row, index) => (
-            <tr key={`${row.label}-${index}`}>
-              <td className="border border-black py-0.5">{row.label}</td>
-              <td className="border border-black py-0.5">{row.dishMassG ?? "-"}</td>
-              <td className="border border-black py-0.5">{row.dishPlusSampleMassG ?? "-"}</td>
-              <td className="border border-black py-0.5">{row.dishPlusDriedMassG ?? "-"}</td>
-              <td className="border border-black py-0.5">{row.sampleMassG ?? "-"}</td>
-              <td className="border border-black py-0.5">{row.driedMassG ?? "-"}</td>
-              <td className="border border-black py-0.5 font-bold">{row.dryMaterialPercent ?? "-"}</td>
-            </tr>
-          ))}
           <tr>
-            <td className="border border-black py-0.5 text-left font-bold" colSpan={6}>
-              Lënda e thatë mesatare / <span className="font-normal italic">Mean dry material content</span>
-              {completed.length ? ` (${completed.length})` : ""}
-            </td>
-            <td className="border border-black py-0.5 font-bold">
-              {admixture.averageDryMaterialPercent !== undefined ? `${admixture.averageDryMaterialPercent} %` : "-"}
-            </td>
+            <td>1</td>
+            <td className="text-left">Lënda e thatë / <span className="italic">Dry Mass</span>*</td>
+            <td>%</td>
+            <td>BS EN 480-8:2012</td>
+            <td className="font-bold">{fmt(r.dryMass, 1)}</td>
+            <td>±&nbsp;0,5</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td className="text-left">Reduktimi i ujit / <span className="italic">Water reduction</span>*</td>
+            <td>%</td>
+            <td>BS EN 480-1:2023</td>
+            <td className="font-bold">{fmt(r.waterReduction, 1)}</td>
+            <td>±&nbsp;0,82</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td className="text-left">Densiteti në 20ºC / <span className="italic">Density at 20ºC</span></td>
+            <td>g/cm³</td>
+            <td>ISO 758:2011</td>
+            <td className="font-bold">{fmt(r.density, 3)}</td>
+            <td>±&nbsp;0,03</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td className="text-left">Vlera e pH / <span className="italic">pH value</span></td>
+            <td>_</td>
+            <td>ISO 4316:2018</td>
+            <td className="font-bold">{fmt(r.ph, 2)}</td>
+            <td>±&nbsp;0,31</td>
           </tr>
         </tbody>
       </table>
-
       <OfficialAsterisk />
-      <OfficialNotesAndFooter
-        notes={admixture.notes}
-        issueDate={issueDate}
-        testedBy={admixture.technicianName}
-        responsible={headOfLabName(admixture.checkedBy)}
-      />
+      <OfficialNotesAndFooter notes={admixture.notes} testedBy={admixture.technicianName} responsible={admixture.checkedBy || "Ing./Eng. Besiana ALLIU"} issueDate={issueDate} />
     </OfficialReportShell>
   );
 }

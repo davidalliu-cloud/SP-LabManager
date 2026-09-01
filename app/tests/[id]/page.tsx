@@ -6,7 +6,7 @@ import { Dispatch, FormEvent, SetStateAction, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { StageCell } from "@/components/ui/stage-cell";
 import { testLifecycle } from "@/lib/sample-stage";
-import { getMortarTestKind, isAggregateAcvAccreditedTest, isAggregateBulkDensityAccreditedTest, isAggregateChemicalAccreditedTest, isAggregateDensityAbsorptionAccreditedTest, isAggregateElongationIndexAccreditedTest, isAggregateFillerDensityAccreditedTest, isAggregateFlakinessIndexAccreditedTest, isAggregateFreezeThawAccreditedTest, isAggregateGranulometrySampleType, isAggregateLosAngelesAccreditedTest, isAggregateSandEquivalentAccreditedTest, isAggregateShapeIndexAccreditedTest, isAggregateSoundnessAccreditedTest, isAsphaltAccreditedTest, isAdmixtureDryMaterialAccreditedTest, isCementBlaineAstmAccreditedTest, isCementBlaineBsEnAccreditedTest, isCementConsistencyAccreditedTest, isCementStrengthAccreditedTest, isConcreteCoreAccreditedTest, isConcreteDensityAccreditedTest, isConcreteFlexuralAccreditedTest, isConcreteIndirectTensileAccreditedTest, isConcreteWaterPenetrationAccreditedTest, isMortarAccreditedTest, isSteelSampleType, isThermalInsulationAccreditedTest } from "@/lib/accredited-tests";
+import { getMortarTestKind, isAggregateAcvAccreditedTest, isAggregateBulkDensityAccreditedTest, isAggregateChemicalAccreditedTest, isAggregateDensityAbsorptionAccreditedTest, isAggregateElongationIndexAccreditedTest, isAggregateFillerDensityAccreditedTest, isAggregateFlakinessIndexAccreditedTest, isAggregateFreezeThawAccreditedTest, isAggregateGranulometrySampleType, isAggregateLosAngelesAccreditedTest, isAggregateSandEquivalentAccreditedTest, isAggregateShapeIndexAccreditedTest, isAggregateSoundnessAccreditedTest, isAsphaltAccreditedTest, isAdmixtureAccreditedTest, isCementBlaineAstmAccreditedTest, isCementBlaineBsEnAccreditedTest, isCementConsistencyAccreditedTest, isCementStrengthAccreditedTest, isConcreteCoreAccreditedTest, isConcreteDensityAccreditedTest, isConcreteFlexuralAccreditedTest, isConcreteIndirectTensileAccreditedTest, isConcreteWaterPenetrationAccreditedTest, isMortarAccreditedTest, isSteelSampleType, isThermalInsulationAccreditedTest } from "@/lib/accredited-tests";
 import { admixtureDeterminationsDisagree } from "@/lib/calculations";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { useLabStore } from "@/lib/lab-store";
@@ -41,7 +41,7 @@ export default function TestDetailPage() {
   const asphalt = store.asphaltTests.find((item) => item.testId === activeTest.id);
   const thermalInsulation = store.thermalInsulationTests.find((item) => item.testId === activeTest.id);
   const cementConsistency = store.cementConsistencyTests.find((item) => item.testId === activeTest.id);
-  const admixtureDryMaterial = store.admixtureDryMaterialTests.find((item) => item.testId === activeTest.id);
+  const admixture = store.admixtureTests.find((item) => item.testId === activeTest.id);
   const cementStrength = store.cementStrengthTests.find((item) => item.testId === activeTest.id);
   const cementBlaine = store.cementBlaineTests.find((item) => item.testId === activeTest.id);
   const mortar = store.mortarTests.find((item) => item.testId === activeTest.id);
@@ -294,10 +294,32 @@ export default function TestDetailPage() {
     return Number.isFinite(parsed) ? parsed : undefined;
   }
 
-  function submitAdmixtureDryMaterial(event: FormEvent<HTMLFormElement>) {
+  function submitAdmixture(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    store.saveAdmixtureDryMaterialTest(activeTest.id, {
+    const densityRun = (i: number) => ({
+      sampleMassG: optionalNumber(form.get(`density-m1-${i}`)),
+      waterMassG: optionalNumber(form.get(`density-m2-${i}`)),
+      waterDensity: optionalNumber(form.get(`density-rho-${i}`)),
+      airDensity: optionalNumber(form.get(`density-rhoa-${i}`))
+    });
+    const dryRun = (i: number) => ({
+      emptyCrucibleG: optionalNumber(form.get(`dry-m0-${i}`)),
+      sampleMassG: optionalNumber(form.get(`dry-m-${i}`)),
+      beforeG: optionalNumber(form.get(`dry-before-${i}`)),
+      afterG: optionalNumber(form.get(`dry-after-${i}`))
+    });
+    const mix = (prefix: string, i: number) => ({
+      cementG: optionalNumber(form.get(`${prefix}-cement-${i}`)),
+      sandG: optionalNumber(form.get(`${prefix}-sand-${i}`)),
+      waterMl: optionalNumber(form.get(`${prefix}-water-${i}`)),
+      admixturePercent: optionalNumber(form.get(`${prefix}-adpct-${i}`)),
+      admixtureMl: optionalNumber(form.get(`${prefix}-adml-${i}`)),
+      tableFlowMm: optionalNumber(form.get(`${prefix}-flow-${i}`))
+    });
+    store.saveAdmixtureTest(activeTest.id, {
+      productIdentity: String(form.get("productIdentity") ?? ""),
+      samplingDate: String(form.get("samplingDate") ?? ""),
       testStartDate: String(form.get("testStartDate") ?? ""),
       testEndDate: String(form.get("testEndDate") ?? ""),
       temperature: String(form.get("temperature") ?? ""),
@@ -306,15 +328,16 @@ export default function TestDetailPage() {
       technicianName: String(form.get("technicianName") ?? ""),
       checkedBy: String(form.get("checkedBy") ?? ""),
       notes: String(form.get("notes") ?? ""),
-      productDescription: String(form.get("productDescription") ?? ""),
-      declaredDryMaterialPercent: optionalNumber(form.get("declaredDryMaterialPercent")),
-      dryingTemperatureC: optionalNumber(form.get("dryingTemperatureC")),
-      determinations: [1, 2, 3].map((index) => ({
-        label: String(form.get(`admixLabel-${index}`) ?? "") || String(index),
-        dishMassG: optionalNumber(form.get(`admixDish-${index}`)),
-        dishPlusSampleMassG: optionalNumber(form.get(`admixDishSample-${index}`)),
-        dishPlusDriedMassG: optionalNumber(form.get(`admixDishDried-${index}`))
-      }))
+      density1: densityRun(1),
+      density2: densityRun(2),
+      ph1: optionalNumber(form.get("ph-1")),
+      ph2: optionalNumber(form.get("ph-2")),
+      dryMass1: dryRun(1),
+      dryMass2: dryRun(2),
+      controlMix1: mix("control", 1),
+      controlMix2: mix("control", 2),
+      testMix1: mix("test", 1),
+      testMix2: mix("test", 2)
     });
   }
 
@@ -985,7 +1008,7 @@ export default function TestDetailPage() {
   const isAsphaltTest = isAsphaltAccreditedTest(activeTest.testType);
   const isThermalInsulationTest = isThermalInsulationAccreditedTest(activeTest.testType);
   const isCementConsistencyTest = isCementConsistencyAccreditedTest(activeTest.testType);
-  const isAdmixtureDryMaterialTest = isAdmixtureDryMaterialAccreditedTest(activeTest.testType);
+  const isAdmixtureTest = isAdmixtureAccreditedTest(activeTest.testType);
   const isCementStrengthTest = isCementStrengthAccreditedTest(activeTest.testType);
   const isCementBlaineBsEnTest = isCementBlaineBsEnAccreditedTest(activeTest.testType);
   const isCementBlaineAstmTest = isCementBlaineAstmAccreditedTest(activeTest.testType);
@@ -1091,98 +1114,111 @@ export default function TestDetailPage() {
     );
   }
 
-  if (isAdmixtureDryMaterialTest) {
-    const determinations = admixtureDryMaterial?.determinations ?? [];
-    const percentages = determinations.map((row) => row.dryMaterialPercent);
-    const spreadWarning = admixtureDeterminationsDisagree(percentages);
+  if (isAdmixtureTest) {
+    const adx = admixture;
+    const dv: Record<string, number | undefined> = {
+      "density-m1-1": adx?.density1.sampleMassG, "density-m2-1": adx?.density1.waterMassG, "density-rho-1": adx?.density1.waterDensity, "density-rhoa-1": adx?.density1.airDensity,
+      "density-m1-2": adx?.density2.sampleMassG, "density-m2-2": adx?.density2.waterMassG, "density-rho-2": adx?.density2.waterDensity, "density-rhoa-2": adx?.density2.airDensity,
+      "ph-1": adx?.ph1, "ph-2": adx?.ph2,
+      "dry-m0-1": adx?.dryMass1.emptyCrucibleG, "dry-m-1": adx?.dryMass1.sampleMassG, "dry-before-1": adx?.dryMass1.beforeG, "dry-after-1": adx?.dryMass1.afterG,
+      "dry-m0-2": adx?.dryMass2.emptyCrucibleG, "dry-m-2": adx?.dryMass2.sampleMassG, "dry-before-2": adx?.dryMass2.beforeG, "dry-after-2": adx?.dryMass2.afterG,
+      "control-cement-1": adx?.controlMix1.cementG, "control-sand-1": adx?.controlMix1.sandG, "control-water-1": adx?.controlMix1.waterMl, "control-adpct-1": adx?.controlMix1.admixturePercent, "control-adml-1": adx?.controlMix1.admixtureMl, "control-flow-1": adx?.controlMix1.tableFlowMm,
+      "control-cement-2": adx?.controlMix2.cementG, "control-sand-2": adx?.controlMix2.sandG, "control-water-2": adx?.controlMix2.waterMl, "control-adpct-2": adx?.controlMix2.admixturePercent, "control-adml-2": adx?.controlMix2.admixtureMl, "control-flow-2": adx?.controlMix2.tableFlowMm,
+      "test-cement-1": adx?.testMix1.cementG, "test-sand-1": adx?.testMix1.sandG, "test-water-1": adx?.testMix1.waterMl, "test-adpct-1": adx?.testMix1.admixturePercent, "test-adml-1": adx?.testMix1.admixtureMl, "test-flow-1": adx?.testMix1.tableFlowMm,
+      "test-cement-2": adx?.testMix2.cementG, "test-sand-2": adx?.testMix2.sandG, "test-water-2": adx?.testMix2.waterMl, "test-adpct-2": adx?.testMix2.admixturePercent, "test-adml-2": adx?.testMix2.admixtureMl, "test-flow-2": adx?.testMix2.tableFlowMm
+    };
+    const resultText = (value?: number, digits = 1) => (typeof value === "number" && Number.isFinite(value) ? value.toFixed(digits) : "");
+    const renderDuo = (title: string, subtitle: string, rows: Array<[string, string, number?]>) => (
+      <div className="border-b border-line p-5">
+        <div className="text-sm font-semibold text-ink">{title}</div>
+        {subtitle ? <div className="mt-0.5 text-xs text-muted">{subtitle}</div> : null}
+        <div className="mt-3 grid grid-cols-[1fr_110px_110px] items-center gap-x-3 gap-y-1">
+          <div />
+          <div className="text-center text-xs font-semibold text-lab-burgundy">Testi 1 / Test 1</div>
+          <div className="text-center text-xs font-semibold text-lab-burgundy">Testi 2 / Test 2</div>
+          {rows.map(([label, base, def]) => (
+            <div key={base} className="contents">
+              <div className="py-1 pr-2 text-[13px] leading-tight text-ink">{label}</div>
+              <input name={`${base}-1`} type="number" step="any" defaultValue={dv[`${base}-1`] ?? def} className="input h-9" />
+              <input name={`${base}-2`} type="number" step="any" defaultValue={dv[`${base}-2`] ?? def} className="input h-9" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+    const mixRows = (prefix: string): Array<[string, string]> => [
+      ["Sasia e çimentos (g) / Cement", `${prefix}-cement`],
+      ["Sasia e rërës standarte (g) / Standard sand", `${prefix}-sand`],
+      ["Sasia e ujit (ml) / Water", `${prefix}-water`],
+      ["Sasia e aditivit (%) / Admixture", `${prefix}-adpct`],
+      ["Sasia e aditivit (ml) / Admixture", `${prefix}-adml`],
+      ["Rrjedhshmëria / Table flow (mm)", `${prefix}-flow`]
+    ];
     return (
       <>
         <PageHeader
           title={activeTest.testCode}
-          description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Lënda e thatë e aditivit`}
+          description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Karakteristikat fiziko-kimike të aditivëve`}
           action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />}
         />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-          <form onSubmit={submitAdmixtureDryMaterial} className="surface-card">
+          <form onSubmit={submitAdmixture} className="surface-card">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4">
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div>
-              <h2 className="mt-1 text-lg font-semibold text-ink">Përcaktimi i lëndës së thatë / <span className="italic font-normal">Conventional dry material content</span></h2>
-              <p className="mt-1 text-sm text-muted">
-                BS EN 480-8. Peshoni enën bosh, me aditivin, dhe pas tharjes. Masa e kampionit, mbetja e thatë dhe përqindja llogariten vetë.
-              </p>
+              <h2 className="mt-1 text-lg font-semibold text-ink">Karakteristikat fiziko-kimike të aditivëve për beton</h2>
+              <p className="mt-1 text-sm text-muted">Dry mass (BS EN 480-8), water reduction (BS EN 480-1), density (ISO 758), pH (ISO 4316). Any part left blank shows blank on the report.</p>
             </div>
 
             <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
               <Field label="Register number"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
-              <Field label="Sample type"><input className="input bg-lab-porcelain" value={sample?.sampleType ?? ""} readOnly /></Field>
-              <Field label="Applied standard"><input className="input bg-lab-porcelain" value={activeTest.standard || "BS EN 480-8:2012"} readOnly /></Field>
-              <Field label="Produkti / Product"><input name="productDescription" defaultValue={admixtureDryMaterial?.productDescription ?? sample?.sampleDescription ?? ""} className="input" /></Field>
-              <Field label="Lënda e thatë e deklaruar [%]"><input name="declaredDryMaterialPercent" type="number" step="0.01" min="0" max="100" defaultValue={admixtureDryMaterial?.declaredDryMaterialPercent ?? ""} className="input" /></Field>
-              <Field label="Temperatura e tharjes [°C]"><input name="dryingTemperatureC" type="number" step="1" min="0" max="300" defaultValue={admixtureDryMaterial?.dryingTemperatureC ?? 105} className="input" /></Field>
-              <Field label="Testing start date"><input name="testStartDate" type="date" defaultValue={admixtureDryMaterial?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
-              <Field label="Testing end date"><input name="testEndDate" type="date" defaultValue={admixtureDryMaterial?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
-              <Field label="Testing location"><input name="testingLocation" defaultValue={admixtureDryMaterial?.testingLocation ?? "01/A Lab. Fiziko-Mekanik / Physical-Mechanical laboratory"} className="input" /></Field>
-              <Field label="Technician"><EmployeeSelect name="technicianName" employees={activeEmployees} required value={admixtureDryMaterial?.technicianName ?? ""} /></Field>
-              <Field label="Checked by"><EmployeeSelect name="checkedBy" employees={activeEmployees} value={admixtureDryMaterial?.checkedBy ?? ""} /></Field>
-              <Field label="Temperature"><input name="temperature" defaultValue={admixtureDryMaterial?.temperature ?? ""} className="input" /></Field>
-              <Field label="Relative humidity"><input name="humidity" defaultValue={admixtureDryMaterial?.humidity ?? ""} className="input" /></Field>
+              <Field label="Product identity / Emërtimi i produktit"><input name="productIdentity" defaultValue={admixture?.productIdentity ?? sample?.sampleDescription ?? ""} className="input" /></Field>
+              <Field label="Sampling date / Data e marrjes"><input name="samplingDate" type="date" defaultValue={admixture?.samplingDate ?? sample?.dateReceived ?? ""} className="input" /></Field>
+              <Field label="Testing start date"><input name="testStartDate" type="date" defaultValue={admixture?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
+              <Field label="Testing end date"><input name="testEndDate" type="date" defaultValue={admixture?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
+              <Field label="Technician"><EmployeeSelect name="technicianName" employees={activeEmployees} required value={admixture?.technicianName ?? ""} /></Field>
+              <Field label="Checked by"><EmployeeSelect name="checkedBy" employees={activeEmployees} value={admixture?.checkedBy ?? "Ing./Eng. Besiana ALLIU"} /></Field>
+              <Field label="Testing location"><input name="testingLocation" defaultValue={admixture?.testingLocation ?? "01/B Laboratori kimik / Chemical laboratory"} className="input" /></Field>
+              <Field label="Temperature"><input name="temperature" defaultValue={admixture?.temperature ?? ""} className="input" placeholder="e.g. 21.7 C" /></Field>
+              <Field label="Relative humidity"><input name="humidity" defaultValue={admixture?.humidity ?? ""} className="input" placeholder="e.g. 54%" /></Field>
             </div>
 
-            <div className="p-5">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">Përcaktimet / <span className="italic font-normal normal-case">Determinations</span></h3>
-              <p className="mt-1 text-xs text-muted">Lini bosh një përcaktim që nuk është kryer — nuk llogaritet në mesatare.</p>
-              <div className="mt-3 overflow-x-auto">
-                <table className="w-full min-w-[720px] text-left text-sm">
-                  <thead className="table-head">
-                    <tr>
-                      <th className="px-3 py-2">Nr.</th>
-                      <th className="px-3 py-2">Ena [g]</th>
-                      <th className="px-3 py-2">Ena + kampioni [g]</th>
-                      <th className="px-3 py-2">Ena + e thatë [g]</th>
-                      <th className="px-3 py-2">Kampioni [g]</th>
-                      <th className="px-3 py-2">Mbetja [g]</th>
-                      <th className="px-3 py-2">Lënda e thatë [%]</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-line">
-                    {[1, 2, 3].map((index) => {
-                      const row = determinations[index - 1];
-                      return (
-                        <tr key={index}>
-                          <td className="px-3 py-2"><input name={`admixLabel-${index}`} defaultValue={row?.label ?? String(index)} className="input w-16" /></td>
-                          <td className="px-3 py-2"><input name={`admixDish-${index}`} type="number" step="0.0001" min="0" defaultValue={row?.dishMassG ?? ""} className="input" /></td>
-                          <td className="px-3 py-2"><input name={`admixDishSample-${index}`} type="number" step="0.0001" min="0" defaultValue={row?.dishPlusSampleMassG ?? ""} className="input" /></td>
-                          <td className="px-3 py-2"><input name={`admixDishDried-${index}`} type="number" step="0.0001" min="0" defaultValue={row?.dishPlusDriedMassG ?? ""} className="input" /></td>
-                          <td className="px-3 py-2 text-muted">{row?.sampleMassG ?? "-"}</td>
-                          <td className="px-3 py-2 text-muted">{row?.driedMassG ?? "-"}</td>
-                          <td className="px-3 py-2 font-semibold text-ink">{row?.dryMaterialPercent ?? "-"}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+            {renderDuo("Densiteti në 20ºC / Density (ISO 758:2011)", "Densiteti = (m1+A)/(m2+A)·ρ, ku A = ρa·m2.", [
+              ["Pesha e mostrës m1 (g)", "density-m1"],
+              ["Pesha e ujit të distiluar m2 (g)", "density-m2"],
+              ["Densiteti i ujit ρ (g/ml)", "density-rho", 0.9982],
+              ["Densiteti i ajrit ρa (g/ml)", "density-rhoa", 0.0012]
+            ])}
 
-              {spreadWarning ? (
-                <div className="mt-3 rounded-md border border-[#f0a93a] bg-brand-risk p-3 text-xs font-semibold text-ink">
-                  Përcaktimet ndryshojnë me më shumë se 1 %. Kontrolloni peshimet përpara se rezultati të raportohet.
-                </div>
-              ) : null}
+            {renderDuo("Vlera e pH / pH (ISO 4316:2018)", "", [["pH i mostrës / pH of sample", "ph"]])}
 
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <InfoInline
-                  label="Lënda e thatë mesatare / Mean dry material"
-                  value={admixtureDryMaterial?.averageDryMaterialPercent !== undefined ? `${admixtureDryMaterial.averageDryMaterialPercent} %` : "Ruaj për ta llogaritur"}
-                />
-                <Field label="Notes"><input name="notes" defaultValue={admixtureDryMaterial?.notes ?? ""} className="input" /></Field>
-              </div>
+            {renderDuo("Lënda e thatë / Dry mass (BS EN 480-8:2012)", "Lënda e thatë = (m2−m0)/(m1−m0)·100.", [
+              ["Pesha e kroxholit bosh m0 (g)", "dry-m0"],
+              ["Pesha e mostrës m (g)", "dry-m"],
+              ["Kroxhol + mostër para tharjes m1 (g)", "dry-before"],
+              ["Kroxhol + mostër pas tharjes m2 (g)", "dry-after"]
+            ])}
+
+            {renderDuo("Reduktimi i ujit — mostra e kontrollit / Water reduction — control mix (BS EN 480-1:2023)", "", mixRows("control"))}
+            {renderDuo("Reduktimi i ujit — mostra e testuar / Water reduction — test mix", "Reduktimi = (uji_kontroll − uji_test)/uji_kontroll·100.", mixRows("test"))}
+
+            <div className="grid gap-3 border-b border-line p-5 md:grid-cols-4">
+              <Field label="Lënda e thatë / Dry mass (%)"><input readOnly className="input bg-lab-porcelain" value={resultText(adx?.results.dryMass, 1)} /></Field>
+              <Field label="Reduktimi i ujit / Water reduction (%)"><input readOnly className="input bg-lab-porcelain" value={resultText(adx?.results.waterReduction, 1)} /></Field>
+              <Field label="Densiteti / Density (g/cm³)"><input readOnly className="input bg-lab-porcelain" value={resultText(adx?.results.density, 3)} /></Field>
+              <Field label="pH"><input readOnly className="input bg-lab-porcelain" value={resultText(adx?.results.ph, 2)} /></Field>
             </div>
 
-            <div className="flex justify-end border-t border-line p-5">
-              <button type="submit" className="btn-primary">Ruaj rezultatet</button>
+            <div className="grid gap-4 p-5">
+              <div>
+                <label className="text-sm font-medium text-ink">Notes</label>
+                <textarea name="notes" rows={3} defaultValue={admixture?.notes} className="input mt-1" />
+              </div>
+              <div className="flex justify-end">
+                <button className="btn-primary">Ruaj të dhënat / Save data</button>
+              </div>
             </div>
           </form>
-          <TestActionsSidebar ready={Boolean(admixtureDryMaterial)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={admixtureDryMaterial?.averageDryMaterialPercent !== undefined ? `Lënda e thatë mesatare  %.` : "Ruani peshimet për të llogaritur lëndën e thatë."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+          <TestActionsSidebar ready={Boolean(admixture)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={admixture ? "Rezultatet e llogaritura janë gati për raportin e aditivit." : "Ruani të dhënat e fletës së punës për të llogaritur rezultatet."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
     );

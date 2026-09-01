@@ -24,7 +24,8 @@ import {
   isConcreteDensityAccreditedTest,
   isConcreteFlexuralAccreditedTest,
   isConcreteIndirectTensileAccreditedTest,
-  isConcreteWaterPenetrationAccreditedTest
+  isConcreteWaterPenetrationAccreditedTest,
+  isAdmixtureAccreditedTest
 } from "@/lib/accredited-tests";
 import { useLabStore } from "@/lib/lab-store";
 import { canEditTestData, canTechnicianAccessTest } from "@/lib/permissions";
@@ -94,9 +95,10 @@ export default function MobileTestDetailPage() {
     );
   }
 
+  const isAdmixture = isAdmixtureAccreditedTest(test.testType);
   const isOtherConcreteType = isWaterPenetration || isFlexural || isConcreteDensity || isIndirectTensile || isConcreteCore;
   const isOtherAggregateType =
-    isChemical || isLosAngeles || isFreezeThaw || isAcv || isDensityAbsorption || isFillerDensity || isShapeIndex || isFlakinessIndex || isElongationIndex || isBulkDensity || isSoundness;
+    isChemical || isLosAngeles || isFreezeThaw || isAcv || isDensityAbsorption || isFillerDensity || isShapeIndex || isFlakinessIndex || isElongationIndex || isBulkDensity || isSoundness || isAdmixture;
 
   if (isOtherConcreteType || isOtherAggregateType) {
     return (

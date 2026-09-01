@@ -63,9 +63,7 @@ import {
   calculateVoidsPercent,
   calculateWaterSolubleSulfateSo3Percent,
   calculateWaterDemandPercent,
-  calculateUnitWeightKgPerM,
-  deriveAdmixtureDetermination,
-  averageAdmixtureDryMaterial
+  calculateUnitWeightKgPerM
 } from "./calculations";
 import { useAuth } from "./auth";
 import { officialClientCodes2026 } from "./client-directory";
@@ -74,7 +72,7 @@ import { initialState } from "./seed-data";
 import { deriveSampleStage, SAMPLE_STAGES } from "./sample-stage";
 import { createSupabaseBrowserClient } from "./supabase/client";
 import { pushAuditEntries, pushNotifications } from "./activity-log";
-import type { AdmixtureDryMaterialTest, AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltMixtureKind, AsphaltReportKind, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabState, LabTest, LabUser, MortarTest, MortarTestKind, Notification, Project, Report, Role, Sample, SampleStatus, SteelTensileTest, ThermalInsulationTest } from "./types";
+import type { AdmixtureTest, AdmixtureDensityRun, AdmixtureDryMassRun, AdmixtureWaterMixRun, AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltMixtureKind, AsphaltReportKind, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabState, LabTest, LabUser, MortarTest, MortarTestKind, Notification, Project, Report, Role, Sample, SampleStatus, SteelTensileTest, ThermalInsulationTest } from "./types";
 
 export interface NewSampleInput {
   clientId: string;
@@ -403,9 +401,9 @@ interface CementStrengthInput {
   }>;
 }
 
-/** What the technician actually types for BS EN 480-8. Everything derived —
- *  sample mass, dried mass, percentage, mean — is computed in the store. */
-interface AdmixtureDryMaterialInput {
+interface AdmixtureInput {
+  productIdentity?: string;
+  samplingDate?: string;
   testStartDate?: string;
   testEndDate?: string;
   temperature?: string;
@@ -414,15 +412,16 @@ interface AdmixtureDryMaterialInput {
   technicianName: string;
   checkedBy?: string;
   notes?: string;
-  productDescription?: string;
-  declaredDryMaterialPercent?: number;
-  dryingTemperatureC?: number;
-  determinations: Array<{
-    label: string;
-    dishMassG?: number;
-    dishPlusSampleMassG?: number;
-    dishPlusDriedMassG?: number;
-  }>;
+  density1: AdmixtureDensityRun;
+  density2: AdmixtureDensityRun;
+  ph1?: number;
+  ph2?: number;
+  dryMass1: AdmixtureDryMassRun;
+  dryMass2: AdmixtureDryMassRun;
+  controlMix1: AdmixtureWaterMixRun;
+  controlMix2: AdmixtureWaterMixRun;
+  testMix1: AdmixtureWaterMixRun;
+  testMix2: AdmixtureWaterMixRun;
 }
 
 interface CementBlaineInput {
@@ -910,7 +909,7 @@ interface LabStoreValue extends LabState {
   saveCementConsistencyTest: (testId: string, input: CementConsistencyInput) => void;
   saveCementStrengthTest: (testId: string, input: CementStrengthInput) => void;
   saveCementBlaineTest: (testId: string, input: CementBlaineInput) => void;
-  saveAdmixtureDryMaterialTest: (testId: string, input: AdmixtureDryMaterialInput) => void;
+  saveAdmixtureTest: (testId: string, input: AdmixtureInput) => void;
   saveMortarTest: (testId: string, input: MortarInput) => void;
   saveSteelTest: (testId: string, input: SteelInput) => void;
   saveAggregateTest: (testId: string, input: AggregateInput) => void;
@@ -1202,6 +1201,7 @@ function mergeWithInitialState(saved: Partial<LabState>): LabState {
     steelTests: saved.steelTests ?? initialState.steelTests,
     aggregateTests: saved.aggregateTests ?? initialState.aggregateTests,
     aggregateChemicalTests: saved.aggregateChemicalTests ?? initialState.aggregateChemicalTests,
+    admixtureTests: saved.admixtureTests ?? initialState.admixtureTests,
     aggregateLosAngelesTests: saved.aggregateLosAngelesTests ?? initialState.aggregateLosAngelesTests,
     aggregateFreezeThawTests: saved.aggregateFreezeThawTests ?? initialState.aggregateFreezeThawTests,
     aggregateAcvTests: saved.aggregateAcvTests ?? initialState.aggregateAcvTests,
@@ -1830,6 +1830,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             steelTests: previous.steelTests.filter((row) => !linkedTestIds.has(row.testId)),
             aggregateTests: previous.aggregateTests.filter((row) => !linkedTestIds.has(row.testId)),
             aggregateChemicalTests: previous.aggregateChemicalTests.filter((row) => !linkedTestIds.has(row.testId)),
+            admixtureTests: previous.admixtureTests.filter((row) => !linkedTestIds.has(row.testId)),
             aggregateLosAngelesTests: previous.aggregateLosAngelesTests.filter((row) => !linkedTestIds.has(row.testId)),
             aggregateFreezeThawTests: previous.aggregateFreezeThawTests.filter((row) => !linkedTestIds.has(row.testId)),
             aggregateAcvTests: previous.aggregateAcvTests.filter((row) => !linkedTestIds.has(row.testId)),
@@ -2658,19 +2659,44 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           return draft;
         });
       },
-      // BS EN 480-8 — conventional dry material content of a concrete admixture.
-      // Every derived figure is computed here from the three weighings, so the
-      // form only ever collects what was actually measured.
-      saveAdmixtureDryMaterialTest(testId, input) {
+      // Physical-chemical characteristics of a concrete admixture (SL-RA-AD):
+      // dry mass (EN 480-8), water reduction (EN 480-1), density (ISO 758), pH
+      // (ISO 4316). Results are computed here from the duplicate runs; any run
+      // left blank yields a blank result.
+      saveAdmixtureTest(testId, input) {
         setState((previous) => {
           if (!canCurrentUserEditTest(previous, testId)) return previous;
-          const determinations = input.determinations.map((row) => ({
-            ...row,
-            ...deriveAdmixtureDetermination(row)
-          }));
-          const admixtureTest: AdmixtureDryMaterialTest = {
-            id: previous.admixtureDryMaterialTests.find((row) => row.testId === testId)?.id ?? crypto.randomUUID(),
+          const num = (v?: number) => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
+          const avg = (values: Array<number | undefined>) => {
+            const valid = values.filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+            return valid.length ? valid.reduce((sum, v) => sum + v, 0) / valid.length : undefined;
+          };
+          const densityOf = (run: AdmixtureDensityRun) => {
+            const m1 = num(run.sampleMassG);
+            const m2 = num(run.waterMassG);
+            const rho = num(run.waterDensity);
+            if (m1 === undefined || m2 === undefined || rho === undefined) return undefined;
+            const a = (num(run.airDensity) ?? 0) * m2;
+            const denom = m2 + a;
+            return denom ? ((m1 + a) / denom) * rho : undefined;
+          };
+          const dryOf = (run: AdmixtureDryMassRun) => {
+            const m0 = num(run.emptyCrucibleG);
+            const m1 = num(run.beforeG);
+            const m2 = num(run.afterG);
+            if (m0 === undefined || m1 === undefined || m2 === undefined) return undefined;
+            const denom = m1 - m0;
+            return denom ? ((m2 - m0) / denom) * 100 : undefined;
+          };
+          const controlWater = avg([num(input.controlMix1.waterMl), num(input.controlMix2.waterMl)]);
+          const testWater = avg([num(input.testMix1.waterMl), num(input.testMix2.waterMl)]);
+          const waterReduction =
+            controlWater !== undefined && testWater !== undefined && controlWater ? ((controlWater - testWater) / controlWater) * 100 : undefined;
+          const admixtureTest: AdmixtureTest = {
+            id: previous.admixtureTests.find((row) => row.testId === testId)?.id ?? crypto.randomUUID(),
             testId,
+            productIdentity: input.productIdentity,
+            samplingDate: input.samplingDate,
             testStartDate: input.testStartDate,
             testEndDate: input.testEndDate,
             temperature: input.temperature,
@@ -2679,23 +2705,34 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             technicianName: input.technicianName,
             checkedBy: input.checkedBy,
             notes: input.notes,
-            productDescription: input.productDescription,
-            declaredDryMaterialPercent: input.declaredDryMaterialPercent,
-            dryingTemperatureC: input.dryingTemperatureC,
-            determinations,
-            // Only the determinations actually completed count toward the mean.
-            averageDryMaterialPercent: averageAdmixtureDryMaterial(determinations.map((row) => row.dryMaterialPercent))
+            density1: input.density1,
+            density2: input.density2,
+            ph1: input.ph1,
+            ph2: input.ph2,
+            dryMass1: input.dryMass1,
+            dryMass2: input.dryMass2,
+            controlMix1: input.controlMix1,
+            controlMix2: input.controlMix2,
+            testMix1: input.testMix1,
+            testMix2: input.testMix2,
+            results: {
+              density: avg([densityOf(input.density1), densityOf(input.density2)]),
+              ph: avg([num(input.ph1), num(input.ph2)]),
+              dryMass: avg([dryOf(input.dryMass1), dryOf(input.dryMass2)]),
+              waterReduction
+            },
+            createdAt: new Date().toISOString()
           };
-          const existing = previous.admixtureDryMaterialTests.some((row) => row.testId === testId);
+          const exists = previous.admixtureTests.some((row) => row.testId === testId);
           const draft: LabState = {
             ...previous,
-            admixtureDryMaterialTests: existing
-              ? previous.admixtureDryMaterialTests.map((row) => (row.testId === testId ? admixtureTest : row))
-              : [admixtureTest, ...previous.admixtureDryMaterialTests],
+            admixtureTests: exists
+              ? previous.admixtureTests.map((row) => (row.testId === testId ? admixtureTest : row))
+              : [admixtureTest, ...previous.admixtureTests],
             tests: previous.tests.map((test) => (test.id === testId ? { ...test, status: "In Progress" } : test)),
             auditLog: [...previous.auditLog]
           };
-          addAudit(draft, "test_data_saved", "test", testId, "Admixture dry material (EN 480-8) data saved.");
+          addAudit(draft, "test_data_saved", "test", testId, "Admixture physical-chemical data saved.");
           return draft;
         });
       },
@@ -3538,6 +3575,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           const steel = previous.steelTests.find((row) => row.testId === testId);
           const aggregate = previous.aggregateTests.find((row) => row.testId === testId);
           const aggregateChemical = previous.aggregateChemicalTests.find((row) => row.testId === testId);
+          const admixture = previous.admixtureTests.find((row) => row.testId === testId);
           const aggregateLosAngeles = previous.aggregateLosAngelesTests.find((row) => row.testId === testId);
           const aggregateFreezeThaw = previous.aggregateFreezeThawTests.find((row) => row.testId === testId);
           const aggregateAcv = previous.aggregateAcvTests.find((row) => row.testId === testId);
@@ -3562,7 +3600,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             ? groupSteelSpecimensByDiameter(steel)
             : coreReportGroups?.length
               ? coreReportGroups
-            : concreteWater || concreteFlexural || concreteDensity || concreteIndirectTensile || concreteCore || asphalt || thermalInsulation || cementConsistency || cementStrength || cementBlaine || mortar || aggregate || aggregateChemical || aggregateLosAngeles || aggregateFreezeThaw || aggregateAcv || aggregateDensity || aggregateFillerDensity || aggregateShapeIndex || aggregateFlakiness || aggregateElongation || aggregateBulkDensity || aggregateSandEquivalent || aggregateSoundness
+            : concreteWater || concreteFlexural || concreteDensity || concreteIndirectTensile || concreteCore || asphalt || thermalInsulation || cementConsistency || cementStrength || cementBlaine || mortar || aggregate || aggregateChemical || aggregateLosAngeles || aggregateFreezeThaw || aggregateAcv || aggregateDensity || aggregateFillerDensity || aggregateShapeIndex || aggregateFlakiness || aggregateElongation || aggregateBulkDensity || aggregateSandEquivalent || aggregateSoundness || admixture
               ? [[previous.samples.find((sample) => sample.id === test.sampleId)?.sampleCode ?? test.testCode]]
               : concrete?.specimens?.length
                 ? chunk(concrete.specimens.map((specimen) => specimen.specimenCode), 3)

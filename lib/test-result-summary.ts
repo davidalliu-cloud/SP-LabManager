@@ -14,18 +14,14 @@ function formatNumber(value?: number, digits = 2) {
 }
 
 export function getTestResultSummary(store: LabState, test: LabTest): TestResultSummary {
-  const admixture = store.admixtureDryMaterialTests.find((item) => item.testId === test.id);
+  const admixture = store.admixtureTests.find((item) => item.testId === test.id);
   if (admixture) {
-    const completed = admixture.determinations.filter((row) => typeof row.dryMaterialPercent === "number").length;
     return {
       testStartDate: admixture.testStartDate,
       testEndDate: admixture.testEndDate,
       technicianName: admixture.technicianName,
-      // States how many determinations the mean is actually over, so a partial
-      // test cannot read like a complete one.
-      result: admixture.averageDryMaterialPercent !== undefined
-        ? `Lënda e thatë: ${formatNumber(admixture.averageDryMaterialPercent)} % (${completed} përcaktim${completed === 1 ? "" : "e"})`
-        : "Lënda e thatë: pa përcaktime të plotësuara"
+      checkedBy: admixture.checkedBy,
+      result: `Lënda e thatë: ${formatNumber(admixture.results.dryMass)}%; reduktim uji: ${formatNumber(admixture.results.waterReduction)}%; densiteti: ${formatNumber(admixture.results.density, 3)} g/cm³; pH: ${formatNumber(admixture.results.ph)}`
     };
   }
 
