@@ -481,11 +481,18 @@ textarea {
 .concrete-cube-report.pdf-capture {
   width: 210mm !important;
   max-width: 210mm !important;
-  height: 296mm !important;
-  min-height: 0 !important;
+  /* min-height, not height, and no `overflow: hidden`.
+     With a fixed height and hidden overflow the browser silently amputated
+     whatever did not fit: the capture measured 326mm of content inside a 296mm
+     box, so 30mm vanished off the foot of every stored PDF — the last lines of
+     the legal disclaimers, the whole issue-date line and the whole SARP & LAB
+     address footer. Nothing on screen showed it was gone.
+     Letting the box grow means an over-long report is captured whole, and
+     renderElementToPdfBlob scales it onto one page instead. A report may come
+     out fractionally smaller; it can no longer come out incomplete. */
+  min-height: 296mm !important;
   margin: 0 auto !important;
   padding: 5mm 9mm 6mm !important;
-  overflow: hidden !important;
   transform: none !important;
   box-sizing: border-box !important;
   display: flex !important;
@@ -494,12 +501,12 @@ textarea {
   box-shadow: none !important;
   border-radius: 0 !important;
   font-family: "Times New Roman", Times, serif !important;
-  font-size: 9.3pt !important;
-  line-height: 1.1 !important;
+  font-size: 8.9pt !important;
+  line-height: 1.08 !important;
 }
 
 .concrete-cube-report.pdf-capture > * {
-  margin-top: 4px !important;
+  margin-top: 3px !important;
 }
 
 .concrete-cube-report.pdf-capture > header {
@@ -507,9 +514,26 @@ textarea {
   padding-bottom: 3px !important;
 }
 
+/* The three rules below exist in @media print but had been lost from this
+   mirror, and together they were most of the 30mm overflow: the on-screen
+   logos and signature block are sized to read well in the preview, which is
+   real height on a fixed page. The signature block alone measured 52mm here
+   against 20mm in print. */
+.concrete-cube-report.pdf-capture > header img[alt="SARP"] {
+  width: 128px !important;
+}
+
+.concrete-cube-report.pdf-capture > header img[alt^="DA accreditation"] {
+  width: 66px !important;
+}
+
+.concrete-cube-report.pdf-capture .signature-block-img {
+  height: 20mm !important;
+}
+
 .concrete-cube-report.pdf-capture .cube-meta {
-  font-size: 9.3pt !important;
-  line-height: 1.1 !important;
+  font-size: 8.9pt !important;
+  line-height: 1.08 !important;
   row-gap: 1px !important;
 }
 
@@ -575,11 +599,11 @@ textarea {
 .mortar-report.pdf-capture {
   width: 210mm !important;
   max-width: 210mm !important;
-  height: 296mm !important;
-  min-height: 0 !important;
+  /* See the concrete cube box above: a fixed height with hidden overflow
+     truncates the foot of the report without any sign that it has. */
+  min-height: 296mm !important;
   margin: 0 auto !important;
   padding: 7mm 11mm 4mm !important;
-  overflow: hidden !important;
   transform: none !important;
   box-sizing: border-box !important;
   border: 0 !important;
@@ -608,11 +632,12 @@ textarea {
 .official-report.pdf-capture {
   width: 210mm !important;
   max-width: 210mm !important;
-  height: 296mm !important;
-  min-height: 0 !important;
+  /* See the concrete cube box above: a fixed height with hidden overflow
+     truncates the foot of the report without any sign that it has. This family
+     covers cement, thermal, steel, asphalt, aggregate, admixture and masonry. */
+  min-height: 296mm !important;
   margin: 0 auto !important;
   padding: 5mm 9mm 5mm !important;
-  overflow: hidden !important;
   transform: none !important;
   box-sizing: border-box !important;
   border: 0 !important;
