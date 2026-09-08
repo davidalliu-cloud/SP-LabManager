@@ -1,8 +1,9 @@
 "use client";
 
-import type { AdmixtureTest, AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabTest, MortarTest, Project, Report, Sample, SteelTensileTest, ThermalInsulationTest } from "@/lib/types";
+import type { AdmixtureTest, AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabTest, MasonryUnitTest, MortarTest, Project, Report, Sample, SteelTensileTest, ThermalInsulationTest } from "@/lib/types";
 import { CementConsistencyReportPreview, CementStrengthReportPreview, CementBlaineReportPreview } from "./cement-reports";
 import { AdmixtureReportPreview } from "./admixture-reports";
+import { MasonryUnitReportPreview } from "./masonry-reports";
 import { MortarReportPreview } from "./mortar-reports";
 import { ConcreteCubeReportPreview } from "./concrete-cube-report";
 import {
@@ -50,6 +51,7 @@ export function ReportPreview({
   cementStrength,
   cementBlaine,
   admixture,
+  masonryUnit,
   mortar,
   steel,
   aggregate,
@@ -83,6 +85,7 @@ export function ReportPreview({
   cementStrength?: CementStrengthTest;
   cementBlaine?: CementBlaineTest;
   admixture?: AdmixtureTest;
+  masonryUnit?: MasonryUnitTest;
   mortar?: MortarTest;
   steel?: SteelTensileTest;
   aggregate?: AggregateGradationTest;
@@ -109,6 +112,10 @@ export function ReportPreview({
 
   if (cementStrength) {
     return <CementStrengthReportPreview report={report} test={test} sample={sample} client={client} project={project} cementStrength={cementStrength} />;
+  }
+
+  if (masonryUnit) {
+    return <MasonryUnitReportPreview report={report} test={test} sample={sample} client={client} project={project} masonry={masonryUnit} />;
   }
 
   if (admixture) {

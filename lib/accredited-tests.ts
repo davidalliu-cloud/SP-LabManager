@@ -28,7 +28,13 @@ const sampleTypeDisplayNames: Record<string, string> = {
   "Tapet + Binder": "Tapet + Binder / Asphalt Mixture",
   // Admixtures were in the accredited list but never in these maps, so the
   // sample type showed as raw Albanian with no English half.
-  "SHTESA PËR BETON (ADITIVË)": "Shtesa për Beton (Aditivë) / Concrete Admixtures"
+  "SHTESA PËR BETON (ADITIVË)": "Shtesa për Beton (Aditivë) / Concrete Admixtures",
+  // Masonry units sat in the same position as admixtures: accredited (AT-034 to
+  // AT-037) but missing from these maps. That also kept the whole family out of
+  // accreditedSampleTypes, because the raw scope name is all uppercase and the
+  // uppercase filter drops it — mapping it to a bilingual name is what makes the
+  // family selectable at all.
+  "ELEMENT MURATURE 1. TULLA QERAMIKE, SILIKATE, BETONI, 2. BLLOK BETONI": "Element Muraturë / Masonry Units"
 };
 
 const sampleTypeAliases: Record<string, string> = {
@@ -66,7 +72,16 @@ const sampleTypeAliases: Record<string, string> = {
   "Aditiv": "Shtesa për Beton (Aditivë) / Concrete Admixtures",
   "Aditivë": "Shtesa për Beton (Aditivë) / Concrete Admixtures",
   "Admixture": "Shtesa për Beton (Aditivë) / Concrete Admixtures",
-  "Shtesa për Beton (Aditivë) / Concrete Admixtures": "Shtesa për Beton (Aditivë) / Concrete Admixtures"
+  "Shtesa për Beton (Aditivë) / Concrete Admixtures": "Shtesa për Beton (Aditivë) / Concrete Admixtures",
+  "ELEMENT MURATURE 1. TULLA QERAMIKE, SILIKATE, BETONI, 2. BLLOK BETONI": "Element Muraturë / Masonry Units",
+  "Element Murature": "Element Muraturë / Masonry Units",
+  "Element Muraturë": "Element Muraturë / Masonry Units",
+  "Tulla": "Element Muraturë / Masonry Units",
+  "Tullë": "Element Muraturë / Masonry Units",
+  "Bllok Betoni": "Element Muraturë / Masonry Units",
+  "Masonry Unit": "Element Muraturë / Masonry Units",
+  "Masonry Units": "Element Muraturë / Masonry Units",
+  "Element Muraturë / Masonry Units": "Element Muraturë / Masonry Units"
 };
 
 function displaySampleType(sampleType: string) {
@@ -336,6 +351,23 @@ export function isAdmixtureAccreditedTest(testIdOrType?: string) {
     testIdOrType === "Përcaktimi i lëndës së thatë" ||
     testIdOrType === "Përcaktimi i reduktimit të ujit"
   );
+}
+
+/**
+ * AT-034 to AT-037 — masonry units. Dimensions (BS EN 772-16), density
+ * (BS EN 772-13), water absorption (BS EN 772-21) and compressive strength
+ * (BS EN 772-1) are accredited separately but are run on one set of units, so
+ * they share a single worksheet and report, as thermal insulation products do.
+ */
+const MASONRY_UNIT_TEST_IDS = new Set(["AT-034", "AT-035", "AT-036", "AT-037"]);
+
+export function isMasonryUnitAccreditedTest(testIdOrType?: string) {
+  if (!testIdOrType) return false;
+  return MASONRY_UNIT_TEST_IDS.has(testIdOrType);
+}
+
+export function isMasonryUnitSampleType(sampleType: string) {
+  return normalizeSampleType(sampleType) === "Element Muraturë / Masonry Units";
 }
 
 export function isMortarSampleType(sampleType: string) {

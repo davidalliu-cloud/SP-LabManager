@@ -1332,6 +1332,7 @@ export interface LabState {
   cementStrengthTests: CementStrengthTest[];
   cementBlaineTests: CementBlaineTest[];
   admixtureTests: AdmixtureTest[];
+  masonryUnitTests: MasonryUnitTest[];
   mortarTests: MortarTest[];
   steelTests: SteelTensileTest[];
   aggregateTests: AggregateGradationTest[];
@@ -1352,4 +1353,96 @@ export interface LabState {
   procedureRevisions: ProcedureRevision[];
   notifications: Notification[];
   auditLog: AuditLog[];
+}
+
+/**
+ * Masonry units — BS EN 772-16 (dimensions), BS EN 772-13 (density),
+ * BS EN 772-21 (water absorption) and BS EN 772-1 (compressive strength).
+ *
+ * The four are accredited separately (AT-034 to AT-037) but are run on one set
+ * of units and reported together, so they are modelled as a single test in the
+ * same way as thermal insulation products.
+ *
+ * Every measured field is optional. A specimen that was not put through one of
+ * the four determinations leaves those fields empty, and the empty value is
+ * excluded from the mean rather than averaged in as a zero.
+ */
+export type MasonryUnitCategory =
+  | "Tullë Qeramike"
+  | "Tullë Silikate"
+  | "Tullë Betoni"
+  | "Bllok Betoni";
+
+export interface MasonryUnitSpecimen {
+  specimenCode: string;
+  /** BS EN 772-16 — mean of the measurements taken on each face. */
+  lengthMm?: number;
+  widthMm?: number;
+  heightMm?: number;
+  /** BS EN 772-13 — mass after drying to constant mass. */
+  dryMassG?: number;
+  /**
+   * Net volume by displacement, for perforated units. Left empty for solid
+   * units, where net and gross density are the same.
+   */
+  netVolumeMm3?: number;
+  /** BS EN 772-21 — mass after 24 h immersion in cold water. */
+  saturatedMassG?: number;
+  /** BS EN 772-1 — maximum load at failure. */
+  maximumLoadKn?: number;
+
+  // Derived — never entered by hand.
+  grossVolumeMm3?: number;
+  grossDryDensityKgM3?: number;
+  netDryDensityKgM3?: number;
+  waterAbsorptionPercent?: number;
+  loadedAreaMm2?: number;
+  compressiveStrengthMpa?: number;
+  /** delta x conditioning factor x compressive strength. */
+  normalisedStrengthMpa?: number;
+}
+
+export interface MasonryUnitAverages {
+  lengthMm?: number;
+  widthMm?: number;
+  heightMm?: number;
+  grossDryDensityKgM3?: number;
+  netDryDensityKgM3?: number;
+  waterAbsorptionPercent?: number;
+  compressiveStrengthMpa?: number;
+  normalisedStrengthMpa?: number;
+}
+
+export interface MasonryUnitTest {
+  id: string;
+  testId: string;
+  testStartDate?: string;
+  testEndDate?: string;
+  unitCategory?: MasonryUnitCategory;
+  productDescription?: string;
+  manufacturer?: string;
+  /** Declared dimensions, for the deviation column on the report. */
+  declaredLengthMm?: number;
+  declaredWidthMm?: number;
+  declaredHeightMm?: number;
+  /**
+   * BS EN 772-1 shape factor, read from Annex A against the unit's width and
+   * height. Entered by the technician rather than looked up by the app: the
+   * standard is a controlled document and the app must not become a second,
+   * uncontrolled copy of it.
+   */
+  shapeFactorDelta?: number;
+  /** BS EN 772-1 conditioning factor for the conditioning actually used. */
+  conditioningFactor?: number;
+  conditioningMethod?: string;
+  dryingTemperatureC?: number;
+  temperature?: string;
+  humidity?: string;
+  testingLocation?: string;
+  technicianName: string;
+  checkedBy?: string;
+  notes?: string;
+  specimens: MasonryUnitSpecimen[];
+  averages: MasonryUnitAverages;
+  createdAt: string;
 }

@@ -14,6 +14,32 @@ function formatNumber(value?: number, digits = 2) {
 }
 
 export function getTestResultSummary(store: LabState, test: LabTest): TestResultSummary {
+  const masonry = store.masonryUnitTests.find((item) => item.testId === test.id);
+  if (masonry) {
+    const crushed = masonry.specimens.filter((row) => typeof row.compressiveStrengthMpa === "number").length;
+    const strength = masonry.averages.normalisedStrengthMpa ?? masonry.averages.compressiveStrengthMpa;
+    const parts: string[] = [];
+    // Only the determinations that were actually run appear in the summary, so
+    // a unit set that was measured but never crushed does not read as 0 MPa.
+    if (masonry.averages.grossDryDensityKgM3 !== undefined) {
+      parts.push(`Densiteti: ${formatNumber(masonry.averages.grossDryDensityKgM3, 0)} kg/m³`);
+    }
+    if (masonry.averages.waterAbsorptionPercent !== undefined) {
+      parts.push(`Ujëthithja: ${formatNumber(masonry.averages.waterAbsorptionPercent)} %`);
+    }
+    if (strength !== undefined) {
+      const normalised = masonry.averages.normalisedStrengthMpa !== undefined ? " e normalizuar" : "";
+      parts.push(`Rezistenca${normalised}: ${formatNumber(strength)} MPa (${crushed} njësi)`);
+    }
+    return {
+      testStartDate: masonry.testStartDate,
+      testEndDate: masonry.testEndDate,
+      technicianName: masonry.technicianName,
+      checkedBy: masonry.checkedBy,
+      result: parts.length ? parts.join("; ") : "Element muraturë: pa matje të plotësuara"
+    };
+  }
+
   const admixture = store.admixtureTests.find((item) => item.testId === test.id);
   if (admixture) {
     return {

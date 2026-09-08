@@ -6,16 +6,19 @@ import { Dispatch, FormEvent, SetStateAction, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { StageCell } from "@/components/ui/stage-cell";
 import { testLifecycle } from "@/lib/sample-stage";
-import { getMortarTestKind, isAggregateAcvAccreditedTest, isAggregateBulkDensityAccreditedTest, isAggregateChemicalAccreditedTest, isAggregateDensityAbsorptionAccreditedTest, isAggregateElongationIndexAccreditedTest, isAggregateFillerDensityAccreditedTest, isAggregateFlakinessIndexAccreditedTest, isAggregateFreezeThawAccreditedTest, isAggregateGranulometrySampleType, isAggregateLosAngelesAccreditedTest, isAggregateSandEquivalentAccreditedTest, isAggregateShapeIndexAccreditedTest, isAggregateSoundnessAccreditedTest, isAsphaltAccreditedTest, isAdmixtureAccreditedTest, isCementBlaineAstmAccreditedTest, isCementBlaineBsEnAccreditedTest, isCementConsistencyAccreditedTest, isCementStrengthAccreditedTest, isConcreteCoreAccreditedTest, isConcreteDensityAccreditedTest, isConcreteFlexuralAccreditedTest, isConcreteIndirectTensileAccreditedTest, isConcreteWaterPenetrationAccreditedTest, isMortarAccreditedTest, isSteelSampleType, isThermalInsulationAccreditedTest } from "@/lib/accredited-tests";
+import { getMortarTestKind, isAggregateAcvAccreditedTest, isAggregateBulkDensityAccreditedTest, isAggregateChemicalAccreditedTest, isAggregateDensityAbsorptionAccreditedTest, isAggregateElongationIndexAccreditedTest, isAggregateFillerDensityAccreditedTest, isAggregateFlakinessIndexAccreditedTest, isAggregateFreezeThawAccreditedTest, isAggregateGranulometrySampleType, isAggregateLosAngelesAccreditedTest, isAggregateSandEquivalentAccreditedTest, isAggregateShapeIndexAccreditedTest, isAggregateSoundnessAccreditedTest, isAsphaltAccreditedTest, isAdmixtureAccreditedTest, isMasonryUnitAccreditedTest, isCementBlaineAstmAccreditedTest, isCementBlaineBsEnAccreditedTest, isCementConsistencyAccreditedTest, isCementStrengthAccreditedTest, isConcreteCoreAccreditedTest, isConcreteDensityAccreditedTest, isConcreteFlexuralAccreditedTest, isConcreteIndirectTensileAccreditedTest, isConcreteWaterPenetrationAccreditedTest, isMortarAccreditedTest, isSteelSampleType, isThermalInsulationAccreditedTest } from "@/lib/accredited-tests";
 import { admixtureDeterminationsDisagree } from "@/lib/calculations";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { useLabStore } from "@/lib/lab-store";
 import { canEditTestData, canGenerateReportForTest, canReviewTests, canViewClientIdentity } from "@/lib/permissions";
-import type { AsphaltReportKind, LabTest, LabUser, MortarTest, MortarTestKind, Sample } from "@/lib/types";
+import type { AsphaltReportKind, LabTest, LabUser, MasonryUnitCategory, MortarTest, MortarTestKind, Sample } from "@/lib/types";
 
 const aggregateSieveSizes = [125, 80, 63, 37.5, 31.5, 25, 20, 16, 12.5, 8, 4, 2, 1, 0.5, 0.25, 0.125, 0.063, 0];
 const mortarSieveSizes = [8, 4, 2, 1, 0.5, 0.25, 0.125, 0.063, 0.0001];
 const asphaltSieveSizes = [31.5, 25, 20, 16, 12.5, 8, 4, 2, 0.5, 0.25, 0.063, 0];
+// BS EN 772-1 and 772-16 both test six units.
+const MASONRY_SPECIMEN_ROWS = [1, 2, 3, 4, 5, 6];
+const MASONRY_UNIT_CATEGORIES: MasonryUnitCategory[] = ["Tullë Qeramike", "Tullë Silikate", "Tullë Betoni", "Bllok Betoni"];
 
 export default function TestDetailPage() {
   const params = useParams<{ id: string }>();
@@ -42,6 +45,7 @@ export default function TestDetailPage() {
   const thermalInsulation = store.thermalInsulationTests.find((item) => item.testId === activeTest.id);
   const cementConsistency = store.cementConsistencyTests.find((item) => item.testId === activeTest.id);
   const admixture = store.admixtureTests.find((item) => item.testId === activeTest.id);
+  const masonryUnit = store.masonryUnitTests.find((item) => item.testId === activeTest.id);
   const cementStrength = store.cementStrengthTests.find((item) => item.testId === activeTest.id);
   const cementBlaine = store.cementBlaineTests.find((item) => item.testId === activeTest.id);
   const mortar = store.mortarTests.find((item) => item.testId === activeTest.id);
@@ -338,6 +342,41 @@ export default function TestDetailPage() {
       controlMix2: mix("control", 2),
       testMix1: mix("test", 1),
       testMix2: mix("test", 2)
+    });
+  }
+
+  function submitMasonryUnit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    store.saveMasonryUnitTest(activeTest.id, {
+      testStartDate: String(form.get("testStartDate") ?? ""),
+      testEndDate: String(form.get("testEndDate") ?? ""),
+      unitCategory: (String(form.get("unitCategory") ?? "") || undefined) as MasonryUnitCategory | undefined,
+      productDescription: String(form.get("productDescription") ?? ""),
+      manufacturer: String(form.get("manufacturer") ?? ""),
+      declaredLengthMm: optionalNumber(form.get("declaredLengthMm")),
+      declaredWidthMm: optionalNumber(form.get("declaredWidthMm")),
+      declaredHeightMm: optionalNumber(form.get("declaredHeightMm")),
+      shapeFactorDelta: optionalNumber(form.get("shapeFactorDelta")),
+      conditioningFactor: optionalNumber(form.get("conditioningFactor")),
+      conditioningMethod: String(form.get("conditioningMethod") ?? ""),
+      dryingTemperatureC: optionalNumber(form.get("dryingTemperatureC")),
+      temperature: String(form.get("temperature") ?? ""),
+      humidity: String(form.get("humidity") ?? ""),
+      testingLocation: String(form.get("testingLocation") ?? ""),
+      technicianName: String(form.get("technicianName") ?? ""),
+      checkedBy: String(form.get("checkedBy") ?? ""),
+      notes: String(form.get("notes") ?? ""),
+      specimens: MASONRY_SPECIMEN_ROWS.map((index) => ({
+        specimenCode: String(form.get(`masonryCode-${index}`) ?? "") || String(index),
+        lengthMm: optionalNumber(form.get(`masonryLength-${index}`)),
+        widthMm: optionalNumber(form.get(`masonryWidth-${index}`)),
+        heightMm: optionalNumber(form.get(`masonryHeight-${index}`)),
+        dryMassG: optionalNumber(form.get(`masonryDryMass-${index}`)),
+        netVolumeMm3: optionalNumber(form.get(`masonryNetVolume-${index}`)),
+        saturatedMassG: optionalNumber(form.get(`masonrySaturatedMass-${index}`)),
+        maximumLoadKn: optionalNumber(form.get(`masonryLoad-${index}`))
+      }))
     });
   }
 
@@ -1009,6 +1048,7 @@ export default function TestDetailPage() {
   const isThermalInsulationTest = isThermalInsulationAccreditedTest(activeTest.testType);
   const isCementConsistencyTest = isCementConsistencyAccreditedTest(activeTest.testType);
   const isAdmixtureTest = isAdmixtureAccreditedTest(activeTest.testType);
+  const isMasonryUnitTest = isMasonryUnitAccreditedTest(activeTest.testType);
   const isCementStrengthTest = isCementStrengthAccreditedTest(activeTest.testType);
   const isCementBlaineBsEnTest = isCementBlaineBsEnAccreditedTest(activeTest.testType);
   const isCementBlaineAstmTest = isCementBlaineAstmAccreditedTest(activeTest.testType);
@@ -1109,6 +1149,195 @@ export default function TestDetailPage() {
             </div>
           </form>
           <TestActionsSidebar ready={Boolean(thermalInsulation)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={thermalInsulation ? `Thermal report data saved with density ${thermalInsulation.averages.apparentDensityKgM3} kg/m3.` : "Save worksheet data first to calculate the report values."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+        </div>
+      </>
+    );
+  }
+
+  if (isMasonryUnitTest) {
+    const specimens = masonryUnit?.specimens ?? [];
+    const averages = masonryUnit?.averages;
+    const crushed = specimens.filter((row) => typeof row.compressiveStrengthMpa === "number").length;
+    // Normalisation needs both factors from BS EN 772-1. Without them the raw
+    // strength still stands; it is simply not normalised, and the technician is
+    // told so rather than being handed a number that silently skipped a step.
+    const missingFactors =
+      Boolean(masonryUnit) && (masonryUnit?.shapeFactorDelta === undefined || masonryUnit?.conditioningFactor === undefined);
+    return (
+      <>
+        <PageHeader
+          title={activeTest.testCode}
+          description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Element muraturë`}
+          action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />}
+        />
+        <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
+          <form onSubmit={submitMasonryUnit} className="surface-card">
+            <div className="border-b border-line bg-lab-porcelain px-5 py-4">
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div>
+              <h2 className="mt-1 text-lg font-semibold text-ink">Element muraturë / <span className="italic font-normal">Masonry units</span></h2>
+              <p className="mt-1 text-sm text-muted">
+                BS EN 772-16 (përmasat), BS EN 772-13 (densiteti), BS EN 772-21 (ujëthithja) dhe BS EN 772-1 (shtypja).
+                Përmasat, masa e thatë, masa e ngopur dhe forca shtypëse jepen nga ju; densiteti, ujëthithja dhe rezistenca llogariten vetë.
+              </p>
+            </div>
+
+            <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
+              <Field label="Register number"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
+              <Field label="Sample type"><input className="input bg-lab-porcelain" value={sample?.sampleType ?? ""} readOnly /></Field>
+              <Field label="Applied standard"><input className="input bg-lab-porcelain" value={activeTest.standard || "BS EN 772-1 / -13 / -16 / -21"} readOnly /></Field>
+              <Field label="Lloji i njësisë / Unit type">
+                <select name="unitCategory" defaultValue={masonryUnit?.unitCategory ?? ""} className="input">
+                  <option value="">—</option>
+                  {MASONRY_UNIT_CATEGORIES.map((category) => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Produkti / Product"><input name="productDescription" defaultValue={masonryUnit?.productDescription ?? sample?.sampleDescription ?? ""} className="input" /></Field>
+              <Field label="Prodhuesi / Manufacturer"><input name="manufacturer" defaultValue={masonryUnit?.manufacturer ?? ""} className="input" /></Field>
+              <Field label="Gjatësia e deklaruar [mm]"><input name="declaredLengthMm" type="number" step="0.1" min="0" max="1000" defaultValue={masonryUnit?.declaredLengthMm ?? ""} className="input" /></Field>
+              <Field label="Gjerësia e deklaruar [mm]"><input name="declaredWidthMm" type="number" step="0.1" min="0" max="1000" defaultValue={masonryUnit?.declaredWidthMm ?? ""} className="input" /></Field>
+              <Field label="Lartësia e deklaruar [mm]"><input name="declaredHeightMm" type="number" step="0.1" min="0" max="1000" defaultValue={masonryUnit?.declaredHeightMm ?? ""} className="input" /></Field>
+              <Field label="Kondicionimi / Conditioning"><input name="conditioningMethod" defaultValue={masonryUnit?.conditioningMethod ?? ""} className="input" placeholder="p.sh. i thatë në ajër" /></Field>
+              <Field label="Temperatura e tharjes [°C]"><input name="dryingTemperatureC" type="number" step="1" min="0" max="300" defaultValue={masonryUnit?.dryingTemperatureC ?? 105} className="input" /></Field>
+              <Field label="Testing start date"><input name="testStartDate" type="date" defaultValue={masonryUnit?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
+              <Field label="Testing end date"><input name="testEndDate" type="date" defaultValue={masonryUnit?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
+              <Field label="Testing location"><input name="testingLocation" defaultValue={masonryUnit?.testingLocation ?? "01/A Lab. Fiziko-Mekanik / Physical-Mechanical laboratory"} className="input" /></Field>
+              <Field label="Technician"><EmployeeSelect name="technicianName" employees={activeEmployees} required value={masonryUnit?.technicianName ?? ""} /></Field>
+              <Field label="Checked by"><EmployeeSelect name="checkedBy" employees={activeEmployees} value={masonryUnit?.checkedBy ?? ""} /></Field>
+              <Field label="Temperature"><input name="temperature" defaultValue={masonryUnit?.temperature ?? ""} className="input" /></Field>
+              <Field label="Relative humidity"><input name="humidity" defaultValue={masonryUnit?.humidity ?? ""} className="input" /></Field>
+            </div>
+
+            <div className="border-b border-line p-5">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">Faktorët sipas BS EN 772-1 / <span className="italic font-normal normal-case">Factors from the standard</span></h3>
+              <p className="mt-1 text-xs text-muted">
+                Lexoni faktorin e formës δ nga Aneksi A i BS EN 772-1 sipas gjerësisë dhe lartësisë së njësisë, dhe faktorin e kondicionimit
+                sipas mënyrës së kondicionimit. Aplikacioni nuk i mban vetë këto tabela — standardi është dokument i kontrolluar.
+              </p>
+              <div className="mt-3 grid gap-4 md:grid-cols-3">
+                <Field label="Faktori i formës δ / Shape factor"><input name="shapeFactorDelta" type="number" step="0.01" min="0.1" max="2" defaultValue={masonryUnit?.shapeFactorDelta ?? ""} className="input" /></Field>
+                <Field label="Faktori i kondicionimit / Conditioning factor"><input name="conditioningFactor" type="number" step="0.01" min="0.1" max="2" defaultValue={masonryUnit?.conditioningFactor ?? ""} className="input" /></Field>
+                <InfoInline
+                  label="Gjerësia × lartësia mesatare"
+                  value={
+                    averages?.widthMm !== undefined && averages?.heightMm !== undefined
+                      ? `${averages.widthMm} × ${averages.heightMm} mm`
+                      : "Ruaj përmasat për ta parë"
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="p-5">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">Njësitë / <span className="italic font-normal normal-case">Units</span></h3>
+              <p className="mt-1 text-xs text-muted">
+                Lini bosh çdo kolonë që nuk është matur për një njësi — nuk llogaritet në mesatare. Vëllimi neto plotësohet vetëm për njësi me zbrazëti.
+              </p>
+              <div className="mt-3 overflow-x-auto">
+                <table className="w-full min-w-[1180px] text-left text-sm">
+                  <thead className="table-head">
+                    <tr>
+                      <th className="px-2 py-2">Nr.</th>
+                      <th className="px-2 py-2">L [mm]</th>
+                      <th className="px-2 py-2">W [mm]</th>
+                      <th className="px-2 py-2">H [mm]</th>
+                      <th className="px-2 py-2">Masa e thatë [g]</th>
+                      <th className="px-2 py-2">Vëllimi neto [mm³]</th>
+                      <th className="px-2 py-2">Masa e ngopur [g]</th>
+                      <th className="px-2 py-2">Forca [kN]</th>
+                      <th className="px-2 py-2">ρ bruto [kg/m³]</th>
+                      <th className="px-2 py-2">ρ neto [kg/m³]</th>
+                      <th className="px-2 py-2">Ujëthithja [%]</th>
+                      <th className="px-2 py-2">f [MPa]</th>
+                      <th className="px-2 py-2">f norm. [MPa]</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line">
+                    {MASONRY_SPECIMEN_ROWS.map((index) => {
+                      const row = specimens[index - 1];
+                      return (
+                        <tr key={index}>
+                          <td className="px-2 py-2"><input name={`masonryCode-${index}`} defaultValue={row?.specimenCode ?? String(index)} className="input w-14" /></td>
+                          <td className="px-2 py-2"><input name={`masonryLength-${index}`} type="number" step="0.1" min="0" max="1000" defaultValue={row?.lengthMm ?? ""} className="input w-24" /></td>
+                          <td className="px-2 py-2"><input name={`masonryWidth-${index}`} type="number" step="0.1" min="0" max="1000" defaultValue={row?.widthMm ?? ""} className="input w-24" /></td>
+                          <td className="px-2 py-2"><input name={`masonryHeight-${index}`} type="number" step="0.1" min="0" max="1000" defaultValue={row?.heightMm ?? ""} className="input w-24" /></td>
+                          <td className="px-2 py-2"><input name={`masonryDryMass-${index}`} type="number" step="0.1" min="0" max="100000" defaultValue={row?.dryMassG ?? ""} className="input w-28" /></td>
+                          <td className="px-2 py-2"><input name={`masonryNetVolume-${index}`} type="number" step="1" min="0" defaultValue={row?.netVolumeMm3 ?? ""} className="input w-32" /></td>
+                          <td className="px-2 py-2"><input name={`masonrySaturatedMass-${index}`} type="number" step="0.1" min="0" max="100000" defaultValue={row?.saturatedMassG ?? ""} className="input w-28" /></td>
+                          <td className="px-2 py-2"><input name={`masonryLoad-${index}`} type="number" step="0.01" min="0" max="5000" defaultValue={row?.maximumLoadKn ?? ""} className="input w-24" /></td>
+                          <td className="px-2 py-2 text-muted">{row?.grossDryDensityKgM3 ?? "-"}</td>
+                          <td className="px-2 py-2 text-muted">{row?.netDryDensityKgM3 ?? "-"}</td>
+                          <td className="px-2 py-2 text-muted">{row?.waterAbsorptionPercent ?? "-"}</td>
+                          <td className="px-2 py-2 text-muted">{row?.compressiveStrengthMpa ?? "-"}</td>
+                          <td className="px-2 py-2 font-semibold text-ink">{row?.normalisedStrengthMpa ?? "-"}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {missingFactors ? (
+                <div className="mt-3 rounded-md border border-[#f0a93a] bg-brand-risk p-3 text-xs font-semibold text-ink">
+                  Rezistenca e normalizuar nuk llogaritet pa faktorin e formës δ dhe faktorin e kondicionimit. Rezistenca e matur mbetet e vlefshme.
+                </div>
+              ) : null}
+
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <InfoInline
+                  label="Përmasat mesatare / Mean dimensions"
+                  value={
+                    averages?.lengthMm !== undefined
+                      ? `${averages.lengthMm} × ${averages.widthMm ?? "-"} × ${averages.heightMm ?? "-"} mm`
+                      : "Ruaj për ta llogaritur"
+                  }
+                />
+                <InfoInline
+                  label="Densiteti bruto mesatar / Mean gross density"
+                  value={averages?.grossDryDensityKgM3 !== undefined ? `${averages.grossDryDensityKgM3} kg/m³` : "Ruaj për ta llogaritur"}
+                />
+                <InfoInline
+                  label="Ujëthithja mesatare / Mean absorption"
+                  value={averages?.waterAbsorptionPercent !== undefined ? `${averages.waterAbsorptionPercent} %` : "Ruaj për ta llogaritur"}
+                />
+                <InfoInline
+                  label="Rezistenca mesatare / Mean strength"
+                  value={
+                    averages?.compressiveStrengthMpa !== undefined
+                      ? `${averages.compressiveStrengthMpa} MPa (${crushed} njësi)`
+                      : "Ruaj për ta llogaritur"
+                  }
+                />
+                <Field label="Notes"><input name="notes" defaultValue={masonryUnit?.notes ?? ""} className="input" /></Field>
+              </div>
+            </div>
+
+            <div className="flex justify-end border-t border-line p-5">
+              <button type="submit" className="btn-primary">Ruaj rezultatet</button>
+            </div>
+          </form>
+          <TestActionsSidebar
+            ready={Boolean(masonryUnit)}
+            activeTest={activeTest}
+            reportId={report?.id}
+            complete={complete}
+            generateReport={generateReport}
+            message={
+              averages?.normalisedStrengthMpa !== undefined
+                ? `Rezistenca e normalizuar ${averages.normalisedStrengthMpa} MPa nga ${crushed} njësi.`
+                : averages?.compressiveStrengthMpa !== undefined
+                  ? `Rezistenca ${averages.compressiveStrengthMpa} MPa nga ${crushed} njësi, pa normalizim.`
+                  : "Ruani matjet për të llogaritur rezultatet."
+            }
+            canEdit={canEditWorksheet}
+            canGenerateReport={canGenerateReport}
+            canReview={canReviewTest}
+            reviewPending={isAwaitingTechnicalReview}
+            approveTest={approveTechnicalResult}
+            rejectTest={rejectTechnicalResult}
+            technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName}
+          />
         </div>
       </>
     );
