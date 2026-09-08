@@ -65,7 +65,9 @@ import {
   calculateWaterDemandPercent,
   calculateUnitWeightKgPerM,
   deriveAdmixtureDetermination,
-  averageAdmixtureDryMaterial
+  averageAdmixtureDryMaterial,
+  deriveMasonryUnitSpecimen,
+  averageMasonryColumn
 } from "./calculations";
 import { useAuth } from "./auth";
 import { officialClientCodes2026 } from "./client-directory";
@@ -74,7 +76,7 @@ import { initialState } from "./seed-data";
 import { deriveSampleStage, SAMPLE_STAGES } from "./sample-stage";
 import { createSupabaseBrowserClient } from "./supabase/client";
 import { pushAuditEntries, pushNotifications } from "./activity-log";
-import type { AdmixtureDryMaterialTest, AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltMixtureKind, AsphaltReportKind, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabState, LabTest, LabUser, MortarTest, MortarTestKind, Notification, Project, Report, Role, Sample, SampleStatus, SteelTensileTest, ThermalInsulationTest } from "./types";
+import type { AdmixtureDryMaterialTest, AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltMixtureKind, AsphaltReportKind, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabState, LabTest, LabUser, MasonryUnitTest, MortarTest, MortarTestKind, Notification, Project, Report, Role, Sample, SampleStatus, SteelTensileTest, ThermalInsulationTest } from "./types";
 
 export interface NewSampleInput {
   clientId: string;
@@ -422,6 +424,37 @@ interface AdmixtureDryMaterialInput {
     dishMassG?: number;
     dishPlusSampleMassG?: number;
     dishPlusDriedMassG?: number;
+  }>;
+}
+
+interface MasonryUnitInput {
+  testStartDate?: string;
+  testEndDate?: string;
+  unitCategory?: MasonryUnitTest["unitCategory"];
+  productDescription?: string;
+  manufacturer?: string;
+  declaredLengthMm?: number;
+  declaredWidthMm?: number;
+  declaredHeightMm?: number;
+  shapeFactorDelta?: number;
+  conditioningFactor?: number;
+  conditioningMethod?: string;
+  dryingTemperatureC?: number;
+  temperature?: string;
+  humidity?: string;
+  testingLocation?: string;
+  technicianName: string;
+  checkedBy?: string;
+  notes?: string;
+  specimens: Array<{
+    specimenCode: string;
+    lengthMm?: number;
+    widthMm?: number;
+    heightMm?: number;
+    dryMassG?: number;
+    netVolumeMm3?: number;
+    saturatedMassG?: number;
+    maximumLoadKn?: number;
   }>;
 }
 
@@ -911,6 +944,7 @@ interface LabStoreValue extends LabState {
   saveCementStrengthTest: (testId: string, input: CementStrengthInput) => void;
   saveCementBlaineTest: (testId: string, input: CementBlaineInput) => void;
   saveAdmixtureDryMaterialTest: (testId: string, input: AdmixtureDryMaterialInput) => void;
+  saveMasonryUnitTest: (testId: string, input: MasonryUnitInput) => void;
   saveMortarTest: (testId: string, input: MortarInput) => void;
   saveSteelTest: (testId: string, input: SteelInput) => void;
   saveAggregateTest: (testId: string, input: AggregateInput) => void;
@@ -1187,6 +1221,11 @@ function mergeWithInitialState(saved: Partial<LabState>): LabState {
           : test
       );
     })(),
+    // A blob written before these test types existed has no key for them, so
+    // they fall back to the empty array rather than arriving as undefined and
+    // crashing the first .find() that touches them.
+    admixtureDryMaterialTests: saved.admixtureDryMaterialTests ?? initialState.admixtureDryMaterialTests,
+    masonryUnitTests: saved.masonryUnitTests ?? initialState.masonryUnitTests,
     concreteTests: saved.concreteTests ?? initialState.concreteTests,
     concreteWaterPenetrationTests: saved.concreteWaterPenetrationTests ?? initialState.concreteWaterPenetrationTests,
     concreteFlexuralTests: saved.concreteFlexuralTests ?? initialState.concreteFlexuralTests,
@@ -2696,6 +2735,64 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             auditLog: [...previous.auditLog]
           };
           addAudit(draft, "test_data_saved", "test", testId, "Admixture dry material (EN 480-8) data saved.");
+          return draft;
+        });
+      },
+      saveMasonryUnitTest(testId, input) {
+        setState((previous) => {
+          if (!canCurrentUserEditTest(previous, testId)) return previous;
+          const factors = { shapeFactorDelta: input.shapeFactorDelta, conditioningFactor: input.conditioningFactor };
+          const specimens = input.specimens.map((row) => ({
+            ...row,
+            ...deriveMasonryUnitSpecimen(row, factors)
+          }));
+          // Every mean covers only the units that carry a reading for that
+          // column, so units measured but not crushed do not drag the strength
+          // down, and a column nobody ran stays blank instead of reading zero.
+          const masonryTest: MasonryUnitTest = {
+            id: previous.masonryUnitTests.find((row) => row.testId === testId)?.id ?? crypto.randomUUID(),
+            testId,
+            testStartDate: input.testStartDate,
+            testEndDate: input.testEndDate,
+            unitCategory: input.unitCategory,
+            productDescription: input.productDescription,
+            manufacturer: input.manufacturer,
+            declaredLengthMm: input.declaredLengthMm,
+            declaredWidthMm: input.declaredWidthMm,
+            declaredHeightMm: input.declaredHeightMm,
+            shapeFactorDelta: input.shapeFactorDelta,
+            conditioningFactor: input.conditioningFactor,
+            conditioningMethod: input.conditioningMethod,
+            dryingTemperatureC: input.dryingTemperatureC,
+            temperature: input.temperature,
+            humidity: input.humidity,
+            testingLocation: input.testingLocation,
+            technicianName: input.technicianName,
+            checkedBy: input.checkedBy,
+            notes: input.notes,
+            specimens,
+            averages: {
+              lengthMm: averageMasonryColumn(specimens.map((row) => row.lengthMm), 1),
+              widthMm: averageMasonryColumn(specimens.map((row) => row.widthMm), 1),
+              heightMm: averageMasonryColumn(specimens.map((row) => row.heightMm), 1),
+              grossDryDensityKgM3: averageMasonryColumn(specimens.map((row) => row.grossDryDensityKgM3), 0),
+              netDryDensityKgM3: averageMasonryColumn(specimens.map((row) => row.netDryDensityKgM3), 0),
+              waterAbsorptionPercent: averageMasonryColumn(specimens.map((row) => row.waterAbsorptionPercent), 2),
+              compressiveStrengthMpa: averageMasonryColumn(specimens.map((row) => row.compressiveStrengthMpa), 2),
+              normalisedStrengthMpa: averageMasonryColumn(specimens.map((row) => row.normalisedStrengthMpa), 2)
+            },
+            createdAt: previous.masonryUnitTests.find((row) => row.testId === testId)?.createdAt ?? new Date().toISOString()
+          };
+          const existing = previous.masonryUnitTests.some((row) => row.testId === testId);
+          const draft: LabState = {
+            ...previous,
+            masonryUnitTests: existing
+              ? previous.masonryUnitTests.map((row) => (row.testId === testId ? masonryTest : row))
+              : [masonryTest, ...previous.masonryUnitTests],
+            tests: previous.tests.map((test) => (test.id === testId ? { ...test, status: "In Progress" } : test)),
+            auditLog: [...previous.auditLog]
+          };
+          addAudit(draft, "test_data_saved", "test", testId, "Masonry unit (EN 772) data saved.");
           return draft;
         });
       },

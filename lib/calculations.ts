@@ -472,3 +472,103 @@ export function admixtureDeterminationsDisagree(values: Array<number | undefined
   if (usable.length < 2) return false;
   return Math.max(...usable) - Math.min(...usable) > allowedSpreadPercent;
 }
+
+// --- Masonry units, BS EN 772-1 / -13 / -16 / -21 -------------------------
+
+const finite = (value?: number): value is number => typeof value === "number" && Number.isFinite(value);
+
+/**
+ * Mean of the specimens that carry a value for this column.
+ *
+ * Unlike averageAdmixtureDryMaterial this keeps zeros, because zero is a
+ * legitimate reading for a masonry column (an absorption of 0.0 %) whereas a
+ * missing reading is not. Returns undefined when nothing was measured, so a
+ * half-finished test reports a blank rather than a number.
+ */
+export function averageMasonryColumn(values: Array<number | undefined>, decimals = 2) {
+  const usable = values.filter(finite);
+  if (!usable.length) return undefined;
+  return round(usable.reduce((sum, value) => sum + value, 0) / usable.length, decimals);
+}
+
+/**
+ * Everything derivable from one masonry unit's measurements.
+ *
+ * Each result appears only when the readings it needs are present, so a unit
+ * that was weighed but not crushed reports a density and no strength.
+ */
+export function deriveMasonryUnitSpecimen(
+  input: {
+    lengthMm?: number;
+    widthMm?: number;
+    heightMm?: number;
+    dryMassG?: number;
+    netVolumeMm3?: number;
+    saturatedMassG?: number;
+    maximumLoadKn?: number;
+  },
+  factors: { shapeFactorDelta?: number; conditioningFactor?: number } = {}
+) {
+  const { lengthMm, widthMm, heightMm, dryMassG, netVolumeMm3, saturatedMassG, maximumLoadKn } = input;
+
+  // BS EN 772-16 — gross volume from the measured dimensions.
+  const grossVolumeMm3 =
+    finite(lengthMm) && finite(widthMm) && finite(heightMm) && lengthMm > 0 && widthMm > 0 && heightMm > 0
+      ? round(lengthMm * widthMm * heightMm, 0)
+      : undefined;
+
+  // BS EN 772-13 — g / mm3 to kg/m3 is a factor of 1e6.
+  const grossDryDensityKgM3 =
+    finite(dryMassG) && finite(grossVolumeMm3) && grossVolumeMm3 > 0
+      ? round((dryMassG * 1_000_000) / grossVolumeMm3, 0)
+      : undefined;
+
+  // Net volume is measured by displacement and only differs for perforated
+  // units; solid units leave it blank and report gross density alone.
+  const netDryDensityKgM3 =
+    finite(dryMassG) && finite(netVolumeMm3) && netVolumeMm3 > 0
+      ? round((dryMassG * 1_000_000) / netVolumeMm3, 0)
+      : undefined;
+
+  // BS EN 772-21 — cold water absorption against the dry mass.
+  const waterAbsorptionPercent =
+    finite(dryMassG) && dryMassG > 0 && finite(saturatedMassG)
+      ? round(((saturatedMassG - dryMassG) / dryMassG) * 100, 2)
+      : undefined;
+
+  // BS EN 772-1 — gross loaded area, and strength as load over that area.
+  const loadedAreaMm2 =
+    finite(lengthMm) && finite(widthMm) && lengthMm > 0 && widthMm > 0 ? round(lengthMm * widthMm, 0) : undefined;
+
+  const compressiveStrengthMpa =
+    finite(maximumLoadKn) && finite(loadedAreaMm2) && loadedAreaMm2 > 0
+      ? round((maximumLoadKn * 1000) / loadedAreaMm2, 2)
+      : undefined;
+
+  // Normalised strength needs both factors from the standard. Absent either,
+  // the strength stands unnormalised rather than being silently multiplied by 1.
+  const { shapeFactorDelta, conditioningFactor } = factors;
+  const normalisedStrengthMpa =
+    finite(compressiveStrengthMpa) && finite(shapeFactorDelta) && finite(conditioningFactor)
+      ? round(compressiveStrengthMpa * shapeFactorDelta * conditioningFactor, 2)
+      : undefined;
+
+  return {
+    grossVolumeMm3,
+    grossDryDensityKgM3,
+    netDryDensityKgM3,
+    waterAbsorptionPercent,
+    loadedAreaMm2,
+    compressiveStrengthMpa,
+    normalisedStrengthMpa
+  };
+}
+
+/**
+ * Deviation of a measured mean dimension from the declared one, in mm.
+ * BS EN 772-16 reports the unit against what the manufacturer declared.
+ */
+export function masonryDimensionDeviation(measured?: number, declared?: number) {
+  if (!finite(measured) || !finite(declared)) return undefined;
+  return round(measured - declared, 1);
+}
