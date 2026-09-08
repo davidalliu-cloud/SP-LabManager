@@ -8,7 +8,7 @@ import { reportLifecycle } from "@/lib/sample-stage";
 import { round } from "@/lib/calculations";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
 
-const HEAD_OF_LAB_NAME = "Adela Duzha";
+const HEAD_OF_LAB_NAME = "Eng. Adelajda Duzha";
 
 export function headOfLabName(_preferred?: string) {
   return HEAD_OF_LAB_NAME;
