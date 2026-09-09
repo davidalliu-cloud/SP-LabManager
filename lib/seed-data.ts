@@ -49,6 +49,7 @@ export const initialState: LabState = {
     { id: "p-2", clientId: "c-2", projectName: "Harbor Access Road", location: "Tripoli", description: "Road and drainage package" }
   ],
   samples: [],
+  fieldRecords: [],
   tests: [],
   concreteTests: [],
   concreteWaterPenetrationTests: [],

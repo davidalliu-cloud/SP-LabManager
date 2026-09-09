@@ -15,6 +15,7 @@ import { canViewClientIdentity, isTechnicianRole } from "@/lib/permissions";
 const navItems = [
   ["nav.dashboard", "/"],
   ["nav.sampleRegister", "/samples"],
+  ["nav.fieldRegister", "/field"],
   ["nav.tests", "/tests"],
   ["nav.reports", "/reports"],
   ["nav.procedures", "/procedures"],

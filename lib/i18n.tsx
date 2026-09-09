@@ -16,6 +16,7 @@ const translations = {
 
     "nav.dashboard": "Dashboard",
     "nav.sampleRegister": "Sample Register",
+    "nav.fieldRegister": "Field Register",
     "nav.tests": "Tests",
     "nav.reports": "Reports Register",
     "nav.procedures": "Procedures",
@@ -190,6 +191,7 @@ const translations = {
 
     "nav.dashboard": "Paneli",
     "nav.sampleRegister": "Regjistri i Kampionëve",
+    "nav.fieldRegister": "Rregjistri i Terrenit",
     "nav.tests": "Testet",
     "nav.reports": "Rregjistri Raporteve",
     "nav.procedures": "Procedurat",

@@ -1314,11 +1314,30 @@ export interface ProcedureRevision {
   createdAt: string;
 }
 
+// A field-sampling record — a sample taken/tested on site (Rregjistri i Terrenit),
+// as opposed to a sample received into the lab. Initial shape; fields will be
+// refined against the site register template.
+export interface FieldRecord {
+  id: string;
+  recordCode: string;
+  date: string;
+  clientId?: string;
+  projectId?: string;
+  location: string;
+  sampleType: string;
+  quantity?: number;
+  sampledBy?: string;
+  notes?: string;
+  createdBy: string;
+  createdAt: string;
+}
+
 export interface LabState {
   users: LabUser[];
   clients: Client[];
   projects: Project[];
   samples: Sample[];
+  fieldRecords: FieldRecord[];
   tests: LabTest[];
   concreteTests: ConcreteCompressiveTest[];
   concreteWaterPenetrationTests: ConcreteWaterPenetrationTest[];
