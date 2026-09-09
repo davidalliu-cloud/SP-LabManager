@@ -1431,6 +1431,19 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             const merged = mergeCollectionsPreferLocal(incomingState, base, current);
             lastSyncedStateRef.current = incomingState;
             remoteUpdatedAtRef.current = incoming.updated_at!;
+            // If merging the remote change on top of ours produced nothing
+            // beyond the remote state itself, this client has no unsaved local
+            // work — so record the remote as our saved baseline and do NOT let
+            // the save effect echo it straight back. Without this, two live
+            // clients bounce every update back and forth forever (each re-save
+            // bumps updated_at), and that constant churn makes every genuine
+            // save — like submitting a report — lose its compare-and-swap race.
+            // When there ARE local changes, forPersistence(merged) differs from
+            // the remote, so we leave the baseline alone and the effect pushes
+            // our work as normal.
+            if (JSON.stringify(forPersistence(merged)) === JSON.stringify(forPersistence(incomingState))) {
+              lastSavedOnlineJson.current = JSON.stringify(merged);
+            }
             return merged;
           });
         }
