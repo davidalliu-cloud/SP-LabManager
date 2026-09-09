@@ -43,7 +43,15 @@ export default function DashboardPage() {
   const month = currentMonthContext();
   const samplesThisMonth = store.samples.filter((sample) => sample.dateReceived.startsWith(month.key)).length;
   const completedThisMonth = store.tests.filter((test) => test.completedAt?.startsWith(month.key)).length;
-  const pendingPreparation = store.tests.filter((test) => test.status === "Approved" && !store.reports.some((report) => report.testId === test.id)).length;
+  // Tests whose result is approved but which still have no report — exactly the
+  // "finished but stuck before a report" instance that is otherwise invisible in
+  // the registers. Listed in the Needs-attention panel below; the count also
+  // feeds the "Reports to prepare" tile.
+  const needsReport = store.tests
+    .filter((test) => test.status === "Approved" && !store.reports.some((report) => report.testId === test.id))
+    .map((test) => ({ test, sample: store.samples.find((sample) => sample.id === test.sampleId) }))
+    .sort((left, right) => (left.test.requiredTestDate ?? "").localeCompare(right.test.requiredTestDate ?? ""));
+  const pendingPreparation = needsReport.length;
   const pendingApproval = store.reports.filter((report) => report.reportStatus === "Pending Approval").length;
   const approvedNotIssued = store.reports.filter((report) => report.reportStatus === "Approved").length;
   // Derived from the due date, the same rule the Delayed Items page and the row
@@ -86,6 +94,63 @@ export default function DashboardPage() {
         <SummaryCard label={t("dashboard.pendingApproval")} value={pendingApproval} tone="purple" href="/reports" />
         <SummaryCard label={t("dashboard.approvedNotIssued")} value={approvedNotIssued} tone="green" href="/reports" />
         <SummaryCard label={t("dashboard.delayedTests")} value={delayed} tone="red" href="/delayed" />
+      </section>
+
+      <section className={`mt-6 surface-card p-4 ${needsReport.length ? "border-l-4 border-l-lab-gold" : ""}`}>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="flex items-center gap-2 text-base font-semibold text-ink">
+              {t("dashboard.attentionTitle")}
+              {needsReport.length ? (
+                <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-brand-late px-2 py-0.5 text-xs font-bold text-lab-red">
+                  {needsReport.length}
+                </span>
+              ) : null}
+            </h2>
+            <p className="mt-1 text-sm text-muted">{t("dashboard.attentionDescription")}</p>
+          </div>
+        </div>
+        {needsReport.length ? (
+          <div className="mt-4 overflow-x-auto border border-line">
+            <table className="w-full min-w-[820px] text-left text-sm">
+              <thead className="table-head">
+                <tr>
+                  <th className="px-4 py-3">Kampioni</th>
+                  <th className="px-4 py-3">Testi</th>
+                  <th className="px-4 py-3">Lloji</th>
+                  <th className="px-4 py-3">Data e testimit</th>
+                  <th className="px-4 py-3">Tekniku</th>
+                  <th className="px-4 py-3">Veprim</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {needsReport.map(({ test, sample }) => {
+                  const overdue = isOverdue(test.requiredTestDate, test.status);
+                  const technician = store.users.find((user) => user.id === test.assignedTechnician);
+                  return (
+                    <tr key={test.id} className={overdue ? "bg-red-50/70" : "hover:bg-[rgba(91,25,63,0.04)]"}>
+                      <td className="px-4 py-3 font-semibold text-ink">{sample?.sampleCode ?? "-"}</td>
+                      <td className="px-4 py-3 font-semibold text-ink">{test.testCode}</td>
+                      <td className="px-4 py-3">{test.testType}</td>
+                      <td className={`px-4 py-3 ${overdue ? "font-semibold text-brand-late" : ""}`}>{formatEuropeanDate(test.requiredTestDate)}</td>
+                      <td className="px-4 py-3">{technician?.fullName ?? "-"}</td>
+                      <td className="px-4 py-3">
+                        <Link href={`/tests/${test.id}`} className="font-semibold text-lab-burgundy hover:text-lab-purple">
+                          {t("dashboard.attentionGenerate")}
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-brand-green">
+            <span className="h-1.5 w-1.5 rounded-full bg-brand-green" aria-hidden="true" />
+            {t("dashboard.attentionEmpty")}
+          </p>
+        )}
       </section>
 
       <section className="mt-6 surface-card p-4">
