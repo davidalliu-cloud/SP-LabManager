@@ -10,7 +10,7 @@ import { useLabStore } from "@/lib/lab-store";
 import { canViewClientIdentity } from "@/lib/permissions";
 import { sampleLifecycle, testLifecycle } from "@/lib/sample-stage";
 import { isApproaching, isOverdue } from "@/lib/status";
-import type { LabTest, Sample } from "@/lib/types";
+import type { LabTest, Sample, TestStatus } from "@/lib/types";
 
 const albanianMonths = [
   "Janar",
@@ -52,6 +52,12 @@ export default function DashboardPage() {
     .map((test) => ({ test, sample: store.samples.find((sample) => sample.id === test.sampleId) }))
     .sort((left, right) => (left.test.requiredTestDate ?? "").localeCompare(right.test.requiredTestDate ?? ""));
   const pendingPreparation = needsReport.length;
+  // Tests whose actual testing work is not finished yet — the technicians' queue.
+  const incompleteStatuses: TestStatus[] = ["Pending", "Scheduled", "In Progress", "Delayed", "Rejected"];
+  const needsCompletion = store.tests
+    .filter((test) => incompleteStatuses.includes(test.status))
+    .map((test) => ({ test, sample: store.samples.find((sample) => sample.id === test.sampleId) }))
+    .sort((left, right) => (left.test.requiredTestDate ?? "").localeCompare(right.test.requiredTestDate ?? ""));
   const pendingApproval = store.reports.filter((report) => report.reportStatus === "Pending Approval").length;
   const approvedNotIssued = store.reports.filter((report) => report.reportStatus === "Approved").length;
   // Derived from the due date, the same rule the Delayed Items page and the row
@@ -96,62 +102,25 @@ export default function DashboardPage() {
         <SummaryCard label={t("dashboard.delayedTests")} value={delayed} tone="red" href="/delayed" />
       </section>
 
-      <section className={`mt-6 surface-card p-4 ${needsReport.length ? "border-l-4 border-l-lab-gold" : ""}`}>
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h2 className="flex items-center gap-2 text-base font-semibold text-ink">
-              {t("dashboard.attentionTitle")}
-              {needsReport.length ? (
-                <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-brand-late px-2 py-0.5 text-xs font-bold text-lab-red">
-                  {needsReport.length}
-                </span>
-              ) : null}
-            </h2>
-            <p className="mt-1 text-sm text-muted">{t("dashboard.attentionDescription")}</p>
-          </div>
-        </div>
-        {needsReport.length ? (
-          <div className="mt-4 overflow-x-auto border border-line">
-            <table className="w-full min-w-[820px] text-left text-sm">
-              <thead className="table-head">
-                <tr>
-                  <th className="px-4 py-3">Kampioni</th>
-                  <th className="px-4 py-3">Testi</th>
-                  <th className="px-4 py-3">Lloji</th>
-                  <th className="px-4 py-3">Data e testimit</th>
-                  <th className="px-4 py-3">Tekniku</th>
-                  <th className="px-4 py-3">Veprim</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line">
-                {needsReport.map(({ test, sample }) => {
-                  const overdue = isOverdue(test.requiredTestDate, test.status);
-                  const technician = store.users.find((user) => user.id === test.assignedTechnician);
-                  return (
-                    <tr key={test.id} className={overdue ? "bg-red-50/70" : "hover:bg-[rgba(91,25,63,0.04)]"}>
-                      <td className="px-4 py-3 font-semibold text-ink">{sample?.sampleCode ?? "-"}</td>
-                      <td className="px-4 py-3 font-semibold text-ink">{test.testCode}</td>
-                      <td className="px-4 py-3">{test.testType}</td>
-                      <td className={`px-4 py-3 ${overdue ? "font-semibold text-brand-late" : ""}`}>{formatEuropeanDate(test.requiredTestDate)}</td>
-                      <td className="px-4 py-3">{technician?.fullName ?? "-"}</td>
-                      <td className="px-4 py-3">
-                        <Link href={`/tests/${test.id}`} className="font-semibold text-lab-burgundy hover:text-lab-purple">
-                          {t("dashboard.attentionGenerate")}
-                        </Link>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-brand-green">
-            <span className="h-1.5 w-1.5 rounded-full bg-brand-green" aria-hidden="true" />
-            {t("dashboard.attentionEmpty")}
-          </p>
-        )}
-      </section>
+      <AttentionPanel
+        title={t("dashboard.completionTitle")}
+        description={t("dashboard.completionDescription")}
+        empty={t("dashboard.completionEmpty")}
+        actionLabel={t("dashboard.completionOpen")}
+        items={needsCompletion}
+        accentClass="border-l-lab-red"
+        badgeClass="bg-brand-late text-lab-red"
+      />
+
+      <AttentionPanel
+        title={t("dashboard.attentionTitle")}
+        description={t("dashboard.attentionDescription")}
+        empty={t("dashboard.attentionEmpty")}
+        actionLabel={t("dashboard.attentionGenerate")}
+        items={needsReport}
+        accentClass="border-l-lab-gold"
+        badgeClass="bg-lab-gold/20 text-[#8a5a12]"
+      />
 
       <section className="mt-6 surface-card p-4">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
@@ -223,6 +192,92 @@ export default function DashboardPage() {
         </div>
       </section>
     </>
+  );
+}
+
+// Collapsed by default (native <details>) so a caught-up lab sees only compact
+// headers with a count badge, and expands a panel only when it wants the list.
+function AttentionPanel({
+  title,
+  description,
+  empty,
+  actionLabel,
+  items,
+  accentClass,
+  badgeClass
+}: {
+  title: string;
+  description: string;
+  empty: string;
+  actionLabel: string;
+  items: Array<{ test: LabTest; sample?: Sample }>;
+  accentClass: string;
+  badgeClass: string;
+}) {
+  const store = useLabStore();
+  const count = items.length;
+  return (
+    <details className={`group mt-6 surface-card p-0 ${count ? `border-l-4 ${accentClass}` : ""}`}>
+      <summary className={`flex list-none items-center justify-between gap-3 p-4 [&::-webkit-details-marker]:hidden ${count ? "cursor-pointer" : "cursor-default"}`}>
+        <div>
+          <h2 className="flex items-center gap-2 text-base font-semibold text-ink">
+            {title}
+            {count ? (
+              <span className={`inline-flex min-w-6 items-center justify-center rounded-full px-2 py-0.5 text-xs font-bold ${badgeClass}`}>
+                {count}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-green">
+                <span className="h-1.5 w-1.5 rounded-full bg-brand-green" aria-hidden="true" />
+                {empty}
+              </span>
+            )}
+          </h2>
+          <p className="mt-1 text-sm text-muted">{description}</p>
+        </div>
+        {count ? (
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 shrink-0 text-muted transition-transform group-open:rotate-180" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        ) : null}
+      </summary>
+      {count ? (
+        <div className="overflow-x-auto border-t border-line">
+          <table className="w-full min-w-[820px] text-left text-sm">
+            <thead className="table-head">
+              <tr>
+                <th className="px-4 py-3">Kampioni</th>
+                <th className="px-4 py-3">Testi</th>
+                <th className="px-4 py-3">Lloji</th>
+                <th className="px-4 py-3">Data e testimit</th>
+                <th className="px-4 py-3">Tekniku</th>
+                <th className="px-4 py-3">Veprim</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {items.map(({ test, sample }) => {
+                const overdue = isOverdue(test.requiredTestDate, test.status);
+                const technician = store.users.find((user) => user.id === test.assignedTechnician);
+                return (
+                  <tr key={test.id} className={overdue ? "bg-red-50/70" : "hover:bg-[rgba(91,25,63,0.04)]"}>
+                    <td className="px-4 py-3 font-semibold text-ink">{sample?.sampleCode ?? "-"}</td>
+                    <td className="px-4 py-3 font-semibold text-ink">{test.testCode}</td>
+                    <td className="px-4 py-3">{test.testType}</td>
+                    <td className={`px-4 py-3 ${overdue ? "font-semibold text-brand-late" : ""}`}>{formatEuropeanDate(test.requiredTestDate)}</td>
+                    <td className="px-4 py-3">{technician?.fullName ?? "-"}</td>
+                    <td className="px-4 py-3">
+                      <Link href={`/tests/${test.id}`} className="font-semibold text-lab-burgundy hover:text-lab-purple">
+                        {actionLabel}
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
+    </details>
   );
 }
 
