@@ -56,6 +56,15 @@ export function SaveStatus() {
     >
       <span className="h-1.5 w-1.5 rounded-full bg-lab-red" aria-hidden="true" />
       {isConflict ? t("save.conflict") : t("save.error")}
+      {/* Retry re-sends the current (merged) in-memory change — no work is lost.
+          Reload stays as a secondary escape hatch that discards it. */}
+      <button
+        type="button"
+        onClick={() => store.retrySave()}
+        className="rounded border border-ink/20 bg-white px-1.5 py-0.5 font-semibold text-lab-burgundy hover:bg-lab-burgundy hover:text-white"
+      >
+        {t("save.retry")}
+      </button>
       <button
         type="button"
         onClick={() => window.location.reload()}

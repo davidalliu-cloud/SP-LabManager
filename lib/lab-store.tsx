@@ -910,6 +910,12 @@ interface LabStoreValue extends LabState {
   currentUserId: string;
   /** Whether the most recent change actually reached the server. */
   saveState: SaveState;
+  /**
+   * Re-attempt the last save against the current in-memory state. Used by the
+   * conflict/error banner so a save that lost a race can be retried without a
+   * reload (which would discard the unsaved change).
+   */
+  retrySave: () => void;
   // False until local storage has been read AND (when Supabase is configured)
   // the shared online state has been fetched. Before that, `state.users` is
   // still the hardcoded seed/demo data, which doesn't contain real accounts —
@@ -1267,6 +1273,11 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
   const [isHydrated, setIsHydrated] = useState(false);
   const [isRemoteChecked, setIsRemoteChecked] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>({ kind: "saved" });
+  // Bumped by retrySave() to re-run the save effect on demand (e.g. from the
+  // conflict banner) without any state change — so a save that lost a race can
+  // be retried against the current, already-merged in-memory state instead of
+  // forcing a reload that would discard it.
+  const [saveNonce, setSaveNonce] = useState(0);
   const lastSavedOnlineJson = useRef<string | null>(null);
   const remoteUpdatedAtRef = useRef<string | null>(null);
   const lastSyncedStateRef = useRef<LabState | null>(null);
@@ -1469,14 +1480,21 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (!data || data.length === 0) {
-          if (attempt >= 3) {
+          if (attempt >= 6) {
             // Previously this force-upserted, which silently overwrote whatever
-            // the other person had just saved. Three failed compare-and-swaps in
-            // a row means we cannot reconcile safely, so we stop and say so
+            // the other person had just saved. Repeated failed compare-and-swaps
+            // mean we cannot reconcile automatically, so we stop and say so
             // rather than deciding on the user's behalf whose work survives.
+            // The change is NOT lost: it stays in memory (state was updated to
+            // the merged result on each attempt), so the conflict banner's
+            // "Retry" re-runs this save against that merged state.
             setSaveState({ kind: "conflict" });
             return;
           }
+
+          // Space out retries with a short randomized backoff so two clients
+          // saving at the same instant don't keep colliding on every attempt.
+          await new Promise((resolve) => setTimeout(resolve, 150 * attempt + Math.random() * 200));
 
           const { data: fresh, error: fetchError } = await supabase
             .from("app_state")
@@ -1536,7 +1554,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
     }, 800);
 
     return () => window.clearTimeout(timer);
-  }, [isHydrated, isRemoteChecked, state]);
+  }, [isHydrated, isRemoteChecked, state, saveNonce]);
 
   const value = useMemo<LabStoreValue>(() => {
     function addAudit(draft: LabState, action: string, entityType: string, entityId: string, description: string) {
@@ -1660,6 +1678,12 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       ...state,
       currentUserId,
       saveState,
+      retrySave() {
+        // Show progress immediately, then bump the nonce to re-run the save
+        // effect against the current (already-merged) in-memory state.
+        setSaveState({ kind: "saving" });
+        setSaveNonce((n) => n + 1);
+      },
       isReady: isHydrated && (isRemoteChecked || !hasSupabaseConfig()),
       createEmployee(input) {
         const employeeId = crypto.randomUUID();
