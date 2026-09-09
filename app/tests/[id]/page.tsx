@@ -1082,7 +1082,7 @@ export default function TestDetailPage() {
       <>
         <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Thermal insulation`} action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />} />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-          <form onSubmit={submitThermalInsulation} className="surface-card">
+          <form onSubmit={submitThermalInsulation} className="surface-card"><fieldset disabled={!canEditWorksheet} className="m-0 min-w-0 border-0 p-0 disabled:opacity-70">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4">
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div>
               <h2 className="mt-1 text-lg font-semibold text-ink">Karakteristikat fiziko-mekanike të produkteve termoizoluese</h2>
@@ -1147,7 +1147,7 @@ export default function TestDetailPage() {
               <div><label className="text-sm font-medium text-ink">Notes</label><textarea name="notes" rows={4} defaultValue={thermalInsulation?.notes} className="input mt-1" /></div>
               <div className="flex justify-end"><button className="btn-secondary">Save thermal insulation data</button></div>
             </div>
-          </form>
+          </fieldset></form>
           <TestActionsSidebar ready={Boolean(thermalInsulation)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={thermalInsulation ? `Thermal report data saved with density ${thermalInsulation.averages.apparentDensityKgM3} kg/m3.` : "Save worksheet data first to calculate the report values."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
@@ -1171,7 +1171,7 @@ export default function TestDetailPage() {
           action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />}
         />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-          <form onSubmit={submitMasonryUnit} className="surface-card">
+          <form onSubmit={submitMasonryUnit} className="surface-card"><fieldset disabled={!canEditWorksheet} className="m-0 min-w-0 border-0 p-0 disabled:opacity-70">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4">
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div>
               <h2 className="mt-1 text-lg font-semibold text-ink">Element muraturë / <span className="italic font-normal">Masonry units</span></h2>
@@ -1316,7 +1316,7 @@ export default function TestDetailPage() {
             <div className="flex justify-end border-t border-line p-5">
               <button type="submit" className="btn-primary">Ruaj rezultatet</button>
             </div>
-          </form>
+          </fieldset></form>
           <TestActionsSidebar
             ready={Boolean(masonryUnit)}
             activeTest={activeTest}
@@ -1391,7 +1391,7 @@ export default function TestDetailPage() {
           action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />}
         />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-          <form onSubmit={submitAdmixture} className="surface-card">
+          <form onSubmit={submitAdmixture} className="surface-card"><fieldset disabled={!canEditWorksheet} className="m-0 min-w-0 border-0 p-0 disabled:opacity-70">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4">
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div>
               <h2 className="mt-1 text-lg font-semibold text-ink">Karakteristikat fiziko-kimike të aditivëve për beton</h2>
@@ -1446,7 +1446,7 @@ export default function TestDetailPage() {
                 <button className="btn-primary">Ruaj të dhënat / Save data</button>
               </div>
             </div>
-          </form>
+          </fieldset></form>
           <TestActionsSidebar ready={Boolean(admixture)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={admixture ? "Rezultatet e llogaritura janë gati për raportin e aditivit." : "Ruani të dhënat e fletës së punës për të llogaritur rezultatet."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
@@ -1458,7 +1458,7 @@ export default function TestDetailPage() {
       <>
         <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Cement consistency, setting, expansion`} action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />} />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-          <form onSubmit={submitCementConsistency} className="surface-card">
+          <form onSubmit={submitCementConsistency} className="surface-card"><fieldset disabled={!canEditWorksheet} className="m-0 min-w-0 border-0 p-0 disabled:opacity-70">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4">
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div>
               <h2 className="mt-1 text-lg font-semibold text-ink">Konsistenca, koha e prezës dhe ekspansioni</h2>
@@ -1513,7 +1513,7 @@ export default function TestDetailPage() {
               </div>
               <div className="lg:col-span-3 flex justify-end"><button className="btn-secondary">Save cement data</button></div>
             </div>
-          </form>
+          </fieldset></form>
           <TestActionsSidebar ready={Boolean(cementConsistency)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={cementConsistency ? `Water demand ${cementConsistency.consistency.waterDemandPercent}%, initial setting ${cementConsistency.setting.initialSettingMinutes} min.` : "Save worksheet data first to calculate cement consistency results."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
@@ -1536,7 +1536,7 @@ export default function TestDetailPage() {
       <>
         <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Cement strength`} action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />} />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-          <form onSubmit={submitCementStrength} className="surface-card">
+          <form onSubmit={submitCementStrength} className="surface-card"><fieldset disabled={!canEditWorksheet} className="m-0 min-w-0 border-0 p-0 disabled:opacity-70">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4">
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div>
               <h2 className="mt-1 text-lg font-semibold text-ink">Rezistenca në shtypje dhe përkulje e çimentos</h2>
@@ -1583,7 +1583,7 @@ export default function TestDetailPage() {
               <div className="mt-5"><label className="text-sm font-medium text-ink">Notes</label><textarea name="notes" rows={4} defaultValue={cementStrength?.notes} className="input mt-1" /></div>
               <div className="mt-5 flex justify-end"><button className="btn-secondary">Save cement strength data</button></div>
             </div>
-          </form>
+          </fieldset></form>
           <TestActionsSidebar ready={Boolean(cementStrength)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={cementStrength ? `28-day compression average ${cementStrength.averages.compressive28DayMpa} MPa.` : "Save worksheet data first to calculate cement strength."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
@@ -1596,7 +1596,7 @@ export default function TestDetailPage() {
       <>
         <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Blaine ${method}`} action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />} />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-          <form onSubmit={(event) => submitCementBlaine(event, method)} className="surface-card">
+          <form onSubmit={(event) => submitCementBlaine(event, method)} className="surface-card"><fieldset disabled={!canEditWorksheet} className="m-0 min-w-0 border-0 p-0 disabled:opacity-70">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4">
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div>
               <h2 className="mt-1 text-lg font-semibold text-ink">Sipërfaqja specifike Blaine sipas {method}</h2>
@@ -1672,7 +1672,7 @@ export default function TestDetailPage() {
                 <div className="lg:col-span-3 flex justify-end"><button className="btn-secondary">Save Blaine ASTM data</button></div>
               </div>
             )}
-          </form>
+          </fieldset></form>
           <TestActionsSidebar ready={Boolean(cementBlaine)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={cementBlaine ? `Specific surface ${cementBlaine.specificSurfaceCm2G} cm2/g.` : "Save worksheet data first to calculate Blaine specific surface."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
@@ -1684,7 +1684,7 @@ export default function TestDetailPage() {
       <>
         <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / ${activeTest.testType}`} action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />} />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-          <form onSubmit={submitMortar} className="surface-card">
+          <form onSubmit={submitMortar} className="surface-card"><fieldset disabled={!canEditWorksheet} className="m-0 min-w-0 border-0 p-0 disabled:opacity-70">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4">
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Fletë pune / Worksheet</div>
               <h2 className="mt-1 text-lg font-semibold text-ink">Llaç / Mortar</h2>
@@ -1713,7 +1713,7 @@ export default function TestDetailPage() {
               <textarea name="notes" rows={4} defaultValue={mortar?.notes} className="input mt-1" />
               <div className="mt-5 flex justify-end"><button className="btn-secondary">Ruaj të dhënat e llaçit</button></div>
             </div>
-          </form>
+          </fieldset></form>
           <TestActionsSidebar ready={Boolean(mortar)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={mortar ? mortar.summary : "Ruani fillimisht të dhënat e fletës së punës."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
@@ -1725,7 +1725,7 @@ export default function TestDetailPage() {
       <>
         <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Hardened concrete density`} action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />} />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-          <form onSubmit={submitConcreteDensity} className="surface-card">
+          <form onSubmit={submitConcreteDensity} className="surface-card"><fieldset disabled={!canEditWorksheet} className="m-0 min-w-0 border-0 p-0 disabled:opacity-70">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4"><div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div><h2 className="mt-1 text-lg font-semibold text-ink">Pesha volumore e betonit të ngurtësuar</h2><p className="mt-1 text-sm text-muted">BS EN 12390-7:2019. For regular specimens use D = m / V; for irregular specimens the volume can be calculated from air and water mass.</p></div>
             <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
               <Field label="Register number"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
@@ -1753,7 +1753,7 @@ export default function TestDetailPage() {
               <div className="mt-5"><label className="text-sm font-medium text-ink">Notes</label><textarea name="notes" rows={4} defaultValue={concreteDensity?.notes} className="input mt-1" /></div>
               <div className="mt-5 flex justify-end"><button className="btn-secondary">Save density data</button></div>
             </div>
-          </form>
+          </fieldset></form>
           <TestActionsSidebar ready={Boolean(concreteDensity)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={concreteDensity ? `Average density is ${concreteDensity.averageDensityKgM3} kg/m3.` : "Save worksheet data first to calculate density."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
@@ -1765,7 +1765,7 @@ export default function TestDetailPage() {
       <>
         <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Karrota betoni`} action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />} />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-          <form onSubmit={submitConcreteCore} className="surface-card">
+          <form onSubmit={submitConcreteCore} className="surface-card"><fieldset disabled={!canEditWorksheet} className="m-0 min-w-0 border-0 p-0 disabled:opacity-70">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4">
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Fletë Pune</div>
               <h2 className="mt-1 text-lg font-semibold text-ink">Përcaktimi i qëndrueshmërisë në shtypje të karrotave të betonit</h2>
@@ -1843,7 +1843,7 @@ export default function TestDetailPage() {
               <div className="mt-5"><label className="text-sm font-medium text-ink">Shënime</label><textarea name="notes" rows={4} defaultValue={concreteCore?.notes} className="input mt-1" /></div>
               <div className="mt-5 flex justify-end"><button className="btn-secondary">Ruaj të dhënat e karrotave</button></div>
             </div>
-          </form>
+          </fieldset></form>
           <TestActionsSidebar ready={Boolean(concreteCore)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={concreteCore ? `Raporti do të përdorë formatin ${concreteCore.reportRatioType === "1:2" ? "1 me 2" : concreteCore.reportRatioType === "1:1" ? "1 me 1" : "të përzier"}.` : "Ruaj të dhënat për të zgjedhur automatikisht raportin."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
@@ -1862,7 +1862,7 @@ export default function TestDetailPage() {
       <>
         <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Asfaltobeton`} action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />} />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-          <form onSubmit={submitAsphalt} className="surface-card">
+          <form onSubmit={submitAsphalt} className="surface-card"><fieldset disabled={!canEditWorksheet} className="m-0 min-w-0 border-0 p-0 disabled:opacity-70">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4">
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Fletë Pune / Worksheet</div>
               <h2 className="mt-1 text-lg font-semibold text-ink">Vetitë fiziko-mekanike të asfaltobetonit</h2>
@@ -1964,7 +1964,7 @@ export default function TestDetailPage() {
                 <div className="mt-5 flex justify-end"><button className="btn-secondary">Ruaj fletën e asfaltit</button></div>
               </div>
             </div>
-          </form>
+          </fieldset></form>
           <aside className="space-y-4">
             <TestActionsSidebar ready={Boolean(asphalt)} activeTest={activeTest} reportId={undefined} complete={complete} generateReport={() => generateAsphaltReport("bitumen-content")} message={asphalt ? `Bitum ${asphalt.bitumen.bitumenContentPercent}%, dendësi mesatare ${asphalt.summaries.averageBulkDensityGcm3} g/cm3.` : "Ruani fillimisht të dhënat e fletës së asfaltit."} canEdit={canEditWorksheet} canGenerateReport={canGenerateAsphaltReport("bitumen-content")} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
             <div className="surface-card p-4">
@@ -1988,7 +1988,7 @@ export default function TestDetailPage() {
       <>
         <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Indirect tensile`} action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />} />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-          <form onSubmit={submitConcreteIndirectTensile} className="surface-card">
+          <form onSubmit={submitConcreteIndirectTensile} className="surface-card"><fieldset disabled={!canEditWorksheet} className="m-0 min-w-0 border-0 p-0 disabled:opacity-70">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4"><div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div><h2 className="mt-1 text-lg font-semibold text-ink">Rezistenca në tërheqje indirekte</h2><p className="mt-1 text-sm text-muted">BS EN 12390-6:2009. fct = 2F / (π x L x d), with F in N.</p></div>
             <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
               <Field label="Register number"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
@@ -2017,7 +2017,7 @@ export default function TestDetailPage() {
               <div className="mt-5"><label className="text-sm font-medium text-ink">Notes</label><textarea name="notes" rows={4} defaultValue={concreteIndirectTensile?.notes} className="input mt-1" /></div>
               <div className="mt-5 flex justify-end"><button className="btn-secondary">Save indirect tensile data</button></div>
             </div>
-          </form>
+          </fieldset></form>
           <TestActionsSidebar ready={Boolean(concreteIndirectTensile)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={concreteIndirectTensile ? `Average indirect tensile strength is ${concreteIndirectTensile.averageTensileStrengthMpa} MPa.` : "Save worksheet data first to calculate indirect tensile strength."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
@@ -2029,7 +2029,7 @@ export default function TestDetailPage() {
       <>
         <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Water penetration`} action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />} />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-          <form onSubmit={submitConcreteWaterPenetration} className="surface-card">
+          <form onSubmit={submitConcreteWaterPenetration} className="surface-card"><fieldset disabled={!canEditWorksheet} className="m-0 min-w-0 border-0 p-0 disabled:opacity-70">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4"><div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div><h2 className="mt-1 text-lg font-semibold text-ink">Depërtimi i ujit në betonin e ngurtësuar</h2><p className="mt-1 text-sm text-muted">BS EN 12390-8:2019. Record the maximum depth of water penetration for up to three specimens.</p></div>
             <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
               <Field label="Register number"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
@@ -2063,7 +2063,7 @@ export default function TestDetailPage() {
               <div className="mt-5"><label className="text-sm font-medium text-ink">Notes</label><textarea name="notes" rows={4} defaultValue={concreteWater?.notes} className="input mt-1" /></div>
               <div className="mt-5 flex justify-end"><button className="btn-secondary">Save water penetration data</button></div>
             </div>
-          </form>
+          </fieldset></form>
           <TestActionsSidebar ready={Boolean(concreteWater)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={concreteWater ? `Average water penetration is ${concreteWater.averagePenetrationMm} mm.` : "Save worksheet data first to calculate average penetration."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
@@ -2075,7 +2075,7 @@ export default function TestDetailPage() {
       <>
         <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Flexural strength`} action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />} />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-          <form onSubmit={submitConcreteFlexural} className="surface-card">
+          <form onSubmit={submitConcreteFlexural} className="surface-card"><fieldset disabled={!canEditWorksheet} className="m-0 min-w-0 border-0 p-0 disabled:opacity-70">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4"><div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div><h2 className="mt-1 text-lg font-semibold text-ink">Rezistenca në përkulje / Flexural Strength</h2><p className="mt-1 text-sm text-muted">BS EN 12390-5:2019. Two-point apparatus formula: f = F x l / (d1 x d2²).</p></div>
             <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
               <Field label="Register number"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
@@ -2103,7 +2103,7 @@ export default function TestDetailPage() {
               <div className="mt-5"><label className="text-sm font-medium text-ink">Notes</label><textarea name="notes" rows={4} defaultValue={concreteFlexural?.notes} className="input mt-1" /></div>
               <div className="mt-5 flex justify-end"><button className="btn-secondary">Save flexural data</button></div>
             </div>
-          </form>
+          </fieldset></form>
           <TestActionsSidebar ready={Boolean(concreteFlexural)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={concreteFlexural ? `Average flexural strength is ${concreteFlexural.averageFlexuralStrengthMpa} MPa.` : "Save worksheet data first to calculate flexural strength."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
@@ -2115,7 +2115,7 @@ export default function TestDetailPage() {
       <>
         <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Soundness`} action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />} />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-          <form onSubmit={submitSoundness} className="surface-card">
+          <form onSubmit={submitSoundness} className="surface-card"><fieldset disabled={!canEditWorksheet} className="m-0 min-w-0 border-0 p-0 disabled:opacity-70">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4">
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div>
               <h2 className="mt-1 text-lg font-semibold text-ink">Humbja në peshë me sulfat magnezi / Soundness</h2>
@@ -2173,7 +2173,7 @@ export default function TestDetailPage() {
               <div><label className="text-sm font-medium text-ink">Notes</label><textarea name="notes" rows={4} defaultValue={aggregateSoundness?.notes} className="input mt-1" /></div>
               <div className="flex justify-end"><button className="btn-secondary">Save soundness data</button></div>
             </div>
-          </form>
+          </fieldset></form>
           <TestActionsSidebar ready={Boolean(aggregateSoundness)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={aggregateSoundness ? `Soundness loss calculated as ${aggregateSoundness.averageSoundnessLossPercent}%.` : "Save worksheet data first to calculate soundness."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
@@ -2185,7 +2185,7 @@ export default function TestDetailPage() {
       <>
         <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Sand equivalent`} action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />} />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-          <form onSubmit={submitSandEquivalent} className="surface-card">
+          <form onSubmit={submitSandEquivalent} className="surface-card"><fieldset disabled={!canEditWorksheet} className="m-0 min-w-0 border-0 p-0 disabled:opacity-70">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4">
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div>
               <h2 className="mt-1 text-lg font-semibold text-ink">Ekuivalenti i rërës / Sand Equivalent</h2>
@@ -2232,7 +2232,7 @@ export default function TestDetailPage() {
               <div><label className="text-sm font-medium text-ink">Notes</label><textarea name="notes" rows={4} defaultValue={aggregateSandEquivalent?.notes} className="input mt-1" /></div>
               <div className="flex justify-end"><button className="btn-secondary">Save sand equivalent data</button></div>
             </div>
-          </form>
+          </fieldset></form>
           <TestActionsSidebar ready={Boolean(aggregateSandEquivalent)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={aggregateSandEquivalent ? `Sand equivalent calculated as ${aggregateSandEquivalent.sandEquivalentValue}.` : "Save worksheet data first to calculate sand equivalent."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
@@ -2244,7 +2244,7 @@ export default function TestDetailPage() {
       <>
         <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Bulk density`} action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />} />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-          <form onSubmit={submitBulkDensity} className="surface-card">
+          <form onSubmit={submitBulkDensity} className="surface-card"><fieldset disabled={!canEditWorksheet} className="m-0 min-w-0 border-0 p-0 disabled:opacity-70">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4"><div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div><h2 className="mt-1 text-lg font-semibold text-ink">Pesha volumore e agregateve / Bulk Density</h2><p className="mt-1 text-sm text-muted">BS EN 1097-3:1998. Bulk density = (m2 - m1) / V, reported in Mg/m3.</p></div>
             <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
               <Field label="Register number"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
@@ -2270,7 +2270,7 @@ export default function TestDetailPage() {
               <div className="mt-5"><label className="text-sm font-medium text-ink">Notes</label><textarea name="notes" rows={4} defaultValue={aggregateBulkDensity?.notes} className="input mt-1" /></div>
               <div className="mt-5 flex justify-end"><button className="btn-secondary">Save bulk density data</button></div>
             </div>
-          </form>
+          </fieldset></form>
           <TestActionsSidebar ready={Boolean(aggregateBulkDensity)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={aggregateBulkDensity ? `Bulk density calculated as ${aggregateBulkDensity.averageBulkDensityMgM3} Mg/m3.` : "Save worksheet data first to calculate bulk density."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
@@ -2283,7 +2283,7 @@ export default function TestDetailPage() {
       <>
         <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Elongation index`} action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />} />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-          <form onSubmit={submitElongationIndex} className="surface-card">
+          <form onSubmit={submitElongationIndex} className="surface-card"><fieldset disabled={!canEditWorksheet} className="m-0 min-w-0 border-0 p-0 disabled:opacity-70">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4"><div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div><h2 className="mt-1 text-lg font-semibold text-ink">Indeksi i zgjatimit / Elongation Index</h2><p className="mt-1 text-sm text-muted">BS 812-105.2:1980. EI = elongated particle mass / retained mass x 100.</p></div>
             <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
               <Field label="Register number"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
@@ -2309,7 +2309,7 @@ export default function TestDetailPage() {
               <div className="mt-5"><label className="text-sm font-medium text-ink">Notes</label><textarea name="notes" rows={4} defaultValue={aggregateElongation?.notes} className="input mt-1" /></div>
               <div className="mt-5 flex justify-end"><button className="btn-secondary">Save elongation index data</button></div>
             </div>
-          </form>
+          </fieldset></form>
           <TestActionsSidebar ready={Boolean(aggregateElongation)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={aggregateElongation ? `Elongation index calculated as ${aggregateElongation.elongationIndexPercent}%.` : "Save worksheet data first to calculate elongation index."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
@@ -2342,7 +2342,7 @@ export default function TestDetailPage() {
           action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />}
         />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-          <form onSubmit={submitFlakinessIndex} className="surface-card">
+          <form onSubmit={submitFlakinessIndex} className="surface-card"><fieldset disabled={!canEditWorksheet} className="m-0 min-w-0 border-0 p-0 disabled:opacity-70">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4">
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div>
               <h2 className="mt-1 text-lg font-semibold text-ink">Indeksi i ciflosjes / Flakiness Index</h2>
@@ -2423,7 +2423,7 @@ export default function TestDetailPage() {
                 <button className="btn-secondary">Save flakiness data</button>
               </div>
             </div>
-          </form>
+          </fieldset></form>
 
           <aside className="space-y-4">
             <div className="surface-card p-4">
@@ -2460,7 +2460,7 @@ export default function TestDetailPage() {
           action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />}
         />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-          <form onSubmit={submitShapeIndex} className="surface-card">
+          <form onSubmit={submitShapeIndex} className="surface-card"><fieldset disabled={!canEditWorksheet} className="m-0 min-w-0 border-0 p-0 disabled:opacity-70">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4">
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div>
               <h2 className="mt-1 text-lg font-semibold text-ink">Përcaktimi i indeksit të formës</h2>
@@ -2529,7 +2529,7 @@ export default function TestDetailPage() {
                 <button className="btn-secondary">Save shape index data</button>
               </div>
             </div>
-          </form>
+          </fieldset></form>
 
           <aside className="space-y-4">
             <div className="surface-card p-4">
@@ -2566,7 +2566,7 @@ export default function TestDetailPage() {
           action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />}
         />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-          <form onSubmit={submitFillerDensity} className="surface-card">
+          <form onSubmit={submitFillerDensity} className="surface-card"><fieldset disabled={!canEditWorksheet} className="m-0 min-w-0 border-0 p-0 disabled:opacity-70">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4">
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div>
               <h2 className="mt-1 text-lg font-semibold text-ink">Densiteti specifik i filerit</h2>
@@ -2637,7 +2637,7 @@ export default function TestDetailPage() {
                 <button className="btn-secondary">Save filler density data</button>
               </div>
             </div>
-          </form>
+          </fieldset></form>
 
           <aside className="space-y-4">
             <div className="surface-card p-4">
@@ -2674,7 +2674,7 @@ export default function TestDetailPage() {
           action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />}
         />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-          <form onSubmit={submitDensityAbsorption} className="surface-card">
+          <form onSubmit={submitDensityAbsorption} className="surface-card"><fieldset disabled={!canEditWorksheet} className="m-0 min-w-0 border-0 p-0 disabled:opacity-70">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4">
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div>
               <h2 className="mt-1 text-lg font-semibold text-ink">Densiteti specifik dhe absorbimi i agregateve</h2>
@@ -2754,7 +2754,7 @@ export default function TestDetailPage() {
                 <button className="btn-secondary">Save density and absorption data</button>
               </div>
             </div>
-          </form>
+          </fieldset></form>
 
           <aside className="space-y-4">
             <div className="surface-card p-4">
@@ -2791,7 +2791,7 @@ export default function TestDetailPage() {
           action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />}
         />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-          <form onSubmit={submitAcv} className="surface-card">
+          <form onSubmit={submitAcv} className="surface-card"><fieldset disabled={!canEditWorksheet} className="m-0 min-w-0 border-0 p-0 disabled:opacity-70">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4">
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div>
               <h2 className="mt-1 text-lg font-semibold text-ink">Përcaktimi i rezistencës në thërrmim (ACV)</h2>
@@ -2852,7 +2852,7 @@ export default function TestDetailPage() {
                 <button className="btn-secondary">Save ACV data</button>
               </div>
             </div>
-          </form>
+          </fieldset></form>
 
           <aside className="space-y-4">
             <div className="surface-card p-4">
@@ -2889,7 +2889,7 @@ export default function TestDetailPage() {
           action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />}
         />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-          <form onSubmit={submitFreezeThaw} className="surface-card">
+          <form onSubmit={submitFreezeThaw} className="surface-card"><fieldset disabled={!canEditWorksheet} className="m-0 min-w-0 border-0 p-0 disabled:opacity-70">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4">
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div>
               <h2 className="mt-1 text-lg font-semibold text-ink">Përcaktimi i rezistencës ndaj cikleve ngrirje-shkrirje</h2>
@@ -2973,7 +2973,7 @@ export default function TestDetailPage() {
                 <button className="btn-secondary">Save freeze-thaw data</button>
               </div>
             </div>
-          </form>
+          </fieldset></form>
 
           <aside className="space-y-4">
             <div className="surface-card p-4">
@@ -3010,7 +3010,7 @@ export default function TestDetailPage() {
           action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />}
         />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-          <form onSubmit={submitLosAngeles} className="surface-card">
+          <form onSubmit={submitLosAngeles} className="surface-card"><fieldset disabled={!canEditWorksheet} className="m-0 min-w-0 border-0 p-0 disabled:opacity-70">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4">
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div>
               <h2 className="mt-1 text-lg font-semibold text-ink">Përcaktimi i humbjes në fragmentim (Los Angeles test)</h2>
@@ -3086,7 +3086,7 @@ export default function TestDetailPage() {
                 <button className="btn-secondary">Save Los Angeles data</button>
               </div>
             </div>
-          </form>
+          </fieldset></form>
 
           <aside className="space-y-4">
             <div className="surface-card p-4">
@@ -3123,7 +3123,7 @@ export default function TestDetailPage() {
           action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />}
         />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-          <form onSubmit={submitAggregateChemical} className="surface-card">
+          <form onSubmit={submitAggregateChemical} className="surface-card"><fieldset disabled={!canEditWorksheet} className="m-0 min-w-0 border-0 p-0 disabled:opacity-70">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4">
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div>
               <h2 className="mt-1 text-lg font-semibold text-ink">Përcaktimi i klorureve dhe sulfateve në agregate</h2>
@@ -3182,7 +3182,7 @@ export default function TestDetailPage() {
                 <button className="btn-secondary">Save chloride and sulfate data</button>
               </div>
             </div>
-          </form>
+          </fieldset></form>
 
           <aside className="space-y-4">
             <div className="surface-card p-4">
@@ -3219,7 +3219,7 @@ export default function TestDetailPage() {
           action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />}
         />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-          <form onSubmit={submitAggregate} className="surface-card">
+          <form onSubmit={submitAggregate} className="surface-card"><fieldset disabled={!canEditWorksheet} className="m-0 min-w-0 border-0 p-0 disabled:opacity-70">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4">
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div>
               <h2 className="mt-1 text-lg font-semibold text-ink">Granulometri sipas BS EN</h2>
@@ -3289,7 +3289,7 @@ export default function TestDetailPage() {
                 <button className="btn-secondary">Save granulometry data</button>
               </div>
             </div>
-          </form>
+          </fieldset></form>
 
           <aside className="space-y-4">
             <div className="surface-card p-4">
@@ -3324,7 +3324,7 @@ export default function TestDetailPage() {
           action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />}
         />
         <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-          <form onSubmit={submitSteel} className="surface-card">
+          <form onSubmit={submitSteel} className="surface-card"><fieldset disabled={!canEditWorksheet} className="m-0 min-w-0 border-0 p-0 disabled:opacity-70">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4">
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div>
               <h2 className="mt-1 text-lg font-semibold text-ink">Determination of Physical-Mechanical Characteristics of Steel Rebar</h2>
@@ -3435,7 +3435,7 @@ export default function TestDetailPage() {
                 <button className="btn-secondary">Save steel tensile data</button>
               </div>
             </div>
-          </form>
+          </fieldset></form>
 
           <aside className="space-y-4">
             <div className="surface-card p-4">
@@ -3484,7 +3484,7 @@ export default function TestDetailPage() {
         action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />}
       />
       <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-        <form onSubmit={submit} className="surface-card">
+        <form onSubmit={submit} className="surface-card"><fieldset disabled={!canEditWorksheet} className="m-0 min-w-0 border-0 p-0 disabled:opacity-70">
           <div className="border-b border-line bg-lab-porcelain px-5 py-4">
             <div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Work Sheet</div>
             <h2 className="mt-1 text-lg font-semibold text-ink">Determination of Physical-Mechanical Characteristics of Concrete Cubes</h2>
@@ -3585,7 +3585,7 @@ export default function TestDetailPage() {
               <button className="btn-secondary">Save data</button>
             </div>
           </div>
-        </form>
+        </fieldset></form>
 
         <aside className="space-y-4">
           <div className="surface-card p-4">
