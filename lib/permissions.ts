@@ -77,9 +77,46 @@ export function canSendReportsToClient(email?: string) {
   return Boolean(email && REPORT_SEND_ALLOWED_EMAILS.includes(email.trim().toLowerCase()));
 }
 
+// A test result is "signed off" once it is approved or has entered the report
+// pipeline. From this point the worksheet is frozen for EVERYONE — including the
+// superadmin and Chief of Lab — because an approved/issued result must not be
+// altered casually. The only way back in is an explicit re-write (which voids
+// the approvals) or a report rejection (which sends the test back to "Rejected").
+export const SIGNED_OFF_TEST_STATUSES: TestStatus[] = [
+  "Approved",
+  "Report Drafted",
+  "Pending Approval",
+  "Report Approved",
+  "Issued",
+  "Sent to Client"
+];
+
+export function isTestSignedOff(status?: TestStatus) {
+  return Boolean(status && SIGNED_OFF_TEST_STATUSES.includes(status));
+}
+
 export function canEditTestData(role?: Role, status?: TestStatus) {
+  // Locked for everyone once signed off — no superadmin/Chief bypass here.
+  if (isTestSignedOff(status)) return false;
+  // Before sign-off, Chief of Lab and superadmin may correct data at any of the
+  // remaining stages (including the review window); others only while the test
+  // is still open.
   if (isSuperAdmin(role) || role === "Chief of Lab") return true;
   return Boolean(status && ["Pending", "Scheduled", "In Progress", "Delayed", "Rejected"].includes(status));
+}
+
+// A sample's registration data (client, project, sample type, dates…) is locked
+// once any signed-off work depends on it — i.e. any of its tests is signed off
+// or any report has been generated. Editing it then would silently change the
+// basis of an approved result, so it requires a deliberate re-write instead.
+export function isSampleLocked(testStatuses: Array<TestStatus | undefined>, hasReport: boolean) {
+  return hasReport || testStatuses.some((status) => isTestSignedOff(status));
+}
+
+// Re-writing a sample voids its approvals and rewinds the whole flow, so it is
+// held to the same named allow-list as ordinary sample editing.
+export function canRewriteSample(email?: string) {
+  return canEditSampleAfterRegistration(email);
 }
 
 export function canGenerateReportForTest(role?: Role, status?: TestStatus, hasReport = false) {

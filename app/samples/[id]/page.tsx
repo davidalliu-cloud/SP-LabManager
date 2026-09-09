@@ -9,7 +9,7 @@ import { SummaryCard } from "@/components/ui/summary-card";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { useLabStore } from "@/lib/lab-store";
 import { accreditedSampleTypes, getAccreditedTestById, getAccreditedTestsForSampleType } from "@/lib/accredited-tests";
-import { canAssignSampleClient, canEditSampleAfterRegistration, canReviewTests, canViewClientIdentity } from "@/lib/permissions";
+import { canAssignSampleClient, canEditSampleAfterRegistration, canReviewTests, canRewriteSample, canViewClientIdentity, isSampleLocked } from "@/lib/permissions";
 import { deriveSampleStage, reportLifecycle, testLifecycle } from "@/lib/sample-stage";
 import { StageCell } from "@/components/ui/stage-cell";
 import { SampleStageStepper } from "@/components/samples/sample-stage-stepper";
@@ -56,6 +56,10 @@ export default function SampleDetailPage() {
       ? `${plannedCastingDates.map((date) => formatEuropeanDate(date)).join(", ")}`
       : sample.concretingDate;
   const reports = store.reports.filter((item) => item.sampleId === sample.id);
+  // Once any test is signed off or any report exists, the sample's data is
+  // frozen; changing it requires the deliberate re-write below.
+  const sampleLocked = isSampleLocked(tests.map((item) => item.status), reports.length > 0);
+  const canRewrite = canRewriteSample(currentUser?.email);
   const linkedSamples = sample.sampleGroupId
     ? store.samples.filter((item) => item.sampleGroupId === sample.sampleGroupId && item.id !== sample.id)
     : [];
@@ -119,6 +123,20 @@ export default function SampleDetailPage() {
     store.acceptSample(sample.id);
   }
 
+  function handleRewrite() {
+    if (!sample) return;
+    const confirmed = window.confirm(
+      `Rishkruaj kampionin ${sample.sampleCode}?\n\n` +
+        "Kjo do të ANULOJË të gjitha miratimet dhe raportet e këtij kampioni dhe do t'i kthejë testet në fillim. Do të duhet të kaloni sërish nga fillimi.\n\n" +
+        `Re-write sample ${sample.sampleCode}? This VOIDS all its approvals and reports and reopens its tests — you will go through the whole flow again.`
+    );
+    if (!confirmed) return;
+    store.rewriteSample(sample.id);
+    // Reports are now gone and tests are back to Pending, so the sample is
+    // editable again — drop straight into the edit form.
+    openEdit();
+  }
+
   return (
     <>
       <PageHeader
@@ -160,12 +178,37 @@ export default function SampleDetailPage() {
             <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
               <h2 className="text-base font-semibold text-ink">Informacioni i kampionit</h2>
               {canEditSample ? (
-                <button type="button" onClick={() => (isEditingDetails ? setIsEditingDetails(false) : openEdit())} className="btn-secondary px-3">
-                  {isEditingDetails ? "Mbyll modifikimin" : "Modifiko të dhënat"}
-                </button>
+                sampleLocked ? (
+                  canRewrite ? (
+                    <button
+                      type="button"
+                      onClick={handleRewrite}
+                      className="rounded-md border border-lab-red/40 bg-white px-3 py-2 text-xs font-semibold text-lab-red transition hover:bg-lab-red hover:text-white"
+                    >
+                      Rishkruaj kampionin / Re-write sample
+                    </button>
+                  ) : null
+                ) : (
+                  <button type="button" onClick={() => (isEditingDetails ? setIsEditingDetails(false) : openEdit())} className="btn-secondary px-3">
+                    {isEditingDetails ? "Mbyll modifikimin" : "Modifiko të dhënat"}
+                  </button>
+                )
               ) : null}
             </div>
-            {isEditingDetails && canEditSample ? (
+            {sampleLocked ? (
+              <p className="mt-3 flex items-start gap-2 rounded-md border border-line bg-lab-mist/40 px-3 py-2 text-xs leading-5 text-muted">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 h-4 w-4 shrink-0 text-lab-burgundy" aria-hidden="true">
+                  <rect x="3" y="11" width="18" height="11" rx="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                <span>
+                  Të dhënat janë të kyçura sepse ka teste të miratuara ose raporte të krijuara. Për t&apos;i ndryshuar, përdorni <strong>Rishkruaj kampionin</strong>, që anulon miratimet dhe raportet dhe ju kthen që nga fillimi.
+                  {" / "}
+                  Data is locked because approved tests or reports exist. To change it, use <strong>Re-write sample</strong>, which voids the approvals and reports and takes you back to the start.
+                </span>
+              </p>
+            ) : null}
+            {isEditingDetails && canEditSample && !sampleLocked ? (
               <form onSubmit={submitEdit} className="mt-4 grid gap-4 md:grid-cols-3">
                 {canAssignClient ? (
                   <>

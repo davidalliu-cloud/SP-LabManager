@@ -3874,7 +3874,7 @@ function TestActionsSidebar({
             </div>
           ) : null}
           <button onClick={generateReport} disabled={!canGenerateReport} className="btn-primary w-full disabled:cursor-not-allowed disabled:bg-slate-300">Gjenero raportin</button>
-          {!canEdit ? <div className="soft-panel p-3 text-xs text-muted">Të dhënat e testit janë të kyçura. Ndryshime lejohen vetëm për Superadmin, ose pas refuzimit nga Kryelaboranti për përsëritje.</div> : null}
+          {!canEdit ? <div className="soft-panel p-3 text-xs text-muted">Të dhënat e testit janë të kyçura pasi rezultati është miratuar. Për t&apos;i ndryshuar, raporti duhet të refuzohet (kthen testin për përsëritje) ose kampioni të rishkruhet. / The test data is locked once the result is approved. To change it, the report must be rejected (which reopens the test) or the sample re-written.</div> : null}
           <div className="soft-panel p-3 text-xs text-muted">{message}</div>
           {reportId ? <Link className="btn-secondary block text-center" href={`/reports/${reportId}`}>Hap raportin</Link> : null}
         </div>

@@ -69,7 +69,7 @@ import {
 } from "./calculations";
 import { useAuth } from "./auth";
 import { officialClientCodes2026 } from "./client-directory";
-import { canAssignSampleClient, canDeleteSamples, canEditSampleAfterRegistration, canEditTestData, canReviewTests, canGenerateReportForTest, canManageClients, canManageEmployees } from "./permissions";
+import { canAssignSampleClient, canDeleteSamples, canEditSampleAfterRegistration, canEditTestData, canReviewTests, canGenerateReportForTest, canManageClients, canManageEmployees, canRewriteSample, isSampleLocked } from "./permissions";
 import { initialState } from "./seed-data";
 import { deriveSampleStage, SAMPLE_STAGES } from "./sample-stage";
 import { createSupabaseBrowserClient } from "./supabase/client";
@@ -933,6 +933,9 @@ interface LabStoreValue extends LabState {
   assignSampleClient: (sampleId: string, clientId: string, projectId: string) => void;
   assignSampleTechnician: (sampleId: string, technicianId: string) => void;
   updateSample: (sampleId: string, input: SampleCorrectionInput) => void;
+  /** Void a signed-off sample's approvals and rewind its tests so the whole flow
+   *  can be redone. Only the sample-edit allow-list may call it. */
+  rewriteSample: (sampleId: string) => void;
   acceptSample: (sampleId: string) => void;
   createSample: (input: NewSampleInput) => string;
   /** Registers several samples from one intake (e.g. sand + gravel delivered together) - one Sample per material, linked by a shared sampleGroupId when there's more than one. */
@@ -1938,6 +1941,15 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       assignSampleClient(sampleId, clientId, projectId) {
         setState((previous) => {
           if (!canAssignSampleClient(currentRole)) return previous;
+          // Same freeze as updateSample: don't re-point a signed-off sample.
+          if (
+            isSampleLocked(
+              previous.tests.filter((row) => row.sampleId === sampleId).map((row) => row.status),
+              previous.reports.some((row) => row.sampleId === sampleId)
+            )
+          ) {
+            return previous;
+          }
           const sample = previous.samples.find((row) => row.id === sampleId);
           const client = previous.clients.find((row) => row.id === clientId);
           const project = previous.projects.find((row) => row.id === projectId);
@@ -1985,6 +1997,17 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           if (!canEditSampleAfterRegistration(currentUser?.email)) return previous;
           const sample = previous.samples.find((row) => row.id === sampleId);
           if (!sample) return previous;
+          // Once signed-off work depends on this sample, its data is frozen -
+          // changing it requires an explicit re-write (rewriteSample) that first
+          // voids the approvals. Defense in depth behind the UI lock.
+          if (
+            isSampleLocked(
+              previous.tests.filter((row) => row.sampleId === sampleId).map((row) => row.status),
+              previous.reports.some((row) => row.sampleId === sampleId)
+            )
+          ) {
+            return previous;
+          }
           const normalizedDeliveredBy = input.deliveredBy?.trim() || undefined;
           const normalizedCollectedBy = input.collectedBy?.trim() || undefined;
           const normalizedConcretingDate = input.concretingDate?.trim() || undefined;
@@ -2049,6 +2072,58 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
               (retargeted.length ? ` ${retargeted.length} linked test${retargeted.length === 1 ? "" : "s"} retargeted to "${input.requestedTestType}".` : "") +
               (heldBack.length ? ` ${heldBack.length} linked test${heldBack.length === 1 ? "" : "s"} already in progress kept its original test type - review manually.` : "")
           );
+          return draft;
+        });
+      },
+      rewriteSample(sampleId) {
+        setState((previous) => {
+          if (!canRewriteSample(currentUser?.email)) return previous;
+          const sample = previous.samples.find((row) => row.id === sampleId);
+          if (!sample) return previous;
+          const linkedTests = previous.tests.filter((row) => row.sampleId === sampleId);
+          const linkedReports = previous.reports.filter((row) => row.sampleId === sampleId);
+          // Nothing signed off yet - the sample is still freely editable, so there
+          // is nothing to rewind.
+          if (!isSampleLocked(linkedTests.map((row) => row.status), linkedReports.length > 0)) return previous;
+          const linkedReportIds = new Set(linkedReports.map((row) => row.id));
+          const draft: LabState = {
+            ...previous,
+            // Rewind every linked test to the start so the worksheet reopens and a
+            // subsequent sample edit can retarget test types again.
+            tests: previous.tests.map((row) =>
+              row.sampleId === sampleId
+                ? { ...row, status: "Pending", completedAt: undefined, completedBy: undefined }
+                : row
+            ),
+            // Void the sample's reports. The PDFs stay in storage and the report
+            // numbers are preserved in the audit entry below for traceability.
+            reports: previous.reports.filter((row) => row.sampleId !== sampleId),
+            notifications: previous.notifications.filter((notification) =>
+              notification.relatedReportId ? !linkedReportIds.has(notification.relatedReportId) : true
+            ),
+            auditLog: [...previous.auditLog]
+          };
+          const voided = linkedReports.map((row) => row.reportNumber).filter(Boolean).join(", ");
+          addAudit(
+            draft,
+            "sample_rewritten",
+            "sample",
+            sampleId,
+            `Sample ${sample.sampleCode} re-written by ${currentUser?.fullName ?? "user"}: ` +
+              `${linkedTests.length} linked test${linkedTests.length === 1 ? "" : "s"} reopened for redo` +
+              (voided ? `; voided report${linkedReports.length === 1 ? "" : "s"} ${voided}` : "") +
+              ". All approvals cleared - the full flow must be repeated."
+          );
+          // Tell each assigned technician their test is back in their queue.
+          Array.from(new Set(linkedTests.map((row) => row.assignedTechnician).filter((id): id is string => Boolean(id)))).forEach((technicianId) => {
+            addNotification(
+              draft,
+              technicianId,
+              "Kampioni u rishkrua / Sample re-written",
+              `Kampioni ${sample.sampleCode} u rishkrua. Testet duhet të përsëriten. / Sample ${sample.sampleCode} was re-written; its tests must be redone.`,
+              linkedTests.find((row) => row.assignedTechnician === technicianId)?.id
+            );
+          });
           return draft;
         });
       },
