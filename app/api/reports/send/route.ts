@@ -96,13 +96,27 @@ export async function POST(request: Request) {
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     auth: { persistSession: false }
   });
-  const { data: reports, error: readError } = await supabase
-    .from("app_reports")
-    .select("id, report_number, report_status, pdf_url")
-    .in("id", payload.reportIds);
+  // The shared JSON blob (app_state) is the single source of truth. The
+  // normalized app_* tables are only a mirror kept by a DB trigger, and that
+  // trigger has been disabled because re-syncing the whole blob on every save
+  // was timing out and blocking all writes. So read reports straight from the
+  // blob here rather than from app_reports, which can be stale or empty.
+  const { data: stateRow, error: readError } = await supabase
+    .from("app_state")
+    .select("state")
+    .eq("id", "shared-lab-state")
+    .maybeSingle();
 
   if (readError) return NextResponse.json({ ok: false, error: `Could not load reports: ${readError.message}` }, { status: 500 });
-  if (!reports?.length) return NextResponse.json({ ok: false, error: "Those reports could not be found." }, { status: 404 });
+
+  type BlobReport = { id?: string; reportNumber?: string; reportStatus?: string; pdfUrl?: string };
+  const wanted = new Set(payload.reportIds);
+  const blobReports = (stateRow?.state as { reports?: BlobReport[] } | null)?.reports ?? [];
+  const reports = blobReports
+    .filter((r) => r.id && wanted.has(r.id))
+    .map((r) => ({ id: r.id!, report_number: r.reportNumber ?? r.id!, report_status: r.reportStatus, pdf_url: r.pdfUrl }));
+
+  if (!reports.length) return NextResponse.json({ ok: false, error: "Those reports could not be found." }, { status: 404 });
 
   const notApproved = reports.filter((r) => r.report_status !== "Approved");
   if (notApproved.length) {
