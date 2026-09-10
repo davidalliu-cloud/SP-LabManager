@@ -105,7 +105,7 @@ export function AdmixtureReportPreview({
         </tbody>
       </table>
       <OfficialAsterisk />
-      <OfficialNotesAndFooter notes={admixture.notes} testedBy={admixture.technicianName} responsible={admixture.checkedBy || "Ing./Eng. Besiana ALLIU"} issueDate={issueDate} />
+      <OfficialNotesAndFooter layout="flow" notes={admixture.notes} testedBy={admixture.technicianName} responsible={admixture.checkedBy || "Ing./Eng. Besiana ALLIU"} issueDate={issueDate} />
     </OfficialReportShell>
   );
 }

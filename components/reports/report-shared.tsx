@@ -360,12 +360,23 @@ export function OfficialNotesAndFooter({
   notes,
   testedBy,
   responsible,
-  issueDate
+  issueDate,
+  layout = "pinned"
 }: {
   notes?: string;
   testedBy?: string;
   responsible?: string;
   issueDate?: string;
+  /**
+   * "pinned" keeps the signature, legal text, issue date and address welded to
+   * the foot of the sheet. That suits a report whose table fills the page, but
+   * on a short one it strands the signature below a band of empty paper — the
+   * admixture report left 82mm of it.
+   *
+   * "flow" lets the block sit directly under the notes instead, which is how
+   * the concrete cube report reads, and what a short report should do.
+   */
+  layout?: "pinned" | "flow";
 }) {
   return (
     <>
@@ -373,7 +384,7 @@ export function OfficialNotesAndFooter({
         <div className="pl-14">Shënime / <span className="italic">Notes</span>:</div>
         <div className="min-h-4 border-b border-black">{notes}</div>
       </div>
-      <div className="official-footer-cluster">
+      <div className={layout === "flow" ? "official-footer-flow" : "official-footer-cluster"}>
         <SignaturePair
           wrapperClassName="official-signatures"
           columnClassName="grid grid-cols-2 gap-16 text-center text-[9.5pt]"

@@ -971,3 +971,28 @@ textarea {
     @apply rounded-md border border-line bg-white px-5 py-2.5 text-sm font-semibold text-ink transition hover:border-lab-burgundy hover:bg-lab-burgundy hover:text-white;
   }
 }
+
+/* ------------------------------------------------------------------ *
+ * Official report family — footer that flows with the content.
+ * The default .official-footer-cluster is welded to the foot of the
+ * sheet, which reads well when the table fills the page and badly when
+ * it does not: the admixture report left 82mm of blank paper between
+ * its four result rows and the signatures. This variant lets the block
+ * sit under the notes the way the concrete cube report does, and any
+ * spare paper is left at the bottom where it belongs.
+ * ------------------------------------------------------------------ */
+.official-footer-flow {
+  margin-top: 6mm;
+}
+
+@media print {
+  .official-footer-flow {
+    position: static !important;
+    margin-top: 6mm !important;
+  }
+}
+
+.official-report.pdf-capture .official-footer-flow {
+  position: static !important;
+  margin-top: 6mm !important;
+}
