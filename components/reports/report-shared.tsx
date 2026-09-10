@@ -350,11 +350,20 @@ export function OfficialNotesAndFooter({
   notes,
   testedBy,
   responsible,
+  responsibleOverride,
   issueDate
 }: {
   notes?: string;
   testedBy?: string;
   responsible?: string;
+  /**
+   * Use this exact name as the laboratory responsible, instead of the
+   * head-of-lab constant. headOfLabName ignores what it is passed, so every
+   * report in this family otherwise signs with the same person. The chemical
+   * laboratory has its own responsible, which is why the water report needs
+   * to say who actually signed it.
+   */
+  responsibleOverride?: string;
   issueDate?: string;
 }) {
   return (
@@ -370,7 +379,7 @@ export function OfficialNotesAndFooter({
           testedByLabel={<>TESTUAR NGA / <span className="italic font-normal">TESTED BY</span></>}
           testedByName={testedBy}
           responsibleLabel={<>PËRGJEGJËSI I LABORATORIT / <span className="italic font-normal">LABORATORY RESPONSIBLE</span></>}
-          responsibleName={headOfLabName(responsible)}
+          responsibleName={responsibleOverride || headOfLabName(responsible)}
           heightMm={30}
         />
         <div className="official-disclaimers mt-2 space-y-0.5 text-[6pt] leading-tight">

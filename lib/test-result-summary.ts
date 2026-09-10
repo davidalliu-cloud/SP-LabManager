@@ -14,6 +14,27 @@ function formatNumber(value?: number, digits = 2) {
 }
 
 export function getTestResultSummary(store: LabState, test: LabTest): TestResultSummary {
+  const water = store.waterAnalysisTests.find((item) => item.testId === test.id);
+  if (water) {
+    const r = water.results;
+    const parts: string[] = [];
+    // Only what was actually determined appears, so a part-finished analysis
+    // cannot read like a complete one.
+    if (r.colour) parts.push(`Ngjyra: ${r.colour}`);
+    if (r.odour) parts.push(`Aroma: ${r.odour}`);
+    if (r.densityKgM3 !== undefined) parts.push(`Densiteti: ${formatNumber(r.densityKgM3, 1)} kg/m³`);
+    if (r.ph !== undefined) parts.push(`pH: ${formatNumber(r.ph)}`);
+    if (r.chlorideMgL !== undefined) parts.push(`Klorure: ${formatNumber(r.chlorideMgL, 1)} mg/l`);
+    if (r.sulfateMgL !== undefined) parts.push(`Sulfate: ${formatNumber(r.sulfateMgL, 1)} mg/l`);
+    return {
+      testStartDate: water.testStartDate,
+      testEndDate: water.testEndDate,
+      technicianName: water.technicianName,
+      checkedBy: water.checkedBy,
+      result: parts.length ? parts.join("; ") : "Analizë uji: pa matje të plotësuara"
+    };
+  }
+
   const masonry = store.masonryUnitTests.find((item) => item.testId === test.id);
   if (masonry) {
     const crushed = masonry.specimens.filter((row) => typeof row.compressiveStrengthMpa === "number").length;

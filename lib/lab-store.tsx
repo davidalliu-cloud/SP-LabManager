@@ -65,7 +65,11 @@ import {
   calculateWaterDemandPercent,
   calculateUnitWeightKgPerM,
   deriveMasonryUnitSpecimen,
-  averageMasonryColumn
+  averageMasonryColumn,
+  deriveWaterDensityRun,
+  deriveWaterChlorideRun,
+  deriveWaterSulfateRun,
+  averageWaterRuns
 } from "./calculations";
 import { useAuth } from "./auth";
 import { officialClientCodes2026 } from "./client-directory";
@@ -74,7 +78,7 @@ import { initialState } from "./seed-data";
 import { deriveSampleStage, SAMPLE_STAGES } from "./sample-stage";
 import { createSupabaseBrowserClient } from "./supabase/client";
 import { pushAuditEntries, pushNotifications } from "./activity-log";
-import type { AdmixtureTest, AdmixtureDensityRun, AdmixtureDryMassRun, AdmixtureWaterMixRun, AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltMixtureKind, AsphaltReportKind, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabState, LabTest, LabUser, MasonryUnitTest, MortarTest, MortarTestKind, Notification, Project, Report, Role, Sample, SampleStatus, SteelTensileTest, ThermalInsulationTest } from "./types";
+import type { AdmixtureTest, AdmixtureDensityRun, AdmixtureDryMassRun, AdmixtureWaterMixRun, AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltMixtureKind, AsphaltReportKind, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabState, LabTest, LabUser, MasonryUnitTest, MortarTest, WaterAnalysisTest, MortarTestKind, Notification, Project, Report, Role, Sample, SampleStatus, SteelTensileTest, ThermalInsulationTest } from "./types";
 
 export interface NewSampleInput {
   clientId: string;
@@ -401,6 +405,49 @@ interface CementStrengthInput {
     testDate?: string;
     loadKn: number;
   }>;
+}
+
+interface WaterAnalysisInput {
+  testStartDate?: string;
+  testEndDate?: string;
+  waterTypeAndSource?: string;
+  samplingPlace?: string;
+  packagingType?: string;
+  samplingOperator?: string;
+  temperature?: string;
+  humidity?: string;
+  testingLocation?: string;
+  equipmentUsed?: string;
+  technicianName: string;
+  checkedBy?: string;
+  notes?: string;
+
+  densityStartDate?: string;
+  densityEndDate?: string;
+  density1: { sampleMassG?: number; distilledWaterMassG?: number; waterDensityGMl?: number; airDensityGMl?: number };
+  density2: { sampleMassG?: number; distilledWaterMassG?: number; waterDensityGMl?: number; airDensityGMl?: number };
+
+  phStartDate?: string;
+  phEndDate?: string;
+  ph1?: number;
+  ph2?: number;
+
+  appearanceStartDate?: string;
+  appearanceEndDate?: string;
+  appearance1: { sampleVolumeMl?: number; hydrochloricAcidMl?: number; observation?: string };
+  appearance2: { sampleVolumeMl?: number; hydrochloricAcidMl?: number; observation?: string };
+  colour?: string;
+  odour?: string;
+
+  chlorideStartDate?: string;
+  chlorideEndDate?: string;
+  chloride1: { sampleMassG?: number; blankAgNo3Ml?: number; sampleAgNo3Ml?: number };
+  chloride2: { sampleMassG?: number; blankAgNo3Ml?: number; sampleAgNo3Ml?: number };
+
+  sulfateStartDate?: string;
+  sulfateEndDate?: string;
+  sulfate1: { sampleMassG?: number; emptyCrucibleG?: number; crucibleAndResidueG?: number };
+  sulfate2: { sampleMassG?: number; emptyCrucibleG?: number; crucibleAndResidueG?: number };
 }
 
 interface MasonryUnitInput {
@@ -953,6 +1000,7 @@ interface LabStoreValue extends LabState {
   saveCementBlaineTest: (testId: string, input: CementBlaineInput) => void;
   saveAdmixtureTest: (testId: string, input: AdmixtureInput) => void;
   saveMasonryUnitTest: (testId: string, input: MasonryUnitInput) => void;
+  saveWaterAnalysisTest: (testId: string, input: WaterAnalysisInput) => void;
   saveMortarTest: (testId: string, input: MortarInput) => void;
   saveSteelTest: (testId: string, input: SteelInput) => void;
   saveAggregateTest: (testId: string, input: AggregateInput) => void;
@@ -1233,6 +1281,7 @@ function mergeWithInitialState(saved: Partial<LabState>): LabState {
     // falls back to the empty array rather than arriving as undefined and
     // crashing the first .find() that touches it.
     masonryUnitTests: saved.masonryUnitTests ?? initialState.masonryUnitTests,
+    waterAnalysisTests: saved.waterAnalysisTests ?? initialState.waterAnalysisTests,
     concreteTests: saved.concreteTests ?? initialState.concreteTests,
     concreteWaterPenetrationTests: saved.concreteWaterPenetrationTests ?? initialState.concreteWaterPenetrationTests,
     concreteFlexuralTests: saved.concreteFlexuralTests ?? initialState.concreteFlexuralTests,
@@ -1909,6 +1958,8 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             aggregateTests: previous.aggregateTests.filter((row) => !linkedTestIds.has(row.testId)),
             aggregateChemicalTests: previous.aggregateChemicalTests.filter((row) => !linkedTestIds.has(row.testId)),
             admixtureTests: previous.admixtureTests.filter((row) => !linkedTestIds.has(row.testId)),
+            masonryUnitTests: previous.masonryUnitTests.filter((row) => !linkedTestIds.has(row.testId)),
+            waterAnalysisTests: previous.waterAnalysisTests.filter((row) => !linkedTestIds.has(row.testId)),
             aggregateLosAngelesTests: previous.aggregateLosAngelesTests.filter((row) => !linkedTestIds.has(row.testId)),
             aggregateFreezeThawTests: previous.aggregateFreezeThawTests.filter((row) => !linkedTestIds.has(row.testId)),
             aggregateAcvTests: previous.aggregateAcvTests.filter((row) => !linkedTestIds.has(row.testId)),
@@ -2813,6 +2864,83 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       // dry mass (EN 480-8), water reduction (EN 480-1), density (ISO 758), pH
       // (ISO 4316). Results are computed here from the duplicate runs; any run
       // left blank yields a blank result.
+      saveWaterAnalysisTest(testId, input) {
+        setState((previous) => {
+          if (!canCurrentUserEditTest(previous, testId)) return previous;
+
+          const density1 = { ...input.density1, ...deriveWaterDensityRun(input.density1) };
+          const density2 = { ...input.density2, ...deriveWaterDensityRun(input.density2) };
+          const chloride1 = { ...input.chloride1, ...deriveWaterChlorideRun(input.chloride1) };
+          const chloride2 = { ...input.chloride2, ...deriveWaterChlorideRun(input.chloride2) };
+          const sulfate1 = { ...input.sulfate1, ...deriveWaterSulfateRun(input.sulfate1) };
+          const sulfate2 = { ...input.sulfate2, ...deriveWaterSulfateRun(input.sulfate2) };
+
+          // Each reported figure is the mean of the runs that were actually
+          // carried out. A section nobody ran reports nothing rather than zero.
+          const results = {
+            colour: input.colour || undefined,
+            odour: input.odour || undefined,
+            densityKgM3: averageWaterRuns([density1.densityKgM3, density2.densityKgM3], 1),
+            ph: averageWaterRuns([input.ph1, input.ph2], 2),
+            chlorideMgL: averageWaterRuns([chloride1.chlorideMgL, chloride2.chlorideMgL], 1),
+            sulfateMgL: averageWaterRuns([sulfate1.sulfateMgL, sulfate2.sulfateMgL], 1)
+          };
+
+          const existingRow = previous.waterAnalysisTests.find((row) => row.testId === testId);
+          const waterTest: WaterAnalysisTest = {
+            id: existingRow?.id ?? crypto.randomUUID(),
+            testId,
+            testStartDate: input.testStartDate,
+            testEndDate: input.testEndDate,
+            waterTypeAndSource: input.waterTypeAndSource,
+            samplingPlace: input.samplingPlace,
+            packagingType: input.packagingType,
+            samplingOperator: input.samplingOperator,
+            temperature: input.temperature,
+            humidity: input.humidity,
+            testingLocation: input.testingLocation,
+            equipmentUsed: input.equipmentUsed,
+            technicianName: input.technicianName,
+            checkedBy: input.checkedBy,
+            notes: input.notes,
+            densityStartDate: input.densityStartDate,
+            densityEndDate: input.densityEndDate,
+            density1,
+            density2,
+            phStartDate: input.phStartDate,
+            phEndDate: input.phEndDate,
+            ph1: input.ph1,
+            ph2: input.ph2,
+            appearanceStartDate: input.appearanceStartDate,
+            appearanceEndDate: input.appearanceEndDate,
+            appearance1: input.appearance1,
+            appearance2: input.appearance2,
+            colour: input.colour,
+            odour: input.odour,
+            chlorideStartDate: input.chlorideStartDate,
+            chlorideEndDate: input.chlorideEndDate,
+            chloride1,
+            chloride2,
+            sulfateStartDate: input.sulfateStartDate,
+            sulfateEndDate: input.sulfateEndDate,
+            sulfate1,
+            sulfate2,
+            results,
+            createdAt: existingRow?.createdAt ?? new Date().toISOString()
+          };
+
+          const draft: LabState = {
+            ...previous,
+            waterAnalysisTests: existingRow
+              ? previous.waterAnalysisTests.map((row) => (row.testId === testId ? waterTest : row))
+              : [waterTest, ...previous.waterAnalysisTests],
+            tests: previous.tests.map((test) => (test.id === testId ? { ...test, status: "In Progress" } : test)),
+            auditLog: [...previous.auditLog]
+          };
+          addAudit(draft, "test_data_saved", "test", testId, "Water analysis (EN 1008) data saved.");
+          return draft;
+        });
+      },
       saveMasonryUnitTest(testId, input) {
         setState((previous) => {
           if (!canCurrentUserEditTest(previous, testId)) return previous;
@@ -3784,6 +3912,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           const aggregate = previous.aggregateTests.find((row) => row.testId === testId);
           const aggregateChemical = previous.aggregateChemicalTests.find((row) => row.testId === testId);
           const admixture = previous.admixtureTests.find((row) => row.testId === testId);
+          const waterAnalysis = previous.waterAnalysisTests.find((row) => row.testId === testId);
           const aggregateLosAngeles = previous.aggregateLosAngelesTests.find((row) => row.testId === testId);
           const aggregateFreezeThaw = previous.aggregateFreezeThawTests.find((row) => row.testId === testId);
           const aggregateAcv = previous.aggregateAcvTests.find((row) => row.testId === testId);

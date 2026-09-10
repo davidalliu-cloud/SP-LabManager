@@ -572,3 +572,114 @@ export function masonryDimensionDeviation(measured?: number, declared?: number) 
   if (!finiteNumber(measured) || !finiteNumber(declared)) return undefined;
   return round(measured - declared, 1);
 }
+
+// --- Water for concrete, BS EN 1008 / EN 196-2 / EN ISO 10523 / ISO 758 ----
+
+/** Density of distilled water at 20 °C, g/ml — the worksheet's default. */
+export const WATER_DENSITY_20C_G_ML = 0.9982;
+/** Density of air, g/ml — the worksheet's default. */
+export const AIR_DENSITY_G_ML = 0.0012;
+
+/**
+ * Mass percent to mg/l, taking one litre of water as 1000 g.
+ * 0.1 % lands on BS EN 1008's 1000 mg/l chloride limit, which is the check
+ * that this is the intended reading of the worksheet.
+ */
+export const PERCENT_TO_MG_PER_L = 10_000;
+
+/**
+ * The sulfate worksheet's gravimetric factor of 34.3 is SO3/BaSO4
+ * (80.06 / 233.39), so it yields sulfur trioxide, not sulfate. The report
+ * column, and BS EN 1008's 2000 mg/l limit, are both SO4-2, so the SO3 result
+ * is converted by the mass ratio below. The worksheet still shows SO3; only
+ * the reported figure is converted.
+ */
+const SO3_MOLAR_MASS = 80.06;
+const SO4_MOLAR_MASS = 96.06;
+export const SO4_PER_SO3 = SO4_MOLAR_MASS / SO3_MOLAR_MASS;
+
+const finiteWater = (value?: number): value is number => typeof value === "number" && Number.isFinite(value);
+
+/**
+ * ISO 758 — density of the water, by weighing the sample against the same
+ * volume of distilled water and correcting for the buoyancy of air.
+ * A = air density x m2; density = (m1 + A) / (m2 + A) x water density.
+ */
+export function deriveWaterDensityRun(input: {
+  sampleMassG?: number;
+  distilledWaterMassG?: number;
+  waterDensityGMl?: number;
+  airDensityGMl?: number;
+}) {
+  const m1 = input.sampleMassG;
+  const m2 = input.distilledWaterMassG;
+  const rho = input.waterDensityGMl ?? WATER_DENSITY_20C_G_ML;
+  const rhoAir = input.airDensityGMl ?? AIR_DENSITY_G_ML;
+
+  const correctionFactorA = finiteWater(m2) && finiteWater(rhoAir) ? round(rhoAir * m2, 5) : undefined;
+
+  const densityGMl =
+    finiteWater(m1) && finiteWater(m2) && finiteWater(correctionFactorA) && finiteWater(rho) && m2 + correctionFactorA !== 0
+      ? round(((m1 + correctionFactorA) / (m2 + correctionFactorA)) * rho, 4)
+      : undefined;
+
+  // The worksheet works in g/ml; the report column is kg/m3.
+  const densityKgM3 = finiteWater(densityGMl) ? round(densityGMl * 1000, 1) : undefined;
+
+  return { correctionFactorA, densityGMl, densityKgM3 };
+}
+
+/**
+ * EN 196-2 — chlorides by silver nitrate titration against a blank.
+ * The worksheet's formula, verbatim: 0.8865 x ((V0 - V1) / (V0 x m)).
+ */
+export function deriveWaterChlorideRun(input: {
+  sampleMassG?: number;
+  blankAgNo3Ml?: number;
+  sampleAgNo3Ml?: number;
+}) {
+  const { sampleMassG: m, blankAgNo3Ml: v0, sampleAgNo3Ml: v1 } = input;
+
+  const chloridePercent =
+    finiteWater(m) && m > 0 && finiteWater(v0) && v0 > 0 && finiteWater(v1)
+      ? round(0.8865 * ((v0 - v1) / (v0 * m)), 4)
+      : undefined;
+
+  const chlorideMgL = finiteWater(chloridePercent) ? round(chloridePercent * PERCENT_TO_MG_PER_L, 1) : undefined;
+
+  return { chloridePercent, chlorideMgL };
+}
+
+/**
+ * EN 196-2 — sulfates gravimetrically as barium sulfate.
+ * m3 = m2 - m1; SO3 % = 34.3 x (m3 / m0); sulfate follows by mass ratio.
+ */
+export function deriveWaterSulfateRun(input: {
+  sampleMassG?: number;
+  emptyCrucibleG?: number;
+  crucibleAndResidueG?: number;
+}) {
+  const { sampleMassG: m0, emptyCrucibleG: m1, crucibleAndResidueG: m2 } = input;
+
+  const bariumSulfateMassG = finiteWater(m1) && finiteWater(m2) ? round(m2 - m1, 5) : undefined;
+
+  const sulfurTrioxidePercent =
+    finiteWater(m0) && m0 > 0 && finiteWater(bariumSulfateMassG)
+      ? round(34.3 * (bariumSulfateMassG / m0), 4)
+      : undefined;
+
+  const sulfatePercent = finiteWater(sulfurTrioxidePercent) ? round(sulfurTrioxidePercent * SO4_PER_SO3, 4) : undefined;
+  const sulfateMgL = finiteWater(sulfatePercent) ? round(sulfatePercent * PERCENT_TO_MG_PER_L, 1) : undefined;
+
+  return { bariumSulfateMassG, sulfurTrioxidePercent, sulfatePercent, sulfateMgL };
+}
+
+/**
+ * Mean of the runs that were actually completed, so a single-run test reports
+ * that run rather than half of it, and an empty section reports nothing.
+ */
+export function averageWaterRuns(values: Array<number | undefined>, decimals = 2) {
+  const usable = values.filter(finiteWater);
+  if (!usable.length) return undefined;
+  return round(usable.reduce((sum, value) => sum + value, 0) / usable.length, decimals);
+}

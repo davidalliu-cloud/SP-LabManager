@@ -6,7 +6,7 @@ import { Dispatch, FormEvent, SetStateAction, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { StageCell } from "@/components/ui/stage-cell";
 import { testLifecycle } from "@/lib/sample-stage";
-import { getMortarTestKind, isAggregateAcvAccreditedTest, isAggregateBulkDensityAccreditedTest, isAggregateChemicalAccreditedTest, isAggregateDensityAbsorptionAccreditedTest, isAggregateElongationIndexAccreditedTest, isAggregateFillerDensityAccreditedTest, isAggregateFlakinessIndexAccreditedTest, isAggregateFreezeThawAccreditedTest, isAggregateGranulometrySampleType, isAggregateLosAngelesAccreditedTest, isAggregateSandEquivalentAccreditedTest, isAggregateShapeIndexAccreditedTest, isAggregateSoundnessAccreditedTest, isAsphaltAccreditedTest, isAdmixtureAccreditedTest, isMasonryUnitAccreditedTest, isCementBlaineAstmAccreditedTest, isCementBlaineBsEnAccreditedTest, isCementConsistencyAccreditedTest, isCementStrengthAccreditedTest, isConcreteCoreAccreditedTest, isConcreteDensityAccreditedTest, isConcreteFlexuralAccreditedTest, isConcreteIndirectTensileAccreditedTest, isConcreteWaterPenetrationAccreditedTest, isMortarAccreditedTest, isSteelSampleType, isThermalInsulationAccreditedTest } from "@/lib/accredited-tests";
+import { getMortarTestKind, isAggregateAcvAccreditedTest, isAggregateBulkDensityAccreditedTest, isAggregateChemicalAccreditedTest, isAggregateDensityAbsorptionAccreditedTest, isAggregateElongationIndexAccreditedTest, isAggregateFillerDensityAccreditedTest, isAggregateFlakinessIndexAccreditedTest, isAggregateFreezeThawAccreditedTest, isAggregateGranulometrySampleType, isAggregateLosAngelesAccreditedTest, isAggregateSandEquivalentAccreditedTest, isAggregateShapeIndexAccreditedTest, isAggregateSoundnessAccreditedTest, isAsphaltAccreditedTest, isAdmixtureAccreditedTest, isMasonryUnitAccreditedTest, isWaterAnalysisAccreditedTest, isCementBlaineAstmAccreditedTest, isCementBlaineBsEnAccreditedTest, isCementConsistencyAccreditedTest, isCementStrengthAccreditedTest, isConcreteCoreAccreditedTest, isConcreteDensityAccreditedTest, isConcreteFlexuralAccreditedTest, isConcreteIndirectTensileAccreditedTest, isConcreteWaterPenetrationAccreditedTest, isMortarAccreditedTest, isSteelSampleType, isThermalInsulationAccreditedTest } from "@/lib/accredited-tests";
 import { admixtureDeterminationsDisagree } from "@/lib/calculations";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { useLabStore } from "@/lib/lab-store";
@@ -45,6 +45,7 @@ export default function TestDetailPage() {
   const thermalInsulation = store.thermalInsulationTests.find((item) => item.testId === activeTest.id);
   const cementConsistency = store.cementConsistencyTests.find((item) => item.testId === activeTest.id);
   const admixture = store.admixtureTests.find((item) => item.testId === activeTest.id);
+  const waterAnalysis = store.waterAnalysisTests.find((item) => item.testId === activeTest.id);
   const masonryUnit = store.masonryUnitTests.find((item) => item.testId === activeTest.id);
   const cementStrength = store.cementStrengthTests.find((item) => item.testId === activeTest.id);
   const cementBlaine = store.cementBlaineTests.find((item) => item.testId === activeTest.id);
@@ -291,6 +292,73 @@ export default function TestDetailPage() {
   /** A blank weighing is not zero. `Number("") === 0`, which is how a cube test
    *  once reported 7.92 MPa instead of 31.69 — empty fields averaged in as real
    *  readings. Blank stays undefined here and is excluded from the mean. */
+  function submitWaterAnalysis(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const text = (name: string) => String(form.get(name) ?? "");
+    const num = (name: string) => optionalNumber(form.get(name));
+    // Suffix 1 and 2 are the worksheet's "Rezultati 1" and "Rezultati 2".
+    const densityRun = (n: 1 | 2) => ({
+      sampleMassG: num(`wDensM1-${n}`),
+      distilledWaterMassG: num(`wDensM2-${n}`),
+      waterDensityGMl: num(`wDensRho-${n}`),
+      airDensityGMl: num(`wDensRhoA-${n}`)
+    });
+    const appearanceRun = (n: 1 | 2) => ({
+      sampleVolumeMl: num(`wAppVol-${n}`),
+      hydrochloricAcidMl: num(`wAppHcl-${n}`),
+      observation: text(`wAppObs-${n}`)
+    });
+    const chlorideRun = (n: 1 | 2) => ({
+      sampleMassG: num(`wClM-${n}`),
+      blankAgNo3Ml: num(`wClV0-${n}`),
+      sampleAgNo3Ml: num(`wClV1-${n}`)
+    });
+    const sulfateRun = (n: 1 | 2) => ({
+      sampleMassG: num(`wSoM0-${n}`),
+      emptyCrucibleG: num(`wSoM1-${n}`),
+      crucibleAndResidueG: num(`wSoM2-${n}`)
+    });
+
+    store.saveWaterAnalysisTest(activeTest.id, {
+      testStartDate: text("testStartDate"),
+      testEndDate: text("testEndDate"),
+      waterTypeAndSource: text("waterTypeAndSource"),
+      samplingPlace: text("samplingPlace"),
+      packagingType: text("packagingType"),
+      samplingOperator: text("samplingOperator"),
+      temperature: text("temperature"),
+      humidity: text("humidity"),
+      testingLocation: text("testingLocation"),
+      equipmentUsed: text("equipmentUsed"),
+      technicianName: text("technicianName"),
+      checkedBy: text("checkedBy"),
+      notes: text("notes"),
+      densityStartDate: text("densityStartDate"),
+      densityEndDate: text("densityEndDate"),
+      density1: densityRun(1),
+      density2: densityRun(2),
+      phStartDate: text("phStartDate"),
+      phEndDate: text("phEndDate"),
+      ph1: num("wPh-1"),
+      ph2: num("wPh-2"),
+      appearanceStartDate: text("appearanceStartDate"),
+      appearanceEndDate: text("appearanceEndDate"),
+      appearance1: appearanceRun(1),
+      appearance2: appearanceRun(2),
+      colour: text("colour"),
+      odour: text("odour"),
+      chlorideStartDate: text("chlorideStartDate"),
+      chlorideEndDate: text("chlorideEndDate"),
+      chloride1: chlorideRun(1),
+      chloride2: chlorideRun(2),
+      sulfateStartDate: text("sulfateStartDate"),
+      sulfateEndDate: text("sulfateEndDate"),
+      sulfate1: sulfateRun(1),
+      sulfate2: sulfateRun(2)
+    });
+  }
+
   function optionalNumber(value: FormDataEntryValue | null) {
     const text = String(value ?? "").trim();
     if (!text) return undefined;
@@ -1048,6 +1116,7 @@ export default function TestDetailPage() {
   const isThermalInsulationTest = isThermalInsulationAccreditedTest(activeTest.testType);
   const isCementConsistencyTest = isCementConsistencyAccreditedTest(activeTest.testType);
   const isAdmixtureTest = isAdmixtureAccreditedTest(activeTest.testType);
+  const isWaterAnalysisTest = isWaterAnalysisAccreditedTest(activeTest.testType);
   const isMasonryUnitTest = isMasonryUnitAccreditedTest(activeTest.testType);
   const isCementStrengthTest = isCementStrengthAccreditedTest(activeTest.testType);
   const isCementBlaineBsEnTest = isCementBlaineBsEnAccreditedTest(activeTest.testType);
@@ -1329,6 +1398,237 @@ export default function TestDetailPage() {
                 : averages?.compressiveStrengthMpa !== undefined
                   ? `Rezistenca ${averages.compressiveStrengthMpa} MPa nga ${crushed} njësi, pa normalizim.`
                   : "Ruani matjet për të llogaritur rezultatet."
+            }
+            canEdit={canEditWorksheet}
+            canGenerateReport={canGenerateReport}
+            canReview={canReviewTest}
+            reviewPending={isAwaitingTechnicalReview}
+            approveTest={approveTechnicalResult}
+            rejectTest={rejectTechnicalResult}
+            technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName}
+          />
+        </div>
+      </>
+    );
+  }
+
+  if (isWaterAnalysisTest) {
+    const w = waterAnalysis;
+    const res = w?.results;
+    // BS EN 1008 sets no density limit, but concrete mixing water is ~1000
+    // kg/m3. Anything far off that is a weighing or a units slip, not a result.
+    const densityLooksWrong = [w?.density1.densityKgM3, w?.density2.densityKgM3].some(
+      (value) => typeof value === "number" && (value < 950 || value > 1050)
+    );
+
+    const runHeader = (
+      <div className="contents">
+        <div />
+        <div className="text-center text-xs font-semibold text-lab-burgundy">Rezultati 1</div>
+        <div className="text-center text-xs font-semibold text-lab-burgundy">Rezultati 2</div>
+      </div>
+    );
+
+    const inputRow = (
+      label: string,
+      base: string,
+      unit: string,
+      defaults: [number | string | undefined, number | string | undefined],
+      step = "any"
+    ) => (
+      <div key={base} className="contents">
+        <div className="py-1 pr-2 text-[13px] leading-tight text-ink">
+          {label} <span className="text-muted">[{unit}]</span>
+        </div>
+        <input name={`${base}-1`} type="number" step={step} min="0" defaultValue={defaults[0] ?? ""} className="input h-9" />
+        <input name={`${base}-2`} type="number" step={step} min="0" defaultValue={defaults[1] ?? ""} className="input h-9" />
+      </div>
+    );
+
+    const derivedRow = (label: string, unit: string, v1?: number, v2?: number) => (
+      <div key={label} className="contents">
+        <div className="py-1 pr-2 text-[13px] leading-tight text-muted">
+          {label} <span className="text-muted">[{unit}]</span>
+        </div>
+        <div className="flex h-9 items-center justify-center rounded-md bg-lab-porcelain text-sm font-semibold text-ink">{v1 ?? "-"}</div>
+        <div className="flex h-9 items-center justify-center rounded-md bg-lab-porcelain text-sm font-semibold text-ink">{v2 ?? "-"}</div>
+      </div>
+    );
+
+    const sectionDates = (base: string, start?: string, end?: string) => (
+      <div className="mt-2 grid gap-3 md:grid-cols-2">
+        <Field label="Data e fillimit të testimit">
+          <input name={`${base}StartDate`} type="date" defaultValue={start ?? activeTest.requiredTestDate} className="input" />
+        </Field>
+        <Field label="Data e mbarimit të testimit">
+          <input name={`${base}EndDate`} type="date" defaultValue={end ?? activeTest.requiredTestDate} className="input" />
+        </Field>
+      </div>
+    );
+
+    return (
+      <>
+        <PageHeader
+          title={activeTest.testCode}
+          description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Analizë uji`}
+          action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />}
+        />
+        <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
+          <form onSubmit={submitWaterAnalysis} className="surface-card"><fieldset disabled={!canEditWorksheet} className="m-0 min-w-0 border-0 p-0 disabled:opacity-70">
+            <div className="border-b border-line bg-lab-porcelain px-5 py-4">
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Fletë pune</div>
+              <h2 className="mt-1 text-lg font-semibold text-ink">Karakteristikat fiziko-kimike të ujit / <span className="italic font-normal">Physical-chemical characteristics of water</span></h2>
+              <p className="mt-1 text-sm text-muted">
+                SL-FP-U-7.5.1.1 (densiteti, pH, ngjyra/aroma/H2S) dhe SL-FP-U-7.5.1.2 (klorure, sulfate) — të dyja mbushen këtu dhe
+                raportohen bashkë në SL-RA-U-7.8/1. Çdo përcaktim kryhet dy herë; lini bosh atë që nuk është kryer.
+              </p>
+            </div>
+
+            <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
+              <Field label="Numri i regjistrit"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
+              <Field label="Tipi i kampionit"><input className="input bg-lab-porcelain" value={sample?.sampleType ?? ""} readOnly /></Field>
+              <Field label="Standardi i aplikuar"><input className="input bg-lab-porcelain" value={activeTest.standard || "BS EN 1008:2002; BS EN 196-2:2013; BS EN ISO 10523:2012"} readOnly /></Field>
+              <Field label="Tipi dhe burimi i ujit"><input name="waterTypeAndSource" defaultValue={w?.waterTypeAndSource ?? ""} className="input" placeholder="p.sh. ujë rrjeti / pus" /></Field>
+              <Field label="Vendi i marrjes së kampionit"><input name="samplingPlace" defaultValue={w?.samplingPlace ?? ""} className="input" /></Field>
+              <Field label="Tipi i ambalazhit"><input name="packagingType" defaultValue={w?.packagingType ?? "SHISHE PLASTIKE / PLASTIC BOTTLE"} className="input" /></Field>
+              <Field label="Operatori i marrjes së kampionit"><input name="samplingOperator" defaultValue={w?.samplingOperator ?? "KLIENTI / CLIENT"} className="input" /></Field>
+              <Field label="Pajisjet që përdoren"><input name="equipmentUsed" defaultValue={w?.equipmentUsed ?? "Enë kimike, kroxhol platini, Furrë Muffle, Furnelë, Peshore OHAUS, pH meter HANNA INSTRUMENTS"} className="input" /></Field>
+              <Field label="Vendi ku kryhet testi"><input name="testingLocation" defaultValue={w?.testingLocation ?? "01/B Laboratori Kimik / Chemical laboratory"} className="input" /></Field>
+              <Field label="Data e fillimit të testimit"><input name="testStartDate" type="date" defaultValue={w?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
+              <Field label="Data e mbarimit të testimit"><input name="testEndDate" type="date" defaultValue={w?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
+              <Field label="Tekniku"><EmployeeSelect name="technicianName" employees={activeEmployees} required value={w?.technicianName ?? ""} /></Field>
+              <Field label="Kontrolluar nga"><EmployeeSelect name="checkedBy" employees={activeEmployees} value={w?.checkedBy ?? ""} /></Field>
+              <Field label="Temperatura"><input name="temperature" defaultValue={w?.temperature ?? ""} className="input" /></Field>
+              <Field label="Lagështia"><input name="humidity" defaultValue={w?.humidity ?? ""} className="input" /></Field>
+            </div>
+
+            <div className="border-b border-line p-5">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">1. Përcaktimi i densitetit të ujit <span className="font-normal normal-case text-muted">— ISO 758</span></h3>
+              {sectionDates("density", w?.densityStartDate, w?.densityEndDate)}
+              <div className="mt-3 grid grid-cols-[1fr_120px_120px] items-center gap-x-3 gap-y-1">
+                {runHeader}
+                {inputRow("Pesha e mostrës në 20 °C (m1)", "wDensM1", "g", [w?.density1.sampleMassG, w?.density2.sampleMassG])}
+                {inputRow("Pesha e ujit të distiluar në 20 °C (m2)", "wDensM2", "g", [w?.density1.distilledWaterMassG, w?.density2.distilledWaterMassG])}
+                {inputRow("Densiteti i ujit në 20 °C (ρ)", "wDensRho", "g/ml", [w?.density1.waterDensityGMl ?? 0.9982, w?.density2.waterDensityGMl ?? 0.9982])}
+                {inputRow("Densiteti i ajrit (ρa)", "wDensRhoA", "g/ml", [w?.density1.airDensityGMl ?? 0.0012, w?.density2.airDensityGMl ?? 0.0012])}
+                {derivedRow("Faktori i korrektimit (A) = ρa × m2", "_", w?.density1.correctionFactorA, w?.density2.correctionFactorA)}
+                {derivedRow("Densiteti = (m1+A)/(m2+A) × ρ", "g/ml", w?.density1.densityGMl, w?.density2.densityGMl)}
+                {derivedRow("Densiteti i raportuar", "kg/m³", w?.density1.densityKgM3, w?.density2.densityKgM3)}
+              </div>
+              {densityLooksWrong ? (
+                <div className="mt-3 rounded-md border border-[#f0a93a] bg-brand-risk p-3 text-xs font-semibold text-ink">
+                  Densiteti del jashtë intervalit të pritur për ujin (950–1050 kg/m³). Kontrolloni peshimet m1 dhe m2 përpara se rezultati të raportohet.
+                </div>
+              ) : null}
+            </div>
+
+            <div className="border-b border-line p-5">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">2. Përcaktimi i pH të ujit <span className="font-normal normal-case text-muted">— BS EN ISO 10523</span></h3>
+              {sectionDates("ph", w?.phStartDate, w?.phEndDate)}
+              <div className="mt-3 grid grid-cols-[1fr_120px_120px] items-center gap-x-3 gap-y-1">
+                {runHeader}
+                <div className="contents">
+                  <div className="py-1 pr-2 text-[13px] leading-tight text-ink">pH i mostrës së marrë për testim</div>
+                  <input name="wPh-1" type="number" step="0.01" min="0" max="14" defaultValue={w?.ph1 ?? ""} className="input h-9" />
+                  <input name="wPh-2" type="number" step="0.01" min="0" max="14" defaultValue={w?.ph2 ?? ""} className="input h-9" />
+                </div>
+              </div>
+            </div>
+
+            <div className="border-b border-line p-5">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">3. Ngjyra, aroma dhe prania e H2S</h3>
+              {sectionDates("appearance", w?.appearanceStartDate, w?.appearanceEndDate)}
+              <div className="mt-3 grid grid-cols-[1fr_120px_120px] items-center gap-x-3 gap-y-1">
+                {runHeader}
+                {inputRow("Vëllimi i mostrës së marrë për testim", "wAppVol", "ml", [w?.appearance1.sampleVolumeMl, w?.appearance2.sampleVolumeMl])}
+                {inputRow("Vëllimi i HCl", "wAppHcl", "ml", [w?.appearance1.hydrochloricAcidMl, w?.appearance2.hydrochloricAcidMl])}
+                <div className="contents">
+                  <div className="py-1 pr-2 text-[13px] leading-tight text-ink">Vëzhgime</div>
+                  <input name="wAppObs-1" defaultValue={w?.appearance1.observation ?? ""} className="input h-9" />
+                  <input name="wAppObs-2" defaultValue={w?.appearance2.observation ?? ""} className="input h-9" />
+                </div>
+              </div>
+              <p className="mt-3 text-xs text-muted">Këto dy fusha shkojnë drejtpërdrejt në rreshtat 1 dhe 2 të raportit.</p>
+              <div className="mt-2 grid gap-4 md:grid-cols-2">
+                <Field label="Ngjyra e ujit / Colour">
+                  <input name="colour" defaultValue={w?.colour ?? ""} className="input" placeholder="E verdhë e zbehtë ose më e zbehtë / Pale yellow or paler" list="water-colour-options" />
+                </Field>
+                <Field label="Aroma e ujit / Odour">
+                  <input name="odour" defaultValue={w?.odour ?? ""} className="input" placeholder="Pa aromë / Odourless" list="water-odour-options" />
+                </Field>
+              </div>
+              <datalist id="water-colour-options">
+                <option value="E pangjyrë / Colourless" />
+                <option value="E verdhë e zbehtë ose më e zbehtë / Pale yellow or paler" />
+                <option value="E verdhë / Yellow" />
+              </datalist>
+              <datalist id="water-odour-options">
+                <option value="Pa aromë / Odourless" />
+                <option value="Aromë e lehtë e H2S / Slight smell of hydrogen sulphide" />
+                <option value="Aromë e fortë e H2S / Strong smell of hydrogen sulphide" />
+              </datalist>
+            </div>
+
+            <div className="border-b border-line p-5">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">4. Përcaktimi i klorureve të tretshme <span className="font-normal normal-case text-muted">— BS EN 196-2</span></h3>
+              {sectionDates("chloride", w?.chlorideStartDate, w?.chlorideEndDate)}
+              <div className="mt-3 grid grid-cols-[1fr_120px_120px] items-center gap-x-3 gap-y-1">
+                {runHeader}
+                {inputRow("Masa e mostrës së marrë për testim (m)", "wClM", "g", [w?.chloride1.sampleMassG, w?.chloride2.sampleMassG])}
+                {inputRow("Vëllimi i AgNO3 për provën e bardhë (V0)", "wClV0", "ml", [w?.chloride1.blankAgNo3Ml, w?.chloride2.blankAgNo3Ml])}
+                {inputRow("Vëllimi i AgNO3 të harxhuar (V1)", "wClV1", "ml", [w?.chloride1.sampleAgNo3Ml, w?.chloride2.sampleAgNo3Ml])}
+                {derivedRow("Klorure = 0.8865 × ((V0−V1)/(V0×m))", "%", w?.chloride1.chloridePercent, w?.chloride2.chloridePercent)}
+                {derivedRow("Klorure të raportuara", "mg/l", w?.chloride1.chlorideMgL, w?.chloride2.chlorideMgL)}
+              </div>
+            </div>
+
+            <div className="border-b border-line p-5">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">5. Përcaktimi i sulfateve të tretshme <span className="font-normal normal-case text-muted">— BS EN 196-2</span></h3>
+              {sectionDates("sulfate", w?.sulfateStartDate, w?.sulfateEndDate)}
+              <div className="mt-3 grid grid-cols-[1fr_120px_120px] items-center gap-x-3 gap-y-1">
+                {runHeader}
+                {inputRow("Masa e mostrës së marrë për testim (m0)", "wSoM0", "g", [w?.sulfate1.sampleMassG, w?.sulfate2.sampleMassG])}
+                {inputRow("Masa e kroxholit bosh (m1)", "wSoM1", "g", [w?.sulfate1.emptyCrucibleG, w?.sulfate2.emptyCrucibleG])}
+                {inputRow("Masa e kroxholit + mostër pas 950 ± 50 °C (m2)", "wSoM2", "g", [w?.sulfate1.crucibleAndResidueG, w?.sulfate2.crucibleAndResidueG])}
+                {derivedRow("Masa e sulfatit të bariumit (m3) = m2 − m1", "g", w?.sulfate1.bariumSulfateMassG, w?.sulfate2.bariumSulfateMassG)}
+                {derivedRow("SO3 = 34.3 × (m3/m0)", "%", w?.sulfate1.sulfurTrioxidePercent, w?.sulfate2.sulfurTrioxidePercent)}
+                {derivedRow("Sulfate (SO4) = SO3 × 96.06/80.06", "%", w?.sulfate1.sulfatePercent, w?.sulfate2.sulfatePercent)}
+                {derivedRow("Sulfate të raportuara", "mg/l", w?.sulfate1.sulfateMgL, w?.sulfate2.sulfateMgL)}
+              </div>
+              <p className="mt-3 text-xs text-muted">
+                Faktori 34.3 i fletës së punës është raporti SO3/BaSO4, prandaj jep SO3. Raporti kërkon SO4, ndaj shumëzohet me 96.06/80.06.
+              </p>
+            </div>
+
+            <div className="p-5">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">Rezultatet për raportin / <span className="italic font-normal normal-case">Reported results</span></h3>
+              <div className="mt-3 grid gap-4 md:grid-cols-3">
+                <InfoInline label="Ngjyra" value={res?.colour ?? "Ruaj për ta parë"} />
+                <InfoInline label="Aroma" value={res?.odour ?? "Ruaj për ta parë"} />
+                <InfoInline label="Densiteti" value={res?.densityKgM3 !== undefined ? `${res.densityKgM3} kg/m³` : "Ruaj për ta llogaritur"} />
+                <InfoInline label="pH (≥ 4)" value={res?.ph !== undefined ? String(res.ph) : "Ruaj për ta llogaritur"} />
+                <InfoInline label="Klorure (≤ 1000 mg/l)" value={res?.chlorideMgL !== undefined ? `${res.chlorideMgL} mg/l` : "Ruaj për ta llogaritur"} />
+                <InfoInline label="Sulfate (≤ 2000 mg/l)" value={res?.sulfateMgL !== undefined ? `${res.sulfateMgL} mg/l` : "Ruaj për ta llogaritur"} />
+              </div>
+              <div className="mt-4">
+                <Field label="Shënime"><input name="notes" defaultValue={w?.notes ?? ""} className="input" /></Field>
+              </div>
+            </div>
+
+            <div className="flex justify-end border-t border-line p-5">
+              <button type="submit" className="btn-primary">Ruaj rezultatet</button>
+            </div>
+          </fieldset></form>
+          <TestActionsSidebar
+            ready={Boolean(waterAnalysis)}
+            activeTest={activeTest}
+            reportId={report?.id}
+            complete={complete}
+            generateReport={generateReport}
+            message={
+              res?.chlorideMgL !== undefined || res?.sulfateMgL !== undefined || res?.densityKgM3 !== undefined
+                ? "Rezultatet e llogaritura janë gati për raportin e ujit."
+                : "Ruani matjet për të llogaritur rezultatet."
             }
             canEdit={canEditWorksheet}
             canGenerateReport={canGenerateReport}

@@ -34,7 +34,8 @@ const sampleTypeDisplayNames: Record<string, string> = {
   // accreditedSampleTypes, because the raw scope name is all uppercase and the
   // uppercase filter drops it — mapping it to a bilingual name is what makes the
   // family selectable at all.
-  "ELEMENT MURATURE 1. TULLA QERAMIKE, SILIKATE, BETONI, 2. BLLOK BETONI": "Element Muraturë / Masonry Units"
+  "ELEMENT MURATURE 1. TULLA QERAMIKE, SILIKATE, BETONI, 2. BLLOK BETONI": "Element Muraturë / Masonry Units",
+  "UJË PËR BETON": "Ujë për Beton / Water for Concrete"
 };
 
 const sampleTypeAliases: Record<string, string> = {
@@ -81,7 +82,15 @@ const sampleTypeAliases: Record<string, string> = {
   "Bllok Betoni": "Element Muraturë / Masonry Units",
   "Masonry Unit": "Element Muraturë / Masonry Units",
   "Masonry Units": "Element Muraturë / Masonry Units",
-  "Element Muraturë / Masonry Units": "Element Muraturë / Masonry Units"
+  "Element Muraturë / Masonry Units": "Element Muraturë / Masonry Units",
+  "UJË PËR BETON": "Ujë për Beton / Water for Concrete",
+  "Ujë": "Ujë për Beton / Water for Concrete",
+  "Uje": "Ujë për Beton / Water for Concrete",
+  "Ujë për Beton": "Ujë për Beton / Water for Concrete",
+  "Uji": "Ujë për Beton / Water for Concrete",
+  "Water": "Ujë për Beton / Water for Concrete",
+  "Water for Concrete": "Ujë për Beton / Water for Concrete",
+  "Ujë për Beton / Water for Concrete": "Ujë për Beton / Water for Concrete"
 };
 
 function displaySampleType(sampleType: string) {
@@ -263,7 +272,10 @@ const accreditedTestRows: Array<[string, string, string, string, string?, string
   ["AT-084", "PRODUKTE TERMOIZOLUESE", "Percaktimi i rezistencës në shtypje pas 10 % deformim", "BS EN ISO 29469:2022", "30÷500 kPa"],
   ["AT-085", "BETON I NGURTËSUAR", "Mostrat e marra nga struktura - Marrja, ekzaminimi dhe testimi në shtypje", "BS EN 12504-1:2019", "< 2000 kN", "BS EN 12504-1:2019"],
   ["AT-086", "NGJITËS PËR PLLAKA QERAMIKE (KOLLA)", "Përcaktimi i rezistencës së ngjitjes", "BS EN 12004-2:2017", "≤ 4 MPa"],
-  ["AT-AD-PHYSCHEM", "SHTESA PËR BETON (ADITIVË)", "Përcaktimi i karakteristikave fiziko-kimike të aditivëve për beton", "BS EN 480-8:2012; BS EN 480-1:2023; ISO 758:2011; ISO 4316:2018", "Lënda e thatë, reduktimi i ujit, densiteti, pH"]
+  ["AT-AD-PHYSCHEM", "SHTESA PËR BETON (ADITIVË)", "Përcaktimi i karakteristikave fiziko-kimike të aditivëve për beton", "BS EN 480-8:2012; BS EN 480-1:2023; ISO 758:2011; ISO 4316:2018", "Lënda e thatë, reduktimi i ujit, densiteti, pH"],
+  // One combined test, as the admixture row above: SL-FP-U-7.5.1.1 and
+  // SL-FP-U-7.5.1.2 are two worksheets feeding the single SL-RA-U-7.8/1 report.
+  ["AT-U-PHYSCHEM", "UJË PËR BETON", "Përcaktimi i karakteristikave fiziko-kimike të ujit për beton", "BS EN 1008:2002; BS EN 196-2:2013; BS EN ISO 10523:2012; ISO 758:2011", "Ngjyra, aroma, densiteti, pH, klorure ≤ 1000 mg/l, sulfate ≤ 2000 mg/l"]
 ];
 
 export const accreditedTests: AccreditedTest[] = accreditedTestRows.map(([id, sampleType, testName, standard, measurementRange, samplingStandard]) => ({
@@ -360,6 +372,21 @@ export function isAdmixtureAccreditedTest(testIdOrType?: string) {
  * they share a single worksheet and report, as thermal insulation products do.
  */
 const MASONRY_UNIT_TEST_IDS = new Set(["AT-034", "AT-035", "AT-036", "AT-037"]);
+
+/**
+ * Water for concrete — BS EN 1008. One test covering colour, odour, density,
+ * pH, chlorides and sulfates, reported together on SL-RA-U-7.8/1.
+ */
+export function isWaterAnalysisAccreditedTest(testIdOrType?: string) {
+  return Boolean(
+    testIdOrType === "AT-U-PHYSCHEM" ||
+      testIdOrType === "Përcaktimi i karakteristikave fiziko-kimike të ujit për beton"
+  );
+}
+
+export function isWaterSampleType(sampleType: string) {
+  return normalizeSampleType(sampleType) === "Ujë për Beton / Water for Concrete";
+}
 
 export function isMasonryUnitAccreditedTest(testIdOrType?: string) {
   if (!testIdOrType) return false;

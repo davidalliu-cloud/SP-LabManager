@@ -1352,6 +1352,7 @@ export interface LabState {
   cementBlaineTests: CementBlaineTest[];
   admixtureTests: AdmixtureTest[];
   masonryUnitTests: MasonryUnitTest[];
+  waterAnalysisTests: WaterAnalysisTest[];
   mortarTests: MortarTest[];
   steelTests: SteelTensileTest[];
   aggregateTests: AggregateGradationTest[];
@@ -1463,5 +1464,127 @@ export interface MasonryUnitTest {
   notes?: string;
   specimens: MasonryUnitSpecimen[];
   averages: MasonryUnitAverages;
+  createdAt: string;
+}
+
+/**
+ * Water for concrete — BS EN 1008:2002, with EN 196-2 for chlorides and
+ * sulfates, EN ISO 10523 for pH and ISO 758 for density.
+ *
+ * Two worksheets feed one report (SL-RA-U-7.8/1): SL-FP-U-7.5.1.1 covers
+ * density, pH and the colour/odour/H2S observation, SL-FP-U-7.5.1.2 covers
+ * chlorides and sulfates. Both are run in duplicate, so every section holds
+ * two runs and the report carries their mean.
+ *
+ * Every measured field is optional. A determination that was not run stays
+ * empty and is left out of the mean rather than averaged in as a zero.
+ */
+export interface WaterDensityRun {
+  /** m1 — mass of the sample at 20 °C. */
+  sampleMassG?: number;
+  /** m2 — mass of the same volume of distilled water at 20 °C. */
+  distilledWaterMassG?: number;
+  /** rho — density of water at 20 °C, defaulted from the worksheet. */
+  waterDensityGMl?: number;
+  /** rho-a — density of air, defaulted from the worksheet. */
+  airDensityGMl?: number;
+  // Derived.
+  correctionFactorA?: number;
+  densityGMl?: number;
+  densityKgM3?: number;
+}
+
+export interface WaterChlorideRun {
+  /** m — mass of the sample taken for the titration. */
+  sampleMassG?: number;
+  /** V0 — silver nitrate consumed by the blank. */
+  blankAgNo3Ml?: number;
+  /** V1 — silver nitrate consumed by the sample. */
+  sampleAgNo3Ml?: number;
+  // Derived.
+  chloridePercent?: number;
+  chlorideMgL?: number;
+}
+
+export interface WaterAnalysisSulfateRun {
+  /** m0 — mass of the sample. */
+  sampleMassG?: number;
+  /** m1 — mass of the empty crucible. */
+  emptyCrucibleG?: number;
+  /** m2 — crucible plus residue after ignition at 950 +/- 50 °C. */
+  crucibleAndResidueG?: number;
+  // Derived.
+  bariumSulfateMassG?: number;
+  /** The worksheet's 34.3 factor yields SO3; both are kept so the report's
+   *  sulfate figure can be traced back to what was actually weighed. */
+  sulfurTrioxidePercent?: number;
+  sulfatePercent?: number;
+  sulfateMgL?: number;
+}
+
+export interface WaterAppearanceRun {
+  /** Volume of sample taken for the colour / odour / H2S observation. */
+  sampleVolumeMl?: number;
+  /** Volume of hydrochloric acid added before smelling for H2S. */
+  hydrochloricAcidMl?: number;
+  observation?: string;
+}
+
+/** What reaches the report's six-row results table. */
+export interface WaterAnalysisResults {
+  colour?: string;
+  odour?: string;
+  densityKgM3?: number;
+  ph?: number;
+  chlorideMgL?: number;
+  sulfateMgL?: number;
+}
+
+export interface WaterAnalysisTest {
+  id: string;
+  testId: string;
+  testStartDate?: string;
+  testEndDate?: string;
+  /** Where the water came from, and how it arrived — both are report fields. */
+  waterTypeAndSource?: string;
+  samplingPlace?: string;
+  packagingType?: string;
+  samplingOperator?: string;
+  temperature?: string;
+  humidity?: string;
+  testingLocation?: string;
+  equipmentUsed?: string;
+  technicianName: string;
+  checkedBy?: string;
+  notes?: string;
+
+  densityStartDate?: string;
+  densityEndDate?: string;
+  density1: WaterDensityRun;
+  density2: WaterDensityRun;
+
+  phStartDate?: string;
+  phEndDate?: string;
+  ph1?: number;
+  ph2?: number;
+
+  appearanceStartDate?: string;
+  appearanceEndDate?: string;
+  appearance1: WaterAppearanceRun;
+  appearance2: WaterAppearanceRun;
+  colour?: string;
+  odour?: string;
+
+  chlorideStartDate?: string;
+  chlorideEndDate?: string;
+  chloride1: WaterChlorideRun;
+  chloride2: WaterChlorideRun;
+
+  sulfateStartDate?: string;
+  sulfateEndDate?: string;
+  sulfate1: WaterAnalysisSulfateRun;
+  sulfate2: WaterAnalysisSulfateRun;
+
+  results: WaterAnalysisResults;
   createdAt: string;
 }
