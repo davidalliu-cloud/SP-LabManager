@@ -400,6 +400,17 @@ export function isWaterAnalysisAccreditedTest(testIdOrType?: string) {
   );
 }
 
+/**
+ * AT-069 — rebound hammer on concrete structures, BS EN 12504-2. Registered in
+ * the Field Register; see lib/field-register.ts.
+ */
+export function isSclerometerAccreditedTest(testIdOrType?: string) {
+  return Boolean(
+    testIdOrType === 'AT-069' ||
+      testIdOrType === 'Përcaktimi i rezistencës mekanike në shtypje me sklerometër'
+  );
+}
+
 export function isWaterSampleType(sampleType: string) {
   return normalizeSampleType(sampleType) === "Ujë për Beton / Water for Concrete";
 }

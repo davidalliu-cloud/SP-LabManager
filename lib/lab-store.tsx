@@ -69,7 +69,9 @@ import {
   deriveWaterDensityRun,
   deriveWaterChlorideRun,
   deriveWaterSulfateRun,
-  averageWaterRuns
+  averageWaterRuns,
+  deriveSclerometerLocation,
+  averageSclerometerColumn
 } from "./calculations";
 import { useAuth } from "./auth";
 import { officialClientCodes2026 } from "./client-directory";
@@ -78,7 +80,7 @@ import { initialState } from "./seed-data";
 import { deriveSampleStage, SAMPLE_STAGES } from "./sample-stage";
 import { createSupabaseBrowserClient } from "./supabase/client";
 import { pushAuditEntries, pushNotifications } from "./activity-log";
-import type { AdmixtureTest, AdmixtureDensityRun, AdmixtureDryMassRun, AdmixtureWaterMixRun, AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltMixtureKind, AsphaltReportKind, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabState, LabTest, LabUser, MasonryUnitTest, MortarTest, WaterAnalysisTest, MortarTestKind, Notification, Project, Report, Role, Sample, SampleStatus, SteelTensileTest, ThermalInsulationTest } from "./types";
+import type { AdmixtureTest, AdmixtureDensityRun, AdmixtureDryMassRun, AdmixtureWaterMixRun, AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltMixtureKind, AsphaltReportKind, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabState, LabTest, LabUser, MasonryUnitTest, MortarTest, WaterAnalysisTest, SclerometerTest, MortarTestKind, Notification, Project, Report, Role, Sample, SampleStatus, SteelTensileTest, ThermalInsulationTest } from "./types";
 
 export interface NewSampleInput {
   clientId: string;
@@ -405,6 +407,34 @@ interface CementStrengthInput {
     surfaceAreaMm2: number;
     testDate?: string;
     loadKn: number;
+  }>;
+}
+
+interface SclerometerInput {
+  testStartDate?: string;
+  testEndDate?: string;
+  surveyLocation?: string;
+  structureDescription?: string;
+  concreteAge?: string;
+  surfaceCondition?: string;
+  instrumentModel?: string;
+  instrumentSerial?: string;
+  instrumentCalibrationDate?: string;
+  correlationKind?: SclerometerTest["correlationKind"];
+  correlationA?: number;
+  correlationB?: number;
+  correlationReference?: string;
+  temperature?: string;
+  humidity?: string;
+  testingLocation?: string;
+  technicianName: string;
+  checkedBy?: string;
+  notes?: string;
+  locations: Array<{
+    locationCode: string;
+    element?: string;
+    direction?: SclerometerTest["locations"][number]["direction"];
+    readings: Array<number | undefined>;
   }>;
 }
 
@@ -1002,6 +1032,7 @@ interface LabStoreValue extends LabState {
   saveAdmixtureTest: (testId: string, input: AdmixtureInput) => void;
   saveMasonryUnitTest: (testId: string, input: MasonryUnitInput) => void;
   saveWaterAnalysisTest: (testId: string, input: WaterAnalysisInput) => void;
+  saveSclerometerTest: (testId: string, input: SclerometerInput) => void;
   saveMortarTest: (testId: string, input: MortarInput) => void;
   saveSteelTest: (testId: string, input: SteelInput) => void;
   saveAggregateTest: (testId: string, input: AggregateInput) => void;
@@ -1283,6 +1314,7 @@ function mergeWithInitialState(saved: Partial<LabState>): LabState {
     // crashing the first .find() that touches it.
     masonryUnitTests: saved.masonryUnitTests ?? initialState.masonryUnitTests,
     waterAnalysisTests: saved.waterAnalysisTests ?? initialState.waterAnalysisTests,
+    sclerometerTests: saved.sclerometerTests ?? initialState.sclerometerTests,
     concreteTests: saved.concreteTests ?? initialState.concreteTests,
     concreteWaterPenetrationTests: saved.concreteWaterPenetrationTests ?? initialState.concreteWaterPenetrationTests,
     concreteFlexuralTests: saved.concreteFlexuralTests ?? initialState.concreteFlexuralTests,
@@ -1961,6 +1993,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             admixtureTests: previous.admixtureTests.filter((row) => !linkedTestIds.has(row.testId)),
             masonryUnitTests: previous.masonryUnitTests.filter((row) => !linkedTestIds.has(row.testId)),
             waterAnalysisTests: previous.waterAnalysisTests.filter((row) => !linkedTestIds.has(row.testId)),
+            sclerometerTests: previous.sclerometerTests.filter((row) => !linkedTestIds.has(row.testId)),
             aggregateLosAngelesTests: previous.aggregateLosAngelesTests.filter((row) => !linkedTestIds.has(row.testId)),
             aggregateFreezeThawTests: previous.aggregateFreezeThawTests.filter((row) => !linkedTestIds.has(row.testId)),
             aggregateAcvTests: previous.aggregateAcvTests.filter((row) => !linkedTestIds.has(row.testId)),
@@ -2865,6 +2898,62 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       // dry mass (EN 480-8), water reduction (EN 480-1), density (ISO 758), pH
       // (ISO 4316). Results are computed here from the duplicate runs; any run
       // left blank yields a blank result.
+      saveSclerometerTest(testId, input) {
+        setState((previous) => {
+          if (!canCurrentUserEditTest(previous, testId)) return previous;
+          const correlation = {
+            kind: input.correlationKind,
+            coefficientA: input.correlationA,
+            coefficientB: input.correlationB
+          };
+          const locations = input.locations.map((row) => ({
+            ...row,
+            ...deriveSclerometerLocation(row.readings, correlation)
+          }));
+          // A location the standard rejected, or one never surveyed, carries no
+          // index and so contributes nothing to either mean.
+          const existingRow = previous.sclerometerTests.find((row) => row.testId === testId);
+          const sclerometerTest: SclerometerTest = {
+            id: existingRow?.id ?? crypto.randomUUID(),
+            testId,
+            testStartDate: input.testStartDate,
+            testEndDate: input.testEndDate,
+            surveyLocation: input.surveyLocation,
+            structureDescription: input.structureDescription,
+            concreteAge: input.concreteAge,
+            surfaceCondition: input.surfaceCondition,
+            instrumentModel: input.instrumentModel,
+            instrumentSerial: input.instrumentSerial,
+            instrumentCalibrationDate: input.instrumentCalibrationDate,
+            correlationKind: input.correlationKind,
+            correlationA: input.correlationA,
+            correlationB: input.correlationB,
+            correlationReference: input.correlationReference,
+            temperature: input.temperature,
+            humidity: input.humidity,
+            testingLocation: input.testingLocation,
+            technicianName: input.technicianName,
+            checkedBy: input.checkedBy,
+            notes: input.notes,
+            locations,
+            averages: {
+              reboundIndex: averageSclerometerColumn(locations.map((row) => row.reboundIndex), 1),
+              compressiveStrengthMpa: averageSclerometerColumn(locations.map((row) => row.compressiveStrengthMpa), 2)
+            },
+            createdAt: existingRow?.createdAt ?? new Date().toISOString()
+          };
+          const draft: LabState = {
+            ...previous,
+            sclerometerTests: existingRow
+              ? previous.sclerometerTests.map((row) => (row.testId === testId ? sclerometerTest : row))
+              : [sclerometerTest, ...previous.sclerometerTests],
+            tests: previous.tests.map((test) => (test.id === testId ? { ...test, status: "In Progress" } : test)),
+            auditLog: [...previous.auditLog]
+          };
+          addAudit(draft, "test_data_saved", "test", testId, "Sclerometer (EN 12504-2) data saved.");
+          return draft;
+        });
+      },
       saveWaterAnalysisTest(testId, input) {
         setState((previous) => {
           if (!canCurrentUserEditTest(previous, testId)) return previous;
@@ -3914,6 +4003,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           const aggregateChemical = previous.aggregateChemicalTests.find((row) => row.testId === testId);
           const admixture = previous.admixtureTests.find((row) => row.testId === testId);
           const waterAnalysis = previous.waterAnalysisTests.find((row) => row.testId === testId);
+          const sclerometer = previous.sclerometerTests.find((row) => row.testId === testId);
           const aggregateLosAngeles = previous.aggregateLosAngelesTests.find((row) => row.testId === testId);
           const aggregateFreezeThaw = previous.aggregateFreezeThawTests.find((row) => row.testId === testId);
           const aggregateAcv = previous.aggregateAcvTests.find((row) => row.testId === testId);

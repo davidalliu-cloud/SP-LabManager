@@ -38,6 +38,7 @@ export default function ReportDetailPage() {
   const admixture = store.admixtureTests.find((item) => item.testId === activeReport.testId);
   const masonryUnit = store.masonryUnitTests.find((item) => item.testId === activeReport.testId);
   const waterAnalysis = store.waterAnalysisTests.find((item) => item.testId === activeReport.testId);
+  const sclerometer = store.sclerometerTests.find((item) => item.testId === activeReport.testId);
   const mortar = store.mortarTests.find((item) => item.testId === activeReport.testId);
   const steel = store.steelTests.find((item) => item.testId === activeReport.testId);
   const aggregate = store.aggregateTests.find((item) => item.testId === activeReport.testId);
@@ -121,7 +122,7 @@ export default function ReportDetailPage() {
       </div>
       <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
         <div ref={reportSurfaceRef}>
-          <ReportPreview report={activeReport} test={test} sample={sample} client={client} project={project} concrete={concrete} concreteWater={concreteWater} concreteFlexural={concreteFlexural} concreteDensity={concreteDensity} concreteIndirectTensile={concreteIndirectTensile} concreteCore={concreteCore} asphalt={asphalt} thermalInsulation={thermalInsulation} cementConsistency={cementConsistency} cementStrength={cementStrength} cementBlaine={cementBlaine} admixture={admixture} masonryUnit={masonryUnit} waterAnalysis={waterAnalysis} mortar={mortar} steel={steel} aggregate={aggregate} aggregateChemical={aggregateChemical} aggregateLosAngeles={aggregateLosAngeles} aggregateFreezeThaw={aggregateFreezeThaw} aggregateAcv={aggregateAcv} aggregateDensity={aggregateDensity} aggregateFillerDensity={aggregateFillerDensity} aggregateShapeIndex={aggregateShapeIndex} aggregateFlakiness={aggregateFlakiness} aggregateElongation={aggregateElongation} aggregateBulkDensity={aggregateBulkDensity} aggregateSandEquivalent={aggregateSandEquivalent} aggregateSoundness={aggregateSoundness} />
+          <ReportPreview report={activeReport} test={test} sample={sample} client={client} project={project} concrete={concrete} concreteWater={concreteWater} concreteFlexural={concreteFlexural} concreteDensity={concreteDensity} concreteIndirectTensile={concreteIndirectTensile} concreteCore={concreteCore} asphalt={asphalt} thermalInsulation={thermalInsulation} cementConsistency={cementConsistency} cementStrength={cementStrength} cementBlaine={cementBlaine} admixture={admixture} masonryUnit={masonryUnit} waterAnalysis={waterAnalysis} sclerometer={sclerometer} mortar={mortar} steel={steel} aggregate={aggregate} aggregateChemical={aggregateChemical} aggregateLosAngeles={aggregateLosAngeles} aggregateFreezeThaw={aggregateFreezeThaw} aggregateAcv={aggregateAcv} aggregateDensity={aggregateDensity} aggregateFillerDensity={aggregateFillerDensity} aggregateShapeIndex={aggregateShapeIndex} aggregateFlakiness={aggregateFlakiness} aggregateElongation={aggregateElongation} aggregateBulkDensity={aggregateBulkDensity} aggregateSandEquivalent={aggregateSandEquivalent} aggregateSoundness={aggregateSoundness} />
         </div>
         <aside className="no-print space-y-4">
           <div className="surface-card p-4">

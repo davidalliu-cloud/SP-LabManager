@@ -1355,6 +1355,7 @@ export interface LabState {
   admixtureTests: AdmixtureTest[];
   masonryUnitTests: MasonryUnitTest[];
   waterAnalysisTests: WaterAnalysisTest[];
+  sclerometerTests: SclerometerTest[];
   mortarTests: MortarTest[];
   steelTests: SteelTensileTest[];
   aggregateTests: AggregateGradationTest[];
@@ -1588,5 +1589,82 @@ export interface WaterAnalysisTest {
   sulfate2: WaterAnalysisSulfateRun;
 
   results: WaterAnalysisResults;
+  createdAt: string;
+}
+
+/**
+ * Rebound hammer / sclerometer — BS EN 12504-2, scope entry AT-069.
+ *
+ * A survey is made up of test locations; each location carries at least nine
+ * readings, from which the standard derives one rebound index (see
+ * deriveSclerometerLocation for the median-and-discard rule).
+ *
+ * The standard stops at the rebound index. Turning that into a compressive
+ * strength needs the correlation from the instrument's certificate, so the
+ * correlation is entered per test and recorded on the report rather than being
+ * held as an uncontrolled curve inside the app.
+ */
+export type SclerometerDirection =
+  | "Horizontale / Horizontal"
+  | "Vertikale poshtë / Vertical down"
+  | "Vertikale lart / Vertical up"
+  | "45° poshtë / 45° down"
+  | "45° lart / 45° up";
+
+export type SclerometerCorrelationKind = "linear" | "power";
+
+export interface SclerometerLocation {
+  locationCode: string;
+  /** The structural element tested — column K-12, slab, pier P3. */
+  element?: string;
+  direction?: SclerometerDirection;
+  readings: Array<number | undefined>;
+
+  // Derived — never entered by hand.
+  readingCount?: number;
+  /** True when fewer than the nine readings the standard requires were taken. */
+  belowMinimumReadings?: boolean;
+  initialMedian?: number;
+  discardedCount?: number;
+  discardedPercent?: number;
+  /** More than a fifth of the readings discarded: the location is not reported. */
+  setRejected?: boolean;
+  reboundIndex?: number;
+  compressiveStrengthMpa?: number;
+}
+
+export interface SclerometerTest {
+  id: string;
+  testId: string;
+  testStartDate?: string;
+  testEndDate?: string;
+  /** Where the survey was carried out — this is field work. */
+  surveyLocation?: string;
+  structureDescription?: string;
+  concreteAge?: string;
+  surfaceCondition?: string;
+  instrumentModel?: string;
+  instrumentSerial?: string;
+  instrumentCalibrationDate?: string;
+
+  /** The correlation from the instrument's certificate. */
+  correlationKind?: SclerometerCorrelationKind;
+  correlationA?: number;
+  correlationB?: number;
+  /** Which curve or certificate the coefficients came from. */
+  correlationReference?: string;
+
+  temperature?: string;
+  humidity?: string;
+  testingLocation?: string;
+  technicianName: string;
+  checkedBy?: string;
+  notes?: string;
+
+  locations: SclerometerLocation[];
+  averages: {
+    reboundIndex?: number;
+    compressiveStrengthMpa?: number;
+  };
   createdAt: string;
 }
