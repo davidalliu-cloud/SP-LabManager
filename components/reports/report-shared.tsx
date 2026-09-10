@@ -10,8 +10,18 @@ import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
 
 const HEAD_OF_LAB_NAME = "Eng. Adelajda Duzha";
 
-export function headOfLabName(_preferred?: string) {
-  return HEAD_OF_LAB_NAME;
+/**
+ * Who signs a report as laboratory responsible.
+ *
+ * Whoever the test records as having checked it, falling back to the head of
+ * the laboratory when nothing was recorded. This used to ignore its argument
+ * and always return the constant, so every report signed with the same name
+ * whatever the worksheet said — including water, which belongs to the chemical
+ * laboratory and has its own responsible.
+ */
+export function headOfLabName(preferred?: string) {
+  const named = preferred?.trim();
+  return named || HEAD_OF_LAB_NAME;
 }
 
 // Whoever physically handed the sample to the lab: the client's own person if
@@ -350,20 +360,11 @@ export function OfficialNotesAndFooter({
   notes,
   testedBy,
   responsible,
-  responsibleOverride,
   issueDate
 }: {
   notes?: string;
   testedBy?: string;
   responsible?: string;
-  /**
-   * Use this exact name as the laboratory responsible, instead of the
-   * head-of-lab constant. headOfLabName ignores what it is passed, so every
-   * report in this family otherwise signs with the same person. The chemical
-   * laboratory has its own responsible, which is why the water report needs
-   * to say who actually signed it.
-   */
-  responsibleOverride?: string;
   issueDate?: string;
 }) {
   return (
@@ -379,7 +380,7 @@ export function OfficialNotesAndFooter({
           testedByLabel={<>TESTUAR NGA / <span className="italic font-normal">TESTED BY</span></>}
           testedByName={testedBy}
           responsibleLabel={<>PËRGJEGJËSI I LABORATORIT / <span className="italic font-normal">LABORATORY RESPONSIBLE</span></>}
-          responsibleName={responsibleOverride || headOfLabName(responsible)}
+          responsibleName={headOfLabName(responsible)}
           heightMm={30}
         />
         <div className="official-disclaimers mt-2 space-y-0.5 text-[6pt] leading-tight">

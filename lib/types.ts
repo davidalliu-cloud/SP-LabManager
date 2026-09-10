@@ -130,6 +130,8 @@ export interface LabTest {
 export interface ConcreteCompressiveTest {
   id: string;
   testId: string;
+  /** Who checked the result; signs the report as laboratory responsible. */
+  checkedBy?: string;
   testStartDate?: string;
   testEndDate?: string;
   temperature?: string;

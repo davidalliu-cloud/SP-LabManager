@@ -128,6 +128,7 @@ interface SampleCorrectionInput {
 }
 
 interface ConcreteInput {
+  checkedBy?: string;
   castingDate: string;
   testDate: string;
   testStartDate?: string;

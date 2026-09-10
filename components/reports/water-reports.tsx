@@ -220,7 +220,7 @@ export function WaterAnalysisReportPreview({
         notes={water.notes}
         issueDate={issueDate}
         testedBy={water.technicianName}
-        responsibleOverride={water.checkedBy || "Ing./Eng. Besiana ALLIU"}
+        responsible={water.checkedBy || "Ing./Eng. Besiana ALLIU"}
       />
     </OfficialReportShell>
   );

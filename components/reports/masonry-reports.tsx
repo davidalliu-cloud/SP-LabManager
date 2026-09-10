@@ -11,7 +11,6 @@ import {
   OfficialAsterisk,
   OfficialNotesAndFooter,
   BiText,
-  headOfLabName,
   samplingOperator
 } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
@@ -316,7 +315,7 @@ export function MasonryUnitReportPreview({
         notes={masonry.notes}
         issueDate={issueDate}
         testedBy={masonry.technicianName}
-        responsible={headOfLabName(masonry.checkedBy)}
+        responsible={masonry.checkedBy}
       />
     </OfficialReportShell>
   );

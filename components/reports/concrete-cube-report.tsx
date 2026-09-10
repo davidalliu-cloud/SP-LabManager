@@ -194,7 +194,7 @@ export function ConcreteCubeReportPreview({
         testedByLabel={<>TESTUESI / <span className="italic">TESTED BY</span></>}
         testedByName={concrete?.technicianName || report.draftedBy}
         responsibleLabel={<>PËRGJEGJËSI I LABORATORIT / <span className="italic">LABORATORY RESPONSIBLE</span></>}
-        responsibleName={headOfLabName()}
+        responsibleName={headOfLabName(concrete?.checkedBy)}
         heightMm={38}
       />
 

@@ -134,6 +134,7 @@ export default function TestDetailPage() {
       failureType: first.visualInspection,
       machineUsed: String(form.get("machineUsed")),
       technicianName: String(form.get("technicianName")),
+      checkedBy: String(form.get("checkedBy") ?? ""),
       notes: String(form.get("notes")),
       element: String(form.get("element") ?? ""),
       otherData: String(form.get("otherData") ?? ""),
@@ -3801,6 +3802,7 @@ export default function TestDetailPage() {
             <Field label="Test"><input className="input bg-lab-porcelain" value="Compressive strength of concrete cubes" readOnly /></Field>
             <Field label="Applied standard"><input className="input bg-lab-porcelain" value={activeTest.standard} readOnly /></Field>
             <Field label="Assigned technician"><EmployeeSelect name="technicianName" employees={activeEmployees} required value={concrete?.technicianName ?? "Youssef Khalil"} /></Field>
+            <Field label="Checked by"><EmployeeSelect name="checkedBy" employees={activeEmployees} value={concrete?.checkedBy ?? ""} /></Field>
             <Field label="Element"><input name="element" defaultValue={concrete?.element ?? sample?.sampleDescription ?? ""} className="input" placeholder="e.g. Foundation slab, Column C12" /></Field>
             <Field label="Strength class"><input name="strengthClass" defaultValue={concrete?.strengthClass ?? ""} className="input" placeholder="e.g. C25/30" /></Field>
             <Field label="Other data"><input name="otherData" defaultValue={concrete?.otherData ?? ""} className="input" /></Field>
