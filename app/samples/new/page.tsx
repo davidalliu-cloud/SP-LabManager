@@ -13,6 +13,7 @@ import {
   isSteelSampleType
 } from "@/lib/accredited-tests";
 import { formatEuropeanDate } from "@/lib/date-format";
+import { isFieldSampleType } from "@/lib/field-register";
 import { useLabStore, type NewSampleInput } from "@/lib/lab-store";
 
 function formatDateInput(date: Date) {
@@ -39,7 +40,10 @@ function maturityAgeForRow(index: number) {
 export default function NewSamplePage() {
   const router = useRouter();
   const store = useLabStore();
-  const initialSampleType = accreditedSampleTypes[0] ?? "";
+  // Field work — rebound hammer, static and dynamic plate, concrete cores — is
+  // registered in the Field Register and is deliberately not offered here.
+  const labSampleTypes = useMemo(() => accreditedSampleTypes.filter((type) => !isFieldSampleType(type)), []);
+  const initialSampleType = labSampleTypes[0] ?? "";
   const initialTestId = getAccreditedTestsForSampleType(initialSampleType)[0]?.id ?? "";
   const [sampleType, setSampleType] = useState(initialSampleType);
   const [accreditedTestId, setAccreditedTestId] = useState(initialTestId);
@@ -261,7 +265,7 @@ export default function NewSamplePage() {
         </div>
         <Field label="Tipi i kampionit">
           <select value={sampleType} onChange={(event) => changeSampleType(event.target.value)} className="input">
-            {accreditedSampleTypes.map((type) => (
+            {labSampleTypes.map((type) => (
               <option key={type} value={type}>{type}</option>
             ))}
           </select>

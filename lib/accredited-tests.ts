@@ -90,14 +90,30 @@ const sampleTypeAliases: Record<string, string> = {
   "Uji": "Ujë për Beton / Water for Concrete",
   "Water": "Ujë për Beton / Water for Concrete",
   "Water for Concrete": "Ujë për Beton / Water for Concrete",
-  "Ujë për Beton / Water for Concrete": "Ujë për Beton / Water for Concrete"
+  "Ujë për Beton / Water for Concrete": "Ujë për Beton / Water for Concrete",
+  "Sklerometer": "Sklerometër / Rebound Hammer",
+  "Sklerometër": "Sklerometër / Rebound Hammer",
+  "Rebound Hammer": "Sklerometër / Rebound Hammer",
+  "Hammer Schmidt": "Sklerometër / Rebound Hammer",
+  "Schmidt Hammer": "Sklerometër / Rebound Hammer",
+  "Sklerometër / Rebound Hammer": "Sklerometër / Rebound Hammer",
+  "Piastra Statike": "Piastra Statike / Static Plate",
+  "Piastra statike": "Piastra Statike / Static Plate",
+  "Static Plate": "Piastra Statike / Static Plate",
+  "Static plate": "Piastra Statike / Static Plate",
+  "Piastra Statike / Static Plate": "Piastra Statike / Static Plate",
+  "Piastra Dinamike": "Piastra Dinamike / Dynamic Plate",
+  "Piastra dinamike": "Piastra Dinamike / Dynamic Plate",
+  "Dynamic Plate": "Piastra Dinamike / Dynamic Plate",
+  "Dynamic plate": "Piastra Dinamike / Dynamic Plate",
+  "Piastra Dinamike / Dynamic Plate": "Piastra Dinamike / Dynamic Plate",
 };
 
 function displaySampleType(sampleType: string) {
   return sampleTypeDisplayNames[sampleType] ?? sampleType;
 }
 
-function normalizeSampleType(sampleType: string) {
+export function normalizeSampleType(sampleType: string) {
   return sampleTypeAliases[sampleType] ?? sampleType;
 }
 

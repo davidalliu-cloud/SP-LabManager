@@ -11,6 +11,7 @@ import { SavedViews } from "@/components/ui/saved-views";
 import type { FilterChip } from "@/components/ui/filter-bar";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { useI18n } from "@/lib/i18n";
+import { isFieldSample } from "@/lib/field-register";
 import { useLabStore } from "@/lib/lab-store";
 import { buildLabIndex, NO_REPORTS, NO_TESTS } from "@/lib/lab-index";
 import { buildHaystack, matchesHaystack, tokeniseQuery } from "@/lib/search";
@@ -116,7 +117,8 @@ export default function SamplesPage() {
 
   const allRows = useMemo<SampleRow[]>(
     () =>
-      store.samples.map((sample) => {
+      // Field samples live in the Field Register; only lab work is listed here.
+      store.samples.filter((sample) => !isFieldSample(sample)).map((sample) => {
         const tests = index.testsBySample.get(sample.id) ?? NO_TESTS;
         const nextTest = tests.find((item) => ACTIVE_TEST_STATUSES.includes(item.status)) ?? tests[0];
         const report = (index.reportsBySample.get(sample.id) ?? NO_REPORTS)[0];
@@ -183,7 +185,7 @@ export default function SamplesPage() {
   }, []);
 
   const sampleTypeOptions = useMemo(
-    () => Array.from(new Set(store.samples.map((sample) => sample.sampleType))).filter(Boolean).sort(),
+    () => Array.from(new Set(store.samples.filter((sample) => !isFieldSample(sample)).map((sample) => sample.sampleType))).filter(Boolean).sort(),
     [store.samples]
   );
   const technicianOptions = useMemo(
