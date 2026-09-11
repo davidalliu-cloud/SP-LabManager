@@ -493,6 +493,8 @@ interface MasonryUnitInput {
   shapeFactorDelta?: number;
   conditioningFactor?: number;
   conditioningMethod?: string;
+  surfacePreparation?: string;
+  loadingOrientation?: MasonryUnitTest["loadingOrientation"];
   dryingTemperatureC?: number;
   temperature?: string;
   humidity?: string;
@@ -505,9 +507,16 @@ interface MasonryUnitInput {
     lengthMm?: number;
     widthMm?: number;
     heightMm?: number;
+    shellWebLongitudinalMm?: number;
+    shellWebTransverseMm?: number;
+    meanHoleDepthMm?: number;
+    sumLongitudinalMm?: number;
+    sumTransverseMm?: number;
     dryMassG?: number;
-    netVolumeMm3?: number;
     saturatedMassG?: number;
+    voidVolumeMm3?: number;
+    netVolumeMm3?: number;
+    loadedAreaMm2?: number;
     maximumLoadKn?: number;
   }>;
 }
@@ -3080,6 +3089,8 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             shapeFactorDelta: input.shapeFactorDelta,
             conditioningFactor: input.conditioningFactor,
             conditioningMethod: input.conditioningMethod,
+            surfacePreparation: input.surfacePreparation,
+            loadingOrientation: input.loadingOrientation,
             dryingTemperatureC: input.dryingTemperatureC,
             temperature: input.temperature,
             humidity: input.humidity,
@@ -3092,6 +3103,11 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
               lengthMm: averageMasonryColumn(specimens.map((row) => row.lengthMm), 1),
               widthMm: averageMasonryColumn(specimens.map((row) => row.widthMm), 1),
               heightMm: averageMasonryColumn(specimens.map((row) => row.heightMm), 1),
+              shellWebLongitudinalMm: averageMasonryColumn(specimens.map((row) => row.shellWebLongitudinalMm), 2),
+              shellWebTransverseMm: averageMasonryColumn(specimens.map((row) => row.shellWebTransverseMm), 2),
+              meanHoleDepthMm: averageMasonryColumn(specimens.map((row) => row.meanHoleDepthMm), 1),
+              combinedThicknessLongitudinalPercent: averageMasonryColumn(specimens.map((row) => row.combinedThicknessLongitudinalPercent), 2),
+              combinedThicknessTransversePercent: averageMasonryColumn(specimens.map((row) => row.combinedThicknessTransversePercent), 2),
               grossDryDensityKgM3: averageMasonryColumn(specimens.map((row) => row.grossDryDensityKgM3), 0),
               netDryDensityKgM3: averageMasonryColumn(specimens.map((row) => row.netDryDensityKgM3), 0),
               waterAbsorptionPercent: averageMasonryColumn(specimens.map((row) => row.waterAbsorptionPercent), 2),

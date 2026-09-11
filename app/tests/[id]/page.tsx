@@ -476,6 +476,8 @@ export default function TestDetailPage() {
       shapeFactorDelta: optionalNumber(form.get("shapeFactorDelta")),
       conditioningFactor: optionalNumber(form.get("conditioningFactor")),
       conditioningMethod: String(form.get("conditioningMethod") ?? ""),
+      surfacePreparation: String(form.get("surfacePreparation") ?? ""),
+      loadingOrientation: (String(form.get("loadingOrientation") ?? "perpendicular") || "perpendicular") as "parallel" | "perpendicular",
       dryingTemperatureC: optionalNumber(form.get("dryingTemperatureC")),
       temperature: String(form.get("temperature") ?? ""),
       humidity: String(form.get("humidity") ?? ""),
@@ -488,9 +490,16 @@ export default function TestDetailPage() {
         lengthMm: optionalNumber(form.get(`masonryLength-${index}`)),
         widthMm: optionalNumber(form.get(`masonryWidth-${index}`)),
         heightMm: optionalNumber(form.get(`masonryHeight-${index}`)),
+        shellWebLongitudinalMm: optionalNumber(form.get(`masonryShellLong-${index}`)),
+        shellWebTransverseMm: optionalNumber(form.get(`masonryShellTrans-${index}`)),
+        meanHoleDepthMm: optionalNumber(form.get(`masonryHoleDepth-${index}`)),
+        sumLongitudinalMm: optionalNumber(form.get(`masonrySumLong-${index}`)),
+        sumTransverseMm: optionalNumber(form.get(`masonrySumTrans-${index}`)),
         dryMassG: optionalNumber(form.get(`masonryDryMass-${index}`)),
-        netVolumeMm3: optionalNumber(form.get(`masonryNetVolume-${index}`)),
         saturatedMassG: optionalNumber(form.get(`masonrySaturatedMass-${index}`)),
+        voidVolumeMm3: optionalNumber(form.get(`masonryVoidVolume-${index}`)),
+        netVolumeMm3: optionalNumber(form.get(`masonryNetVolume-${index}`)),
+        loadedAreaMm2: optionalNumber(form.get(`masonryLoadedArea-${index}`)),
         maximumLoadKn: optionalNumber(form.get(`masonryLoad-${index}`))
       }))
     });
@@ -1316,7 +1325,14 @@ export default function TestDetailPage() {
               <Field label="Gjatësia e deklaruar [mm]"><input name="declaredLengthMm" type="number" step="0.1" min="0" max="1000" defaultValue={masonryUnit?.declaredLengthMm ?? ""} className="input" /></Field>
               <Field label="Gjerësia e deklaruar [mm]"><input name="declaredWidthMm" type="number" step="0.1" min="0" max="1000" defaultValue={masonryUnit?.declaredWidthMm ?? ""} className="input" /></Field>
               <Field label="Lartësia e deklaruar [mm]"><input name="declaredHeightMm" type="number" step="0.1" min="0" max="1000" defaultValue={masonryUnit?.declaredHeightMm ?? ""} className="input" /></Field>
-              <Field label="Kondicionimi / Conditioning"><input name="conditioningMethod" defaultValue={masonryUnit?.conditioningMethod ?? ""} className="input" placeholder="p.sh. i thatë në ajër" /></Field>
+              <Field label="Kondicionimi / Conditioning"><input name="conditioningMethod" defaultValue={masonryUnit?.conditioningMethod ?? "Mbajtur në ajër të thatë, metoda B / Air dry, method B"} className="input" placeholder="p.sh. i thatë në ajër" /></Field>
+              <Field label="Përgatitja e sipërfaqes / Surface preparation"><input name="surfacePreparation" defaultValue={masonryUnit?.surfacePreparation ?? "Me bluarje / Grinding"} className="input" /></Field>
+              <Field label="Orientimi i ngarkesës / Load orientation">
+                <select name="loadingOrientation" defaultValue={masonryUnit?.loadingOrientation ?? "perpendicular"} className="input">
+                  <option value="perpendicular">Ʇ me vrimat / ⊥ to holes</option>
+                  <option value="parallel">∥ me vrimat / ∥ to holes</option>
+                </select>
+              </Field>
               <Field label="Temperatura e tharjes [°C]"><input name="dryingTemperatureC" type="number" step="1" min="0" max="300" defaultValue={masonryUnit?.dryingTemperatureC ?? 105} className="input" /></Field>
               <Field label="Testing start date"><input name="testStartDate" type="date" defaultValue={masonryUnit?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Testing end date"><input name="testEndDate" type="date" defaultValue={masonryUnit?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
@@ -1350,23 +1366,32 @@ export default function TestDetailPage() {
             <div className="p-5">
               <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">Njësitë / <span className="italic font-normal normal-case">Units</span></h3>
               <p className="mt-1 text-xs text-muted">
-                Lini bosh çdo kolonë që nuk është matur për një njësi — nuk llogaritet në mesatare. Vëllimi neto plotësohet vetëm për njësi me zbrazëti.
+                Lini bosh çdo kolonë që nuk është matur për një njësi — nuk llogaritet në mesatare. Jepni vëllimin e boshllëqeve (ose vëllimin neto), sipërfaqen e ngarkesës dhe forcën; densiteti, ujëthithja, trashësia e kombinuar dhe rezistenca llogariten vetë.
               </p>
               <div className="mt-3 overflow-x-auto">
-                <table className="w-full min-w-[1180px] text-left text-sm">
+                <table className="w-full min-w-[1900px] text-left text-sm">
                   <thead className="table-head">
                     <tr>
                       <th className="px-2 py-2">Nr.</th>
                       <th className="px-2 py-2">L [mm]</th>
                       <th className="px-2 py-2">W [mm]</th>
                       <th className="px-2 py-2">H [mm]</th>
+                      <th className="px-2 py-2">Tr. gjat. [mm]</th>
+                      <th className="px-2 py-2">Tr. tërth. [mm]</th>
+                      <th className="px-2 py-2">Thellësia vrimës [mm]</th>
+                      <th className="px-2 py-2">Σ gjat. [mm]</th>
+                      <th className="px-2 py-2">Σ tërth. [mm]</th>
                       <th className="px-2 py-2">Masa e thatë [g]</th>
-                      <th className="px-2 py-2">Vëllimi neto [mm³]</th>
                       <th className="px-2 py-2">Masa e ngopur [g]</th>
+                      <th className="px-2 py-2">Vëllimi i boshllëqeve [mm³]</th>
+                      <th className="px-2 py-2">Vëllimi neto [mm³]</th>
+                      <th className="px-2 py-2">Sipërfaqja e ngarkesës [mm²]</th>
                       <th className="px-2 py-2">Forca [kN]</th>
-                      <th className="px-2 py-2">ρ bruto [kg/m³]</th>
                       <th className="px-2 py-2">ρ neto [kg/m³]</th>
+                      <th className="px-2 py-2">ρ bruto [kg/m³]</th>
                       <th className="px-2 py-2">Ujëthithja [%]</th>
+                      <th className="px-2 py-2">Komb. gjat. [%]</th>
+                      <th className="px-2 py-2">Komb. tërth. [%]</th>
                       <th className="px-2 py-2">f [MPa]</th>
                       <th className="px-2 py-2">f norm. [MPa]</th>
                     </tr>
@@ -1380,13 +1405,22 @@ export default function TestDetailPage() {
                           <td className="px-2 py-2"><input name={`masonryLength-${index}`} type="number" step="0.1" min="0" max="1000" defaultValue={row?.lengthMm ?? ""} className="input w-24" /></td>
                           <td className="px-2 py-2"><input name={`masonryWidth-${index}`} type="number" step="0.1" min="0" max="1000" defaultValue={row?.widthMm ?? ""} className="input w-24" /></td>
                           <td className="px-2 py-2"><input name={`masonryHeight-${index}`} type="number" step="0.1" min="0" max="1000" defaultValue={row?.heightMm ?? ""} className="input w-24" /></td>
+                          <td className="px-2 py-2"><input name={`masonryShellLong-${index}`} type="number" step="0.1" min="0" max="1000" defaultValue={row?.shellWebLongitudinalMm ?? ""} className="input w-24" /></td>
+                          <td className="px-2 py-2"><input name={`masonryShellTrans-${index}`} type="number" step="0.1" min="0" max="1000" defaultValue={row?.shellWebTransverseMm ?? ""} className="input w-24" /></td>
+                          <td className="px-2 py-2"><input name={`masonryHoleDepth-${index}`} type="number" step="0.1" min="0" max="1000" defaultValue={row?.meanHoleDepthMm ?? ""} className="input w-24" /></td>
+                          <td className="px-2 py-2"><input name={`masonrySumLong-${index}`} type="number" step="0.1" min="0" max="1000" defaultValue={row?.sumLongitudinalMm ?? ""} className="input w-24" /></td>
+                          <td className="px-2 py-2"><input name={`masonrySumTrans-${index}`} type="number" step="0.1" min="0" max="1000" defaultValue={row?.sumTransverseMm ?? ""} className="input w-24" /></td>
                           <td className="px-2 py-2"><input name={`masonryDryMass-${index}`} type="number" step="0.1" min="0" max="100000" defaultValue={row?.dryMassG ?? ""} className="input w-28" /></td>
-                          <td className="px-2 py-2"><input name={`masonryNetVolume-${index}`} type="number" step="1" min="0" defaultValue={row?.netVolumeMm3 ?? ""} className="input w-32" /></td>
                           <td className="px-2 py-2"><input name={`masonrySaturatedMass-${index}`} type="number" step="0.1" min="0" max="100000" defaultValue={row?.saturatedMassG ?? ""} className="input w-28" /></td>
+                          <td className="px-2 py-2"><input name={`masonryVoidVolume-${index}`} type="number" step="1" min="0" defaultValue={row?.voidVolumeMm3 ?? ""} className="input w-32" /></td>
+                          <td className="px-2 py-2"><input name={`masonryNetVolume-${index}`} type="number" step="1" min="0" defaultValue={row?.netVolumeMm3 ?? ""} className="input w-32" placeholder="opsionale" /></td>
+                          <td className="px-2 py-2"><input name={`masonryLoadedArea-${index}`} type="number" step="1" min="0" defaultValue={row?.loadedAreaMm2 ?? ""} className="input w-28" /></td>
                           <td className="px-2 py-2"><input name={`masonryLoad-${index}`} type="number" step="0.01" min="0" max="5000" defaultValue={row?.maximumLoadKn ?? ""} className="input w-24" /></td>
-                          <td className="px-2 py-2 text-muted">{row?.grossDryDensityKgM3 ?? "-"}</td>
                           <td className="px-2 py-2 text-muted">{row?.netDryDensityKgM3 ?? "-"}</td>
+                          <td className="px-2 py-2 text-muted">{row?.grossDryDensityKgM3 ?? "-"}</td>
                           <td className="px-2 py-2 text-muted">{row?.waterAbsorptionPercent ?? "-"}</td>
+                          <td className="px-2 py-2 text-muted">{row?.combinedThicknessLongitudinalPercent ?? "-"}</td>
+                          <td className="px-2 py-2 text-muted">{row?.combinedThicknessTransversePercent ?? "-"}</td>
                           <td className="px-2 py-2 text-muted">{row?.compressiveStrengthMpa ?? "-"}</td>
                           <td className="px-2 py-2 font-semibold text-ink">{row?.normalisedStrengthMpa ?? "-"}</td>
                         </tr>

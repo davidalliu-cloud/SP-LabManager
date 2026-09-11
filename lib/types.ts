@@ -1402,16 +1402,30 @@ export interface MasonryUnitSpecimen {
   lengthMm?: number;
   widthMm?: number;
   heightMm?: number;
+  /** BS EN 772-16 — mean thickness of longitudinal shells and webs. */
+  shellWebLongitudinalMm?: number;
+  /** BS EN 772-16 — mean thickness of transverse shells and webs. */
+  shellWebTransverseMm?: number;
+  /** BS EN 772-16 — mean depth of each hole. */
+  meanHoleDepthMm?: number;
+  /** Sum of the longitudinal web+shell thicknesses (for combined thickness %). */
+  sumLongitudinalMm?: number;
+  /** Sum of the transverse web+shell thicknesses (for combined thickness %). */
+  sumTransverseMm?: number;
   /** BS EN 772-13 — mass after drying to constant mass. */
   dryMassG?: number;
+  /** BS EN 772-13 — mass after immersion (for moisture / water content). */
+  saturatedMassG?: number;
+  /** Measured void (holes) volume, used to derive the net volume. */
+  voidVolumeMm3?: number;
   /**
-   * Net volume by displacement, for perforated units. Left empty for solid
-   * units, where net and gross density are the same.
+   * Net volume by displacement, for perforated units. Optional alternative to
+   * voidVolumeMm3; when given it is used directly.
    */
   netVolumeMm3?: number;
-  /** BS EN 772-21 — mass after 24 h immersion in cold water. */
-  saturatedMassG?: number;
-  /** BS EN 772-1 — maximum load at failure. */
+  /** BS EN 772-1 — measured loaded (bearing) area. */
+  loadedAreaMm2?: number;
+  /** BS EN 772-1 — maximum load at failure (kN entered; shown in N). */
   maximumLoadKn?: number;
 
   // Derived — never entered by hand.
@@ -1419,7 +1433,8 @@ export interface MasonryUnitSpecimen {
   grossDryDensityKgM3?: number;
   netDryDensityKgM3?: number;
   waterAbsorptionPercent?: number;
-  loadedAreaMm2?: number;
+  combinedThicknessLongitudinalPercent?: number;
+  combinedThicknessTransversePercent?: number;
   compressiveStrengthMpa?: number;
   /** delta x conditioning factor x compressive strength. */
   normalisedStrengthMpa?: number;
@@ -1429,12 +1444,20 @@ export interface MasonryUnitAverages {
   lengthMm?: number;
   widthMm?: number;
   heightMm?: number;
+  shellWebLongitudinalMm?: number;
+  shellWebTransverseMm?: number;
+  meanHoleDepthMm?: number;
+  combinedThicknessLongitudinalPercent?: number;
+  combinedThicknessTransversePercent?: number;
   grossDryDensityKgM3?: number;
   netDryDensityKgM3?: number;
   waterAbsorptionPercent?: number;
   compressiveStrengthMpa?: number;
   normalisedStrengthMpa?: number;
 }
+
+/** Load applied parallel or perpendicular to the holes. */
+export type MasonryLoadingOrientation = "parallel" | "perpendicular";
 
 export interface MasonryUnitTest {
   id: string;
@@ -1458,6 +1481,10 @@ export interface MasonryUnitTest {
   /** BS EN 772-1 conditioning factor for the conditioning actually used. */
   conditioningFactor?: number;
   conditioningMethod?: string;
+  /** Method of surface preparation, e.g. "Me bluarje / Grinding". */
+  surfacePreparation?: string;
+  /** Load applied parallel or perpendicular to the holes (default perpendicular). */
+  loadingOrientation?: MasonryLoadingOrientation;
   dryingTemperatureC?: number;
   temperature?: string;
   humidity?: string;

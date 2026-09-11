@@ -502,20 +502,46 @@ export function deriveMasonryUnitSpecimen(
     lengthMm?: number;
     widthMm?: number;
     heightMm?: number;
+    shellWebLongitudinalMm?: number;
+    shellWebTransverseMm?: number;
+    meanHoleDepthMm?: number;
+    sumLongitudinalMm?: number;
+    sumTransverseMm?: number;
     dryMassG?: number;
-    netVolumeMm3?: number;
     saturatedMassG?: number;
+    voidVolumeMm3?: number;
+    netVolumeMm3?: number;
+    loadedAreaMm2?: number;
     maximumLoadKn?: number;
   },
   factors: { shapeFactorDelta?: number; conditioningFactor?: number } = {}
 ) {
-  const { lengthMm, widthMm, heightMm, dryMassG, netVolumeMm3, saturatedMassG, maximumLoadKn } = input;
+  const {
+    lengthMm,
+    widthMm,
+    heightMm,
+    sumLongitudinalMm,
+    sumTransverseMm,
+    dryMassG,
+    saturatedMassG,
+    voidVolumeMm3,
+    maximumLoadKn
+  } = input;
 
-  // BS EN 772-16 — gross volume from the measured dimensions.
+  // BS EN 772-16 — gross (total) volume from the measured dimensions.
   const grossVolumeMm3 =
     finiteNumber(lengthMm) && finiteNumber(widthMm) && finiteNumber(heightMm) && lengthMm > 0 && widthMm > 0 && heightMm > 0
       ? round(lengthMm * widthMm * heightMm, 0)
       : undefined;
+
+  // Net volume: use the directly-measured net volume when given, otherwise
+  // derive it as gross volume minus the measured void volume (perforated units).
+  const netVolumeMm3 =
+    finiteNumber(input.netVolumeMm3) && input.netVolumeMm3 > 0
+      ? input.netVolumeMm3
+      : finiteNumber(grossVolumeMm3) && finiteNumber(voidVolumeMm3) && grossVolumeMm3 - voidVolumeMm3 > 0
+        ? round(grossVolumeMm3 - voidVolumeMm3, 0)
+        : undefined;
 
   // BS EN 772-13 — g / mm3 to kg/m3 is a factor of 1e6.
   const grossDryDensityKgM3 =
@@ -523,22 +549,37 @@ export function deriveMasonryUnitSpecimen(
       ? round((dryMassG * 1_000_000) / grossVolumeMm3, 0)
       : undefined;
 
-  // Net volume is measured by displacement and only differs for perforated
-  // units; solid units leave it blank and report gross density alone.
   const netDryDensityKgM3 =
     finiteNumber(dryMassG) && finiteNumber(netVolumeMm3) && netVolumeMm3 > 0
       ? round((dryMassG * 1_000_000) / netVolumeMm3, 0)
       : undefined;
 
-  // BS EN 772-21 — cold water absorption against the dry mass.
+  // BS EN 772-13 — moisture / water content against the dry mass.
   const waterAbsorptionPercent =
     finiteNumber(dryMassG) && dryMassG > 0 && finiteNumber(saturatedMassG)
       ? round(((saturatedMassG - dryMassG) / dryMassG) * 100, 2)
       : undefined;
 
-  // BS EN 772-1 — gross loaded area, and strength as load over that area.
+  // BS EN 772-16 — combined thickness of webs+shells as a % of the overall
+  // dimension: longitudinal against the length, transverse against the width.
+  const combinedThicknessLongitudinalPercent =
+    finiteNumber(sumLongitudinalMm) && finiteNumber(lengthMm) && lengthMm > 0
+      ? round((sumLongitudinalMm / lengthMm) * 100, 2)
+      : undefined;
+  const combinedThicknessTransversePercent =
+    finiteNumber(sumTransverseMm) && finiteNumber(widthMm) && widthMm > 0
+      ? round((sumTransverseMm / widthMm) * 100, 2)
+      : undefined;
+
+  // BS EN 772-1 — strength is failure load over the measured loaded (bearing)
+  // area. The area is measured; fall back to length x width only if it was not
+  // entered.
   const loadedAreaMm2 =
-    finiteNumber(lengthMm) && finiteNumber(widthMm) && lengthMm > 0 && widthMm > 0 ? round(lengthMm * widthMm, 0) : undefined;
+    finiteNumber(input.loadedAreaMm2) && input.loadedAreaMm2 > 0
+      ? round(input.loadedAreaMm2, 0)
+      : finiteNumber(lengthMm) && finiteNumber(widthMm) && lengthMm > 0 && widthMm > 0
+        ? round(lengthMm * widthMm, 0)
+        : undefined;
 
   const compressiveStrengthMpa =
     finiteNumber(maximumLoadKn) && finiteNumber(loadedAreaMm2) && loadedAreaMm2 > 0
@@ -555,9 +596,12 @@ export function deriveMasonryUnitSpecimen(
 
   return {
     grossVolumeMm3,
+    netVolumeMm3,
     grossDryDensityKgM3,
     netDryDensityKgM3,
     waterAbsorptionPercent,
+    combinedThicknessLongitudinalPercent,
+    combinedThicknessTransversePercent,
     loadedAreaMm2,
     compressiveStrengthMpa,
     normalisedStrengthMpa
