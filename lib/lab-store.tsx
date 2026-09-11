@@ -1723,8 +1723,17 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, "0");
       const prefix = `${year}-${month}`;
-      const count = samples.filter((sample) => sample.sampleCode.startsWith(`${prefix}-`)).length;
-      return `${prefix}-${String(count + 1).padStart(3, "0")}`;
+      // Use the highest existing sequence number + 1, not the count. Counting
+      // breaks whenever the set has a gap or a duplicate: a duplicate inflates
+      // the count and skips the next number (this is what turned 09-035 into
+      // 09-037), and a deletion would make the count reuse a live number. Max+1
+      // is stable against both.
+      const pattern = new RegExp(`^${prefix}-(\\d+)$`);
+      const highest = samples.reduce((max, sample) => {
+        const match = pattern.exec(sample.sampleCode);
+        return match ? Math.max(max, Number(match[1])) : max;
+      }, 0);
+      return `${prefix}-${String(highest + 1).padStart(3, "0")}`;
     }
 
     function chunk<T>(rows: T[], size: number) {
@@ -2276,7 +2285,6 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       createSample(input) {
         const sampleId = crypto.randomUUID();
-        const sampleCode = nextMonthlySampleCode(input.dateReceived, state.samples);
         const schedules =
           input.schedules.length > 0
             ? input.schedules
@@ -2290,6 +2298,11 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
                 }
               ];
         setState((previous) => {
+          // Compute the code from the LIVE state inside the updater, not from a
+          // render-time snapshot - otherwise several quick registrations (or one
+          // made just after another device's sample merged in) all read the same
+          // stale list and collide, which is what duplicated 09-028.
+          const sampleCode = nextMonthlySampleCode(input.dateReceived, previous.samples);
           const sample: Sample = {
             id: sampleId,
             sampleCode,
