@@ -10,7 +10,10 @@ import {
   isAggregateGranulometrySampleType,
   isAsphaltSampleType,
   isConcreteCompressiveAccreditedTest,
-  isSteelSampleType
+  isMasonryUnitSampleType,
+  isSteelSampleType,
+  MASONRY_UNIT_PACKAGE_NAME,
+  MASONRY_UNIT_PACKAGE_STANDARD
 } from "@/lib/accredited-tests";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { isFieldSampleType } from "@/lib/field-register";
@@ -58,6 +61,9 @@ export default function NewSamplePage() {
   const testOptions = useMemo(() => getAccreditedTestsForSampleType(sampleType), [sampleType]);
   const selectedTest = getAccreditedTestById(accreditedTestId) ?? testOptions[0];
   const showConcreteSchedule = isConcreteCompressiveAccreditedTest(selectedTest);
+  // Masonry units are registered as one package: no sub-test choice; all four
+  // determinations are run together and reported on one SL-RA-EM report.
+  const isMasonryUnit = isMasonryUnitSampleType(sampleType);
   const showSteelWorksheet = isSteelSampleType(sampleType);
   const showAsphaltWorksheet = isAsphaltSampleType(sampleType);
   const canAddMaterials = isAggregateGranulometrySampleType(sampleType);
@@ -224,8 +230,8 @@ export default function NewSamplePage() {
       deliveredBy: String(form.get("deliveredBy")),
       collectedBy: String(form.get("collectedBy") || "").trim() || "Violeta Biba",
       concretingDate: showConcreteSchedule ? String(form.get("concretingDate") || concretingDate) : "",
-      requestedTestType: selectedTest?.testName ?? String(form.get("requestedTestType")),
-      standard: selectedTest?.standard || "Standardi nuk është përcaktuar në listën e akreditimit",
+      requestedTestType: isMasonryUnit ? MASONRY_UNIT_PACKAGE_NAME : (selectedTest?.testName ?? String(form.get("requestedTestType"))),
+      standard: isMasonryUnit ? MASONRY_UNIT_PACKAGE_STANDARD : (selectedTest?.standard || "Standardi nuk është përcaktuar në listën e akreditimit"),
       requiredTestDate,
       reportDueDate,
       assignedTechnician: String(form.get("assignedTechnician") || ""),
@@ -270,13 +276,19 @@ export default function NewSamplePage() {
             ))}
           </select>
         </Field>
-        <Field label="Testi i akredituar i kërkuar">
-          <select value={selectedTest?.id ?? ""} onChange={(event) => setAccreditedTestId(event.target.value)} name="requestedTestType" className="input">
-            {testOptions.map((test) => (
-              <option key={test.id} value={test.id}>{test.testName}</option>
-            ))}
-          </select>
-        </Field>
+        {isMasonryUnit ? (
+          <Field label="Testi i akredituar i kërkuar">
+            <div className="input flex items-center bg-lab-porcelain text-muted">Paketë e plotë — të gjitha testet e muraturës / Full package — all masonry tests</div>
+          </Field>
+        ) : (
+          <Field label="Testi i akredituar i kërkuar">
+            <select value={selectedTest?.id ?? ""} onChange={(event) => setAccreditedTestId(event.target.value)} name="requestedTestType" className="input">
+              {testOptions.map((test) => (
+                <option key={test.id} value={test.id}>{test.testName}</option>
+              ))}
+            </select>
+          </Field>
+        )}
         {showAsphaltWorksheet ? (
           <div className="soft-panel p-4 text-sm text-muted lg:col-span-2">
             Për asfalt mund të regjistrohet vetëm Tapet, vetëm Binder, ose Tapet + Binder në të njëjtin kampion. Fleta e testimit më pas ruan të dhënat e përbashkëta dhe raportet dalin veçmas.

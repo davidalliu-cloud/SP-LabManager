@@ -6,7 +6,7 @@ import { Dispatch, FormEvent, SetStateAction, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { StageCell } from "@/components/ui/stage-cell";
 import { testLifecycle } from "@/lib/sample-stage";
-import { getMortarTestKind, isAggregateAcvAccreditedTest, isAggregateBulkDensityAccreditedTest, isAggregateChemicalAccreditedTest, isAggregateDensityAbsorptionAccreditedTest, isAggregateElongationIndexAccreditedTest, isAggregateFillerDensityAccreditedTest, isAggregateFlakinessIndexAccreditedTest, isAggregateFreezeThawAccreditedTest, isAggregateGranulometrySampleType, isAggregateLosAngelesAccreditedTest, isAggregateSandEquivalentAccreditedTest, isAggregateShapeIndexAccreditedTest, isAggregateSoundnessAccreditedTest, isAsphaltAccreditedTest, isAdmixtureAccreditedTest, isMasonryUnitAccreditedTest, isWaterAnalysisAccreditedTest, isSclerometerAccreditedTest, isCementBlaineAstmAccreditedTest, isCementBlaineBsEnAccreditedTest, isCementConsistencyAccreditedTest, isCementStrengthAccreditedTest, isConcreteCoreAccreditedTest, isConcreteDensityAccreditedTest, isConcreteFlexuralAccreditedTest, isConcreteIndirectTensileAccreditedTest, isConcreteWaterPenetrationAccreditedTest, isMortarAccreditedTest, isSteelSampleType, isThermalInsulationAccreditedTest } from "@/lib/accredited-tests";
+import { getMortarTestKind, isAggregateAcvAccreditedTest, isAggregateBulkDensityAccreditedTest, isAggregateChemicalAccreditedTest, isAggregateDensityAbsorptionAccreditedTest, isAggregateElongationIndexAccreditedTest, isAggregateFillerDensityAccreditedTest, isAggregateFlakinessIndexAccreditedTest, isAggregateFreezeThawAccreditedTest, isAggregateGranulometrySampleType, isAggregateLosAngelesAccreditedTest, isAggregateSandEquivalentAccreditedTest, isAggregateShapeIndexAccreditedTest, isAggregateSoundnessAccreditedTest, isAsphaltAccreditedTest, isAdmixtureAccreditedTest, isMasonryUnitAccreditedTest, isWaterAnalysisAccreditedTest, isSclerometerAccreditedTest, isCementBlaineAstmAccreditedTest, isCementBlaineBsEnAccreditedTest, isCementConsistencyAccreditedTest, isCementStrengthAccreditedTest, isConcreteCoreAccreditedTest, isConcreteDensityAccreditedTest, isConcreteFlexuralAccreditedTest, isConcreteIndirectTensileAccreditedTest, isConcreteWaterPenetrationAccreditedTest, isMortarAccreditedTest, isSteelSampleType, isThermalInsulationAccreditedTest, isMasonryUnitSampleType } from "@/lib/accredited-tests";
 import { admixtureDeterminationsDisagree } from "@/lib/calculations";
 import { SCLEROMETER_MIN_READINGS } from "@/lib/calculations";
 import { formatEuropeanDate } from "@/lib/date-format";
@@ -1166,7 +1166,7 @@ export default function TestDetailPage() {
   const isAdmixtureTest = isAdmixtureAccreditedTest(activeTest.testType);
   const isWaterAnalysisTest = isWaterAnalysisAccreditedTest(activeTest.testType);
   const isSclerometerTest = isSclerometerAccreditedTest(activeTest.testType);
-  const isMasonryUnitTest = isMasonryUnitAccreditedTest(activeTest.testType);
+  const isMasonryUnitTest = isMasonryUnitAccreditedTest(activeTest.testType) || isMasonryUnitSampleType(sample?.sampleType ?? "");
   const isCementStrengthTest = isCementStrengthAccreditedTest(activeTest.testType);
   const isCementBlaineBsEnTest = isCementBlaineBsEnAccreditedTest(activeTest.testType);
   const isCementBlaineAstmTest = isCementBlaineAstmAccreditedTest(activeTest.testType);

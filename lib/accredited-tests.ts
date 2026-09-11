@@ -389,6 +389,25 @@ export function isAdmixtureAccreditedTest(testIdOrType?: string) {
  */
 const MASONRY_UNIT_TEST_IDS = new Set(["AT-034", "AT-035", "AT-036", "AT-037"]);
 
+// Masonry units are always run and reported as one package (dimensions +
+// density + water absorption + compressive strength), so registration stores a
+// single combined "test" rather than one of the four AT rows. This is its name
+// and the combined standard shown on the SL-RA-EM report.
+export const MASONRY_UNIT_PACKAGE_NAME =
+  "Përcaktimi i karakteristikave fiziko-mekanike të elementeve të muraturës";
+export const MASONRY_UNIT_PACKAGE_STANDARD =
+  "BS EN 772-16:2011; BS EN 772-13:2000; BS EN 772-21:2011; BS EN 772-1:2011+A1:2015";
+
+// Any of the four sub-test names, plus the combined package name, identify a
+// masonry test by its stored testType (alongside the four AT ids).
+const MASONRY_UNIT_TEST_NAMES = new Set([
+  "Përcaktimi i dimensioneve",
+  "Përcaktimi i densitetit volumor, specifik dhe aparent",
+  "Përcaktimi i ujëthithjes (absorbimi)",
+  "Përcaktimi i rezistencës në shtypje",
+  MASONRY_UNIT_PACKAGE_NAME
+]);
+
 /**
  * Water for concrete — BS EN 1008. One test covering colour, odour, density,
  * pH, chlorides and sulfates, reported together on SL-RA-U-7.8/1.
@@ -417,7 +436,7 @@ export function isWaterSampleType(sampleType: string) {
 
 export function isMasonryUnitAccreditedTest(testIdOrType?: string) {
   if (!testIdOrType) return false;
-  return MASONRY_UNIT_TEST_IDS.has(testIdOrType);
+  return MASONRY_UNIT_TEST_IDS.has(testIdOrType) || MASONRY_UNIT_TEST_NAMES.has(testIdOrType);
 }
 
 export function isMasonryUnitSampleType(sampleType: string) {
