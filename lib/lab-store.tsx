@@ -1705,8 +1705,19 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
         .forEach((user) => addNotification(draft, user.id, title, message, relatedTestId, relatedReportId));
     }
 
-    function nextNumber(prefix: string, count: number) {
-      return `${prefix}-2026-${String(count + 1).padStart(4, "0")}`;
+    // Next sequential code for a prefix, based on the HIGHEST existing number + 1
+    // (+ an optional offset when minting several in one batch) rather than the
+    // count. Counting reused or skipped numbers whenever the set had a gap or a
+    // duplicate - the same fault that duplicated a sample code - so tests and
+    // reports are numbered the same robust way. `existingCodes` must come from
+    // the live state inside the updater.
+    function nextNumber(prefix: string, existingCodes: string[], offset = 0) {
+      const pattern = new RegExp(`^${prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}-2026-(\\d+)$`);
+      const highest = existingCodes.reduce((max, code) => {
+        const match = pattern.exec(code ?? "");
+        return match ? Math.max(max, Number(match[1])) : max;
+      }, 0);
+      return `${prefix}-2026-${String(highest + 1 + offset).padStart(4, "0")}`;
     }
 
     function nextClientCode(clients: Client[]) {
@@ -2244,7 +2255,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
                 ];
           const tests: LabTest[] = schedules.map((schedule, index) => ({
             id: crypto.randomUUID(),
-            testCode: nextNumber("TEST", previous.tests.length + index),
+            testCode: nextNumber("TEST", previous.tests.map((row) => row.testCode), index),
             sampleId,
             clientId: sample.clientId,
             projectId: sample.projectId,
@@ -4049,7 +4060,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           const specimenCount = reportGroups.reduce((sum, group) => sum + group.length, 0);
           const reports: Report[] = reportGroups.map((codes, index) => ({
             id: index === 0 ? reportId : crypto.randomUUID(),
-            reportNumber: nextNumber("LAB-R", previous.reports.length + index),
+            reportNumber: nextNumber("LAB-R", previous.reports.map((row) => row.reportNumber), index),
             testId,
             sampleId: test.sampleId,
             clientId: test.clientId,
