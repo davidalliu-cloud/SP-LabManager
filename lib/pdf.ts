@@ -17,6 +17,17 @@ async function renderElementToPdfBlob(element: HTMLElement): Promise<Blob> {
     scale: 2,
     useCORS: true,
     backgroundColor: "#ffffff",
+    // Pin the width the cloned document's media queries resolve against.
+    // The reports use Tailwind's responsive grids (sm:grid-cols-2 and friends,
+    // 28 of them), and those key off the viewport rather than the element. Left
+    // to the operator's own window, a narrow screen collapsed a report's
+    // metadata block to a single column, made the page ~50mm taller, and the
+    // fit-to-page step below then shrank the whole report — so the same report
+    // produced a different PDF on a laptop and on a wide monitor. A fixed width
+    // wide enough to clear every breakpoint makes the output deterministic and
+    // matches the layout the reports were designed in.
+    windowWidth: 1400,
+    windowHeight: 2000,
     onclone: (clonedDoc) => {
       clonedDoc
         .querySelectorAll(".print-surface")

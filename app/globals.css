@@ -471,6 +471,48 @@ textarea {
   margin-top: 2px;
 }
 
+
+/* ==================================================================== *
+ * PDF capture — the A4 page box every report needs.
+ *
+ * html2canvas rasterises the live DOM and ignores @media print, so the
+ * PDF path mirrors the print rules onto a .pdf-capture class. The generic
+ * half of that mirror was missing: @media print sizes every report through
+ * .print-surface and .report-a4, and nothing did the same for the capture.
+ * Layouts with no mirror of their own were therefore rasterised at whatever
+ * width the report pane happened to give them — and, worse, that width
+ * depends on the viewer's window, so the same report produced a different
+ * PDF on a laptop and on a wide monitor. renderElementToPdfBlob then shrank
+ * the image to fit the sheet: measured at 43.7% for the aggregate reports,
+ * 64.9% for cores, 75.3% for granulometry.
+ *
+ * These generic rules come FIRST on purpose. They share specificity with the
+ * per-layout mirrors below, so source order lets each layout refine them.
+ * ==================================================================== */
+.report-a4.pdf-capture {
+  width: 210mm !important;
+  max-width: 210mm !important;
+  color: #000 !important;
+  font-family: "Times New Roman", Times, serif !important;
+  font-size: 12pt !important;
+}
+
+.report-a4.pdf-capture * {
+  font-family: "Times New Roman", Times, serif !important;
+}
+
+.print-surface.pdf-capture {
+  box-shadow: none !important;
+  border: 0 !important;
+  width: 210mm !important;
+  max-width: 210mm !important;
+  min-height: 297mm;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  /* Deliberately not overflow:hidden — see adjustBody in mirror-gen. */
+  overflow: visible !important;
+}
+
 /* ------------------------------------------------------------------ *
  * Concrete cube report — PDF capture layout (html2canvas path).
  * html2canvas ignores @media print, so the "Gjenero dhe ruaj PDF"
@@ -621,11 +663,14 @@ textarea {
   bottom: 3mm !important;
 }
 
-/* NOTE: the aggregate gradation report intentionally has NO `.pdf-capture`
-   mirror. html2canvas fails to rasterise its SVG grading chart when the section
-   is re-laid-out in a forced A4 box, so for the "Gjenero dhe ruaj PDF" path we
-   let it capture at its natural on-screen size (already ~210x264mm, one page)
-   where the chart renders correctly. */
+/* The aggregate gradation report used to have no `.pdf-capture` mirror, on the
+   grounds that html2canvas could not rasterise its SVG grading chart inside a
+   forced A4 box. Re-tested 13 Sep 2026 against html2canvas 1.4.1: the chart
+   renders. Its region on the sheet (177 x 64 mm) comes back with 4% ink across
+   29 distinct tones — curve, grid and labels all present. Leaving it unmirrored
+   cost more than it saved: the report was captured at whatever width the
+   operator's window happened to give it and then shrunk onto the page, measured
+   at 75.3%. It now has a mirror like every other layout. */
 
 /* Official report family — PDF capture layout (html2canvas path).
    KEEP IN SYNC with the ".official-report" rules inside @media print. */
@@ -995,4 +1040,211 @@ textarea {
 .official-report.pdf-capture .official-footer-flow {
   position: static !important;
   margin-top: 6mm !important;
+}
+
+/* -------------------------------------------------------------------- *
+ * .simple-report — capture mirror of its @media print rules.
+ * Aggregate reports (12 of them) — ACV, bulk density, chemical, density
+   and absorption, elongation, filler density, flakiness, freeze-thaw, Los
+   Angeles, sand equivalent, shape index, soundness.
+ * -------------------------------------------------------------------- */
+.print-surface.simple-report.pdf-capture {
+    padding: 5mm 8mm !important;
+}
+
+.simple-report.pdf-capture header > div.border-b {
+    padding-bottom: 4px !important;
+}
+
+.simple-report.pdf-capture header .italic.leading-tight {
+    margin-top: 2px !important;
+}
+
+.simple-report.pdf-capture header img {
+    width: 90px !important;
+}
+
+.simple-report.pdf-capture header .text-lg {
+    font-size: 11pt !important;
+}
+
+.simple-report.pdf-capture .grid.gap-4.text-sm {
+    font-size: 9pt !important;
+    gap: 4px 16px !important;
+}
+
+.simple-report.pdf-capture .grid.gap-4.text-sm > div > div.mt-1 {
+    line-height: 1.25 !important;
+    margin-top: 1px !important;
+}
+
+.simple-report.pdf-capture .grid.gap-4.text-sm .text-xs {
+    font-size: 6.8pt !important;
+    line-height: 1.1 !important;
+}
+
+.simple-report.pdf-capture h3.text-sm {
+    font-size: 8.5pt !important;
+    margin-bottom: 2px !important;
+}
+
+.simple-report.pdf-capture table.text-sm,
+ .simple-report.pdf-capture table.text-sm th,
+ .simple-report.pdf-capture table.text-sm td {
+    font-size: 7.1pt !important;
+    line-height: 1.15 !important;
+    padding: 2px 4px !important;
+}
+
+.simple-report.pdf-capture table {
+    table-layout: fixed !important;
+    width: 100% !important;
+    min-width: 0 !important;
+}
+
+.simple-report.pdf-capture .overflow-x-auto {
+    overflow: visible !important;
+}
+
+.simple-report.pdf-capture .mt-3 {
+    margin-top: 4px !important;
+}
+
+.simple-report.pdf-capture .space-y-1 > * + * {
+    margin-top: 1px !important;
+}
+
+.simple-report.pdf-capture .mt-6 {
+    margin-top: 5px !important;
+}
+
+.simple-report.pdf-capture .mt-8 {
+    margin-top: 5px !important;
+}
+
+.simple-report.pdf-capture .mt-10 {
+    margin-top: 6px !important;
+}
+
+.simple-report.pdf-capture .soft-panel.p-4 {
+    padding: 4px 8px !important;
+}
+
+.simple-report.pdf-capture .text-xs {
+    font-size: 7.1pt !important;
+}
+
+.simple-report.pdf-capture .text-sm {
+    font-size: 9.5pt !important;
+}
+
+
+/* -------------------------------------------------------------------- *
+ * .concrete-core-report — capture mirror of its @media print rules.
+ * Concrete cores, BS EN 12504-1 — registered through the Field Register.
+ * -------------------------------------------------------------------- */
+.concrete-core-report.pdf-capture {
+    width: 210mm !important;
+    max-width: 210mm !important;
+    min-height: 296mm !important;
+    margin: 0 auto !important;
+    padding: 5mm 10mm 5mm !important;
+    overflow: visible !important;
+    transform: none !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+    font-family: "Times New Roman", Times, serif !important;
+    font-size: 8.6pt !important;
+    line-height: 1.1 !important;
+}
+
+.concrete-core-report.pdf-capture > * {
+    margin-top: 4px !important;
+}
+
+.concrete-core-report.pdf-capture > header {
+    margin-top: 0 !important;
+}
+
+.concrete-core-report.pdf-capture > header img[alt="SARP"] {
+    width: 128px !important;
+}
+
+.concrete-core-report.pdf-capture > header img[alt^="DA accreditation"] {
+    width: 66px !important;
+}
+
+.concrete-core-report.pdf-capture .official-table {
+    font-size: 7.8pt !important;
+}
+
+.concrete-core-report.pdf-capture .official-table th,
+ .concrete-core-report.pdf-capture .official-table td {
+    padding: 1.5px 4px !important;
+}
+
+.concrete-core-report.pdf-capture .report-signatures {
+    margin-top: 3px !important;
+}
+
+.concrete-core-report.pdf-capture .report-disclaimers {
+    position: static !important;
+    margin-top: 8px !important;
+}
+
+.concrete-core-report.pdf-capture .report-issue-date,
+ .concrete-core-report.pdf-capture footer {
+    position: static !important;
+    margin-top: 4px !important;
+}
+
+.concrete-core-report.pdf-capture .signature-block-img {
+    min-height: 12mm !important;
+}
+
+
+/* -------------------------------------------------------------------- *
+ * .aggregate-gradation-report — capture mirror of its @media print rules.
+ * Granulometry, BS EN 933-1. Carries the grading-curve SVG.
+ * -------------------------------------------------------------------- */
+.aggregate-gradation-report.pdf-capture {
+    width: 210mm !important;
+    max-width: 210mm !important;
+    min-height: 297mm !important;
+    margin: 0 auto !important;
+    padding: 8mm 14mm 5mm !important;
+    overflow: visible !important;
+    font-family: "Times New Roman", Times, serif !important;
+    font-size: 12pt !important;
+}
+
+.aggregate-gradation-report.pdf-capture .gradation-footer-cluster {
+    position: absolute !important;
+    left: 14mm !important;
+    right: 14mm !important;
+    bottom: 2mm !important;
+}
+
+
+/* -------------------------------------------------------------------- *
+ * .compact-official-report — capture mirror of its @media print rules.
+ * The compact variant of the official family: cement, concrete, asphalt,
+   thermal, steel, water, admixture, masonry, sclerometer.
+ * -------------------------------------------------------------------- */
+.compact-official-report.pdf-capture header {
+    padding-bottom: 6px !important;
+}
+
+.compact-official-report.pdf-capture .official-table th,
+ .compact-official-report.pdf-capture .official-table td {
+    padding: 2px 4px !important;
+}
+
+.compact-official-report.pdf-capture .official-table {
+    font-size: 7.8pt !important;
+}
+
+.compact-official-report.pdf-capture .table-head {
+    font-size: 7pt !important;
 }
