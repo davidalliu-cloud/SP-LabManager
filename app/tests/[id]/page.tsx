@@ -8,28 +8,19 @@ import { StageCell } from "@/components/ui/stage-cell";
 import { testLifecycle } from "@/lib/sample-stage";
 import { getMortarTestKind, isAggregateAcvAccreditedTest, isAggregateBulkDensityAccreditedTest, isAggregateChemicalAccreditedTest, isAggregateDensityAbsorptionAccreditedTest, isAggregateElongationIndexAccreditedTest, isAggregateFillerDensityAccreditedTest, isAggregateFlakinessIndexAccreditedTest, isAggregateFreezeThawAccreditedTest, isAggregateGranulometrySampleType, isAggregateLosAngelesAccreditedTest, isAggregateSandEquivalentAccreditedTest, isAggregateShapeIndexAccreditedTest, isAggregateSoundnessAccreditedTest, isAsphaltAccreditedTest, isAdmixtureAccreditedTest, isMasonryUnitAccreditedTest, isWaterAnalysisAccreditedTest, isSclerometerAccreditedTest, isCementBlaineAstmAccreditedTest, isCementBlaineBsEnAccreditedTest, isCementConsistencyAccreditedTest, isCementStrengthAccreditedTest, isConcreteCoreAccreditedTest, isConcreteDensityAccreditedTest, isConcreteFlexuralAccreditedTest, isConcreteIndirectTensileAccreditedTest, isConcreteWaterPenetrationAccreditedTest, isMortarAccreditedTest, isSteelSampleType, isThermalInsulationAccreditedTest, isMasonryUnitSampleType } from "@/lib/accredited-tests";
 import { admixtureDeterminationsDisagree } from "@/lib/calculations";
-import { SCLEROMETER_MIN_READINGS } from "@/lib/calculations";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { useLabStore } from "@/lib/lab-store";
 import { canEditTestData, canGenerateReportForTest, canReviewTests, canViewClientIdentity } from "@/lib/permissions";
-import type { AsphaltReportKind, LabTest, LabUser, MasonryUnitCategory, MortarTest, MortarTestKind, Sample, SclerometerDirection } from "@/lib/types";
+import type { AsphaltReportKind, LabTest, LabUser, MasonryUnitCategory, MortarTest, MortarTestKind, Sample } from "@/lib/types";
 
 const aggregateSieveSizes = [125, 80, 63, 37.5, 31.5, 25, 20, 16, 12.5, 8, 4, 2, 1, 0.5, 0.25, 0.125, 0.063, 0];
 const mortarSieveSizes = [8, 4, 2, 1, 0.5, 0.25, 0.125, 0.063, 0.0001];
 const asphaltSieveSizes = [31.5, 25, 20, 16, 12.5, 8, 4, 2, 0.5, 0.25, 0.063, 0];
 // BS EN 772-1 and 772-16 both test six units.
 const MASONRY_SPECIMEN_ROWS = [1, 2, 3, 4, 5, 6];
-// BS EN 12504-2 needs at least nine readings per location; twelve slots leave
-// room for the labs that take more without forcing anyone to fill them.
-const SCLEROMETER_LOCATION_ROWS = [1, 2, 3, 4, 5, 6];
-const SCLEROMETER_READING_SLOTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-const SCLEROMETER_DIRECTIONS: SclerometerDirection[] = [
-  "Horizontale / Horizontal",
-  "Vertikale poshtë / Vertical down",
-  "Vertikale lart / Vertical up",
-  "45° poshtë / 45° down",
-  "45° lart / 45° up"
-];
+// The template records sixteen hammer blows in its working column.
+const SCLEROMETER_READING_SLOTS = Array.from({ length: 16 }, (_, index) => index + 1);
+const SCLEROMETER_ANGLES = ["0°", "+90°", "-90°", "+45°", "-45°"];
 const MASONRY_UNIT_CATEGORIES: MasonryUnitCategory[] = ["Tullë Qeramike", "Tullë Silikate", "Tullë Betoni", "Bllok Betoni"];
 
 export default function TestDetailPage() {
@@ -311,32 +302,26 @@ export default function TestDetailPage() {
     const form = new FormData(event.currentTarget);
     const text = (name: string) => String(form.get(name) ?? "");
     store.saveSclerometerTest(activeTest.id, {
+      castingDate: text("castingDate"),
       testStartDate: text("testStartDate"),
       testEndDate: text("testEndDate"),
-      surveyLocation: text("surveyLocation"),
-      structureDescription: text("structureDescription"),
       concreteAge: text("concreteAge"),
-      surfaceCondition: text("surfaceCondition"),
-      instrumentModel: text("instrumentModel"),
-      instrumentSerial: text("instrumentSerial"),
-      instrumentCalibrationDate: text("instrumentCalibrationDate"),
-      correlationKind: (text("correlationKind") || "linear") as "linear" | "power",
-      correlationA: optionalNumber(form.get("correlationA")),
-      correlationB: optionalNumber(form.get("correlationB")),
-      correlationReference: text("correlationReference"),
+      impactAngle: text("impactAngle"),
+      // A blank slot is a blow not struck, not a rebound of zero.
+      readings: SCLEROMETER_READING_SLOTS.map((slot) => optionalNumber(form.get(`sclR-${slot}`))),
+      cubeStrengthRck: optionalNumber(form.get("cubeStrengthRck")),
+      meanError: optionalNumber(form.get("meanError")),
+      element: text("element"),
+      quote: text("quote"),
+      orderDate: text("orderDate"),
       temperature: text("temperature"),
       humidity: text("humidity"),
       testingLocation: text("testingLocation"),
+      instrumentModel: text("instrumentModel"),
+      instrumentSerial: text("instrumentSerial"),
       technicianName: text("technicianName"),
       checkedBy: text("checkedBy"),
-      notes: text("notes"),
-      locations: SCLEROMETER_LOCATION_ROWS.map((index) => ({
-        locationCode: text(`sclCode-${index}`) || `Z${index}`,
-        element: text(`sclElement-${index}`),
-        direction: (text(`sclDirection-${index}`) || undefined) as SclerometerDirection | undefined,
-        // A blank slot is a reading not taken, not a rebound of zero.
-        readings: SCLEROMETER_READING_SLOTS.map((slot) => optionalNumber(form.get(`sclR-${index}-${slot}`)))
-      }))
+      notes: text("notes")
     });
   }
 
@@ -1497,14 +1482,6 @@ export default function TestDetailPage() {
 
   if (isSclerometerTest) {
     const scl = sclerometer;
-    const locs = scl?.locations ?? [];
-    const anyRejected = locs.some((row) => row.setRejected);
-    const anyShort = locs.some((row) => row.belowMinimumReadings && (row.readingCount ?? 0) > 0);
-    // The correlation is what turns a rebound index into MPa. Without both
-    // coefficients the index still stands; the strength column simply stays empty.
-    const correlationIncomplete =
-      Boolean(scl) && (scl?.correlationA === undefined || scl?.correlationB === undefined);
-
     return (
       <>
         <PageHeader
@@ -1516,24 +1493,22 @@ export default function TestDetailPage() {
           <form onSubmit={submitSclerometer} className="surface-card"><fieldset disabled={!canEditWorksheet} className="m-0 min-w-0 border-0 p-0 disabled:opacity-70">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4">
               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Fletë pune</div>
-              <h2 className="mt-1 text-lg font-semibold text-ink">Rezistenca me sklerometër / <span className="italic font-normal">Rebound hammer</span></h2>
+              <h2 className="mt-1 text-lg font-semibold text-ink">Sklerometër / <span className="italic font-normal">Rebound hammer</span></h2>
               <p className="mt-1 text-sm text-muted">
-                BS EN 12504-2. Të paktën {SCLEROMETER_MIN_READINGS} lexime për çdo zonë testimi. Mesorja e leximeve merret si indeks;
-                leximet që ndryshojnë nga mesorja me më shumë se 6 njësi hidhen poshtë, dhe nëse hidhen më shumë se 20 % e tyre, e gjithë zona nuk raportohet.
+                SL-RA-PJ-7.8/1.3. Goditjet regjistrohen këtu dhe raporti jep numrin e tyre dhe leximin mesatar.
+                Rezistenca Rck lexohet nga kurba e çekiçit dhe shkruhet bashkë me gabimin mesatar; Rmax dhe Rmin llogariten.
               </p>
             </div>
 
             <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
               <Field label="Numri i regjistrit"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
-              <Field label="Tipi i kampionit"><input className="input bg-lab-porcelain" value={sample?.sampleType ?? ""} readOnly /></Field>
               <Field label="Standardi i aplikuar"><input className="input bg-lab-porcelain" value={activeTest.standard || "BS EN 12504-2:2021"} readOnly /></Field>
-              <Field label="Vendndodhja e provës / Survey location"><input name="surveyLocation" defaultValue={scl?.surveyLocation ?? sample?.sampleDescription ?? ""} className="input" /></Field>
-              <Field label="Struktura / Structure"><input name="structureDescription" defaultValue={scl?.structureDescription ?? ""} className="input" placeholder="p.sh. Ura e Dajlanit, pila P3" /></Field>
-              <Field label="Mosha e betonit / Concrete age"><input name="concreteAge" defaultValue={scl?.concreteAge ?? ""} className="input" placeholder="p.sh. 90 ditë" /></Field>
-              <Field label="Gjendja e sipërfaqes / Surface condition"><input name="surfaceCondition" defaultValue={scl?.surfaceCondition ?? ""} className="input" placeholder="e thatë, e lëmuar" /></Field>
-              <Field label="Data e fillimit"><input name="testStartDate" type="date" defaultValue={scl?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
-              <Field label="Data e mbarimit"><input name="testEndDate" type="date" defaultValue={scl?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
-              <Field label="Vendi i testimit"><input name="testingLocation" defaultValue={scl?.testingLocation ?? "Në terren / On site"} className="input" /></Field>
+              <Field label="Vendi i testimit"><input name="testingLocation" defaultValue={scl?.testingLocation ?? "Në terren / In-situ"} className="input" /></Field>
+              <Field label="Elementi / Element"><input name="element" defaultValue={scl?.element ?? ""} className="input" placeholder="p.sh. K9 AKSI E, OBJEKTI B3/1" /></Field>
+              <Field label="Kuota / Quote"><input name="quote" defaultValue={scl?.quote ?? ""} className="input" placeholder="p.sh. KUOTA +21.94" /></Field>
+              <Field label="Data e marrjes së porosisë"><input name="orderDate" type="date" defaultValue={scl?.orderDate ?? ""} className="input" /></Field>
+              <Field label="Çekiçi / Instrument"><input name="instrumentModel" defaultValue={scl?.instrumentModel ?? ""} className="input" /></Field>
+              <Field label="Seria / Serial"><input name="instrumentSerial" defaultValue={scl?.instrumentSerial ?? ""} className="input" /></Field>
               <Field label="Tekniku"><EmployeeSelect name="technicianName" employees={activeEmployees} required value={scl?.technicianName ?? ""} /></Field>
               <Field label="Kontrolluar nga"><EmployeeSelect name="checkedBy" employees={activeEmployees} value={scl?.checkedBy ?? ""} /></Field>
               <Field label="Temperatura"><input name="temperature" defaultValue={scl?.temperature ?? ""} className="input" /></Field>
@@ -1541,119 +1516,62 @@ export default function TestDetailPage() {
             </div>
 
             <div className="border-b border-line p-5">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">Pajisja dhe korrelacioni / <span className="italic font-normal normal-case">Instrument and correlation</span></h3>
-              <p className="mt-1 text-xs text-muted">
-                BS EN 12504-2 jep indeksin e rikthimit, jo rezistencën. Kthimi në MPa bëhet me korrelacionin e certifikatës së çekiçit,
-                prandaj koeficientët jepen këtu dhe regjistrohen në raport. Pa të dy koeficientët, raportohet vetëm indeksi.
-              </p>
-              <div className="mt-3 grid gap-4 md:grid-cols-3">
-                <Field label="Çekiçi / Instrument"><input name="instrumentModel" defaultValue={scl?.instrumentModel ?? ""} className="input" placeholder="p.sh. Matest C386N" /></Field>
-                <Field label="Seria / Serial"><input name="instrumentSerial" defaultValue={scl?.instrumentSerial ?? ""} className="input" /></Field>
-                <Field label="Data e kalibrimit / Calibration date"><input name="instrumentCalibrationDate" type="date" defaultValue={scl?.instrumentCalibrationDate ?? ""} className="input" /></Field>
-                <Field label="Forma e korrelacionit">
-                  <select name="correlationKind" defaultValue={scl?.correlationKind ?? "linear"} className="input">
-                    <option value="linear">Lineare: fc = a × R + b</option>
-                    <option value="power">Fuqi: fc = a × R^b</option>
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">Rreshtat 1–4 të raportit</h3>
+              <div className="mt-3 grid gap-4 md:grid-cols-4">
+                <Field label="1. Data e betonimit"><input name="castingDate" type="date" defaultValue={scl?.castingDate ?? ""} className="input" /></Field>
+                <Field label="2. Data e testimit — fillimi"><input name="testStartDate" type="date" defaultValue={scl?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
+                <Field label="2. Data e testimit — mbarimi"><input name="testEndDate" type="date" defaultValue={scl?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
+                <Field label="3. Koha e maturimit [ditë]"><input name="concreteAge" defaultValue={scl?.concreteAge ?? ""} className="input" placeholder="p.sh. >28" /></Field>
+                <Field label="4. Kendi i goditjes (α)">
+                  <select name="impactAngle" defaultValue={scl?.impactAngle ?? "0°"} className="input">
+                    {SCLEROMETER_ANGLES.map((angle) => (
+                      <option key={angle} value={angle}>{angle}</option>
+                    ))}
                   </select>
                 </Field>
-                <Field label="Koeficienti a"><input name="correlationA" type="number" step="any" defaultValue={scl?.correlationA ?? ""} className="input" /></Field>
-                <Field label="Koeficienti b"><input name="correlationB" type="number" step="any" defaultValue={scl?.correlationB ?? ""} className="input" /></Field>
-                <div className="md:col-span-3">
-                  <Field label="Referenca e korrelacionit / Correlation reference"><input name="correlationReference" defaultValue={scl?.correlationReference ?? ""} className="input" placeholder="Certifikata e çekiçit, kurba nr. ..." /></Field>
-                </div>
               </div>
-              {correlationIncomplete ? (
-                <div className="mt-3 rounded-md border border-[#f0a93a] bg-brand-risk p-3 text-xs font-semibold text-ink">
-                  Pa të dy koeficientët nuk llogaritet rezistenca në MPa. Indeksi i rikthimit raportohet gjithsesi.
-                </div>
-              ) : null}
+            </div>
+
+            <div className="border-b border-line p-5">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">Goditjet e sklerometrit / <span className="italic font-normal normal-case">Hammer rebound</span></h3>
+              <p className="mt-1 text-xs text-muted">
+                Lini bosh çdo goditje që nuk është kryer — nuk numërohet dhe nuk hyn në mesatare.
+                Leximet nuk shfaqen në raport; raporti jep numrin e tyre dhe mesataren.
+              </p>
+              <div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-8 md:grid-cols-16">
+                {SCLEROMETER_READING_SLOTS.map((slot) => (
+                  <input
+                    key={slot}
+                    name={`sclR-${slot}`}
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    defaultValue={scl?.readings?.[slot - 1] ?? ""}
+                    className="input px-1 text-center"
+                    aria-label={`Goditja ${slot}`}
+                  />
+                ))}
+              </div>
+              <div className="mt-3 grid gap-4 md:grid-cols-2">
+                <InfoInline label="5. Goditjet / Rebounds" value={scl?.reboundCount !== undefined ? String(scl.reboundCount) : "Ruaj për ta numëruar"} />
+                <InfoInline label="6. Leximi mesatar (R)" value={scl?.averageRebound !== undefined ? String(scl.averageRebound) : "Ruaj për ta llogaritur"} />
+              </div>
             </div>
 
             <div className="p-5">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">Zonat e testimit / <span className="italic font-normal normal-case">Test locations</span></h3>
-              <p className="mt-1 text-xs text-muted">Lini bosh një zonë që nuk është testuar. Vlerat e nxjerra shfaqen pas ruajtjes.</p>
-
-              <div className="mt-3 space-y-4">
-                {SCLEROMETER_LOCATION_ROWS.map((index) => {
-                  const row = locs[index - 1];
-                  return (
-                    <div key={index} className="rounded-md border border-line p-4">
-                      <div className="grid gap-3 md:grid-cols-3">
-                        <Field label="Zona / Location">
-                          <input name={`sclCode-${index}`} defaultValue={row?.locationCode ?? `Z${index}`} className="input" />
-                        </Field>
-                        <Field label="Elementi / Element">
-                          <input name={`sclElement-${index}`} defaultValue={row?.element ?? ""} className="input" />
-                        </Field>
-                        <Field label="Drejtimi i goditjes / Direction">
-                          <select name={`sclDirection-${index}`} defaultValue={row?.direction ?? SCLEROMETER_DIRECTIONS[0]} className="input">
-                            {SCLEROMETER_DIRECTIONS.map((direction) => (
-                              <option key={direction} value={direction}>{direction}</option>
-                            ))}
-                          </select>
-                        </Field>
-                      </div>
-
-                      <div className="mt-3">
-                        <div className="text-xs font-semibold uppercase tracking-wide text-muted">Leximet / Readings</div>
-                        <div className="mt-1 grid grid-cols-6 gap-2 md:grid-cols-12">
-                          {SCLEROMETER_READING_SLOTS.map((slot) => (
-                            <input
-                              key={slot}
-                              name={`sclR-${index}-${slot}`}
-                              type="number"
-                              step="1"
-                              min="0"
-                              max="100"
-                              defaultValue={row?.readings?.[slot - 1] ?? ""}
-                              className="input px-1 text-center"
-                              aria-label={`Zona ${index}, leximi ${slot}`}
-                            />
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="mt-3 grid gap-3 text-xs md:grid-cols-5">
-                        <InfoInline label="Lexime" value={row?.readingCount !== undefined ? String(row.readingCount) : "-"} />
-                        <InfoInline label="Mesorja fillestare" value={row?.initialMedian !== undefined ? String(row.initialMedian) : "-"} />
-                        <InfoInline label="Të hedhura poshtë" value={row?.discardedCount !== undefined ? `${row.discardedCount}${row.discardedPercent !== undefined ? ` (${row.discardedPercent} %)` : ""}` : "-"} />
-                        <InfoInline label="Indeksi i rikthimit" value={row?.setRejected ? "Zona s'raportohet" : row?.reboundIndex !== undefined ? String(row.reboundIndex) : "-"} />
-                        <InfoInline label="Rezistenca [MPa]" value={row?.compressiveStrengthMpa !== undefined ? String(row.compressiveStrengthMpa) : "-"} />
-                      </div>
-
-                      {row?.setRejected ? (
-                        <div className="mt-2 rounded-md border border-[#f0a93a] bg-brand-risk p-2 text-xs font-semibold text-ink">
-                          Mbi 20 % e leximeve u hodhën poshtë — sipas BS EN 12504-2 kjo zonë nuk raportohet. Përsëriteni matjen.
-                        </div>
-                      ) : null}
-                      {row?.belowMinimumReadings && (row?.readingCount ?? 0) > 0 ? (
-                        <div className="mt-2 text-xs font-semibold text-[#a9761b]">
-                          Vetëm {row?.readingCount} lexime — standardi kërkon të paktën {SCLEROMETER_MIN_READINGS}.
-                        </div>
-                      ) : null}
-                    </div>
-                  );
-                })}
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">Rezistenca / <span className="italic font-normal normal-case">Strength</span></h3>
+              <p className="mt-1 text-xs text-muted">
+                Rck lexohet nga kurba e çekiçit sipas leximit mesatar. Rmax dhe Rmin dalin si Rck ± gabimi mesatar.
+              </p>
+              <div className="mt-3 grid gap-4 md:grid-cols-4">
+                <Field label="7. Rck [MPa]"><input name="cubeStrengthRck" type="number" step="0.1" min="0" max="150" defaultValue={scl?.cubeStrengthRck ?? ""} className="input" /></Field>
+                <Field label="8. Gabimi mesatar ∆ [MPa]"><input name="meanError" type="number" step="0.01" min="0" max="50" defaultValue={scl?.meanError ?? ""} className="input" /></Field>
+                <InfoInline label="9. Rmax = Rck + ∆" value={scl?.strengthMax !== undefined ? `${scl.strengthMax} MPa` : "—"} />
+                <InfoInline label="10. Rmin = Rck − ∆" value={scl?.strengthMin !== undefined ? `${scl.strengthMin} MPa` : "—"} />
               </div>
-
-              {anyRejected || anyShort ? (
-                <div className="mt-4 rounded-md border border-[#f0a93a] bg-brand-risk p-3 text-xs font-semibold text-ink">
-                  Ka zona që nuk plotësojnë kërkesat e BS EN 12504-2. Kontrolloni përpara se raporti të lëshohet.
-                </div>
-              ) : null}
-
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <InfoInline
-                  label="Indeksi mesatar / Mean rebound index"
-                  value={scl?.averages.reboundIndex !== undefined ? String(scl.averages.reboundIndex) : "Ruaj për ta llogaritur"}
-                />
-                <InfoInline
-                  label="Rezistenca mesatare / Mean strength"
-                  value={scl?.averages.compressiveStrengthMpa !== undefined ? `${scl.averages.compressiveStrengthMpa} MPa` : "Ruaj për ta llogaritur"}
-                />
-                <div className="md:col-span-2">
-                  <Field label="Shënime"><input name="notes" defaultValue={scl?.notes ?? ""} className="input" /></Field>
-                </div>
+              <div className="mt-4">
+                <Field label="Shënime"><input name="notes" defaultValue={scl?.notes ?? ""} className="input" /></Field>
               </div>
             </div>
 
@@ -1668,11 +1586,11 @@ export default function TestDetailPage() {
             complete={complete}
             generateReport={generateReport}
             message={
-              scl?.averages.compressiveStrengthMpa !== undefined
-                ? `Rezistenca mesatare ${scl.averages.compressiveStrengthMpa} MPa.`
-                : scl?.averages.reboundIndex !== undefined
-                  ? `Indeksi mesatar ${scl.averages.reboundIndex}, pa korrelacion për MPa.`
-                  : "Ruani leximet për të llogaritur rezultatet."
+              scl?.cubeStrengthRck !== undefined
+                ? `Rck ${scl.cubeStrengthRck} MPa nga ${scl.reboundCount ?? 0} goditje.`
+                : scl?.averageRebound !== undefined
+                  ? `Leximi mesatar ${scl.averageRebound}, pa Rck.`
+                  : "Ruani goditjet për të llogaritur leximin mesatar."
             }
             canEdit={canEditWorksheet}
             canGenerateReport={canGenerateReport}

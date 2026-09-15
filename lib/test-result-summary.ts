@@ -16,23 +16,23 @@ function formatNumber(value?: number, digits = 2) {
 export function getTestResultSummary(store: LabState, test: LabTest): TestResultSummary {
   const sclerometer = store.sclerometerTests.find((item) => item.testId === test.id);
   if (sclerometer) {
-    const reported = sclerometer.locations.filter((row) => row.reboundIndex !== undefined).length;
-    const rejected = sclerometer.locations.filter((row) => row.setRejected).length;
     const parts: string[] = [];
-    if (sclerometer.averages.reboundIndex !== undefined) {
-      parts.push(`Indeksi: ${formatNumber(sclerometer.averages.reboundIndex, 1)} (${reported} zona)`);
+    if (sclerometer.averageRebound !== undefined) {
+      parts.push(`Leximi mesatar: ${formatNumber(sclerometer.averageRebound, 1)} (${sclerometer.reboundCount ?? 0} goditje)`);
     }
-    if (sclerometer.averages.compressiveStrengthMpa !== undefined) {
-      parts.push(`Rezistenca: ${formatNumber(sclerometer.averages.compressiveStrengthMpa)} MPa`);
+    if (sclerometer.cubeStrengthRck !== undefined) {
+      const band =
+        sclerometer.strengthMin !== undefined && sclerometer.strengthMax !== undefined
+          ? ` (${formatNumber(sclerometer.strengthMin)}–${formatNumber(sclerometer.strengthMax)})`
+          : "";
+      parts.push(`Rck: ${formatNumber(sclerometer.cubeStrengthRck)} MPa${band}`);
     }
-    // A location the standard rejected is called out rather than quietly dropped.
-    if (rejected) parts.push(`${rejected} zonë e papranuar`);
     return {
       testStartDate: sclerometer.testStartDate,
       testEndDate: sclerometer.testEndDate,
       technicianName: sclerometer.technicianName,
       checkedBy: sclerometer.checkedBy,
-      result: parts.length ? parts.join("; ") : "Sklerometër: pa lexime të plotësuara"
+      result: parts.length ? parts.join("; ") : "Sklerometër: pa goditje të regjistruara"
     };
   }
 

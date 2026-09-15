@@ -70,8 +70,7 @@ import {
   deriveWaterChlorideRun,
   deriveWaterSulfateRun,
   averageWaterRuns,
-  deriveSclerometerLocation,
-  averageSclerometerColumn
+  deriveSclerometerResults
 } from "./calculations";
 import { useAuth } from "./auth";
 import { officialClientCodes2026 } from "./client-directory";
@@ -411,31 +410,25 @@ interface CementStrengthInput {
 }
 
 interface SclerometerInput {
+  castingDate?: string;
   testStartDate?: string;
   testEndDate?: string;
-  surveyLocation?: string;
-  structureDescription?: string;
   concreteAge?: string;
-  surfaceCondition?: string;
-  instrumentModel?: string;
-  instrumentSerial?: string;
-  instrumentCalibrationDate?: string;
-  correlationKind?: SclerometerTest["correlationKind"];
-  correlationA?: number;
-  correlationB?: number;
-  correlationReference?: string;
+  impactAngle?: string;
+  readings: Array<number | undefined>;
+  cubeStrengthRck?: number;
+  meanError?: number;
+  element?: string;
+  quote?: string;
+  orderDate?: string;
   temperature?: string;
   humidity?: string;
   testingLocation?: string;
+  instrumentModel?: string;
+  instrumentSerial?: string;
   technicianName: string;
   checkedBy?: string;
   notes?: string;
-  locations: Array<{
-    locationCode: string;
-    element?: string;
-    direction?: SclerometerTest["locations"][number]["direction"];
-    readings: Array<number | undefined>;
-  }>;
 }
 
 interface WaterAnalysisInput {
@@ -2934,45 +2927,12 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       saveSclerometerTest(testId, input) {
         setState((previous) => {
           if (!canCurrentUserEditTest(previous, testId)) return previous;
-          const correlation = {
-            kind: input.correlationKind,
-            coefficientA: input.correlationA,
-            coefficientB: input.correlationB
-          };
-          const locations = input.locations.map((row) => ({
-            ...row,
-            ...deriveSclerometerLocation(row.readings, correlation)
-          }));
-          // A location the standard rejected, or one never surveyed, carries no
-          // index and so contributes nothing to either mean.
           const existingRow = previous.sclerometerTests.find((row) => row.testId === testId);
           const sclerometerTest: SclerometerTest = {
             id: existingRow?.id ?? crypto.randomUUID(),
             testId,
-            testStartDate: input.testStartDate,
-            testEndDate: input.testEndDate,
-            surveyLocation: input.surveyLocation,
-            structureDescription: input.structureDescription,
-            concreteAge: input.concreteAge,
-            surfaceCondition: input.surfaceCondition,
-            instrumentModel: input.instrumentModel,
-            instrumentSerial: input.instrumentSerial,
-            instrumentCalibrationDate: input.instrumentCalibrationDate,
-            correlationKind: input.correlationKind,
-            correlationA: input.correlationA,
-            correlationB: input.correlationB,
-            correlationReference: input.correlationReference,
-            temperature: input.temperature,
-            humidity: input.humidity,
-            testingLocation: input.testingLocation,
-            technicianName: input.technicianName,
-            checkedBy: input.checkedBy,
-            notes: input.notes,
-            locations,
-            averages: {
-              reboundIndex: averageSclerometerColumn(locations.map((row) => row.reboundIndex), 1),
-              compressiveStrengthMpa: averageSclerometerColumn(locations.map((row) => row.compressiveStrengthMpa), 2)
-            },
+            ...input,
+            ...deriveSclerometerResults(input),
             createdAt: existingRow?.createdAt ?? new Date().toISOString()
           };
           const draft: LabState = {
@@ -2983,7 +2943,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             tests: previous.tests.map((test) => (test.id === testId ? { ...test, status: "In Progress" } : test)),
             auditLog: [...previous.auditLog]
           };
-          addAudit(draft, "test_data_saved", "test", testId, "Sclerometer (EN 12504-2) data saved.");
+          addAudit(draft, "test_data_saved", "test", testId, "Sclerometer (SL-RA-PJ-7.8/1.3) data saved.");
           return draft;
         });
       },

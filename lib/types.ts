@@ -1620,78 +1620,59 @@ export interface WaterAnalysisTest {
 }
 
 /**
- * Rebound hammer / sclerometer — BS EN 12504-2, scope entry AT-069.
+ * Rebound hammer / sclerometer — the SL-RA-PJ-7.8/1.3 report.
  *
- * A survey is made up of test locations; each location carries at least nine
- * readings, from which the standard derives one rebound index (see
- * deriveSclerometerLocation for the median-and-discard rule).
+ * Modelled on the laboratory's own template rather than on the standard alone.
+ * The template takes a single test location, records each hammer blow in a
+ * working column, and prints only how many blows were taken and their average —
+ * the individual readings sit outside the printed area.
  *
- * The standard stops at the rebound index. Turning that into a compressive
- * strength needs the correlation from the instrument's certificate, so the
- * correlation is entered per test and recorded on the report rather than being
- * held as an uncontrolled curve inside the app.
+ * It also departs from BS EN 12504-2 in two ways that are the laboratory's to
+ * make, so they are reproduced rather than corrected: the reported index is the
+ * plain average of the readings, not the median with outliers discarded; and
+ * the strength is read off the instrument's curve and typed in as Rck with a
+ * mean error, giving a maximum and a minimum rather than one figure.
  */
-export type SclerometerDirection =
-  | "Horizontale / Horizontal"
-  | "Vertikale poshtë / Vertical down"
-  | "Vertikale lart / Vertical up"
-  | "45° poshtë / 45° down"
-  | "45° lart / 45° up";
-
-export type SclerometerCorrelationKind = "linear" | "power";
-
-export interface SclerometerLocation {
-  locationCode: string;
-  /** The structural element tested — column K-12, slab, pier P3. */
-  element?: string;
-  direction?: SclerometerDirection;
-  readings: Array<number | undefined>;
-
-  // Derived — never entered by hand.
-  readingCount?: number;
-  /** True when fewer than the nine readings the standard requires were taken. */
-  belowMinimumReadings?: boolean;
-  initialMedian?: number;
-  discardedCount?: number;
-  discardedPercent?: number;
-  /** More than a fifth of the readings discarded: the location is not reported. */
-  setRejected?: boolean;
-  reboundIndex?: number;
-  compressiveStrengthMpa?: number;
-}
-
 export interface SclerometerTest {
   id: string;
   testId: string;
+
+  /** Row 1 — Data e betonimit / Casting date. */
+  castingDate?: string;
+  /** Row 2 — Data e testimit, fillimi and mbarimi. */
   testStartDate?: string;
   testEndDate?: string;
-  /** Where the survey was carried out — this is field work. */
-  surveyLocation?: string;
-  structureDescription?: string;
+  /** Row 3 — Koha e maturimit. Free text: the template carries ">28". */
   concreteAge?: string;
-  surfaceCondition?: string;
-  instrumentModel?: string;
-  instrumentSerial?: string;
-  instrumentCalibrationDate?: string;
+  /** Row 4 — Kendi i goditjes, the angle the hammer was held at. */
+  impactAngle?: string;
 
-  /** The correlation from the instrument's certificate. */
-  correlationKind?: SclerometerCorrelationKind;
-  correlationA?: number;
-  correlationB?: number;
-  /** Which curve or certificate the coefficients came from. */
-  correlationReference?: string;
+  /** Row 5 counts these and row 6 averages them; they are not printed. */
+  readings: Array<number | undefined>;
 
+  /** Row 7 — Rck, read from the instrument's correlation curve. */
+  cubeStrengthRck?: number;
+  /** Row 8 — the mean error either side of Rck. */
+  meanError?: number;
+
+  // Derived — rows 5, 6, 9 and 10.
+  reboundCount?: number;
+  averageRebound?: number;
+  strengthMax?: number;
+  strengthMin?: number;
+
+  /** Report header fields the template carries above the results table. */
+  element?: string;
+  quote?: string;
+  orderDate?: string;
   temperature?: string;
   humidity?: string;
   testingLocation?: string;
+  instrumentModel?: string;
+  instrumentSerial?: string;
+
   technicianName: string;
   checkedBy?: string;
   notes?: string;
-
-  locations: SclerometerLocation[];
-  averages: {
-    reboundIndex?: number;
-    compressiveStrengthMpa?: number;
-  };
   createdAt: string;
 }

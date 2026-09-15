@@ -728,93 +728,38 @@ export function averageWaterRuns(values: Array<number | undefined>, decimals = 2
   return round(usable.reduce((sum, value) => sum + value, 0) / usable.length, decimals);
 }
 
-// --- Rebound hammer (sclerometer), BS EN 12504-2 --------------------------
-
-/** BS EN 12504-2 takes at least nine readings at each test location. */
-export const SCLEROMETER_MIN_READINGS = 9;
-/** A reading further than this from the median is discarded. */
-const SCLEROMETER_OUTLIER_LIMIT = 6;
-/** Discarding more than this share of the readings rejects the whole set. */
-const SCLEROMETER_MAX_DISCARDED_SHARE = 0.2;
+// --- Rebound hammer (sclerometer), SL-RA-PJ-7.8/1.3 ----------------------
 
 const finiteReading = (value?: number): value is number => typeof value === "number" && Number.isFinite(value);
 
-function medianOf(values: number[]) {
-  if (!values.length) return undefined;
-  const sorted = [...values].sort((a, b) => a - b);
-  const middle = Math.floor(sorted.length / 2);
-  return sorted.length % 2 ? sorted[middle] : round((sorted[middle - 1] + sorted[middle]) / 2, 2);
-}
-
 /**
- * How BS EN 12504-2 turns a set of rebound readings into one index.
+ * What the laboratory's template does with a set of hammer readings.
  *
- * Take the median of the readings, discard any that differ from it by more
- * than six units, then take the median of what remains. If more than a fifth
- * of the readings had to be discarded the location is not representative and
- * the whole set is rejected rather than reported.
+ * The template's own formula is AVERAGE over the working column, and the
+ * strength comes from Rck typed off the instrument's curve with a mean error
+ * either side. That is reproduced here rather than the median-and-discard rule
+ * in BS EN 12504-2 — which figure the laboratory reports is its call, not the
+ * app's, and the app should not quietly report something different from the
+ * sheet the technician fills in.
+ *
+ * A blow that was not struck is left out of both the count and the average, so
+ * a part-finished location cannot read as a low rebound number.
  */
-export function deriveSclerometerLocation(
-  readings: Array<number | undefined>,
-  correlation: {
-    kind?: "linear" | "power";
-    coefficientA?: number;
-    coefficientB?: number;
-  } = {}
-) {
-  const taken = readings.filter(finiteReading);
-  if (!taken.length) {
-    return {
-      readingCount: 0,
-      // A location nobody surveyed is empty, not deficient — only a location
-      // that was surveyed can fall short of the nine readings required.
-      belowMinimumReadings: false,
-      initialMedian: undefined,
-      discardedCount: 0,
-      discardedPercent: undefined,
-      setRejected: false,
-      reboundIndex: undefined,
-      compressiveStrengthMpa: undefined
-    };
-  }
+export function deriveSclerometerResults(input: {
+  readings: Array<number | undefined>;
+  cubeStrengthRck?: number;
+  meanError?: number;
+}) {
+  const taken = input.readings.filter(finiteReading);
 
-  const initialMedian = medianOf(taken);
-  const retained = taken.filter((value) => Math.abs(value - (initialMedian as number)) <= SCLEROMETER_OUTLIER_LIMIT);
-  const discardedCount = taken.length - retained.length;
-  const discardedPercent = round((discardedCount / taken.length) * 100, 1);
-  const setRejected = discardedCount / taken.length > SCLEROMETER_MAX_DISCARDED_SHARE;
+  const reboundCount = taken.length || undefined;
+  const averageRebound = taken.length
+    ? round(taken.reduce((sum, value) => sum + value, 0) / taken.length, 1)
+    : undefined;
 
-  const reboundIndex = setRejected ? undefined : medianOf(retained);
+  const { cubeStrengthRck: rck, meanError: delta } = input;
+  const strengthMax = finiteReading(rck) && finiteReading(delta) ? round(rck + delta, 2) : undefined;
+  const strengthMin = finiteReading(rck) && finiteReading(delta) ? round(rck - delta, 2) : undefined;
 
-  // The standard yields a rebound index, not a strength. The conversion comes
-  // from the correlation on the instrument's certificate, which the technician
-  // supplies; without it the index stands on its own rather than being run
-  // through a curve the app invented.
-  const { kind, coefficientA: a, coefficientB: b } = correlation;
-  let compressiveStrengthMpa: number | undefined;
-  if (finiteReading(reboundIndex) && finiteReading(a) && finiteReading(b)) {
-    if (kind === "power") {
-      compressiveStrengthMpa = reboundIndex > 0 ? round(a * Math.pow(reboundIndex, b), 2) : undefined;
-    } else if (kind === "linear") {
-      compressiveStrengthMpa = round(a * reboundIndex + b, 2);
-    }
-  }
-
-  return {
-    readingCount: taken.length,
-    belowMinimumReadings: taken.length < SCLEROMETER_MIN_READINGS,
-    initialMedian,
-    discardedCount,
-    discardedPercent,
-    setRejected,
-    reboundIndex,
-    compressiveStrengthMpa
-  };
-}
-
-/** Mean across the locations that produced a value. */
-export function averageSclerometerColumn(values: Array<number | undefined>, decimals = 2) {
-  const usable = values.filter(finiteReading);
-  if (!usable.length) return undefined;
-  return round(usable.reduce((sum, value) => sum + value, 0) / usable.length, decimals);
+  return { reboundCount, averageRebound, strengthMax, strengthMin };
 }
