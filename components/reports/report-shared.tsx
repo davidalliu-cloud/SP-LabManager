@@ -361,11 +361,19 @@ export function OfficialNotesAndFooter({
   testedBy,
   responsible,
   issueDate,
-  layout = "pinned"
+  layout = "pinned",
+  disclaimers
 }: {
   notes?: string;
   testedBy?: string;
   responsible?: string;
+  /**
+   * The asphalt family carries its own two lines instead of the three below —
+   * different wording, not a shortened version of them. Supplied by the report
+   * rather than hard-coded here so each family keeps the text its own template
+   * carries.
+   */
+  disclaimers?: ReactNode;
   issueDate?: string;
   /**
    * "pinned" keeps the signature, legal text, issue date and address welded to
@@ -395,9 +403,11 @@ export function OfficialNotesAndFooter({
           heightMm={30}
         />
         <div className="official-disclaimers mt-2 space-y-0.5 text-[6pt] leading-tight">
+          {disclaimers ?? <>
           <p>Rezultatet në këtë raport testimi i përkasin vetëm mostrës së testuar. / <span className="italic">The results relate only to the items tested.</span></p>
           <p>Ky raport testimi nuk mund të riprodhohet në mënyrë të pjesshme pa aprovimin me shkrim të laboratorit. / <span className="italic">The test report shall not be reproduced except in full without the written approval of the laboratory.</span></p>
           <p>Laboratori nuk është përgjegjës për fazën e kampionmarrjes. / <span className="italic">The laboratory is not responsible for the sampling phase.</span></p>
+          </>}
         </div>
         <div className="official-issue-date mt-2 grid grid-cols-[285px_150px] items-end gap-4 text-[6pt]">
           <div>Data e lëshimit të Raportit të Testimit / <span className="italic">Test Report Issue Date:</span></div>

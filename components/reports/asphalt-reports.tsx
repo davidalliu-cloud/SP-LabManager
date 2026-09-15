@@ -39,33 +39,53 @@ export function AsphaltReportPreview({
     compaction: "PËRCAKTIMI I DENSITETIT SPECIFIK TË KARROTAVE TË ASFALTIT / BULK SPECIFIC GRAVITY OF COMPACTED ASPHALT"
   };
   const issueDate = report.issuedAt || report.approvedAt || asphalt.testEndDate || sample?.reportDueDate;
+  // Wording and order follow the SL-RA-AS templates, which differ from the rest
+  // of the official family: POROSITËSI rather than KLIENTI, a sampling date in
+  // place of a receipt date, and one testing date instead of a start and an end.
   const metaEntries: OfficialMetaEntry[] = [
     { sq: "Nr. REGJISTRI", en: "REGISTER No.", value: sample?.sampleCode },
-    { sq: "KLIENTI", en: "PURCHASER", value: client?.clientName },
-    { sq: "ADRESA", en: "ADDRESS", value: client?.address },
+    { sq: "POROSITËSI", en: "PURCHASER", value: client?.clientName },
+    { sq: "ADRESA", en: "ADRESS", value: client?.address },
     { sq: "KONTAKTET", en: "CONTACT", value: client?.phone || client?.email },
     { sq: "OBJEKTI", en: "OBJECT", value: project?.projectName },
-    { sq: "KAMPIONI", en: "SAMPLE", value: `${asphalt.mixtureKind} / Bituminous mixture` },
-    { sq: "VENDI I MARRJES SË KAMPIONIT", en: "SAMPLING LOCATION", value: asphalt.samplingLocation },
-    { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: sample?.dateReceived },
+    { sq: "KAMPIONI", en: "SAMPLE", value: asphaltSampleLabel(asphalt.mixtureKind) },
+    { sq: "DATA E KAMPIONIMIT", en: "SAMPLING DATE", value: formatEuropeanDate(asphalt.asphaltDate || sample?.dateReceived) },
+    { sq: "DATA E TESTIMIT", en: "TESTING DATE", value: formatEuropeanDate(asphalt.testEndDate || asphalt.testStartDate) },
     { sq: "OPERATORI I MARRJES SË KAMPIONIT", en: "SAMPLING OPERATOR", value: samplingOperator(sample) }
   ];
   return (
     <OfficialReportShell report={report} code={codeMap[kind] ?? "SL-RA-AS-7.8/1"} className="compact-official-report">
       <OfficialMetaGrid entries={metaEntries} className="mt-5" />
       <div className="mt-1 grid grid-cols-[315px_1fr] gap-x-8 gap-y-1 text-[10pt] leading-[1.12]">
-        <OfficialTestingDates start={asphalt.testStartDate} end={asphalt.testEndDate} />
         <CoreMetaRow sq="TESTI" en="TEST" value={titleMap[kind]} />
         <CoreMetaRow sq="METODA E TESTIMIT" en="TEST METHOD" value={kind === "bitumen-content" ? "B" : kind === "granulometry" ? "ME EKSTRAKTIM / EXTRACTION" : kind === "marshall-stability" ? "ME KOMPAKTOR / IMPACT COMPACTOR" : "-"} />
         <CoreMetaRow sq="STANDARDI I TESTIMIT" en="TEST STANDARD" value={asphaltStandardForReport(kind, test?.standard)} />
-        <CoreMetaRow sq="VENDI KU ËSHTË PERFORMUAR TESTI" en="LAB. LOCATION" value={asphalt.testingLocation || "05/A Lab. i testimit të asfaltobetoneve / Asphalt testing laboratory"} />
+        <CoreMetaRow sq="VENDI KU ËSHTË PEFORMUAR TESTI" en="TESTING PLACE" value={asphalt.testingLocation || "05/A"} />
         <OfficialEnvironmental temperature={asphalt.temperature} humidity={asphalt.humidity} />
       </div>
       <AsphaltReportBody kind={kind} asphalt={asphalt} />
-      <OfficialAsterisk />
-      <OfficialNotesAndFooter notes={asphalt.notes} testedBy={asphalt.technicianName || report.draftedBy} responsible={asphalt.checkedBy} issueDate={issueDate} />
+      <OfficialNotesAndFooter
+        notes={asphalt.notes}
+        testedBy={asphalt.technicianName || report.draftedBy}
+        responsible={asphalt.checkedBy}
+        issueDate={issueDate}
+        disclaimers={
+          <>
+            <p>Ky raport i përket vetëm mostrës që i nënshtrohet testimit / <span className="italic">This test report belongs only to the tested sample</span></p>
+            <p>Është rreptësisht e ndaluar kopjimi i këtij dokumenti pa autorizimin e laboratorit / <span className="italic">It is forbidden to copy this report or part of it without permission of the laboratory</span></p>
+          </>
+        }
+      />
     </OfficialReportShell>
   );
+}
+
+/** The layer as the SL-RA-AS templates write it in KAMPIONI / SAMPLE. */
+export function asphaltSampleLabel(kind: string) {
+  if (kind === "Tapet") return "TAPET / WEARING COURSE";
+  if (kind === "Binder") return "BINDER / BINDER COURSE";
+  if (kind === "Tapet + Binder") return "TAPET + BINDER / WEARING + BINDER COURSE";
+  return kind;
 }
 
 export function asphaltStandardForReport(kind: string, fallback?: string) {
@@ -80,11 +100,15 @@ export function asphaltStandardForReport(kind: string, fallback?: string) {
 export function AsphaltReportBody({ kind, asphalt }: { kind: string; asphalt: AsphaltTest }) {
   if (kind === "bitumen-content") {
     const rows: Array<[string, string, string, number]> = [
-      ["Pesha e koshit + filter", "Wire basket weight + filter", "g", asphalt.bitumen.basketFilterMassG],
-      ["Pesha e konglomeratit bituminoz + ena para ekstraktimit", "Bituminous conglomerate weight before extraction", "g", asphalt.bitumen.beforeExtractionMassG],
-      ["Pesha e konglomeratit bituminoz + ena pas ekstraktimit", "Bituminous conglomerate weight after extraction", "g", asphalt.bitumen.afterExtractionMassG],
-      ["Pesha e filer", "Filler weight", "g", asphalt.bitumen.fillerMassG],
+      ["Pesha e hinës + filteri", "Funnel weight + filter", "g", asphalt.bitumen.basketFilterMassG],
+      ["Pesha e konglomeratit bituminoz + ena para ekstraktimit", "Bituminous conglomerate weight + wire basket before the extraction", "g", asphalt.bitumen.beforeExtractionMassG],
+      ["Pesha e konglomeratit bituminoz + ena pas ekstraktimit", "Bituminous conglomerate weight + wire basket after the extraction", "g", asphalt.bitumen.afterExtractionMassG],
+      ["Pesha e filerit", "Filler weight", "g", asphalt.bitumen.fillerMassG],
       ["Pesha e bitumit të ekstraktuar", "Extracted bitumen weight", "g", asphalt.bitumen.bitumenMassG],
+      // These two were stored but never printed, and both percentages below
+      // divide by them — without them the reader cannot check the arithmetic.
+      ["Pesha e konglomeratit bituminoz", "Bituminous conglomerate weight", "g", asphalt.bitumen.conglomerateMassG],
+      ["Pesha e agregatit bituminoz", "Bituminous aggregate weight", "g", asphalt.bitumen.aggregateMassG],
       ["Përmbajtja e bitumit në konglomerat", "Content of bitumen in conglomerate", "%", asphalt.bitumen.bitumenContentPercent],
       ["Përmbajtja e bitumit në agregat", "Content of bitumen in aggregate", "%", asphalt.bitumen.bitumenOnAggregatePercent]
     ];
