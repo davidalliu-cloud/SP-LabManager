@@ -76,6 +76,38 @@ export default function ReportDetailPage() {
     }, 500);
   }
 
+  /**
+   * The copy that goes out on paper and is signed in pen.
+   *
+   * Same sheet as the signed one, with the signature and stamp left blank —
+   * they are one image per column, so a single class covers both. The image
+   * keeps its box rather than being removed, so the page geometry is identical
+   * to the signed copy and there is room to actually sign.
+   *
+   * Deliberately print-only. The email attaches the *stored* PDF, so anything
+   * unsigned that reached storage could later be sent to a client as if it were
+   * an issued report. Nothing here writes to storage.
+   */
+  function printForWetSignature() {
+    const surface = reportSurfaceRef.current?.querySelector<HTMLElement>(".print-surface");
+    if (!surface) return;
+    const originalTitle = document.title;
+    let restored = false;
+    const restore = () => {
+      if (restored) return;
+      restored = true;
+      surface.classList.remove("wet-signature");
+      document.title = originalTitle;
+      window.removeEventListener("afterprint", restore);
+    };
+    surface.classList.add("wet-signature");
+    document.title = "";
+    window.addEventListener("afterprint", restore);
+    window.print();
+    // Not every browser fires afterprint; restore is idempotent.
+    window.setTimeout(restore, 1500);
+  }
+
   async function generateStoredPdf() {
     const surface = reportSurfaceRef.current?.querySelector<HTMLElement>(".print-surface");
     if (!surface) return;
@@ -180,8 +212,15 @@ export default function ReportDetailPage() {
                   Shkarko PDF-në e ruajtur
                 </a>
               ) : null}
+              <button onClick={printForWetSignature} className="btn-secondary w-full">
+                Printo për firmë me dorë
+              </button>
+              <p className="text-xs leading-snug text-muted">
+                Kopja e printuar del pa firmë dhe pa vulë, që të firmoset me stilolaps. PDF-ja e ruajtur dhe ajo që i
+                dërgohet klientit mbeten të firmosura.
+              </p>
               <button onClick={downloadApprovedPdf} className="w-full text-xs font-medium text-muted underline hover:text-lab-burgundy">
-                Ose printo/shfaq për printim manual
+                Ose printo kopjen e firmosur
               </button>
               {clientHasEmail ? (
                 <input

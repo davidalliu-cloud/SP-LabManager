@@ -1248,3 +1248,21 @@ textarea {
 .compact-official-report.pdf-capture .table-head {
     font-size: 7pt !important;
 }
+
+/* ------------------------------------------------------------------ *
+ * Wet-signature copy.
+ *
+ * Set on the report surface only while the "Printo për firmë me dorë"
+ * button is driving window.print(), and removed as soon as the dialog
+ * closes. The signature and the company stamp are a single image per
+ * column, so hiding .signature-block-img covers both; the letterhead —
+ * the SARP mark and the DA accreditation mark — is not a signature and
+ * stays on every copy.
+ *
+ * visibility rather than display: the image keeps its box, so the printed
+ * sheet matches the signed one line for line and leaves the space clear
+ * to sign in. Removing it would shorten the page and move the footer.
+ * ------------------------------------------------------------------ */
+.print-surface.wet-signature .signature-block-img {
+  visibility: hidden !important;
+}
