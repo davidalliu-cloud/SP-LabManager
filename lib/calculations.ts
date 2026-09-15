@@ -7,14 +7,27 @@ export function calculateCompressiveStrength(maximumLoadKn: number, areaMm2: num
   return round((maximumLoadKn * 1000) / areaMm2, 2);
 }
 
+/**
+ * Pi as the SL-RA-B-7.8/1.9.x templates write it.
+ *
+ * Their area formula is literally =D*D*3.14/4, not PI(). For a 19cm core that
+ * is 283.39 cm2 where pi gives 283.53, and the template prints 283.39. Every
+ * strength on the report divides by this area, so using the more accurate
+ * constant would stop the app's figures tying out against the laboratory's own
+ * sheet — which is the thing being replicated.
+ */
+const TEMPLATE_PI = 3.14;
+
 export function calculateConcreteCoreResults(input: { diameterMm: number; heightMm: number; weightKg: number; loadKn: number }) {
   const diameterCm = round(input.diameterMm / 10, 2);
   const heightCm = round(input.heightMm / 10, 2);
-  const contactAreaCm2 = diameterCm ? round((Math.PI * diameterCm ** 2) / 4, 2) : 0;
+  // Carried at full precision and rounded only for display, as the spreadsheet
+  // does: rounding the area first would walk the strength off by a hair.
+  const exactAreaCm2 = diameterCm ? (TEMPLATE_PI * diameterCm ** 2) / 4 : 0;
+  const contactAreaCm2 = round(exactAreaCm2, 2);
   const heightDiameterRatio = diameterCm ? round(heightCm / diameterCm, 2) : 0;
-  const volumeM3 = input.diameterMm && input.heightMm ? (Math.PI * input.diameterMm ** 2 / 4) * input.heightMm / 1_000_000_000 : 0;
-  const densityKgM3 = volumeM3 ? round(input.weightKg / volumeM3, 0) : 0;
-  const cylindricalStrengthMpa = contactAreaCm2 ? round(input.loadKn / contactAreaCm2 * 10, 2) : 0;
+  const densityKgM3 = exactAreaCm2 && heightCm ? round((input.weightKg / (exactAreaCm2 * heightCm)) * 1_000_000, 0) : 0;
+  const cylindricalStrengthMpa = exactAreaCm2 ? round((input.loadKn / exactAreaCm2) * 10, 2) : 0;
   const conversionFactor = cylindricalStrengthMpa < 25 ? 0.8 : 0.83;
   const ratioType: "1:1" | "1:2" = Math.abs(heightDiameterRatio - 2) < Math.abs(heightDiameterRatio - 1) ? "1:2" : "1:1";
   const cubicStrengthMpa = ratioType === "1:2" ? round(cylindricalStrengthMpa / conversionFactor, 2) : round(cylindricalStrengthMpa * conversionFactor, 2);
