@@ -66,3 +66,35 @@ export function fieldOptionForSampleType(sampleType?: string) {
 export function accreditedTestForFieldOption(option: FieldWorkOption) {
   return getAccreditedTestById(option.accreditedTestId);
 }
+
+/**
+ * The Field Register keeps its own numbering, separate from the laboratory's.
+ *
+ * SARP runs two register series on its issued paperwork: "0-" for laboratory
+ * samples and "1-" for the non-destructive work done on site — the SL-RA-PJ
+ * sclerometer template carries 1-01/07, against 0-148/07 on a concrete cube
+ * report from the same month. This reproduces the field half of that: series 1,
+ * the sequence within the month, and the month as a suffix.
+ *
+ * The sequence restarts each month, and is taken from the highest number
+ * already issued that month rather than from a count — a count breaks the
+ * moment the set has a gap or a duplicate, which is how 09-035 once became
+ * 09-037.
+ */
+export const FIELD_SAMPLE_CODE_PATTERN = /^1-(\d+)\/(\d{2})$/;
+
+export function isFieldSampleCode(code?: string) {
+  return Boolean(code && FIELD_SAMPLE_CODE_PATTERN.test(code));
+}
+
+export function nextFieldSampleCode(dateReceived: string, existingCodes: string[]) {
+  const date = new Date(`${dateReceived}T00:00:00`);
+  const month = String(
+    Number.isNaN(date.getTime()) ? new Date().getMonth() + 1 : date.getMonth() + 1
+  ).padStart(2, "0");
+  const highest = existingCodes.reduce((max, code) => {
+    const match = FIELD_SAMPLE_CODE_PATTERN.exec(code ?? "");
+    return match && match[2] === month ? Math.max(max, Number(match[1])) : max;
+  }, 0);
+  return `1-${String(highest + 1).padStart(2, "0")}/${month}`;
+}

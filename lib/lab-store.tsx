@@ -75,6 +75,7 @@ import {
 import { useAuth } from "./auth";
 import { officialClientCodes2026 } from "./client-directory";
 import { canAssignSampleClient, canDeleteSamples, canEditSampleAfterRegistration, canEditTestData, canReviewTests, canGenerateReportForTest, canManageClients, canManageEmployees, canRewriteSample, isSampleLocked } from "./permissions";
+import { isFieldSampleType, nextFieldSampleCode } from "./field-register";
 import { initialState } from "./seed-data";
 import { deriveSampleStage, SAMPLE_STAGES } from "./sample-stage";
 import { createSupabaseBrowserClient } from "./supabase/client";
@@ -1731,6 +1732,17 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       return `K${String(next).padStart(2, "0")}`;
     }
 
+    /**
+     * Field work is numbered in its own series — see nextFieldSampleCode — so a
+     * sample taken on site never consumes a laboratory number, and the two
+     * registers can be read independently.
+     */
+    function nextSampleCodeFor(sampleType: string, dateReceived: string, samples: Sample[]) {
+      return isFieldSampleType(sampleType)
+        ? nextFieldSampleCode(dateReceived, samples.map((sample) => sample.sampleCode))
+        : nextMonthlySampleCode(dateReceived, samples);
+    }
+
     function nextMonthlySampleCode(dateReceived: string, samples: Sample[]) {
       const date = new Date(`${dateReceived}T00:00:00`);
       const year = date.getFullYear();
@@ -2315,7 +2327,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           // render-time snapshot - otherwise several quick registrations (or one
           // made just after another device's sample merged in) all read the same
           // stale list and collide, which is what duplicated 09-028.
-          const sampleCode = nextMonthlySampleCode(input.dateReceived, previous.samples);
+          const sampleCode = nextSampleCodeFor(input.sampleType, input.dateReceived, previous.samples);
           const sample: Sample = {
             id: sampleId,
             sampleCode,
@@ -2372,7 +2384,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           const newSamples: Sample[] = [];
           inputs.forEach((input) => {
             const sampleId = crypto.randomUUID();
-            const sampleCode = nextMonthlySampleCode(input.dateReceived, [...previous.samples, ...newSamples]);
+            const sampleCode = nextSampleCodeFor(input.sampleType, input.dateReceived, [...previous.samples, ...newSamples]);
             const schedules =
               input.schedules.length > 0
                 ? input.schedules
