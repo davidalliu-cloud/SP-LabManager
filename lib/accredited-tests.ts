@@ -398,15 +398,14 @@ export const MASONRY_UNIT_PACKAGE_NAME =
 export const MASONRY_UNIT_PACKAGE_STANDARD =
   "BS EN 772-16:2011; BS EN 772-13:2000; BS EN 772-21:2011; BS EN 772-1:2011+A1:2015";
 
-// Any of the four sub-test names, plus the combined package name, identify a
-// masonry test by its stored testType (alongside the four AT ids).
-const MASONRY_UNIT_TEST_NAMES = new Set([
-  "Përcaktimi i dimensioneve",
-  "Përcaktimi i densitetit volumor, specifik dhe aparent",
-  "Përcaktimi i ujëthithjes (absorbimi)",
-  "Përcaktimi i rezistencës në shtypje",
-  MASONRY_UNIT_PACKAGE_NAME
-]);
+// Only the combined package name identifies a masonry test by its stored
+// testType. The four sub-test names must NOT be listed here: "Përcaktimi i
+// rezistencës në shtypje" and the other three are shared word-for-word with
+// other families — it is also the name of the concrete cube compression test,
+// which is most of the lab's work. Matching on them sent every concrete cube
+// to the masonry worksheet. A shared test name can never identify a family;
+// only an AT id, the package name, or the sample type can.
+const MASONRY_UNIT_TEST_NAMES = new Set([MASONRY_UNIT_PACKAGE_NAME]);
 
 /**
  * Water for concrete — BS EN 1008. One test covering colour, odour, density,
