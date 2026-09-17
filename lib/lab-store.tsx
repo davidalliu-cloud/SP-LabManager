@@ -75,7 +75,9 @@ import {
 import { useAuth } from "./auth";
 import { officialClientCodes2026 } from "./client-directory";
 import { canAssignSampleClient, canDeleteSamples, canEditSampleAfterRegistration, canEditTestData, canReviewTests, canGenerateReportForTest, canManageClients, canManageEmployees, canRewriteSample, isSampleLocked } from "./permissions";
-import { isFieldSampleType, nextFieldSampleCode } from "./field-register";
+import { isFieldSampleType } from "./field-register";
+import { FIELD_SERIES, LAB_SERIES, nextSampleCode } from "./sample-code";
+import { nextReportNumber } from "./report-number";
 import { initialState } from "./seed-data";
 import { deriveSampleStage, SAMPLE_STAGES } from "./sample-stage";
 import { createSupabaseBrowserClient } from "./supabase/client";
@@ -1733,32 +1735,16 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
     }
 
     /**
-     * Field work is numbered in its own series — see nextFieldSampleCode — so a
-     * sample taken on site never consumes a laboratory number, and the two
-     * registers can be read independently.
+     * Field work carries its own series, so a sample taken on site never
+     * consumes a laboratory number and the two registers can be read
+     * independently. See lib/sample-code.ts for the format.
      */
     function nextSampleCodeFor(sampleType: string, dateReceived: string, samples: Sample[]) {
-      return isFieldSampleType(sampleType)
-        ? nextFieldSampleCode(dateReceived, samples.map((sample) => sample.sampleCode))
-        : nextMonthlySampleCode(dateReceived, samples);
-    }
-
-    function nextMonthlySampleCode(dateReceived: string, samples: Sample[]) {
-      const date = new Date(`${dateReceived}T00:00:00`);
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const prefix = `${year}-${month}`;
-      // Use the highest existing sequence number + 1, not the count. Counting
-      // breaks whenever the set has a gap or a duplicate: a duplicate inflates
-      // the count and skips the next number (this is what turned 09-035 into
-      // 09-037), and a deletion would make the count reuse a live number. Max+1
-      // is stable against both.
-      const pattern = new RegExp(`^${prefix}-(\\d+)$`);
-      const highest = samples.reduce((max, sample) => {
-        const match = pattern.exec(sample.sampleCode);
-        return match ? Math.max(max, Number(match[1])) : max;
-      }, 0);
-      return `${prefix}-${String(highest + 1).padStart(3, "0")}`;
+      return nextSampleCode(
+        isFieldSampleType(sampleType) ? FIELD_SERIES : LAB_SERIES,
+        dateReceived,
+        samples.map((sample) => sample.sampleCode)
+      );
     }
 
     function chunk<T>(rows: T[], size: number) {
@@ -4048,7 +4034,11 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           const specimenCount = reportGroups.reduce((sum, group) => sum + group.length, 0);
           const reports: Report[] = reportGroups.map((codes, index) => ({
             id: index === 0 ? reportId : crypto.randomUUID(),
-            reportNumber: nextNumber("LAB-R", previous.reports.map((row) => row.reportNumber), index),
+            reportNumber: nextReportNumber(
+              previous.reports.map((row) => row.reportNumber),
+              new Date().getFullYear(),
+              index
+            ),
             testId,
             sampleId: test.sampleId,
             clientId: test.clientId,

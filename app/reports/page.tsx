@@ -11,6 +11,8 @@ import { SavedViews } from "@/components/ui/saved-views";
 import { useLabStore } from "@/lib/lab-store";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { canSendReportsToClient } from "@/lib/permissions";
+import { reportNumberSortKey } from "@/lib/report-number";
+import { sampleCodeSortKey } from "@/lib/sample-code";
 import { reportLifecycle, sampleStageIndex } from "@/lib/sample-stage";
 import type { ReportStatus } from "@/lib/types";
 
@@ -81,13 +83,15 @@ export default function ReportsPage() {
   const sortedRows = sortRows(filteredRows, ({ report, sample, test, client, project }) => {
     switch (sort.key) {
       case "sequence": return report.reportSequence;
-      case "sample": return sample?.sampleCode;
+      case "sample": return sampleCodeSortKey(sample?.sampleCode);
       case "test": return test?.testType;
       case "specimens": return (report.specimenCodes ?? []).join(", ");
       case "client": return client?.clientName;
       case "project": return project?.projectName;
       case "status": return sampleStageIndex(reportLifecycle(report).stage);
-      default: return report.reportNumber;
+      // Report numbers read 5868/26, so sorting them as text puts 999/26 after
+      // 5868/26. Sort on year first, then the sequence as a number.
+      default: return reportNumberSortKey(report.reportNumber);
     }
   }, sort);
   const selectedRows = filteredRows.filter(({ report }) => selectedReportIds.includes(report.id));

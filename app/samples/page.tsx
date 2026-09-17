@@ -17,6 +17,7 @@ import { buildLabIndex, NO_REPORTS, NO_TESTS } from "@/lib/lab-index";
 import { buildHaystack, matchesHaystack, tokeniseQuery } from "@/lib/search";
 import { isApproaching, isOverdue } from "@/lib/status";
 import { canDeleteSamples, canViewClientIdentity } from "@/lib/permissions";
+import { sampleCodeSortKey } from "@/lib/sample-code";
 import { deriveSampleStageFrom, reportLifecycle, SAMPLE_STAGES, sampleStageIndex } from "@/lib/sample-stage";
 import type { LabTest, Report, Sample, SampleStatus, TestStatus } from "@/lib/types";
 
@@ -231,7 +232,8 @@ export default function SamplesPage() {
         case "status": return sampleStageIndex(row.stage);
         case "technician": return row.technicianName;
         case "reportStatus": return row.report?.reportStatus ?? "";
-        default: return row.sample.sampleCode;
+        // 0-46/09 sorts as text into nonsense: 0-9/09 lands after 0-46/09.
+        default: return sampleCodeSortKey(row.sample.sampleCode);
       }
     };
 
