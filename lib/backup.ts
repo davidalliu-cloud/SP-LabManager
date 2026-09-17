@@ -61,8 +61,10 @@ export function backupEmailHtml(params: {
   summary: BackupSummary;
   attachmentName: string;
   keptSnapshots: number;
+  /** One line on where the third copy went, or why it did not. */
+  sharePointLine?: string;
 }) {
-  const { backupId, date, summary, attachmentName, keptSnapshots } = params;
+  const { backupId, date, summary, attachmentName, keptSnapshots, sharePointLine } = params;
   const row = (sq: string, en: string, value: number) =>
     `<tr><td style="padding:4px 12px 4px 0;">${sq} <span style="color:#6b7280;">/ ${en}</span></td>` +
     `<td style="padding:4px 0;text-align:right;font-weight:600;">${value}</td></tr>`;
@@ -82,6 +84,7 @@ export function backupEmailHtml(params: {
       </table>
       <p>Bashkëngjitur: <strong>${attachmentName}</strong> — të gjitha të dhënat në një skedar.<br />
          <span style="color:#6b7280;">Attached: the complete data in one file. Keep the email and you keep the lab's record.</span></p>
+      ${sharePointLine ? `<p>${sharePointLine}</p>` : ""}
       <p style="color:#6b7280;">Një kopje ruhet gjithashtu në bazën e të dhënave si <code>${backupId}</code>
          (ruhen ${keptSnapshots} javët e fundit).<br />
          A copy is also kept in the database as <code>${backupId}</code>; the last ${keptSnapshots} weeks are retained.</p>

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { backupEmailHtml, summariseBackup } from "@/lib/backup";
 import { tiranaNow } from "@/lib/daily-tasks";
+import { probeSharePointAccess, sharePointStatusLine, uploadBackupToSharePoint } from "@/lib/sharepoint-upload";
 import type { LabState } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -108,9 +109,11 @@ function recipients() {
 /**
  * Weekly backup of the whole lab record.
  *
- * Two copies, because they fail differently: a snapshot row in the database,
- * which makes an accidental deletion a one-statement undo, and an emailed file,
- * which survives the database itself being lost. Neither is much use alone.
+ * Three copies, because they fail differently: a snapshot row in the database,
+ * which makes an accidental deletion a one-statement undo; an emailed file,
+ * which survives the database itself being lost; and a file in the lab's
+ * SharePoint site, which carries version history and Microsoft's retention.
+ * No one of them covers what the others do.
  *
  * ?dryRun=1 builds everything and reports what it would do, without writing a
  * snapshot or sending mail. ?force=1 ignores the day-of-week guard.
@@ -168,7 +171,10 @@ export async function GET(request: Request) {
       fileName,
       bytes: payload.byteLength,
       compressed: compress,
-      recipients: recipients()
+      recipients: recipients(),
+      // Read-only, so the dry run stays a dry run. Use it to confirm the Azure
+      // permission is in place without waiting for Sunday.
+      sharePoint: await probeSharePointAccess(await getGraphToken())
     });
   }
 
@@ -196,6 +202,17 @@ export async function GET(request: Request) {
     await supabase.from("app_state_backups").delete().in("id", expired);
   }
 
+  // The third copy: SharePoint, where the lab already keeps its records and
+  // where every file carries version history. Attempted before the email so the
+  // email can say whether it landed — that is what stops a silent failure from
+  // going unnoticed for months.
+  const sharePoint = await uploadBackupToSharePoint({
+    token: await getGraphToken(),
+    fileName,
+    contentType,
+    content: payload
+  });
+
   const to = recipients();
   await sendWithAttachment({
     to,
@@ -205,7 +222,8 @@ export async function GET(request: Request) {
       date: now.date,
       summary,
       attachmentName: fileName,
-      keptSnapshots: KEEP_SNAPSHOTS
+      keptSnapshots: KEEP_SNAPSHOTS,
+      sharePointLine: sharePointStatusLine(sharePoint)
     }),
     fileName,
     contentType,
@@ -221,6 +239,7 @@ export async function GET(request: Request) {
     bytes: payload.byteLength,
     compressed: compress,
     emailedTo: to.length,
-    prunedSnapshots: expired.length
+    prunedSnapshots: expired.length,
+    sharePoint
   });
 }
