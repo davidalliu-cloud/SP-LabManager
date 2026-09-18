@@ -5,6 +5,10 @@
  * never consumes a laboratory number and each register reads independently.
  *
  * The sequence restarts each month, which is what the month suffix scopes.
+ *
+ * Samples registered before September 2026 keep the form the app issued then —
+ * see LEGACY_CODE_PATTERN. The register holds both, for good, and every function
+ * here treats them as the one series they are.
  */
 export const LAB_SERIES = 0;
 export const FIELD_SERIES = 1;
@@ -13,14 +17,19 @@ export type SampleSeries = typeof LAB_SERIES | typeof FIELD_SERIES;
 export const SAMPLE_CODE_PATTERN = /^([01])-(\d+)\/(\d{2})$/;
 
 /**
- * The form the app issued before it adopted the lab's own: 2026-09-046, which
- * is the same register entry as 0-46/09.
+ * The form the app issued until September 2026: 2026-09-046, which is the same
+ * register entry as 0-46/09.
  *
- * Every function here has to understand it. When the new format shipped ahead
- * of the data being converted, the generator saw no 0-NN/MM codes at all, judged
- * September empty and issued 0-01/09 on top of a register that already ran to
- * 53. Reading both forms is what makes the changeover safe in either order, and
- * it costs nothing once the last legacy code is gone.
+ * These codes are permanent, not a migration left half-done. Samples registered
+ * under them keep them: hundreds of report PDFs already in storage have those
+ * numbers printed on the page, and sending a report attaches the stored file, so
+ * renumbering the samples would leave every one of those PDFs contradicting the
+ * register until all of them were regenerated.
+ *
+ * So every function here reads both forms, permanently. It is also what the
+ * generator needs to stay correct: when the new format shipped ahead of this, it
+ * saw no 0-NN/MM codes at all, judged September empty and issued 0-01/09 onto a
+ * register that already ran to 53.
  */
 const LEGACY_CODE_PATTERN = /^(\d{4})-(\d{2})-(\d+)$/;
 
