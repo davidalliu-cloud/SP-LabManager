@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 import { NotificationDropdown } from "@/components/notifications/notification-dropdown";
 import { SaveStatus } from "@/components/layout/save-status";
@@ -12,7 +12,20 @@ import { useI18n } from "@/lib/i18n";
 import { useLabStore } from "@/lib/lab-store";
 import { canViewClientIdentity, isTechnicianRole } from "@/lib/permissions";
 
-const navItems = [
+/**
+ * The sidebar. A plain entry is [label, href]; a group carries its own entries
+ * and renders as a collapsible section, which is what keeps Quality Management
+ * from flattening the rest of the navigation as it grows.
+ */
+type TranslationKey = Parameters<ReturnType<typeof useI18n>["t"]>[0];
+type Translate = (key: TranslationKey) => string;
+type NavEntry = readonly [TranslationKey, string];
+type NavGroup = { label: TranslationKey; prefix: string; items: readonly NavEntry[] };
+type NavNode = NavEntry | NavGroup;
+
+const isGroup = (node: NavNode): node is NavGroup => !Array.isArray(node);
+
+const navItems: readonly NavNode[] = [
   ["nav.dashboard", "/"],
   ["nav.sampleRegister", "/samples"],
   ["nav.fieldRegister", "/field"],
@@ -24,8 +37,13 @@ const navItems = [
   ["nav.employees", "/employees"],
   ["nav.delayedItems", "/delayed"],
   ["nav.monthlySummary", "/monthly-summary"],
+  {
+    label: "nav.quality",
+    prefix: "/quality",
+    items: [["nav.equipment", "/quality/equipment"]]
+  },
   ["nav.settings", "/settings"]
-] as const;
+];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -101,22 +119,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="mt-2 max-w-[13rem] text-xs leading-5 text-muted">{t("brand.domain")}</div>
         </div>
         <nav className="px-3 py-5">
-          {navItems.filter(([, href]) => showClientIdentityNav || !["/clients", "/projects"].includes(href)).map(([label, href]) => {
-            const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={`mb-1 flex min-h-11 items-center border-l-2 px-4 text-sm font-medium transition ${
-                  active
-                    ? "border-lab-burgundy bg-lab-burgundy/5 text-lab-burgundy font-semibold hover:bg-lab-burgundy hover:text-white"
-                    : "border-transparent text-ink hover:bg-lab-burgundy hover:text-white"
-                }`}
-              >
-                {t(label)}
-              </Link>
-            );
-          })}
+          {navItems
+            .filter((node) => isGroup(node) || showClientIdentityNav || !["/clients", "/projects"].includes(node[1]))
+            .map((node) =>
+              isGroup(node) ? (
+                <NavGroupSection key={node.prefix} group={node} pathname={pathname} t={t} />
+              ) : (
+                <NavLink key={node[1]} label={node[0]} href={node[1]} pathname={pathname} t={t} />
+              )
+            )}
         </nav>
       </aside>
       <div className="lg:pl-72">
@@ -160,6 +171,81 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="relative">{children}</div>
         </main>
       </div>
+    </div>
+  );
+}
+
+const linkClass = (active: boolean, indented = false) =>
+  `mb-1 flex min-h-11 items-center border-l-2 text-sm font-medium transition ${indented ? "pl-8 pr-4" : "px-4"} ${
+    active
+      ? "border-lab-burgundy bg-lab-burgundy/5 text-lab-burgundy font-semibold hover:bg-lab-burgundy hover:text-white"
+      : "border-transparent text-ink hover:bg-lab-burgundy hover:text-white"
+  }`;
+
+function NavLink({
+  label,
+  href,
+  pathname,
+  t,
+  indented
+}: {
+  label: TranslationKey;
+  href: string;
+  pathname: string;
+  t: Translate;
+  indented?: boolean;
+}) {
+  // The dashboard lives at "/", which prefixes everything, so it alone matches
+  // exactly.
+  const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+  return (
+    <Link href={href} className={linkClass(active, indented)}>
+      {t(label)}
+    </Link>
+  );
+}
+
+function NavGroupSection({
+  group,
+  pathname,
+  t
+}: {
+  group: NavGroup;
+  pathname: string;
+  t: Translate;
+}) {
+  const holdsCurrentPage = pathname.startsWith(group.prefix);
+  // Open when one of its pages is showing, so following a link never lands the
+  // user inside a section that appears closed. After that it is theirs to set.
+  const [open, setOpen] = useState(holdsCurrentPage);
+  useEffect(() => {
+    if (holdsCurrentPage) setOpen(true);
+  }, [holdsCurrentPage]);
+
+  return (
+    <div className="mb-1">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        className={`flex min-h-11 w-full items-center justify-between border-l-2 px-4 text-sm font-medium transition ${
+          holdsCurrentPage
+            ? "border-lab-burgundy text-lab-burgundy font-semibold"
+            : "border-transparent text-ink hover:bg-lab-burgundy hover:text-white"
+        }`}
+      >
+        <span>{t(group.label)}</span>
+        <span aria-hidden className={`text-xs transition-transform ${open ? "rotate-90" : ""}`}>
+          ›
+        </span>
+      </button>
+      {open ? (
+        <div className="mt-1">
+          {group.items.map(([label, href]) => (
+            <NavLink key={href} label={label} href={href} pathname={pathname} t={t} indented />
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

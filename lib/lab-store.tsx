@@ -1351,7 +1351,10 @@ function mergeWithInitialState(saved: Partial<LabState>): LabState {
     procedures: saved.procedures ?? initialState.procedures,
     procedureRevisions,
     notifications: saved.notifications ?? initialState.notifications,
-    auditLog: saved.auditLog ?? initialState.auditLog
+    auditLog: saved.auditLog ?? initialState.auditLog,
+    // A blob written before the equipment register existed has no key for it,
+    // so it takes the seeded list rather than arriving undefined.
+    equipment: saved.equipment ?? initialState.equipment
   };
 
   return mergeOfficialClientCodes2026(mergedState);

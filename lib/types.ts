@@ -1334,6 +1334,8 @@ export interface FieldRecord {
   createdAt: string;
 }
 
+import type { Equipment } from "./equipment";
+
 export interface LabState {
   users: LabUser[];
   clients: Client[];
@@ -1376,6 +1378,8 @@ export interface LabState {
   procedureRevisions: ProcedureRevision[];
   notifications: Notification[];
   auditLog: AuditLog[];
+  /** Pajisjet — ISO/IEC 17025 §6.4. See lib/equipment.ts. */
+  equipment: Equipment[];
 }
 
 /**

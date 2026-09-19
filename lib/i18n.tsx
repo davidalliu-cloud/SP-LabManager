@@ -26,6 +26,8 @@ const translations = {
     "nav.employees": "Employees",
     "nav.delayedItems": "Delayed Items",
     "nav.monthlySummary": "Monthly Summary",
+    "nav.quality": "Quality Management",
+    "nav.equipment": "Equipment",
     "nav.settings": "Settings",
 
     "status.Registered": "Registered",
@@ -211,6 +213,8 @@ const translations = {
     "nav.employees": "Punonjësit",
     "nav.delayedItems": "Vonesat",
     "nav.monthlySummary": "Përmbledhje Mujore",
+    "nav.quality": "Menaxhimi i Cilësisë",
+    "nav.equipment": "Pajisjet",
     "nav.settings": "Cilësimet",
 
     "status.Registered": "Regjistruar",

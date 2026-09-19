@@ -1,3 +1,4 @@
+import { equipmentSeed } from "./equipment-seed";
 import type { LabState } from "./types";
 
 const now = new Date().toISOString();
@@ -109,5 +110,6 @@ export const initialState: LabState = {
     createdAt: now
   })),
   notifications: [],
-  auditLog: []
+  auditLog: [],
+  equipment: equipmentSeed
 };
