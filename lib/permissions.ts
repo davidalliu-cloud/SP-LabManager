@@ -50,6 +50,17 @@ export function canRegisterSamples(role?: Role) {
   );
 }
 
+/**
+ * Who may change the equipment register.
+ *
+ * The Quality Manager keeps the calibration programme and the Head of
+ * Laboratory approves it — they are the two names on SL-FB-6.4.7 — plus the
+ * Managing Director as the account that can do anything. Everyone else reads it.
+ */
+export function canManageEquipment(role?: Role) {
+  return isSuperAdmin(role) || role === "Chief of Lab" || role === "Quality Manager";
+}
+
 export function canManageEmployees(role?: Role) {
   return isSuperAdmin(role) || role === "Chief of Lab";
 }

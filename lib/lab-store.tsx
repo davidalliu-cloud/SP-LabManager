@@ -74,7 +74,7 @@ import {
 } from "./calculations";
 import { useAuth } from "./auth";
 import { officialClientCodes2026 } from "./client-directory";
-import { canAssignSampleClient, canDeleteSamples, canEditSampleAfterRegistration, canEditTestData, canReviewTests, canGenerateReportForTest, canManageClients, canManageEmployees, canRewriteSample, isSampleLocked } from "./permissions";
+import { canAssignSampleClient, canDeleteSamples, canEditSampleAfterRegistration, canEditTestData, canReviewTests, canGenerateReportForTest, canManageClients, canManageEmployees, canManageEquipment, canRewriteSample, isSampleLocked } from "./permissions";
 import { isFieldSampleType } from "./field-register";
 import { FIELD_SERIES, LAB_SERIES, nextSampleCode } from "./sample-code";
 import { isSupersededEquipmentShape, type Equipment, type EquipmentInput } from "./equipment";
@@ -1927,6 +1927,9 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
        */
       saveEquipment(id, input) {
         setState((previous) => {
+          // The register is the Quality Manager's and the Head of Laboratory's
+          // to keep; everyone else reads it.
+          if (!canManageEquipment(currentRole)) return previous;
           const item = previous.equipment.find((row) => row.id === id);
           if (!item) return previous;
 

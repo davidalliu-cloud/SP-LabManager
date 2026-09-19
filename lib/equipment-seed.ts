@@ -171,7 +171,8 @@ const ROWS: SeedRow[] = [
     nextCalibrationPeriod: "Maj 2027",
     nextCalibrationDate: "12.05.2027",
     calibrationBody: "Drejtoria e Përgjithshme e Metrologjisë",
-    certificateCode: "LM-0526P213"
+    certificateCode: "LM-0526P213",
+    certificateUrl: "https://sarpandlab.sharepoint.com/sites/LaboratoriMaterialeve2026/Shared%20Documents/2.Dokumenta%20laboratori/SARP%20LAB%20TESTIM/Dokumenta%20akreditimi/2026/6.%20K%C3%8BRKESA%20T%C3%8B%20BURIMEVE/6.4%20Pajisjet/Kalibrime%20pajisjesh/%C3%87ertifikata%20kalibrimi/%C3%87ertifikata%20kalibrimi%20-%20LM-0526P213%20OHAUS%20210%20g.pdf"
   },
   {
     uniqueCode: "FM10",
@@ -188,7 +189,8 @@ const ROWS: SeedRow[] = [
     nextCalibrationPeriod: "Maj 2027",
     nextCalibrationDate: "12.05.2027",
     calibrationBody: "Drejtoria e Përgjithshme e Metrologjisë",
-    certificateCode: "LM-0526P214"
+    certificateCode: "LM-0526P214",
+    certificateUrl: "https://sarpandlab.sharepoint.com/sites/LaboratoriMaterialeve2026/Shared%20Documents/2.Dokumenta%20laboratori/SARP%20LAB%20TESTIM/Dokumenta%20akreditimi/2026/6.%20K%C3%8BRKESA%20T%C3%8B%20BURIMEVE/6.4%20Pajisjet/Kalibrime%20pajisjesh/%C3%87ertifikata%20kalibrimi/%C3%87ertifikata%20kalibrimi%20-%20LM-0526P214%20KERN%204200%20g.pdf"
   },
   {
     uniqueCode: "FM185",
@@ -204,7 +206,8 @@ const ROWS: SeedRow[] = [
     nextCalibrationPeriod: "Maj 2027",
     nextCalibrationDate: "12.05.2027",
     calibrationBody: "Drejtoria e Përgjithshme e Metrologjisë",
-    certificateCode: "LM-0526P215"
+    certificateCode: "LM-0526P215",
+    certificateUrl: "https://sarpandlab.sharepoint.com/sites/LaboratoriMaterialeve2026/Shared%20Documents/2.Dokumenta%20laboratori/SARP%20LAB%20TESTIM/Dokumenta%20akreditimi/2026/6.%20K%C3%8BRKESA%20T%C3%8B%20BURIMEVE/6.4%20Pajisjet/Kalibrime%20pajisjesh/%C3%87ertifikata%20kalibrimi/%C3%87ertifikata%20kalibrimi%20-%20LM-0526P215%20NECLIFE%2030%20kg.pdf"
   },
   {
     uniqueCode: "FM24",
@@ -221,7 +224,8 @@ const ROWS: SeedRow[] = [
     nextCalibrationPeriod: "Maj 2027",
     nextCalibrationDate: "12.05.2027",
     calibrationBody: "Drejtoria e Përgjithshme e Metrologjisë",
-    certificateCode: "LM-0526P217"
+    certificateCode: "LM-0526P217",
+    certificateUrl: "https://sarpandlab.sharepoint.com/sites/LaboratoriMaterialeve2026/Shared%20Documents/2.Dokumenta%20laboratori/SARP%20LAB%20TESTIM/Dokumenta%20akreditimi/2026/6.%20K%C3%8BRKESA%20T%C3%8B%20BURIMEVE/6.4%20Pajisjet/Kalibrime%20pajisjesh/%C3%87ertifikata%20kalibrimi/%C3%87ertifikata%20kalibrimi%20-%20LM-0526P217%20CONSTANT%2040kg.pdf"
   },
   {
     uniqueCode: "FM166/2",
@@ -238,7 +242,8 @@ const ROWS: SeedRow[] = [
     nextCalibrationPeriod: "Maj 2027",
     nextCalibrationDate: "12.05.2027",
     calibrationBody: "Drejtoria e Përgjithshme e Metrologjisë",
-    certificateCode: "LM-0526P216"
+    certificateCode: "LM-0526P216",
+    certificateUrl: "https://sarpandlab.sharepoint.com/sites/LaboratoriMaterialeve2026/Shared%20Documents/2.Dokumenta%20laboratori/SARP%20LAB%20TESTIM/Dokumenta%20akreditimi/2026/6.%20K%C3%8BRKESA%20T%C3%8B%20BURIMEVE/6.4%20Pajisjet/Kalibrime%20pajisjesh/%C3%87ertifikata%20kalibrimi/%C3%87ertifikata%20kalibrimi%20-%20LM-0526P216%20METTLER%20TOLEDO%208100%20g.pdf"
   },
   {
     uniqueCode: "GJ-3/6/3",
@@ -252,7 +257,8 @@ const ROWS: SeedRow[] = [
     nextCalibrationPeriod: "Shkurt 2027",
     nextCalibrationDate: "12.02.2027",
     calibrationBody: "Autoinstrument Doo",
-    certificateCode: "LM26LAB-0101"
+    certificateCode: "LM26LAB-0101",
+    certificateUrl: "https://sarpandlab.sharepoint.com/sites/LaboratoriMaterialeve2026/Shared%20Documents/2.Dokumenta%20laboratori/SARP%20LAB%20TESTIM/Dokumenta%20akreditimi/2026/6.%20K%C3%8BRKESA%20T%C3%8B%20BURIMEVE/6.4%20Pajisjet/Kalibrime%20pajisjesh/%C3%87ertifikata%20kalibrimi/LM26LAB-0101%20dial%20gauge.pdf"
   },
   {
     uniqueCode: "GJ-3/6/4",
@@ -267,7 +273,8 @@ const ROWS: SeedRow[] = [
     nextCalibrationPeriod: "Shkurt 2027",
     nextCalibrationDate: "12.02.2027",
     calibrationBody: "Autoinstrument Doo",
-    certificateCode: "LM26LAB-0098"
+    certificateCode: "LM26LAB-0098",
+    certificateUrl: "https://sarpandlab.sharepoint.com/sites/LaboratoriMaterialeve2026/Shared%20Documents/2.Dokumenta%20laboratori/SARP%20LAB%20TESTIM/Dokumenta%20akreditimi/2026/6.%20K%C3%8BRKESA%20T%C3%8B%20BURIMEVE/6.4%20Pajisjet/Kalibrime%20pajisjesh/%C3%87ertifikata%20kalibrimi/LM26LAB0098%20dial%20gauge.pdf"
   },
   {
     uniqueCode: "GJ-3/6/1",
@@ -282,7 +289,8 @@ const ROWS: SeedRow[] = [
     nextCalibrationPeriod: "Shkurt 2027",
     nextCalibrationDate: "12.02.2027",
     calibrationBody: "Autoinstrument Doo",
-    certificateCode: "LM26LAB-0097"
+    certificateCode: "LM26LAB-0097",
+    certificateUrl: "https://sarpandlab.sharepoint.com/sites/LaboratoriMaterialeve2026/Shared%20Documents/2.Dokumenta%20laboratori/SARP%20LAB%20TESTIM/Dokumenta%20akreditimi/2026/6.%20K%C3%8BRKESA%20T%C3%8B%20BURIMEVE/6.4%20Pajisjet/Kalibrime%20pajisjesh/%C3%87ertifikata%20kalibrimi/LM26LAB-0097%20dial%20gauge.pdf"
   },
   {
     uniqueCode: "GJ-3/6",
@@ -297,7 +305,8 @@ const ROWS: SeedRow[] = [
     nextCalibrationPeriod: "Shkurt 2027",
     nextCalibrationDate: "12.02.2027",
     calibrationBody: "Autoinstrument Doo",
-    certificateCode: "LM26LAB-0099"
+    certificateCode: "LM26LAB-0099",
+    certificateUrl: "https://sarpandlab.sharepoint.com/sites/LaboratoriMaterialeve2026/Shared%20Documents/2.Dokumenta%20laboratori/SARP%20LAB%20TESTIM/Dokumenta%20akreditimi/2026/6.%20K%C3%8BRKESA%20T%C3%8B%20BURIMEVE/6.4%20Pajisjet/Kalibrime%20pajisjesh/%C3%87ertifikata%20kalibrimi/LM26LAB-0099%20dial%20gauge.pdf"
   },
   {
     uniqueCode: "FM14",
@@ -328,7 +337,8 @@ const ROWS: SeedRow[] = [
     nextCalibrationPeriod: "Shkurt 2027",
     nextCalibrationDate: "12.02.2027",
     calibrationBody: "Autoinstrument Doo",
-    certificateCode: "LM26LAB-0095"
+    certificateCode: "LM26LAB-0095",
+    certificateUrl: "https://sarpandlab.sharepoint.com/sites/LaboratoriMaterialeve2026/Shared%20Documents/2.Dokumenta%20laboratori/SARP%20LAB%20TESTIM/Dokumenta%20akreditimi/2026/6.%20K%C3%8BRKESA%20T%C3%8B%20BURIMEVE/6.4%20Pajisjet/Kalibrime%20pajisjesh/%C3%87ertifikata%20kalibrimi/LM26LAB-0095%20vernier%20caliper%20FM14.pdf"
   },
   {
     uniqueCode: "LB24",
@@ -342,7 +352,8 @@ const ROWS: SeedRow[] = [
     nextCalibrationPeriod: "Shkurt 2027",
     nextCalibrationDate: "12.02.2027",
     calibrationBody: "Autoinstrument Doo",
-    certificateCode: "LM26LAB-0100"
+    certificateCode: "LM26LAB-0100",
+    certificateUrl: "https://sarpandlab.sharepoint.com/sites/LaboratoriMaterialeve2026/Shared%20Documents/2.Dokumenta%20laboratori/SARP%20LAB%20TESTIM/Dokumenta%20akreditimi/2026/6.%20K%C3%8BRKESA%20T%C3%8B%20BURIMEVE/6.4%20Pajisjet/Kalibrime%20pajisjesh/%C3%87ertifikata%20kalibrimi/LM26LAB-0100%20steel%20ruler.pdf"
   },
   {
     uniqueCode: "K6",
@@ -359,7 +370,8 @@ const ROWS: SeedRow[] = [
     nextCalibrationPeriod: "Shkurt 2027",
     nextCalibrationDate: "12.02.2027",
     calibrationBody: "Autoinstrument Doo",
-    certificateCode: "TP26LAB-0027"
+    certificateCode: "TP26LAB-0027",
+    certificateUrl: "https://sarpandlab.sharepoint.com/sites/LaboratoriMaterialeve2026/Shared%20Documents/2.Dokumenta%20laboratori/SARP%20LAB%20TESTIM/Dokumenta%20akreditimi/2026/6.%20K%C3%8BRKESA%20T%C3%8B%20BURIMEVE/6.4%20Pajisjet/Kalibrime%20pajisjesh/%C3%87ertifikata%20kalibrimi/TP26LAB-0027%20k-type.pdf"
   },
   {
     uniqueCode: "K22",
@@ -375,7 +387,8 @@ const ROWS: SeedRow[] = [
     nextCalibrationPeriod: "Shkurt 2027",
     nextCalibrationDate: "12.02.2027",
     calibrationBody: "Autoinstrument Doo",
-    certificateCode: "TP26LAB-0026"
+    certificateCode: "TP26LAB-0026",
+    certificateUrl: "https://sarpandlab.sharepoint.com/sites/LaboratoriMaterialeve2026/Shared%20Documents/2.Dokumenta%20laboratori/SARP%20LAB%20TESTIM/Dokumenta%20akreditimi/2026/6.%20K%C3%8BRKESA%20T%C3%8B%20BURIMEVE/6.4%20Pajisjet/Kalibrime%20pajisjesh/%C3%87ertifikata%20kalibrimi/TP26LAB-0026%20thermometer.pdf"
   },
   {
     uniqueCode: "K17",
@@ -390,7 +403,8 @@ const ROWS: SeedRow[] = [
     nextCalibrationPeriod: "Shkurt 2027",
     nextCalibrationDate: "12.02.2027",
     calibrationBody: "Autoinstrument Doo",
-    certificateCode: "SW26LAB-0027"
+    certificateCode: "SW26LAB-0027",
+    certificateUrl: "https://sarpandlab.sharepoint.com/sites/LaboratoriMaterialeve2026/Shared%20Documents/2.Dokumenta%20laboratori/SARP%20LAB%20TESTIM/Dokumenta%20akreditimi/2026/6.%20K%C3%8BRKESA%20T%C3%8B%20BURIMEVE/6.4%20Pajisjet/Kalibrime%20pajisjesh/%C3%87ertifikata%20kalibrimi/SW26LAB-0027%20stopwatch.pdf"
   },
   {
     uniqueCode: "GJ-DC-1",
@@ -406,7 +420,8 @@ const ROWS: SeedRow[] = [
     nextCalibrationPeriod: "Gusht 2025",
     nextCalibrationDate: "29.08.2025",
     calibrationBody: "Drejtoria e Përgjithshme e Metrologjisë",
-    certificateCode: "LP-0824M013"
+    certificateCode: "LP-0824M013",
+    certificateUrl: "https://sarpandlab.sharepoint.com/sites/LaboratoriMaterialeve2026/Shared%20Documents/2.Dokumenta%20laboratori/SARP%20LAB%20TESTIM/Dokumenta%20akreditimi/2026/6.%20K%C3%8BRKESA%20T%C3%8B%20BURIMEVE/6.4%20Pajisjet/Kalibrime%20pajisjesh/%C3%87ertifikata%20kalibrimi/LP-0824M013%20Manometer%20presioni%20controls.pdf"
   },
   {
     name: "Manometer presioni",
@@ -421,7 +436,8 @@ const ROWS: SeedRow[] = [
     nextCalibrationPeriod: "Shtator 2026",
     nextCalibrationDate: "23.09.2026",
     calibrationBody: "Drejtoria e Përgjithshme e Metrologjisë",
-    certificateCode: "LP-0925M031"
+    certificateCode: "LP-0925M031",
+    certificateUrl: "https://sarpandlab.sharepoint.com/sites/LaboratoriMaterialeve2026/Shared%20Documents/2.Dokumenta%20laboratori/SARP%20LAB%20TESTIM/Dokumenta%20akreditimi/2026/6.%20K%C3%8BRKESA%20T%C3%8B%20BURIMEVE/6.4%20Pajisjet/Kalibrime%20pajisjesh/%C3%87ertifikata%20kalibrimi/LP-0925M031%20Manometer%20presioni%20AEP%20Transducers.pdf"
   },
   {
     uniqueCode: "FM32/3",
@@ -438,7 +454,8 @@ const ROWS: SeedRow[] = [
     nextCalibrationPeriod: "Shtator 2026",
     nextCalibrationDate: "23.09.2026",
     calibrationBody: "Drejtoria e Përgjithshme e Metrologjisë",
-    certificateCode: "LP-0925M030"
+    certificateCode: "LP-0925M030",
+    certificateUrl: "https://sarpandlab.sharepoint.com/sites/LaboratoriMaterialeve2026/Shared%20Documents/2.Dokumenta%20laboratori/SARP%20LAB%20TESTIM/Dokumenta%20akreditimi/2026/6.%20K%C3%8BRKESA%20T%C3%8B%20BURIMEVE/6.4%20Pajisjet/Kalibrime%20pajisjesh/%C3%87ertifikata%20kalibrimi/LP-0925M030%20Manometer%20presioni%20(Penetrimi%20i%20betonit).pdf"
   },
   {
     uniqueCode: "FM181",

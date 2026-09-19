@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { useLabStore } from "@/lib/lab-store";
+import { canManageEquipment } from "@/lib/permissions";
 import {
   CALIBRATION_WARNING_DAYS,
   calibrationState,
@@ -29,6 +30,10 @@ export default function EquipmentDetailPage() {
   const params = useParams<{ id: string }>();
   const store = useLabStore();
   const item = store.equipment.find((row) => row.id === params.id);
+  const currentUser = store.users.find((user) => user.id === store.currentUserId);
+  // Read-only for everyone but the two roles that own the calibration
+  // programme, and the Managing Director.
+  const canEdit = canManageEquipment(currentUser?.role);
 
   const today = useMemo(() => new Date(), []);
   const [lastCalibration, setLastCalibration] = useState("");
@@ -85,6 +90,7 @@ export default function EquipmentDetailPage() {
       nextCalibrationPeriod: text("nextCalibrationPeriod"),
       calibrationBody: text("calibrationBody"),
       certificateCode: text("certificateCode"),
+      certificateUrl: text("certificateUrl"),
       location: text("location"),
       notes: text("notes"),
       status: text("status") as EquipmentStatus,
@@ -128,12 +134,70 @@ export default function EquipmentDetailPage() {
                   : "Nuk ka datë kalibrimi të regjistruar."}
         </div>
         {item.certificateCode ? (
-          <div className="mt-1 text-xs opacity-80">Çertifikata: {item.certificateCode}</div>
+          <div className="mt-2 flex flex-wrap items-center gap-3 text-xs">
+            <span className="opacity-80">Çertifikata: {item.certificateCode}</span>
+            {item.certificateUrl ? (
+              <>
+                <a
+                  href={item.certificateUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-md bg-white px-2.5 py-1.5 text-xs font-semibold text-lab-burgundy ring-1 ring-line transition hover:bg-lab-burgundy hover:text-white"
+                >
+                  Shiko çertifikatën
+                </a>
+                <a
+                  href={`${item.certificateUrl}?download=1`}
+                  className="rounded-md bg-white px-2.5 py-1.5 text-xs font-semibold text-lab-burgundy ring-1 ring-line transition hover:bg-lab-burgundy hover:text-white"
+                >
+                  Shkarko
+                </a>
+              </>
+            ) : (
+              <span className="opacity-70">Skedari i çertifikatës nuk është lidhur ende.</span>
+            )}
+          </div>
         ) : null}
       </div>
 
-      <form onSubmit={submit} className="grid gap-5 xl:grid-cols-[1fr_22rem]">
-        <div className="space-y-5">
+      <section className="surface-card mb-5">
+        <div className="border-b border-line bg-lab-porcelain px-5 py-4">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-ink">Të dhënat e regjistruara</h2>
+        </div>
+        <dl className="grid gap-x-8 gap-y-3 p-5 sm:grid-cols-2 lg:grid-cols-3">
+          <Detail label="Nr. unik i identifikimit" value={item.uniqueCode} />
+          <Detail label="Pajisja" value={item.name} />
+          <Detail label="Fusha" value={item.field} />
+          <Detail label="Intervali i matjes" value={item.measuringRange} />
+          <Detail label="Klasa" value={item.accuracyClass} />
+          <Detail label="Prodhuesi" value={item.manufacturer} />
+          <Detail label="Modeli" value={item.model} />
+          <Detail label="Nr. Serial" value={item.serialNumber} />
+          <Detail label="Lloji i kalibrimit" value={item.calibrationType} />
+          <Detail label="Organizmi kalibrues" value={item.calibrationBody} />
+          <Detail label="Data e kalibrimit aktual" value={item.lastCalibration} />
+          <Detail label="Intervali i kalibrimit" value={item.calibrationInterval} />
+          <Detail label="Kalibrimi i ardhshëm" value={item.nextCalibrationPeriod} />
+          <Detail label="Data e ardhshme e kalibrimit" value={item.nextCalibrationDate} />
+          <Detail label="Kodi i Çertifikatës" value={item.certificateCode} />
+          <Detail label="Gjendja" value={item.status} />
+          <Detail label="Vendodhja" value={item.location} />
+          <Detail label="Magazinimi" value={item.storage} />
+          <Detail label="Sasia fizike" value={item.quantity !== undefined ? String(item.quantity) : undefined} />
+          <Detail label="Përshkrimi" value={item.description} />
+          <Detail label="Shënime" value={item.notes} />
+        </dl>
+      </section>
+
+      {!canEdit ? (
+        <p className="rounded-lg border border-line bg-lab-porcelain p-4 text-sm text-muted">
+          Vetëm Menaxheri i Cilësisë, Përgjegjësi i Laboratorit dhe Administratori mund ta ndryshojnë regjistrin e
+          pajisjeve.
+        </p>
+      ) : null}
+
+      <div className="grid gap-5 xl:grid-cols-[1fr_22rem]">
+        <form onSubmit={submit} hidden={!canEdit} className="space-y-5">
           <section className="surface-card">
             <div className="border-b border-line bg-lab-porcelain px-5 py-4">
               <h2 className="text-lg font-semibold text-ink">Kalibrimi</h2>
@@ -189,6 +253,15 @@ export default function EquipmentDetailPage() {
               </Field>
               <Field label="Kodi i Çertifikatës së kalibrimit">
                 <input name="certificateCode" defaultValue={item.certificateCode ?? ""} className="input" />
+              </Field>
+              <Field label="Lidhja me çertifikatën (SharePoint)">
+                <input
+                  name="certificateUrl"
+                  type="url"
+                  defaultValue={item.certificateUrl ?? ""}
+                  placeholder="https://sarpandlab.sharepoint.com/..."
+                  className="input"
+                />
               </Field>
               <Field label="Organizmi kalibrues">
                 <input name="calibrationBody" defaultValue={item.calibrationBody ?? ""} className="input" />
@@ -264,7 +337,7 @@ export default function EquipmentDetailPage() {
               <button type="submit" className="btn-primary">Ruaj</button>
             </div>
           </section>
-        </div>
+        </form>
 
         <aside className="surface-card h-fit">
           <div className="border-b border-line bg-lab-porcelain px-5 py-4">
@@ -292,7 +365,7 @@ export default function EquipmentDetailPage() {
             )}
           </div>
         </aside>
-      </form>
+      </div>
 
       <p className="mt-4 text-xs text-muted">
         Paralajmërimi shfaqet {CALIBRATION_WARNING_DAYS} ditë përpara datës së ardhshme të kalibrimit.
@@ -307,5 +380,14 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">{label}</span>
       {children}
     </label>
+  );
+}
+
+function Detail({ label, value }: { label: string; value?: string }) {
+  return (
+    <div>
+      <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{label}</dt>
+      <dd className="mt-0.5 text-sm text-ink">{value || "—"}</dd>
+    </div>
   );
 }

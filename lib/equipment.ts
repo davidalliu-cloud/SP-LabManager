@@ -51,6 +51,12 @@ export type Equipment = {
   calibrationBody?: string;
   /** Kodi i Çertifikatës së kalibrimit */
   certificateCode?: string;
+  /**
+   * Where the certificate itself lives. SharePoint already holds them and is
+   * the controlled copy, so the register points at it rather than keeping a
+   * second copy that can drift from the first.
+   */
+  certificateUrl?: string;
 
   // --- SL-FB-6.4.1, Lista e pajisjeve laboratorike ------------------------
   /** Përshkrimi i pajisjes */
