@@ -65,8 +65,32 @@ export type Equipment = {
   notes?: string;
   status: EquipmentStatus;
 
+  /**
+   * Every calibration recorded through the app, newest first.
+   *
+   * ISO/IEC 17025 §6.4.13 wants the calibration records kept, not just the
+   * current status, and a register that only ever holds the latest date
+   * silently destroys the previous one each time it is updated. Each save that
+   * changes the calibration date files the entry that is being replaced.
+   */
+  calibrationHistory?: CalibrationEntry[];
+
   createdAt: string;
   updatedAt?: string;
+};
+
+export type CalibrationEntry = {
+  /** Data e kalibrimit aktual, as it stood */
+  lastCalibration?: string;
+  /** Data e ardhshme e kalibrimit, as it stood */
+  nextCalibrationDate?: string;
+  /** Kodi i Çertifikatës së kalibrimit */
+  certificateCode?: string;
+  /** Organizmi kalibrues */
+  calibrationBody?: string;
+  /** When the app filed it, and who was signed in */
+  recordedAt: string;
+  recordedBy?: string;
 };
 
 /**
@@ -127,6 +151,68 @@ export function parseLabDate(value?: string): Date | undefined {
   return undefined;
 }
 
+/** dd.mm.yyyy → yyyy-mm-dd, for a date input. Empty when unparseable. */
+export function toDateInputValue(value?: string) {
+  const date = parseLabDate(value);
+  if (!date) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+/**
+ * yyyy-mm-dd → dd.mm.yyyy, the way the forms are written.
+ *
+ * Storage keeps the document's own format: the register is read beside the
+ * paper record and printed from it, and a screen that says 2027-05-12 where
+ * the certificate says 12.05.2027 invites somebody to "correct" one of them.
+ */
+export function fromDateInputValue(value?: string) {
+  const raw = value?.trim();
+  if (!raw) return "";
+  const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
+  return iso ? `${iso[3]}.${iso[2]}.${iso[1]}` : raw;
+}
+
+/**
+ * What the next calibration date probably is, given when this one happened and
+ * how often the instrument is calibrated.
+ *
+ * A suggestion only. The certificate states the validity and it is the
+ * certificate that counts — SARP's own entries sit a day or two either side of
+ * the arithmetic. So this fills the field to save typing and says where the
+ * number came from, and the technician is free to overwrite it.
+ *
+ * The lab's convention is the day before the anniversary: 13.05.2026 calibrated
+ * yearly reads 12.05.2027.
+ */
+export function suggestNextCalibrationDate(lastCalibration?: string, interval?: string) {
+  const from = parseLabDate(lastCalibration);
+  if (!from) return "";
+
+  const months = intervalInMonths(interval);
+  if (!months) return "";
+
+  const next = new Date(from.getFullYear(), from.getMonth() + months, from.getDate());
+  next.setDate(next.getDate() - 1);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(next.getDate())}.${pad(next.getMonth() + 1)}.${next.getFullYear()}`;
+}
+
+/** The intervals the programme actually uses, in months. */
+function intervalInMonths(interval?: string) {
+  const text = interval?.toLocaleLowerCase("sq-AL").trim();
+  if (!text) return 0;
+  if (text.includes("herë në vit")) {
+    // "1 herë në vit" is yearly; "2 herë në vit" is twice a year, and so on.
+    const times = Number(/^(\d+)/.exec(text)?.[1] ?? 1);
+    return times > 0 ? Math.round(12 / times) : 12;
+  }
+  if (text.includes("herë në 6 muaj")) return 6;
+  if (text.includes("herë në muaj")) return 1;
+  // "Sa herë që përdoret" and "Para çdo përdorimi" have no period to add.
+  return 0;
+}
+
 /** Sorts the register by what needs attention first. */
 export function calibrationSortKey(item: Equipment, today = new Date()) {
   const due = parseLabDate(item.nextCalibrationDate);
@@ -160,3 +246,8 @@ export function equipmentNeedsAttention(item: Equipment, today = new Date()) {
   const state = calibrationState(item, today);
   return state === "overdue" || state === "due-soon";
 }
+
+/** What the edit form may change. Identity and history are not its business. */
+export type EquipmentInput = Partial<
+  Omit<Equipment, "id" | "createdAt" | "updatedAt" | "calibrationHistory">
+>;

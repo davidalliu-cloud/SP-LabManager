@@ -77,7 +77,7 @@ import { officialClientCodes2026 } from "./client-directory";
 import { canAssignSampleClient, canDeleteSamples, canEditSampleAfterRegistration, canEditTestData, canReviewTests, canGenerateReportForTest, canManageClients, canManageEmployees, canRewriteSample, isSampleLocked } from "./permissions";
 import { isFieldSampleType } from "./field-register";
 import { FIELD_SERIES, LAB_SERIES, nextSampleCode } from "./sample-code";
-import { isSupersededEquipmentShape } from "./equipment";
+import { isSupersededEquipmentShape, type Equipment, type EquipmentInput } from "./equipment";
 import { nextReportNumber } from "./report-number";
 import { initialState } from "./seed-data";
 import { deriveSampleStage, SAMPLE_STAGES } from "./sample-stage";
@@ -1012,6 +1012,7 @@ interface LabStoreValue extends LabState {
   removeEmployee: (id: string) => void;
   createClient: (input: NewClientInput) => string;
   updateClient: (id: string, input: ClientInput) => void;
+  saveEquipment: (id: string, input: EquipmentInput) => void;
   removeClient: (id: string) => { ok: boolean; message?: string };
   removeSample: (id: string) => void;
   assignSampleClient: (sampleId: string, clientId: string, projectId: string) => void;
@@ -1915,6 +1916,64 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           return draft;
         });
         return clientId;
+      },
+      /**
+       * Records a calibration, or corrects an instrument's details.
+       *
+       * When the calibration date changes, the entry being replaced is filed
+       * in the instrument's history first. A register that only ever holds the
+       * current date destroys its own evidence every time it is updated, and
+       * ISO/IEC 17025 §6.4.13 asks for the records, not just the status.
+       */
+      saveEquipment(id, input) {
+        setState((previous) => {
+          const item = previous.equipment.find((row) => row.id === id);
+          if (!item) return previous;
+
+          const recalibrated =
+            Boolean(input.lastCalibration) && input.lastCalibration !== item.lastCalibration;
+          // Only file an entry that says something: an instrument seeded
+          // without a date has nothing worth keeping as history.
+          const worthKeeping = Boolean(item.lastCalibration || item.certificateCode);
+          const history =
+            recalibrated && worthKeeping
+              ? [
+                  {
+                    lastCalibration: item.lastCalibration,
+                    nextCalibrationDate: item.nextCalibrationDate,
+                    certificateCode: item.certificateCode,
+                    calibrationBody: item.calibrationBody,
+                    recordedAt: new Date().toISOString(),
+                    recordedBy: currentUserId
+                  },
+                  ...(item.calibrationHistory ?? [])
+                ]
+              : item.calibrationHistory;
+
+          const updated: Equipment = {
+            ...item,
+            ...input,
+            calibrationHistory: history,
+            updatedAt: new Date().toISOString()
+          };
+
+          const draft: LabState = {
+            ...previous,
+            equipment: previous.equipment.map((row) => (row.id === id ? updated : row)),
+            auditLog: [...previous.auditLog]
+          };
+
+          addAudit(
+            draft,
+            recalibrated ? "equipment_calibrated" : "equipment_updated",
+            "equipment",
+            id,
+            recalibrated
+              ? `${updated.uniqueCode || updated.name}: kalibruar ${input.lastCalibration}, vlen deri ${input.nextCalibrationDate || "—"}${input.certificateCode ? `, çertifikata ${input.certificateCode}` : ""}.`
+              : `${updated.uniqueCode || updated.name}: të dhënat u përditësuan.`
+          );
+          return draft;
+        });
       },
       updateClient(id, input) {
         setState((previous) => {

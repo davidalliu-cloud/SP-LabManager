@@ -159,7 +159,11 @@ export default function EquipmentPage() {
             <tbody className="divide-y divide-line">
               {pageRows.map((item) => (
                 <tr key={item.id} className="align-top">
-                  <td className="px-4 py-3 font-semibold text-ink">{item.uniqueCode}</td>
+                  <td className="px-4 py-3 font-semibold text-ink">
+                    <Link href={`/quality/equipment/${item.id}`} className="hover:underline">
+                      {item.uniqueCode || "(pa kod)"}
+                    </Link>
+                  </td>
                   <td className="px-4 py-3">
                     <div className="font-medium text-ink">{item.name}</div>
                     {item.manufacturer || item.model ? (
