@@ -12,7 +12,7 @@ import {
   calibrationSortKey,
   calibrationState,
   daysUntil,
-  parseValidUntil,
+  parseLabDate,
   type CalibrationState,
   type Equipment
 } from "@/lib/equipment";
@@ -33,7 +33,7 @@ export default function EquipmentPage() {
 
   const today = useMemo(() => new Date(), []);
   const centres = useMemo(
-    () => Array.from(new Set(store.equipment.map((item) => item.calibrationCentre).filter(Boolean))).sort() as string[],
+    () => Array.from(new Set(store.equipment.map((item) => item.calibrationBody).filter(Boolean))).sort() as string[],
     [store.equipment]
   );
 
@@ -46,14 +46,14 @@ export default function EquipmentPage() {
   const rows = useMemo(() => {
     const query = search.trim().toLowerCase();
     const filtered = store.equipment.filter((item) => {
-      const haystack = [item.uniqueCode, item.name, item.description, item.manufacturer, item.model, item.serialNumber, item.measurementField]
+      const haystack = [item.uniqueCode, item.name, item.description, item.manufacturer, item.model, item.serialNumber, item.field]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
       return (
         (!query || haystack.includes(query)) &&
         (state === "all" || calibrationState(item, today) === state) &&
-        (centre === "all" || item.calibrationCentre === centre)
+        (centre === "all" || item.calibrationBody === centre)
       );
     });
 
@@ -61,9 +61,9 @@ export default function EquipmentPage() {
       switch (sort.key) {
         case "code": return item.uniqueCode;
         case "name": return item.name;
-        case "centre": return item.calibrationCentre ?? "";
+        case "body": return item.calibrationBody ?? "";
         case "type": return item.calibrationType ?? "";
-        case "validFrom": return parseValidUntil(item.validFrom)?.getTime() ?? 0;
+        case "lastCalibration": return parseLabDate(item.lastCalibration)?.getTime() ?? 0;
         default: return calibrationSortKey(item, today);
       }
     };
@@ -78,7 +78,7 @@ export default function EquipmentPage() {
     <>
       <PageHeader
         title="Pajisjet"
-        description="Regjistri i pajisjeve laboratorike — SL-FB-6.4.1 dhe programi i kalibrimeve SL-FP-6.4.7."
+        description="Regjistri i pajisjeve laboratorike — SL-FB-6.4.7 Programi i kalibrimit të pajisjeve laboratorike, versioni 7 (viti 2026)."
       />
 
       {/* What needs attention, before the table. Overdue is separated from due
@@ -132,7 +132,7 @@ export default function EquipmentPage() {
             </select>
           </label>
           <label>
-            <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">Qendra e kalibrimit</span>
+            <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted">Organizmi kalibrues</span>
             <select value={centre} onChange={(event) => setCentre(event.target.value)} className="input">
               <option value="all">Të gjitha</option>
               {centres.map((name) => (
@@ -148,12 +148,12 @@ export default function EquipmentPage() {
               <tr>
                 <SortableTh label="Kodi unik" sortKey="code" sort={sort} onToggle={toggle} className="px-4 py-3" />
                 <SortableTh label="Pajisja" sortKey="name" sort={sort} onToggle={toggle} className="px-4 py-3" />
-                <th className="px-4 py-3">Fusha e provës / matjeve</th>
-                <SortableTh label="Qendra e kalibrimit" sortKey="centre" sort={sort} onToggle={toggle} className="px-4 py-3" />
-                <SortableTh label="Tipi" sortKey="type" sort={sort} onToggle={toggle} className="px-4 py-3" />
-                <SortableTh label="Fillimi i validimit" sortKey="validFrom" sort={sort} onToggle={toggle} className="px-4 py-3" />
-                <SortableTh label="Mbarimi i validimit" sortKey="calibration" sort={sort} onToggle={toggle} className="px-4 py-3" />
-                <th className="px-4 py-3">Frekuenca</th>
+                <th className="px-4 py-3">Fusha</th>
+                <SortableTh label="Organizmi kalibrues" sortKey="body" sort={sort} onToggle={toggle} className="px-4 py-3" />
+                <SortableTh label="Lloji i kalibrimit" sortKey="type" sort={sort} onToggle={toggle} className="px-4 py-3" />
+                <SortableTh label="Data e kalibrimit aktual" sortKey="lastCalibration" sort={sort} onToggle={toggle} className="px-4 py-3" />
+                <SortableTh label="Data e ardhshme e kalibrimit" sortKey="calibration" sort={sort} onToggle={toggle} className="px-4 py-3" />
+                <th className="px-4 py-3">Intervali</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
@@ -166,12 +166,12 @@ export default function EquipmentPage() {
                       <div className="text-xs text-muted">{[item.manufacturer, item.model].filter(Boolean).join(" · ")}</div>
                     ) : null}
                   </td>
-                  <td className="max-w-80 px-4 py-3 text-muted">{item.measurementField ?? "—"}</td>
-                  <td className="px-4 py-3">{item.calibrationCentre ?? "—"}</td>
+                  <td className="max-w-80 px-4 py-3 text-muted">{item.field ?? "—"}</td>
+                  <td className="px-4 py-3">{item.calibrationBody ?? "—"}</td>
                   <td className="px-4 py-3">{item.calibrationType ?? "—"}</td>
-                  <td className="px-4 py-3 tabular-nums">{item.validFrom || "—"}</td>
+                  <td className="px-4 py-3 tabular-nums">{item.lastCalibration || "—"}</td>
                   <td className="px-4 py-3"><ValidUntilCell item={item} today={today} /></td>
-                  <td className="px-4 py-3 text-muted">{item.calibrationFrequency ?? "—"}</td>
+                  <td className="px-4 py-3 text-muted">{item.calibrationInterval ?? "—"}</td>
                 </tr>
               ))}
               {pageRows.length === 0 ? (
@@ -202,11 +202,11 @@ export default function EquipmentPage() {
  */
 function ValidUntilCell({ item, today }: { item: Equipment; today: Date }) {
   const state = calibrationState(item, today);
-  const due = parseValidUntil(item.validUntil);
+  const due = parseLabDate(item.nextCalibrationDate);
 
   if (state === "none") return <span className="text-muted">—</span>;
   // "Në përdorimin tjetër" is a real entry, not a missing date.
-  if (state === "not-dated") return <span className="text-muted">{item.validUntil}</span>;
+  if (state === "not-dated") return <span className="text-muted">{item.nextCalibrationDate}</span>;
 
   const days = due ? daysUntil(due, today) : 0;
   const tone =
@@ -218,7 +218,7 @@ function ValidUntilCell({ item, today }: { item: Equipment; today: Date }) {
 
   return (
     <span className={`inline-flex flex-col gap-0.5 rounded px-2 py-1 ${tone}`}>
-      <span className="font-semibold tabular-nums">{item.validUntil}</span>
+      <span className="font-semibold tabular-nums">{item.nextCalibrationDate}</span>
       {state === "overdue" ? (
         <span className="text-[11px]">E skaduar {Math.abs(days)} ditë më parë</span>
       ) : state === "due-soon" ? (

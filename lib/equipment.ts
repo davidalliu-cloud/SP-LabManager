@@ -1,43 +1,63 @@
 /**
  * Pajisjet — the equipment register, ISO/IEC 17025 §6.4.
  *
- * Two controlled documents describe the same instruments and this register
- * holds both, joined on the unique identification code:
+ * The field names below are the columns of SL-FB-6.4.7 PROGRAMI I KALIBRIMIT TË
+ * PAJISJEVE LABORATORIKE (Versioni 7, viti 2026), kept word for word. The
+ * register is assessed against the documented system, so the screen has to read
+ * as the same record rather than a re-imagining of it.
  *
- *   SL-FB-6.4.1  LISTA E PAJISJEVE LABORATORIKE — what the instrument is
- *   SL-FP-6.4.7  PROGRAMI I KALIBRIMEVE — when it was calibrated and until when
- *
- * The field names below are the columns of those forms, deliberately unchanged.
- * The register is assessed against the documented system, so the screen has to
- * be readable as the same record, not a re-imagining of it.
- *
- * Not every item is calibrated. Most of the 1,100 inventory rows are sieves and
- * glassware carrying identity only, so every calibration field is optional and
- * an item without them is complete, not unfinished.
+ * The inventory form SL-FB-6.4.1 describes the same instruments in less detail
+ * and adds where each one is kept; its columns are here too, optional, so the
+ * ~1,100 uncalibrated items can join the register later without reshaping it.
  */
-export type CalibrationType = "I.J" | "I.B";
-
 export type EquipmentStatus = "Në përdorim" | "Jashtë përdorimit" | "Në riparim" | "Hequr nga përdorimi";
 
 export type Equipment = {
   id: string;
 
-  // --- SL-FB-6.4.1, Lista e pajisjeve laboratorike -------------------------
-  /** Kodi unik i identifikimit — FM 38/1, K 12, GJ 6. The key to everything. */
+  // --- SL-FB-6.4.7, Programi i kalibrimit ---------------------------------
+  /** Nr. unik i identifikimit — FM38/1, K12, GJ-3/6. The key to everything. */
   uniqueCode: string;
   /** Pajisja */
   name: string;
-  /** Përshkrimi i pajisjes */
-  description?: string;
+  /** Fusha — the measurement domain: forcë, peshë, gjatësi, temperaturë… */
+  field?: string;
+  /** Intervali i matjes */
+  measuringRange?: string;
+  /** Klasa */
+  accuracyClass?: string;
   /** Prodhuesi */
   manufacturer?: string;
   /** Modeli */
   model?: string;
-  /** Numri serial */
+  /** Nr. Serial */
   serialNumber?: string;
+  /** Lloji i kalibrimit — "I jashtëm" or "I brendshëm" */
+  calibrationType?: string;
+  /** Data e kalibrimit aktual */
+  lastCalibration?: string;
+  /** Intervali i kalibrimit — "1 herë në vit" */
+  calibrationInterval?: string;
+  /** Kalibrimi i ardhshëm — the planned month, "Gusht 2026" */
+  nextCalibrationPeriod?: string;
+  /**
+   * Data e ardhshme e kalibrimit. This is the date the register is judged on
+   * and the one the warning counts down to. Some instruments are verified
+   * before each use rather than to a date, so anything unparseable is shown as
+   * written and never counted down.
+   */
+  nextCalibrationDate?: string;
+  /** Organizmi kalibrues */
+  calibrationBody?: string;
+  /** Kodi i Çertifikatës së kalibrimit */
+  certificateCode?: string;
+
+  // --- SL-FB-6.4.1, Lista e pajisjeve laboratorike ------------------------
+  /** Përshkrimi i pajisjes */
+  description?: string;
   /** Sasia fizike */
   quantity?: number;
-  /** Vendodhja — the lab area code, 01/A and the like */
+  /** Vendodhja */
   location?: string;
   /** Magazinimi */
   storage?: string;
@@ -45,34 +65,14 @@ export type Equipment = {
   notes?: string;
   status: EquipmentStatus;
 
-  // --- SL-FP-6.4.7, Programi i kalibrimeve ---------------------------------
-  /** Fusha e provës/matjeve ku përdoret instrumenti */
-  measurementField?: string;
-  /** Qendra e kalibrimit */
-  calibrationCentre?: string;
-  /** Tipi i kalibrimit — I.J external, I.B in-house against traceable standards */
-  calibrationType?: CalibrationType;
-  /** Fillimi i validimit — the calibration date */
-  validFrom?: string;
-  /**
-   * Mbarimi i validimit. Some instruments are verified before each use rather
-   * than to a date ("Në përdorimin tjetër"), so this is free text on the form.
-   * A parseable date drives the warning; anything else is shown as written.
-   */
-  validUntil?: string;
-  /** Frekuenca e kalibrimit — "1 herë në vit", "Sa herë që përdoret" */
-  calibrationFrequency?: string;
-  /** Çertifikata e kalibrimit — certificate reference */
-  certificateNumber?: string;
-
   createdAt: string;
   updatedAt?: string;
 };
 
 /**
- * How near the end of validity an instrument has to be before the register
+ * How near the next calibration an instrument has to be before the register
  * says so. One month, as the lab asked — long enough to book an external
- * calibration centre, short enough not to cry wolf all year.
+ * calibration body, short enough not to cry wolf all year.
  */
 export const CALIBRATION_WARNING_DAYS = 30;
 
@@ -80,16 +80,17 @@ export type CalibrationState = "overdue" | "due-soon" | "valid" | "not-dated" | 
 
 /**
  * Overdue and due-soon are deliberately separate states, not two shades of the
- * same one. "Due soon" is a task for whoever books calibrations. "Overdue"
- * means the instrument's traceability has lapsed and results produced with it
- * are open to challenge — a different thing to act on, and a different urgency.
+ * same one. "Due soon" is a booking for whoever arranges calibration.
+ * "Overdue" means the instrument's traceability has lapsed and results
+ * produced with it are open to challenge — a different thing to act on, and a
+ * different urgency.
  */
-export function calibrationState(item: Pick<Equipment, "validUntil">, today = new Date()): CalibrationState {
-  const raw = item.validUntil?.trim();
+export function calibrationState(item: Pick<Equipment, "nextCalibrationDate">, today = new Date()): CalibrationState {
+  const raw = item.nextCalibrationDate?.trim();
   if (!raw) return "none";
-  const due = parseValidUntil(raw);
-  // "Në përdorimin tjetër" and "Para çdo përdorimi" are real entries on the
-  // form: verified at next use, so there is no date to count down to.
+  const due = parseLabDate(raw);
+  // Entries such as "Në përdorimin tjetër" are real answers on the form:
+  // verified at next use, so there is no date to count down to.
   if (!due) return "not-dated";
   const days = daysUntil(due, today);
   if (days < 0) return "overdue";
@@ -104,10 +105,10 @@ export function daysUntil(due: Date, today = new Date()) {
 }
 
 /**
- * The forms are written by hand in Albanian practice: 26.08.2025. ISO dates
- * are accepted too, since anything typed into the app will be one.
+ * The forms are written in Albanian practice: 31.08.2026. ISO dates are
+ * accepted too, since anything typed into the app will be one.
  */
-export function parseValidUntil(value?: string): Date | undefined {
+export function parseLabDate(value?: string): Date | undefined {
   const raw = value?.trim();
   if (!raw) return undefined;
 
@@ -126,11 +127,11 @@ export function parseValidUntil(value?: string): Date | undefined {
   return undefined;
 }
 
-/** Sorts the register by what needs attention first, then by code. */
+/** Sorts the register by what needs attention first. */
 export function calibrationSortKey(item: Equipment, today = new Date()) {
-  const due = parseValidUntil(item.validUntil);
-  // No date sorts last: it is either an item that is not calibrated at all or
-  // one verified at each use, and neither is a deadline.
+  const due = parseLabDate(item.nextCalibrationDate);
+  // No date sorts last: the instrument is either not calibrated at all or
+  // verified at each use, and neither is a deadline.
   if (!due) return Number.MAX_SAFE_INTEGER;
   return daysUntil(due, today);
 }
