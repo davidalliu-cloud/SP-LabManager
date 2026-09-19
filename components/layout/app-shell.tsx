@@ -111,14 +111,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </svg>
         Versioni Mobil
       </Link>
-      <aside className="no-print fixed inset-y-0 left-0 z-30 hidden w-72 overflow-hidden border-r border-line bg-white lg:block">
-        <div className="border-b border-line px-6 py-8">
+      <aside className="no-print fixed inset-y-0 left-0 z-30 hidden w-72 flex-col overflow-hidden border-r border-line bg-white lg:flex">
+        <div className="shrink-0 border-b border-line px-6 py-8">
           <img src="/brand/sarp-logo.png" alt="SARP" className="h-auto w-40" />
           <div className="mt-6 text-[11px] font-semibold uppercase tracking-[0.2em] text-lab-burgundy">SARP Laboratory</div>
           <div className="mt-2 text-xl font-bold tracking-[-0.01em] leading-tight text-ink">{t("brand.lab")}</div>
           <div className="mt-2 max-w-[13rem] text-xs leading-5 text-muted">{t("brand.domain")}</div>
         </div>
-        <nav className="px-3 py-5">
+        <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-5">
           {navItems
             .filter((node) => isGroup(node) || showClientIdentityNav || !["/clients", "/projects"].includes(node[1]))
             .map((node) =>
