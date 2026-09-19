@@ -1,50 +1,50 @@
 /**
- * Sample register numbers, in the form SARP writes them on its paperwork:
- * series, sequence, month — 0-46/09 for a laboratory sample, 1-01/09 for work
- * done on site. The two series run side by side, so a sample taken in the field
- * never consumes a laboratory number and each register reads independently.
+ * Sample register numbers.
  *
- * The sequence restarts each month, which is what the month suffix scopes.
+ * The laboratory register is, and stays, YYYY-MM-NNN — 2026-09-054. It runs
+ * unbroken from the first sample the app ever registered, and every new sample
+ * simply continues it. Report PDFs already in storage carry these numbers on the
+ * page, so the series is not something to reshape.
  *
- * Samples registered before September 2026 keep the form the app issued then —
- * see LEGACY_CODE_PATTERN. The register holds both, for good, and every function
- * here treats them as the one series they are.
+ * The Field Register is the one exception, and a deliberate one: work carried
+ * out on site is numbered 1-NN/MM, its own series restarting each month, so a
+ * sample taken in the field never consumes a laboratory number and the two
+ * registers can be read independently.
  */
 export const LAB_SERIES = 0;
 export const FIELD_SERIES = 1;
 export type SampleSeries = typeof LAB_SERIES | typeof FIELD_SERIES;
 
-export const SAMPLE_CODE_PATTERN = /^([01])-(\d+)\/(\d{2})$/;
+/** The laboratory register: 2026-09-054. */
+const LAB_CODE_PATTERN = /^(\d{4})-(\d{2})-(\d+)$/;
+
+/** The field register: 1-01/09. */
+const FIELD_CODE_PATTERN = /^1-(\d+)\/(\d{2})$/;
 
 /**
- * The form the app issued until September 2026: 2026-09-046, which is the same
- * register entry as 0-46/09.
- *
- * These codes are permanent, not a migration left half-done. Samples registered
- * under them keep them: hundreds of report PDFs already in storage have those
- * numbers printed on the page, and sending a report attaches the stored file, so
- * renumbering the samples would leave every one of those PDFs contradicting the
- * register until all of them were regenerated.
- *
- * So every function here reads both forms, permanently. It is also what the
- * generator needs to stay correct: when the new format shipped ahead of this, it
- * saw no 0-NN/MM codes at all, judged September empty and issued 0-01/09 onto a
- * register that already ran to 53.
+ * A short-lived third form, 0-54/09, issued to three samples on 18 September
+ * 2026 before the laboratory register was put back to YYYY-MM-NNN. Those three
+ * were renumbered, so none should remain — it is still counted here so that a
+ * straggler could never be handed a number already in use.
  */
-const LEGACY_CODE_PATTERN = /^(\d{4})-(\d{2})-(\d+)$/;
+const WITHDRAWN_LAB_CODE_PATTERN = /^0-(\d+)\/(\d{2})$/;
 
-/** Both forms, reduced to series, sequence and month, or undefined. */
+/** Any of the forms, reduced to series, sequence and month. */
 function parseSampleCode(code: string | undefined, year?: number) {
-  const current = SAMPLE_CODE_PATTERN.exec(code ?? "");
-  if (current) {
-    return { series: Number(current[1]) as SampleSeries, sequence: Number(current[2]), month: current[3] };
+  const lab = LAB_CODE_PATTERN.exec(code ?? "");
+  // A laboratory code carries its year, so when a year is in hand only that
+  // year's codes count — otherwise next January would number itself against
+  // this January's.
+  if (lab && (year === undefined || Number(lab[1]) === year)) {
+    return { series: LAB_SERIES as SampleSeries, sequence: Number(lab[3]), month: lab[2] };
   }
-  const legacy = LEGACY_CODE_PATTERN.exec(code ?? "");
-  // Legacy codes carry their year where the new form does not, so when a year
-  // is in hand only that year's codes count — otherwise next January would
-  // number itself against this January's.
-  if (legacy && (year === undefined || Number(legacy[1]) === year)) {
-    return { series: LAB_SERIES as SampleSeries, sequence: Number(legacy[3]), month: legacy[2] };
+  const field = FIELD_CODE_PATTERN.exec(code ?? "");
+  if (field) {
+    return { series: FIELD_SERIES as SampleSeries, sequence: Number(field[1]), month: field[2] };
+  }
+  const withdrawn = WITHDRAWN_LAB_CODE_PATTERN.exec(code ?? "");
+  if (withdrawn) {
+    return { series: LAB_SERIES as SampleSeries, sequence: Number(withdrawn[1]), month: withdrawn[2] };
   }
   return undefined;
 }
@@ -61,37 +61,38 @@ export function sampleCodeSeries(code?: string): SampleSeries | undefined {
 /**
  * The next number in `series` for the month `dateReceived` falls in.
  *
- * Taken from the highest already issued that month in that series, not from a
- * count — a count breaks the moment the set has a gap or a duplicate, which is
- * how 09-035 once became 09-037, and a deletion would make it reuse a number
- * still in use. Max + 1 survives both.
+ * Taken from the highest already issued that month, not from a count — a count
+ * breaks the moment the set has a gap or a duplicate, which is how 09-035 once
+ * became 09-037, and a deletion would make it reuse a number still in use.
+ * Max + 1 survives both.
  */
 export function nextSampleCode(series: SampleSeries, dateReceived: string, existingCodes: string[]) {
   const date = new Date(`${dateReceived}T00:00:00`);
-  const month = String(
-    Number.isNaN(date.getTime()) ? new Date().getMonth() + 1 : date.getMonth() + 1
-  ).padStart(2, "0");
-  const year = Number.isNaN(date.getTime()) ? new Date().getFullYear() : date.getFullYear();
-  // Both forms count. A register half-converted is still one register, and the
-  // next number has to clear everything in it.
+  const valid = !Number.isNaN(date.getTime());
+  const month = String((valid ? date : new Date()).getMonth() + 1).padStart(2, "0");
+  const year = (valid ? date : new Date()).getFullYear();
+
   const highest = existingCodes.reduce((max, code) => {
     const parsed = parseSampleCode(code, year);
     return parsed && parsed.series === series && parsed.month === month
       ? Math.max(max, parsed.sequence)
       : max;
   }, 0);
-  return `${series}-${String(highest + 1).padStart(2, "0")}/${month}`;
+  const next = highest + 1;
+
+  return series === FIELD_SERIES
+    ? `1-${String(next).padStart(2, "0")}/${month}`
+    : `${year}-${month}-${String(next).padStart(3, "0")}`;
 }
 
 /**
  * A key that sorts register numbers the way the register reads: series, then
- * month, then sequence as a number. Sorting the raw text puts 0-9/09 after
- * 0-46/09, and groups every month's 0-1 together.
+ * month, then sequence as a number. The laboratory form is fixed-width and
+ * sorts correctly as text on its own, but the field form does not — 1-9/09
+ * would land after 1-46/09 — and the two must not interleave.
  *
- * Legacy codes reduce to the same key as their new-format equivalent, so a
- * half-converted register still reads in one order instead of splitting into
- * two blocks. Anything unrecognised keeps its own text, so a stray code lands
- * somewhere stable rather than collapsing to one position.
+ * Anything unrecognised keeps its own text, so a stray code lands somewhere
+ * stable rather than collapsing to one position.
  */
 export function sampleCodeSortKey(value?: string) {
   const parsed = parseSampleCode(value);
