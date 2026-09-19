@@ -136,6 +136,26 @@ export function calibrationSortKey(item: Equipment, today = new Date()) {
   return daysUntil(due, today);
 }
 
+/**
+ * Records written by the first version of the register, before the columns were
+ * aligned to SL-FB-6.4.7 Versioni 7.
+ *
+ * These names existed only in that shape, so finding one is proof the saved
+ * list predates the current record. It matters because the app saves its whole
+ * state every 800 ms: a tab left open on the older build writes its copy back,
+ * and the new screen then reads fields those rows do not have and shows a
+ * register with no dates in it at all. Detecting them lets the next load put
+ * the correct list back rather than needing the database edited by hand.
+ */
+const SUPERSEDED_KEYS = ["validUntil", "validFrom", "measurementField", "calibrationCentre", "calibrationFrequency"];
+
+export function isSupersededEquipmentShape(rows: unknown): boolean {
+  if (!Array.isArray(rows) || rows.length === 0) return false;
+  return rows.some(
+    (row) => typeof row === "object" && row !== null && SUPERSEDED_KEYS.some((key) => key in (row as Record<string, unknown>))
+  );
+}
+
 export function equipmentNeedsAttention(item: Equipment, today = new Date()) {
   const state = calibrationState(item, today);
   return state === "overdue" || state === "due-soon";

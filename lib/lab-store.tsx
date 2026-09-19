@@ -77,6 +77,7 @@ import { officialClientCodes2026 } from "./client-directory";
 import { canAssignSampleClient, canDeleteSamples, canEditSampleAfterRegistration, canEditTestData, canReviewTests, canGenerateReportForTest, canManageClients, canManageEmployees, canRewriteSample, isSampleLocked } from "./permissions";
 import { isFieldSampleType } from "./field-register";
 import { FIELD_SERIES, LAB_SERIES, nextSampleCode } from "./sample-code";
+import { isSupersededEquipmentShape } from "./equipment";
 import { nextReportNumber } from "./report-number";
 import { initialState } from "./seed-data";
 import { deriveSampleStage, SAMPLE_STAGES } from "./sample-stage";
@@ -1353,8 +1354,14 @@ function mergeWithInitialState(saved: Partial<LabState>): LabState {
     notifications: saved.notifications ?? initialState.notifications,
     auditLog: saved.auditLog ?? initialState.auditLog,
     // A blob written before the equipment register existed has no key for it,
-    // so it takes the seeded list rather than arriving undefined.
-    equipment: saved.equipment ?? initialState.equipment
+    // so it takes the seeded list rather than arriving undefined. A blob holding
+    // the register's first shape is replaced too: those rows carry none of the
+    // fields the screen now reads, and keeping them would leave the register
+    // looking empty with no way back short of editing the database.
+    equipment:
+      !saved.equipment || isSupersededEquipmentShape(saved.equipment)
+        ? initialState.equipment
+        : saved.equipment
   };
 
   return mergeOfficialClientCodes2026(mergedState);
