@@ -84,7 +84,7 @@ export default function EquipmentPage() {
       {/* What needs attention, before the table. Overdue is separated from due
           soon because they call for different things: one is a booking to make,
           the other is an instrument whose traceability has lapsed. */}
-      <section className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <CountTile
           label="Kalibrimi i skaduar"
           sub="Validity expired"
@@ -106,6 +106,15 @@ export default function EquipmentPage() {
           value={counts["not-dated"]}
           tone="muted"
           onClick={() => setState("not-dated")}
+        />
+        {/* The inventory: sieves, moulds and glassware with no calibration of
+            their own. Most of the register, and never a deadline. */}
+        <CountTile
+          label="Pa kalibrim"
+          sub="Inventory only"
+          value={counts.none}
+          tone="muted"
+          onClick={() => setState("none")}
         />
       </section>
 

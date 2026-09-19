@@ -6,9 +6,11 @@
  * register is assessed against the documented system, so the screen has to read
  * as the same record rather than a re-imagining of it.
  *
- * The inventory form SL-FB-6.4.1 describes the same instruments in less detail
- * and adds where each one is kept; its columns are here too, optional, so the
- * ~1,100 uncalibrated items can join the register later without reshaping it.
+ * The inventory form SL-FB-6.4.1 supplies the rest of the register: what each
+ * item is and where it is kept, for the sieves, moulds and glassware that carry
+ * no calibration of their own. Its columns sit below, all optional, because an
+ * item with identity and nothing else is a complete record, not a half-filled
+ * one.
  */
 export type EquipmentStatus = "Në përdorim" | "Jashtë përdorimit" | "Në riparim" | "Hequr nga përdorimi";
 
@@ -61,6 +63,8 @@ export type Equipment = {
   // --- SL-FB-6.4.1, Lista e pajisjeve laboratorike ------------------------
   /** Përshkrimi i pajisjes */
   description?: string;
+  /** Nr. — the item's line in the inventory, where it has one */
+  inventoryNo?: number;
   /** Sasia fizike */
   quantity?: number;
   /** Vendodhja */
@@ -257,3 +261,35 @@ export function equipmentNeedsAttention(item: Equipment, today = new Date()) {
 export type EquipmentInput = Partial<
   Omit<Equipment, "id" | "createdAt" | "updatedAt" | "calibrationHistory">
 >;
+
+/**
+ * The register is mostly static reference data: 837 of its records are sieves,
+ * moulds and glassware that came straight from SL-FB-6.4.1 and will never be
+ * touched. Persisting all of them would add over 200 KB to every save, and the
+ * app writes its whole state every 800 ms — so the cost would land on every
+ * action in the app, not just on this page.
+ *
+ * Instead the seed ships with the code and only what has actually been changed
+ * is stored. A record is worth persisting when someone has edited it, or when
+ * it is not in the seed at all because it was added later.
+ */
+export function equipmentForPersistence(equipment: Equipment[], seed: Equipment[]) {
+  const seeded = new Set(seed.map((item) => item.id));
+  return equipment.filter((item) => item.updatedAt || !seeded.has(item.id));
+}
+
+/**
+ * Puts the register back together: the seed, with anything saved laid over it,
+ * then anything saved that the seed does not know about.
+ *
+ * Note this cannot express a deletion of a seeded item — there is no delete in
+ * the register today, and when there is, it will need a tombstone rather than
+ * an absence, because absence is what an untouched record already looks like.
+ */
+export function mergeEquipmentWithSeed(saved: Equipment[] | undefined, seed: Equipment[]) {
+  if (!saved?.length) return seed;
+  const overrides = new Map(saved.map((item) => [item.id, item]));
+  const merged = seed.map((item) => overrides.get(item.id) ?? item);
+  const seeded = new Set(seed.map((item) => item.id));
+  return [...merged, ...saved.filter((item) => !seeded.has(item.id))];
+}

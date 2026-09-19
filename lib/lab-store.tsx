@@ -77,7 +77,13 @@ import { officialClientCodes2026 } from "./client-directory";
 import { canAssignSampleClient, canDeleteSamples, canEditSampleAfterRegistration, canEditTestData, canReviewTests, canGenerateReportForTest, canManageClients, canManageEmployees, canManageEquipment, canRewriteSample, isSampleLocked } from "./permissions";
 import { isFieldSampleType } from "./field-register";
 import { FIELD_SERIES, LAB_SERIES, nextSampleCode } from "./sample-code";
-import { isSupersededEquipmentShape, type Equipment, type EquipmentInput } from "./equipment";
+import {
+  equipmentForPersistence,
+  isSupersededEquipmentShape,
+  mergeEquipmentWithSeed,
+  type Equipment,
+  type EquipmentInput
+} from "./equipment";
 import { nextReportNumber } from "./report-number";
 import { initialState } from "./seed-data";
 import { deriveSampleStage, SAMPLE_STAGES } from "./sample-stage";
@@ -1100,8 +1106,13 @@ const KEEP_ACTIVITY_IN_BLOB = false;
 
 /** What actually gets persisted, as opposed to what is held in memory. */
 function forPersistence(state: LabState): LabState {
-  if (KEEP_ACTIVITY_IN_BLOB) return state;
-  return { ...state, auditLog: [], notifications: [] };
+  const trimmed = {
+    ...state,
+    // Only equipment somebody has actually changed; the rest is in the seed.
+    equipment: equipmentForPersistence(state.equipment, initialState.equipment)
+  };
+  if (KEEP_ACTIVITY_IN_BLOB) return trimmed;
+  return { ...trimmed, auditLog: [], notifications: [] };
 }
 
 /**
@@ -1359,10 +1370,9 @@ function mergeWithInitialState(saved: Partial<LabState>): LabState {
     // the register's first shape is replaced too: those rows carry none of the
     // fields the screen now reads, and keeping them would leave the register
     // looking empty with no way back short of editing the database.
-    equipment:
-      !saved.equipment || isSupersededEquipmentShape(saved.equipment)
-        ? initialState.equipment
-        : saved.equipment
+    equipment: isSupersededEquipmentShape(saved.equipment)
+      ? initialState.equipment
+      : mergeEquipmentWithSeed(saved.equipment, initialState.equipment)
   };
 
   return mergeOfficialClientCodes2026(mergedState);
