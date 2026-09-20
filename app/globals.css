@@ -992,6 +992,36 @@ textarea {
     @apply w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-ink outline-none transition placeholder:text-slate-400 focus:border-lab-burgundy focus:ring-2 focus:ring-lab-burgundy/15;
   }
 
+  /*
+   * A data-entry input, for forms that sit on a tinted panel.
+   *
+   * .input is white with a very light border, which is right on a page that is
+   * mostly reading and occasionally typing. On a form whose whole purpose is
+   * typing, white-on-white leaves nothing to aim at: the fields disappear into
+   * the card. This keeps the white fill, so it still reads as "empty, put
+   * something here", and earns its edges back with a darker border and a little
+   * weight on the value.
+   */
+  .field {
+    @apply w-full rounded-md border border-slate-300 bg-white px-3 py-2.5 text-sm font-medium text-ink shadow-sm outline-none transition placeholder:font-normal placeholder:text-slate-400 focus:border-lab-burgundy focus:ring-2 focus:ring-lab-burgundy/20;
+  }
+
+  /*
+   * Hides the browser's number spinners. On a field that carries its unit as a
+   * suffix inside the box, the spinner lands on top of the unit and neither is
+   * readable; and nobody enters 22.4 °C by clicking an arrow 224 times.
+   */
+  .no-spinner::-webkit-outer-spin-button,
+  .no-spinner::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .no-spinner {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
   .surface-card {
     @apply rounded-lg border border-line bg-white;
   }
