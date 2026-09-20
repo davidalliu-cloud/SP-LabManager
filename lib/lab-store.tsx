@@ -78,6 +78,7 @@ import { canAssignSampleClient, canDeleteSamples, canEditSampleAfterRegistration
 import { isFieldSampleType } from "./field-register";
 import { FIELD_SERIES, LAB_SERIES, nextSampleCode } from "./sample-code";
 import type { EnvironmentReading, EnvironmentReadingInput } from "./environment";
+import type { ProficiencyInput, ProficiencyTest } from "./proficiency";
 import {
   nextComplaintNumber,
   nextNonconformityNumber,
@@ -1032,6 +1033,8 @@ interface LabStoreValue extends LabState {
   raiseNonconformity: (input: NonconformityInput) => string | undefined;
   saveNonconformity: (id: string, input: Partial<NonconformityInput>) => void;
   logComplaint: (input: ComplaintInput) => string | undefined;
+  saveProficiencyTest: (id: string | undefined, input: ProficiencyInput) => void;
+  deleteProficiencyTest: (id: string) => void;
   saveComplaint: (id: string, input: Partial<ComplaintInput>) => void;
   deleteEnvironmentReading: (id: string) => void;
   removeClient: (id: string) => { ok: boolean; message?: string };
@@ -1388,6 +1391,7 @@ function mergeWithInitialState(saved: Partial<LabState>): LabState {
     environmentReadings: saved.environmentReadings ?? initialState.environmentReadings,
     nonconformities: saved.nonconformities ?? initialState.nonconformities,
     complaints: saved.complaints ?? initialState.complaints,
+    proficiencyTests: saved.proficiencyTests ?? initialState.proficiencyTests,
     equipment: isSupersededEquipmentShape(saved.equipment)
       ? initialState.equipment
       : mergeEquipmentWithSeed(saved.equipment, initialState.equipment)
@@ -1991,6 +1995,53 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             auditLog: [...previous.auditLog]
           };
           addAudit(draft, "nonconformity_updated", "nonconformity", id, `JK nr. ${updated.number} u përditësua.`);
+          return draft;
+        });
+      },
+      /**
+       * Files a proficiency test or interlaboratory comparison round.
+       *
+       * The verdict is never stored: it is computed from the z-score wherever
+       * it is shown, so the register cannot disagree with its own numbers.
+       */
+      saveProficiencyTest(id, input) {
+        setState((previous) => {
+          if (!canCloseNonconformity(currentRole)) return previous;
+          const existing = id ? previous.proficiencyTests.find((row) => row.id === id) : undefined;
+          const item: ProficiencyTest = {
+            ...input,
+            id: existing?.id ?? crypto.randomUUID(),
+            createdAt: existing?.createdAt ?? new Date().toISOString(),
+            updatedAt: existing ? new Date().toISOString() : undefined
+          };
+          const draft: LabState = {
+            ...previous,
+            proficiencyTests: existing
+              ? previous.proficiencyTests.map((row) => (row.id === existing.id ? item : row))
+              : [item, ...previous.proficiencyTests],
+            auditLog: [...previous.auditLog]
+          };
+          addAudit(
+            draft,
+            existing ? "proficiency_updated" : "proficiency_recorded",
+            "proficiency",
+            item.id,
+            `${item.testName} (${item.matrix}) — ${item.organiser}, ${item.period}`
+          );
+          return draft;
+        });
+      },
+      deleteProficiencyTest(id) {
+        setState((previous) => {
+          if (!canCloseNonconformity(currentRole)) return previous;
+          const item = previous.proficiencyTests.find((row) => row.id === id);
+          if (!item) return previous;
+          const draft: LabState = {
+            ...previous,
+            proficiencyTests: previous.proficiencyTests.filter((row) => row.id !== id),
+            auditLog: [...previous.auditLog]
+          };
+          addAudit(draft, "proficiency_deleted", "proficiency", id, `${item.testName} u fshi.`);
           return draft;
         });
       },

@@ -1337,6 +1337,7 @@ export interface FieldRecord {
 import type { Equipment } from "./equipment";
 import type { EnvironmentReading } from "./environment";
 import type { Complaint, Nonconformity } from "./nonconformity";
+import type { ProficiencyTest } from "./proficiency";
 
 export interface LabState {
   users: LabUser[];
@@ -1388,6 +1389,8 @@ export interface LabState {
   nonconformities: Nonconformity[];
   /** Ankesat — §7.9, SL-RP-7.9. */
   complaints: Complaint[];
+  /** Testet e zotësisë — §7.7, SL-RP-7.7.1k. */
+  proficiencyTests: ProficiencyTest[];
 }
 
 /**

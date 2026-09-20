@@ -1,4 +1,5 @@
 import { equipmentSeed } from "./equipment-seed";
+import { proficiencySeed } from "./proficiency-seed";
 import type { LabState } from "./types";
 
 const now = new Date().toISOString();
@@ -114,5 +115,6 @@ export const initialState: LabState = {
   equipment: equipmentSeed,
   environmentReadings: [],
   nonconformities: [],
-  complaints: []
+  complaints: [],
+  proficiencyTests: proficiencySeed
 };

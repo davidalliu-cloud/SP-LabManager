@@ -32,6 +32,7 @@ const translations = {
     "nav.environment": "Environmental Conditions",
     "nav.nonconformities": "Nonconforming Work",
     "nav.complaints": "Complaints",
+    "nav.proficiency": "Proficiency Testing",
     "nav.settings": "Settings",
 
     "status.Registered": "Registered",
@@ -223,6 +224,7 @@ const translations = {
     "nav.environment": "Kushtet ambjentale",
     "nav.nonconformities": "Punët jokonforme",
     "nav.complaints": "Ankesat",
+    "nav.proficiency": "Testet e zotësisë",
     "nav.settings": "Cilësimet",
 
     "status.Registered": "Regjistruar",

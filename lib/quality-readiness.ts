@@ -2,6 +2,7 @@ import { calibrationState, type Equipment } from "./equipment";
 import { LAB_AREAS, isWorkingDay, missingDays, readingState, toIsoDate, type EnvironmentReading } from "./environment";
 import { previousWorkingDay } from "./environment-reminder";
 import { dueState, nonconformityStatus, type Complaint, type Nonconformity } from "./nonconformity";
+import { coverageByMatrix, inCycle, needsAction, type ProficiencyTest } from "./proficiency";
 import { isOverdue } from "./status";
 import type { LabState } from "./types";
 
@@ -31,7 +32,10 @@ export type ReadinessItem = {
   href: string;
 };
 
-type Source = Pick<LabState, "equipment" | "environmentReadings" | "nonconformities" | "complaints" | "tests" | "reports">;
+type Source = Pick<
+  LabState,
+  "equipment" | "environmentReadings" | "nonconformities" | "complaints" | "tests" | "reports" | "proficiencyTests"
+>;
 
 export function buildReadiness(state: Source, today = new Date()): ReadinessItem[] {
   const items: ReadinessItem[] = [];
@@ -169,6 +173,28 @@ export function buildReadiness(state: Source, today = new Date()): ReadinessItem
     count: completedWithoutReport,
     level: completedWithoutReport ? "attention" : "ok",
     href: "/tests"
+  });
+
+  // --- §7.7 Testet e zotësisë --------------------------------------------
+  // The four-year cycle is what the assessor measures, and a matrix with
+  // history but nothing in the current cycle is precisely the shape of the
+  // finding raised in March 2025.
+  const pts: ProficiencyTest[] = state.proficiencyTests ?? [];
+  const year = today.getFullYear();
+  const uncovered = coverageByMatrix(pts, year).filter((coverage) => coverage.rounds === 0).length;
+  const poorResults = pts.filter((item) => inCycle(item, year) && needsAction(item)).length;
+  items.push({
+    key: "proficiency",
+    clause: "7.7",
+    title: "Testet e zotësisë (PT / ILC)",
+    detail: uncovered
+      ? `${uncovered} matrica pa pjesëmarrje në ciklin aktual${poorResults ? `, ${poorResults} rezultate jo të kënaqshme` : ""}`
+      : poorResults
+        ? `${poorResults} rezultate jo të kënaqshme në ciklin aktual`
+        : "Të gjitha matricat me pjesëmarrje në cikël",
+    count: uncovered || poorResults,
+    level: uncovered ? "overdue" : poorResults ? "attention" : "ok",
+    href: "/quality/proficiency"
   });
 
   return items;
