@@ -112,5 +112,7 @@ export const initialState: LabState = {
   notifications: [],
   auditLog: [],
   equipment: equipmentSeed,
-  environmentReadings: []
+  environmentReadings: [],
+  nonconformities: [],
+  complaints: []
 };

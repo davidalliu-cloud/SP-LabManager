@@ -74,10 +74,18 @@ import {
 } from "./calculations";
 import { useAuth } from "./auth";
 import { officialClientCodes2026 } from "./client-directory";
-import { canAssignSampleClient, canDeleteSamples, canEditSampleAfterRegistration, canEditTestData, canReviewTests, canGenerateReportForTest, canAmendEnvironment, canManageClients, canManageEmployees, canManageEquipment, canRecordEnvironment, canRewriteSample, isSampleLocked } from "./permissions";
+import { canAssignSampleClient, canDeleteSamples, canEditSampleAfterRegistration, canEditTestData, canReviewTests, canGenerateReportForTest, canAmendEnvironment, canCloseNonconformity, canManageClients, canManageEmployees, canManageEquipment, canRaiseNonconformity, canRecordEnvironment, canRewriteSample, isSampleLocked } from "./permissions";
 import { isFieldSampleType } from "./field-register";
 import { FIELD_SERIES, LAB_SERIES, nextSampleCode } from "./sample-code";
 import type { EnvironmentReading, EnvironmentReadingInput } from "./environment";
+import {
+  nextComplaintNumber,
+  nextNonconformityNumber,
+  type Complaint,
+  type ComplaintInput,
+  type Nonconformity,
+  type NonconformityInput
+} from "./nonconformity";
 import {
   equipmentForPersistence,
   isSupersededEquipmentShape,
@@ -1021,6 +1029,10 @@ interface LabStoreValue extends LabState {
   updateClient: (id: string, input: ClientInput) => void;
   saveEquipment: (id: string, input: EquipmentInput) => void;
   recordEnvironmentReading: (input: EnvironmentReadingInput) => void;
+  raiseNonconformity: (input: NonconformityInput) => string | undefined;
+  saveNonconformity: (id: string, input: Partial<NonconformityInput>) => void;
+  logComplaint: (input: ComplaintInput) => string | undefined;
+  saveComplaint: (id: string, input: Partial<ComplaintInput>) => void;
   deleteEnvironmentReading: (id: string) => void;
   removeClient: (id: string) => { ok: boolean; message?: string };
   removeSample: (id: string) => void;
@@ -1374,6 +1386,8 @@ function mergeWithInitialState(saved: Partial<LabState>): LabState {
     // fields the screen now reads, and keeping them would leave the register
     // looking empty with no way back short of editing the database.
     environmentReadings: saved.environmentReadings ?? initialState.environmentReadings,
+    nonconformities: saved.nonconformities ?? initialState.nonconformities,
+    complaints: saved.complaints ?? initialState.complaints,
     equipment: isSupersededEquipmentShape(saved.equipment)
       ? initialState.equipment
       : mergeEquipmentWithSeed(saved.equipment, initialState.equipment)
@@ -1930,6 +1944,90 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           return draft;
         });
         return clientId;
+      },
+      /**
+       * Raises a nonconformity, numbered on from the paper register.
+       *
+       * Returns its id so a complaint that raised it can record which one.
+       */
+      raiseNonconformity(input) {
+        if (!canRaiseNonconformity(currentRole)) return undefined;
+        const id = crypto.randomUUID();
+        setState((previous) => {
+          const item: Nonconformity = {
+            ...input,
+            id,
+            number: nextNonconformityNumber(previous.nonconformities),
+            createdAt: new Date().toISOString()
+          };
+          const draft: LabState = {
+            ...previous,
+            nonconformities: [item, ...previous.nonconformities],
+            auditLog: [...previous.auditLog]
+          };
+          addAudit(draft, "nonconformity_raised", "nonconformity", id, `JK nr. ${item.number}: ${item.description.slice(0, 120)}`);
+          return draft;
+        });
+        return id;
+      },
+      saveNonconformity(id, input) {
+        setState((previous) => {
+          const item = previous.nonconformities.find((row) => row.id === id);
+          if (!item) return previous;
+          // Raising one is everyone's business; closing one is not. The root
+          // cause, the action and the verification carry the Quality Manager's
+          // signature on SL-FP-7.10.1, so they are gated together.
+          const closing =
+            input.rootCause !== undefined ||
+            input.correctiveAction !== undefined ||
+            input.effectivenessCheck !== undefined ||
+            input.completedDate !== undefined;
+          if (closing && !canCloseNonconformity(currentRole)) return previous;
+
+          const updated: Nonconformity = { ...item, ...input, updatedAt: new Date().toISOString() };
+          const draft: LabState = {
+            ...previous,
+            nonconformities: previous.nonconformities.map((row) => (row.id === id ? updated : row)),
+            auditLog: [...previous.auditLog]
+          };
+          addAudit(draft, "nonconformity_updated", "nonconformity", id, `JK nr. ${updated.number} u përditësua.`);
+          return draft;
+        });
+      },
+      logComplaint(input) {
+        if (!canRaiseNonconformity(currentRole)) return undefined;
+        const id = crypto.randomUUID();
+        setState((previous) => {
+          const item: Complaint = {
+            ...input,
+            id,
+            number: nextComplaintNumber(previous.complaints),
+            createdAt: new Date().toISOString()
+          };
+          const draft: LabState = {
+            ...previous,
+            complaints: [item, ...previous.complaints],
+            auditLog: [...previous.auditLog]
+          };
+          addAudit(draft, "complaint_logged", "complaint", id, `Ankesa nr. ${item.number}: ${item.complainant}`);
+          return draft;
+        });
+        return id;
+      },
+      saveComplaint(id, input) {
+        setState((previous) => {
+          const item = previous.complaints.find((row) => row.id === id);
+          if (!item) return previous;
+          if (!canCloseNonconformity(currentRole)) return previous;
+          const updated: Complaint = { ...item, ...input, updatedAt: new Date().toISOString() };
+          const draft: LabState = {
+            ...previous,
+            complaints: previous.complaints.map((row) => (row.id === id ? updated : row)),
+            auditLog: [...previous.auditLog]
+          };
+          addAudit(draft, "complaint_updated", "complaint", id, `Ankesa nr. ${updated.number} u përditësua.`);
+          return draft;
+        });
       },
       /**
        * Files an ambient conditions reading for one area.

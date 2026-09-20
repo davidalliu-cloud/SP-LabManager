@@ -77,6 +77,25 @@ export function canAmendEnvironment(role?: Role) {
   return isSuperAdmin(role) || role === "Chief of Lab" || role === "Quality Manager";
 }
 
+/**
+ * Who may raise a nonconformity or log a complaint.
+ *
+ * Anyone signed in. A nonconformity nobody can raise is one that gets discussed
+ * in the corridor instead of recorded, and §7.10 expects the lab to act when
+ * any of its work does not conform — not only when a manager notices.
+ */
+export function canRaiseNonconformity(role?: Role) {
+  return Boolean(role);
+}
+
+/**
+ * Who may close one: sign off the root cause, the action and the verification
+ * of effectiveness. On SL-FP-7.10.1 that signature is the Quality Manager's.
+ */
+export function canCloseNonconformity(role?: Role) {
+  return isSuperAdmin(role) || role === "Chief of Lab" || role === "Quality Manager";
+}
+
 export function canManageEmployees(role?: Role) {
   return isSuperAdmin(role) || role === "Chief of Lab";
 }

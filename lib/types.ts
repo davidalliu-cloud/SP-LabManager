@@ -1336,6 +1336,7 @@ export interface FieldRecord {
 
 import type { Equipment } from "./equipment";
 import type { EnvironmentReading } from "./environment";
+import type { Complaint, Nonconformity } from "./nonconformity";
 
 export interface LabState {
   users: LabUser[];
@@ -1383,6 +1384,10 @@ export interface LabState {
   equipment: Equipment[];
   /** Kushtet ambjentale — §6.3, SL-RB-6.3.1. See lib/environment.ts. */
   environmentReadings: EnvironmentReading[];
+  /** Punët jokonforme — §7.10 / §8.7, SL-RP-7.10.2. */
+  nonconformities: Nonconformity[];
+  /** Ankesat — §7.9, SL-RP-7.9. */
+  complaints: Complaint[];
 }
 
 /**

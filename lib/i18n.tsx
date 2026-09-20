@@ -29,6 +29,8 @@ const translations = {
     "nav.quality": "Quality Management",
     "nav.equipment": "Equipment",
     "nav.environment": "Environmental Conditions",
+    "nav.nonconformities": "Nonconforming Work",
+    "nav.complaints": "Complaints",
     "nav.settings": "Settings",
 
     "status.Registered": "Registered",
@@ -217,6 +219,8 @@ const translations = {
     "nav.quality": "Menaxhimi i Cilësisë",
     "nav.equipment": "Pajisjet",
     "nav.environment": "Kushtet ambjentale",
+    "nav.nonconformities": "Punët jokonforme",
+    "nav.complaints": "Ankesat",
     "nav.settings": "Cilësimet",
 
     "status.Registered": "Regjistruar",
