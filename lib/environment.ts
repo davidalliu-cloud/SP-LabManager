@@ -122,8 +122,12 @@ export function toIsoDate(date: Date) {
 }
 
 /**
- * The working days of a month that have no reading for an area, up to today —
- * a future day is not yet missing.
+ * The working days of a month that have no reading for an area, up to today.
+ *
+ * Two days are not gaps. A future day has not happened yet. And a day before
+ * this area was ever recorded is not a lapse in the register — it is a day
+ * before the register was in use, and reporting those would open the screen on
+ * a wall of red that says nothing about how the lab is being run.
  */
 export function missingDays(params: {
   year: number;
@@ -133,17 +137,22 @@ export function missingDays(params: {
   today?: Date;
 }) {
   const { year, month, areaCode, readings, today = new Date() } = params;
-  const recorded = new Set(
-    readings.filter((reading) => reading.areaCode === areaCode).map((reading) => reading.date)
-  );
+  const forArea = readings.filter((reading) => reading.areaCode === areaCode);
+  const recorded = new Set(forArea.map((reading) => reading.date));
   const todayIso = toIsoDate(today);
+  // Nothing is missing for an area that has never been recorded at all.
+  const firstRecorded = forArea.reduce<string | undefined>(
+    (earliest, reading) => (!earliest || reading.date < earliest ? reading.date : earliest),
+    undefined
+  );
+  if (!firstRecorded) return [];
 
   const days: string[] = [];
   const cursor = new Date(year, month - 1, 1);
   while (cursor.getMonth() === month - 1) {
     const iso = toIsoDate(cursor);
     if (iso > todayIso) break;
-    if (isWorkingDay(cursor) && !recorded.has(iso)) days.push(iso);
+    if (iso >= firstRecorded && isWorkingDay(cursor) && !recorded.has(iso)) days.push(iso);
     cursor.setDate(cursor.getDate() + 1);
   }
   return days;

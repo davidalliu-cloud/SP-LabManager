@@ -45,8 +45,13 @@ export function buildReminderDigest(readings: EnvironmentReading[], date: string
   const previousDate = previousWorkingDay(date);
   const previous = previousDate ? forDay(previousDate) : [];
   const previousCodes = new Set(previous.map((reading) => reading.areaCode));
+  // An area counts as missing only once it has been recorded at least once.
+  // Before that the register was simply not in use for it, and opening with a
+  // failure nobody could have avoided teaches everyone to discount the ones
+  // that follow.
+  const everRecorded = new Set(readings.map((reading) => reading.areaCode));
   const previousMissing = previousDate
-    ? LAB_AREAS.filter((area) => !previousCodes.has(area.code)).map((area) => area.code)
+    ? LAB_AREAS.filter((area) => everRecorded.has(area.code) && !previousCodes.has(area.code)).map((area) => area.code)
     : [];
   const previousOutOfTolerance = previous.filter((reading) => readingState(reading) === "out-of-tolerance");
 
@@ -69,7 +74,7 @@ function areaName(code: string) {
   return LAB_AREAS.find((area) => area.code === code)?.name ?? "";
 }
 
-export function reminderEmailHtml(digest: ReminderDigest, appUrl: string) {
+export function reminderEmailHtml(digest: ReminderDigest, appUrl: string, hasHistory = true) {
   const list = (codes: string[]) =>
     codes
       .map(
@@ -86,9 +91,15 @@ export function reminderEmailHtml(digest: ReminderDigest, appUrl: string) {
            Regjistrimi i munguar duhet plotësuar ose arsyetuar te shënimet e matjes më të afërt.
          </div>
        </div>`
-    : `<div style="margin:16px 0;padding:12px 14px;border-left:4px solid #16a34a;background:#f0fdf4;color:#14532d;">
-         Të gjitha ambjentet u regjistruan më ${formatDay(digest.previousDate)}.
-       </div>`;
+    : hasHistory
+      ? `<div style="margin:16px 0;padding:12px 14px;border-left:4px solid #16a34a;background:#f0fdf4;color:#14532d;">
+           Të gjitha ambjentet u regjistruan më ${formatDay(digest.previousDate)}.
+         </div>`
+      : // Nothing recorded yet anywhere: there is no previous day to report on,
+        // and claiming a clean one would be a lie of omission.
+        `<div style="margin:16px 0;padding:12px 14px;border-left:4px solid #9ca3af;background:#f9fafb;color:#374151;">
+           Regjistri sapo është hapur — ende pa matje të mëparshme për të krahasuar.
+         </div>`;
 
   const outOfToleranceBlock = digest.previousOutOfTolerance.length
     ? `<div style="margin:16px 0;padding:12px 14px;border-left:4px solid #dc2626;background:#fef2f2;color:#7f1d1d;">

@@ -134,7 +134,12 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: true, dryRun: true, to, cc, ...digest });
   }
 
-  await sendMail({ to, cc, subject: digest.subject, html: reminderEmailHtml(digest, appUrl) });
+  await sendMail({
+    to,
+    cc,
+    subject: digest.subject,
+    html: reminderEmailHtml(digest, appUrl, (state.environmentReadings ?? []).length > 0)
+  });
 
   await supabase
     .from("app_state")
