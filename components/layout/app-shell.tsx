@@ -40,7 +40,10 @@ const navItems: readonly NavNode[] = [
   {
     label: "nav.quality",
     prefix: "/quality",
-    items: [["nav.equipment", "/quality/equipment"]]
+    items: [
+      ["nav.equipment", "/quality/equipment"],
+      ["nav.environment", "/quality/environment"]
+    ]
   },
   ["nav.settings", "/settings"]
 ];

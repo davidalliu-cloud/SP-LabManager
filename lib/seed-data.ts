@@ -111,5 +111,6 @@ export const initialState: LabState = {
   })),
   notifications: [],
   auditLog: [],
-  equipment: equipmentSeed
+  equipment: equipmentSeed,
+  environmentReadings: []
 };

@@ -61,6 +61,22 @@ export function canManageEquipment(role?: Role) {
   return isSuperAdmin(role) || role === "Chief of Lab" || role === "Quality Manager";
 }
 
+/**
+ * Who may record the ambient conditions.
+ *
+ * Everyone who works in the lab: SL-PB-6.3 §3.2 makes monitoring and recording
+ * the conditions of their own area a duty of the personnel, not of management.
+ * A reading nobody is allowed to enter is a reading that does not get taken.
+ */
+export function canRecordEnvironment(role?: Role) {
+  return Boolean(role);
+}
+
+/** Correcting or removing a reading already filed stays with the register's owners. */
+export function canAmendEnvironment(role?: Role) {
+  return isSuperAdmin(role) || role === "Chief of Lab" || role === "Quality Manager";
+}
+
 export function canManageEmployees(role?: Role) {
   return isSuperAdmin(role) || role === "Chief of Lab";
 }

@@ -28,6 +28,7 @@ const translations = {
     "nav.monthlySummary": "Monthly Summary",
     "nav.quality": "Quality Management",
     "nav.equipment": "Equipment",
+    "nav.environment": "Environmental Conditions",
     "nav.settings": "Settings",
 
     "status.Registered": "Registered",
@@ -215,6 +216,7 @@ const translations = {
     "nav.monthlySummary": "Përmbledhje Mujore",
     "nav.quality": "Menaxhimi i Cilësisë",
     "nav.equipment": "Pajisjet",
+    "nav.environment": "Kushtet ambjentale",
     "nav.settings": "Cilësimet",
 
     "status.Registered": "Regjistruar",

@@ -1335,6 +1335,7 @@ export interface FieldRecord {
 }
 
 import type { Equipment } from "./equipment";
+import type { EnvironmentReading } from "./environment";
 
 export interface LabState {
   users: LabUser[];
@@ -1380,6 +1381,8 @@ export interface LabState {
   auditLog: AuditLog[];
   /** Pajisjet — ISO/IEC 17025 §6.4. See lib/equipment.ts. */
   equipment: Equipment[];
+  /** Kushtet ambjentale — §6.3, SL-RB-6.3.1. See lib/environment.ts. */
+  environmentReadings: EnvironmentReading[];
 }
 
 /**

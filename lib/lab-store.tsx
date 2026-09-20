@@ -74,9 +74,10 @@ import {
 } from "./calculations";
 import { useAuth } from "./auth";
 import { officialClientCodes2026 } from "./client-directory";
-import { canAssignSampleClient, canDeleteSamples, canEditSampleAfterRegistration, canEditTestData, canReviewTests, canGenerateReportForTest, canManageClients, canManageEmployees, canManageEquipment, canRewriteSample, isSampleLocked } from "./permissions";
+import { canAssignSampleClient, canDeleteSamples, canEditSampleAfterRegistration, canEditTestData, canReviewTests, canGenerateReportForTest, canAmendEnvironment, canManageClients, canManageEmployees, canManageEquipment, canRecordEnvironment, canRewriteSample, isSampleLocked } from "./permissions";
 import { isFieldSampleType } from "./field-register";
 import { FIELD_SERIES, LAB_SERIES, nextSampleCode } from "./sample-code";
+import type { EnvironmentReading, EnvironmentReadingInput } from "./environment";
 import {
   equipmentForPersistence,
   isSupersededEquipmentShape,
@@ -1019,6 +1020,8 @@ interface LabStoreValue extends LabState {
   createClient: (input: NewClientInput) => string;
   updateClient: (id: string, input: ClientInput) => void;
   saveEquipment: (id: string, input: EquipmentInput) => void;
+  recordEnvironmentReading: (input: EnvironmentReadingInput) => void;
+  deleteEnvironmentReading: (id: string) => void;
   removeClient: (id: string) => { ok: boolean; message?: string };
   removeSample: (id: string) => void;
   assignSampleClient: (sampleId: string, clientId: string, projectId: string) => void;
@@ -1370,6 +1373,7 @@ function mergeWithInitialState(saved: Partial<LabState>): LabState {
     // the register's first shape is replaced too: those rows carry none of the
     // fields the screen now reads, and keeping them would leave the register
     // looking empty with no way back short of editing the database.
+    environmentReadings: saved.environmentReadings ?? initialState.environmentReadings,
     equipment: isSupersededEquipmentShape(saved.equipment)
       ? initialState.equipment
       : mergeEquipmentWithSeed(saved.equipment, initialState.equipment)
@@ -1926,6 +1930,62 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           return draft;
         });
         return clientId;
+      },
+      /**
+       * Files an ambient conditions reading for one area.
+       *
+       * One reading per area per day is what the procedure asks for, so a
+       * second reading on the same date replaces the first rather than
+       * stacking up — somebody correcting a mistyped figure should not leave
+       * two contradictory rows in an accreditation record.
+       */
+      recordEnvironmentReading(input) {
+        setState((previous) => {
+          if (!canRecordEnvironment(currentRole)) return previous;
+          const existing = previous.environmentReadings.find(
+            (row) => row.areaCode === input.areaCode && row.date === input.date
+          );
+          const reading: EnvironmentReading = {
+            id: existing?.id ?? crypto.randomUUID(),
+            areaCode: input.areaCode,
+            date: input.date,
+            time: input.time,
+            temperature: input.temperature,
+            humidity: input.humidity,
+            notes: input.notes,
+            recordedBy: currentUserId,
+            createdAt: existing?.createdAt ?? new Date().toISOString()
+          };
+          const draft: LabState = {
+            ...previous,
+            environmentReadings: existing
+              ? previous.environmentReadings.map((row) => (row.id === existing.id ? reading : row))
+              : [reading, ...previous.environmentReadings],
+            auditLog: [...previous.auditLog]
+          };
+          addAudit(
+            draft,
+            existing ? "environment_reading_amended" : "environment_reading_recorded",
+            "environment",
+            reading.id,
+            `${input.areaCode} ${input.date}: ${input.temperature ?? "—"} °C, ${input.humidity ?? "—"} %`
+          );
+          return draft;
+        });
+      },
+      deleteEnvironmentReading(id) {
+        setState((previous) => {
+          if (!canAmendEnvironment(currentRole)) return previous;
+          const reading = previous.environmentReadings.find((row) => row.id === id);
+          if (!reading) return previous;
+          const draft: LabState = {
+            ...previous,
+            environmentReadings: previous.environmentReadings.filter((row) => row.id !== id),
+            auditLog: [...previous.auditLog]
+          };
+          addAudit(draft, "environment_reading_deleted", "environment", id, `${reading.areaCode} ${reading.date} u fshi.`);
+          return draft;
+        });
       },
       /**
        * Records a calibration, or corrects an instrument's details.
