@@ -78,6 +78,7 @@ import { canAssignSampleClient, canDeleteSamples, canEditSampleAfterRegistration
 import { isFieldSampleType } from "./field-register";
 import { FIELD_SERIES, LAB_SERIES, nextSampleCode } from "./sample-code";
 import type { EnvironmentReading, EnvironmentReadingInput } from "./environment";
+import type { AuditEntry, AuditEntryInput } from "./internal-audit";
 import type { ProficiencyInput, ProficiencyTest } from "./proficiency";
 import {
   nextComplaintNumber,
@@ -1034,6 +1035,7 @@ interface LabStoreValue extends LabState {
   saveNonconformity: (id: string, input: Partial<NonconformityInput>) => void;
   logComplaint: (input: ComplaintInput) => string | undefined;
   saveProficiencyTest: (id: string | undefined, input: ProficiencyInput) => void;
+  saveAuditEntry: (input: AuditEntryInput) => void;
   deleteProficiencyTest: (id: string) => void;
   saveComplaint: (id: string, input: Partial<ComplaintInput>) => void;
   deleteEnvironmentReading: (id: string) => void;
@@ -1392,6 +1394,7 @@ function mergeWithInitialState(saved: Partial<LabState>): LabState {
     nonconformities: saved.nonconformities ?? initialState.nonconformities,
     complaints: saved.complaints ?? initialState.complaints,
     proficiencyTests: saved.proficiencyTests ?? initialState.proficiencyTests,
+    auditEntries: saved.auditEntries ?? initialState.auditEntries,
     equipment: isSupersededEquipmentShape(saved.equipment)
       ? initialState.equipment
       : mergeEquipmentWithSeed(saved.equipment, initialState.equipment)
@@ -1995,6 +1998,42 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             auditLog: [...previous.auditLog]
           };
           addAudit(draft, "nonconformity_updated", "nonconformity", id, `JK nr. ${updated.number} u përditësua.`);
+          return draft;
+        });
+      },
+      /**
+       * Plans or records the audit of one clause area in one year.
+       *
+       * Keyed on year and clause rather than an id, because that pair is what
+       * the plan is: one row per clause per year. Setting it twice edits the
+       * same row instead of leaving the matrix with two answers for one cell.
+       */
+      saveAuditEntry(input) {
+        setState((previous) => {
+          if (!canCloseNonconformity(currentRole)) return previous;
+          const existing = previous.auditEntries.find(
+            (row) => row.year === input.year && row.clause === input.clause
+          );
+          const entry: AuditEntry = {
+            ...input,
+            id: existing?.id ?? crypto.randomUUID(),
+            createdAt: existing?.createdAt ?? new Date().toISOString(),
+            updatedAt: existing ? new Date().toISOString() : undefined
+          };
+          const draft: LabState = {
+            ...previous,
+            auditEntries: existing
+              ? previous.auditEntries.map((row) => (row.id === existing.id ? entry : row))
+              : [...previous.auditEntries, entry],
+            auditLog: [...previous.auditLog]
+          };
+          addAudit(
+            draft,
+            entry.completedDate ? "internal_audit_completed" : "internal_audit_planned",
+            "internal_audit",
+            entry.id,
+            `Pika ${entry.clause}, viti ${entry.year}${entry.completedDate ? ` — kryer më ${entry.completedDate}` : ""}`
+          );
           return draft;
         });
       },

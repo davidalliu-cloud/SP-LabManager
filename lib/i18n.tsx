@@ -33,6 +33,7 @@ const translations = {
     "nav.nonconformities": "Nonconforming Work",
     "nav.complaints": "Complaints",
     "nav.proficiency": "Proficiency Testing",
+    "nav.internalAudit": "Internal Audits",
     "nav.settings": "Settings",
 
     "status.Registered": "Registered",
@@ -225,6 +226,7 @@ const translations = {
     "nav.nonconformities": "Punët jokonforme",
     "nav.complaints": "Ankesat",
     "nav.proficiency": "Testet e zotësisë",
+    "nav.internalAudit": "Auditimet e brendshme",
     "nav.settings": "Cilësimet",
 
     "status.Registered": "Regjistruar",

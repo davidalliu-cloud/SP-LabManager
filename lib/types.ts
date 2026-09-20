@@ -1337,6 +1337,7 @@ export interface FieldRecord {
 import type { Equipment } from "./equipment";
 import type { EnvironmentReading } from "./environment";
 import type { Complaint, Nonconformity } from "./nonconformity";
+import type { AuditEntry } from "./internal-audit";
 import type { ProficiencyTest } from "./proficiency";
 
 export interface LabState {
@@ -1391,6 +1392,8 @@ export interface LabState {
   complaints: Complaint[];
   /** Testet e zotësisë — §7.7, SL-RP-7.7.1k. */
   proficiencyTests: ProficiencyTest[];
+  /** Auditimet e brendshme — §8.8, SL-FM-8.8.3. */
+  auditEntries: AuditEntry[];
 }
 
 /**

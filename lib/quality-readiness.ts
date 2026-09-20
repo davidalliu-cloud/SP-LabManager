@@ -2,6 +2,7 @@ import { calibrationState, type Equipment } from "./equipment";
 import { LAB_AREAS, isWorkingDay, missingDays, readingState, toIsoDate, type EnvironmentReading } from "./environment";
 import { previousWorkingDay } from "./environment-reminder";
 import { dueState, nonconformityStatus, type Complaint, type Nonconformity } from "./nonconformity";
+import { summariseAuditYear, type AuditEntry } from "./internal-audit";
 import { coverageByMatrix, inCycle, needsAction, type ProficiencyTest } from "./proficiency";
 import { isOverdue } from "./status";
 import type { LabState } from "./types";
@@ -34,7 +35,7 @@ export type ReadinessItem = {
 
 type Source = Pick<
   LabState,
-  "equipment" | "environmentReadings" | "nonconformities" | "complaints" | "tests" | "reports" | "proficiencyTests"
+  "equipment" | "environmentReadings" | "nonconformities" | "complaints" | "tests" | "reports" | "proficiencyTests" | "auditEntries"
 >;
 
 export function buildReadiness(state: Source, today = new Date()): ReadinessItem[] {
@@ -195,6 +196,25 @@ export function buildReadiness(state: Source, today = new Date()): ReadinessItem
     count: uncovered || poorResults,
     level: uncovered ? "overdue" : poorResults ? "attention" : "ok",
     href: "/quality/proficiency"
+  });
+
+  // --- §8.8 Auditimet e brendshme ----------------------------------------
+  // A clause with no month against it is the 2017 finding all over again: the
+  // plan did not address every clause, so those clauses were never audited.
+  const audits: AuditEntry[] = state.auditEntries ?? [];
+  const auditYear = summariseAuditYear(audits, today.getFullYear(), today);
+  items.push({
+    key: "internal-audit",
+    clause: "8.8",
+    title: "Auditimet e brendshme",
+    detail: auditYear.overdue
+      ? `${auditYear.overdue} pika përtej muajit të planifikuar${auditYear.unplanned ? `, ${auditYear.unplanned} pa planifikuar` : ""}`
+      : auditYear.unplanned
+        ? `${auditYear.unplanned} nga ${auditYear.total} pika pa muaj të planifikuar për ${auditYear.year}`
+        : `${auditYear.completed} nga ${auditYear.total} pika të audituara`,
+    count: auditYear.overdue || auditYear.unplanned,
+    level: auditYear.overdue ? "overdue" : auditYear.unplanned ? "attention" : "ok",
+    href: "/quality/internal-audit"
   });
 
   return items;
