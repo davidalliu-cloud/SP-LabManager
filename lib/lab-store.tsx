@@ -95,6 +95,7 @@ import {
   type Equipment,
   type EquipmentInput
 } from "./equipment";
+import { balancedGroups } from "./report-grouping";
 import { nextReportNumber } from "./report-number";
 import { initialState } from "./seed-data";
 import { deriveSampleStage, SAMPLE_STAGES } from "./sample-stage";
@@ -1793,14 +1794,6 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       );
     }
 
-    function chunk<T>(rows: T[], size: number) {
-      const chunks: T[][] = [];
-      for (let index = 0; index < rows.length; index += size) {
-        chunks.push(rows.slice(index, index + size));
-      }
-      return chunks;
-    }
-
     function nextProcedureRevision(procedureId: string, revisions = state.procedureRevisions) {
       const numbers = revisions
         .filter((revision) => revision.procedureId === procedureId)
@@ -1817,7 +1810,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
         const key = String(specimen.nominalDiameterMm || specimen.actualDiameterMm || "unknown");
         groups.set(key, [...(groups.get(key) ?? []), specimen.specimenCode]);
       });
-      return Array.from(groups.entries()).flatMap(([, codes]) => chunk(codes, 3));
+      return Array.from(groups.entries()).flatMap(([, codes]) => balancedGroups(codes, 3));
     }
 
     function canCurrentUserEditTest(previous: LabState, testId: string) {
@@ -4350,7 +4343,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
                   groups.set(key, [...(groups.get(key) ?? []), specimen.specimenCode]);
                   return groups;
                 }, new Map<string, string[]>()).values()
-              ).flatMap((codes) => chunk(codes, 2))
+              ).flatMap((codes) => balancedGroups(codes, 2))
             : undefined;
           const reportGroups = steel?.specimens.length
             ? groupSteelSpecimensByDiameter(steel)
@@ -4359,7 +4352,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             : concreteWater || concreteFlexural || concreteDensity || concreteIndirectTensile || concreteCore || asphalt || thermalInsulation || cementConsistency || cementStrength || cementBlaine || mortar || aggregate || aggregateChemical || aggregateLosAngeles || aggregateFreezeThaw || aggregateAcv || aggregateDensity || aggregateFillerDensity || aggregateShapeIndex || aggregateFlakiness || aggregateElongation || aggregateBulkDensity || aggregateSandEquivalent || aggregateSoundness || admixture
               ? [[previous.samples.find((sample) => sample.id === test.sampleId)?.sampleCode ?? test.testCode]]
               : concrete?.specimens?.length
-                ? chunk(concrete.specimens.map((specimen) => specimen.specimenCode), 3)
+                ? balancedGroups(concrete.specimens.map((specimen) => specimen.specimenCode), 3)
                 : [[previous.samples.find((sample) => sample.id === test.sampleId)?.sampleCode ?? test.testCode]];
           const specimenCount = reportGroups.reduce((sum, group) => sum + group.length, 0);
           const reports: Report[] = reportGroups.map((codes, index) => ({
