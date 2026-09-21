@@ -69,9 +69,20 @@ export default function TestDetailPage() {
   const aggregateBulkDensity = store.aggregateBulkDensityTests.find((item) => item.testId === activeTest.id);
   const aggregateSandEquivalent = store.aggregateSandEquivalentTests.find((item) => item.testId === activeTest.id);
   const aggregateSoundness = store.aggregateSoundnessTests.find((item) => item.testId === activeTest.id);
-  const report = store.reports.find((item) => item.testId === activeTest.id);
-  const nonAsphaltReport = store.reports.find((item) => item.testId === activeTest.id && !item.reportKind);
-  const canGenerateReport = canGenerateReportForTest(currentUser?.role, activeTest.status, Boolean(nonAsphaltReport));
+  // Prefer a live report over a rejected one: after a rejection and a
+  // regeneration the test has both, and the link should go to the new one.
+  const testReports = store.reports.filter((item) => item.testId === activeTest.id);
+  const report = testReports.find((item) => item.reportStatus !== "Rejected") ?? testReports[0];
+  const nonAsphaltReport = testReports.find((item) => !item.reportKind && item.reportStatus !== "Rejected");
+  // The permission check counts rejected reports, unlike the lookup above.
+  // Rejecting a report puts the test back to Rejected, which is not Approved,
+  // so a hasReport of false would leave the reviewer looking at a disabled
+  // button on the very test they have just sent back to be redone.
+  const canGenerateReport = canGenerateReportForTest(
+    currentUser?.role,
+    activeTest.status,
+    testReports.some((item) => !item.reportKind)
+  );
   const canGenerateAsphaltReport = (kind: AsphaltReportKind) => canGenerateReportForTest(currentUser?.role, activeTest.status, Boolean(store.reports.some((item) => item.testId === activeTest.id && item.reportKind === kind)));
   const activeEmployees = store.users.filter((user) => user.isActive !== false);
   const existingSpecimens =

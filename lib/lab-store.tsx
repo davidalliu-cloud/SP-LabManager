@@ -4310,9 +4310,32 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
         setState((previous) => {
           const test = previous.tests.find((row) => row.id === testId);
           if (!test) return previous;
-          const existing = previous.reports.find((row) => row.testId === testId && (row.reportKind ?? "") === (reportKind ?? ""));
+          // A rejected report is not a report that exists — it is one that was
+          // sent back to be done again. Counting it here made the generate
+          // button a silent no-op: the reviewer rejects, presses generate, and
+          // nothing happens, with no way to tell whether the click registered.
+          //
+          // Rejected reports are kept rather than deleted. They were never
+          // issued, but they hold numbers in the register, and removing them
+          // would leave gaps in a sequence whose continuity is the point.
+          const existing = previous.reports.find(
+            (row) =>
+              row.testId === testId &&
+              (row.reportKind ?? "") === (reportKind ?? "") &&
+              row.reportStatus !== "Rejected"
+          );
           if (existing) return previous;
-          if (!canGenerateReportForTest(currentRole, test.status)) return previous;
+          // Rejecting a report sets the test back to Rejected, so the plain
+          // "status must be Approved" rule would refuse the very regeneration
+          // the rejection asked for. A rejected report of this kind is proof
+          // the test was approved once, and is what re-opens the door.
+          const wasRejected = previous.reports.some(
+            (row) =>
+              row.testId === testId &&
+              (row.reportKind ?? "") === (reportKind ?? "") &&
+              row.reportStatus === "Rejected"
+          );
+          if (!canGenerateReportForTest(currentRole, test.status, wasRejected)) return previous;
           const concrete = previous.concreteTests.find((row) => row.testId === testId);
           const concreteWater = previous.concreteWaterPenetrationTests.find((row) => row.testId === testId);
           const concreteFlexural = previous.concreteFlexuralTests.find((row) => row.testId === testId);
