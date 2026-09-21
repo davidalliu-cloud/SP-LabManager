@@ -11,6 +11,7 @@ import { admixtureDeterminationsDisagree } from "@/lib/calculations";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { useLabStore } from "@/lib/lab-store";
 import { canEditTestData, canGenerateReportForTest, canReviewTests, canViewClientIdentity } from "@/lib/permissions";
+import { MAX_TRUCK_PLATES } from "@/lib/types";
 import type { AsphaltReportKind, LabTest, LabUser, MasonryUnitCategory, MortarTest, MortarTestKind, Sample } from "@/lib/types";
 
 const aggregateSieveSizes = [125, 80, 63, 37.5, 31.5, 25, 20, 16, 12.5, 8, 4, 2, 1, 0.5, 0.25, 0.125, 0.063, 0];
@@ -106,6 +107,12 @@ export default function TestDetailPage() {
   const [asphaltDensityRows, setAsphaltDensityRows] = useState(Math.max(asphalt?.marshallDensity.length ?? 3, 3));
   const [asphaltMaxDensityRows, setAsphaltMaxDensityRows] = useState(Math.max(asphalt?.maximumDensity.length ?? 2, 2));
   const [asphaltStabilityRows, setAsphaltStabilityRows] = useState(Math.max(asphalt?.marshallStability.length ?? 3, 3));
+  // Three boxes to start with, as asked; more are added one at a time.
+  const [truckPlates, setTruckPlates] = useState<string[]>(() => {
+    const saved = concrete?.truckPlates ?? [];
+    return saved.length >= 3 ? saved : [...saved, ...Array(3 - saved.length).fill("")];
+  });
+  const filledPlates = truckPlates.map((plate) => plate.trim()).filter(Boolean);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -119,6 +126,7 @@ export default function TestDetailPage() {
       weightKg: Number(form.get(`weightKg-${index}`) || 0),
       maximumLoadKn: Number(form.get(`maximumLoadKn-${index}`) || 0),
       visualInspection: String(form.get(`visualInspection-${index}`) ?? ""),
+      truckPlate: String(form.get(`truckPlate-${index}`) ?? ""),
       notes: String(form.get(`specimenNotes-${index}`) ?? "")
     }));
     const first = specimens.find((row) => row.specimenCode || row.maximumLoadKn || row.weightKg) ?? specimens[0];
@@ -143,6 +151,7 @@ export default function TestDetailPage() {
       element: String(form.get("element") ?? ""),
       otherData: String(form.get("otherData") ?? ""),
       strengthClass: String(form.get("strengthClass") ?? ""),
+      truckPlates,
       specimens
     });
   }
@@ -3999,6 +4008,9 @@ export default function TestDetailPage() {
             <Field label="Strength class"><input name="strengthClass" defaultValue={concrete?.strengthClass ?? ""} className="input" placeholder="e.g. C25/30" /></Field>
             <Field label="Other data"><input name="otherData" defaultValue={concrete?.otherData ?? ""} className="input" /></Field>
             <div className="md:col-span-3">
+              <TruckPlates plates={truckPlates} setPlates={setTruckPlates} />
+            </div>
+            <div className="md:col-span-3">
               <label className="text-sm font-medium text-ink">Equipment used</label>
               <input
                 name="machineUsed"
@@ -4042,6 +4054,7 @@ export default function TestDetailPage() {
                     <th className="px-3 py-2">Weight (kg)</th>
                     <th className="px-3 py-2">Load (kN)</th>
                     <th className="px-3 py-2">Strength (MPa)</th>
+                    <th className="px-3 py-2">Targa e kamionit</th>
                     <th className="px-3 py-2">Visual inspection</th>
                     <th className="px-3 py-2">Notes</th>
                   </tr>
@@ -4061,6 +4074,25 @@ export default function TestDetailPage() {
                         <td className="px-3 py-2"><input name={`weightKg-${index}`} type="number" step="0.01" defaultValue={specimen?.weightKg ?? ""} className="input min-w-24" /></td>
                         <td className="px-3 py-2"><input name={`maximumLoadKn-${index}`} type="number" step="0.01" defaultValue={specimen?.maximumLoadKn ?? ""} className="input min-w-24" /></td>
                         <td className="px-3 py-2 font-semibold text-ink">{specimen ? `${specimen.compressiveStrengthMpa} MPa` : "Ruaj për të llogaritur"}</td>
+                        <td className="px-3 py-2">
+                          <select
+                            name={`truckPlate-${index}`}
+                            defaultValue={specimen?.truckPlate ?? ""}
+                            key={`plate-${index}-${filledPlates.join("|")}`}
+                            className="input min-w-32"
+                          >
+                            <option value="">—</option>
+                            {/* A plate saved earlier but since removed from the
+                                list above still has to be selectable, or saving
+                                the sheet would silently clear it. */}
+                            {(specimen?.truckPlate && !filledPlates.includes(specimen.truckPlate)
+                              ? [specimen.truckPlate, ...filledPlates]
+                              : filledPlates
+                            ).map((plate) => (
+                              <option key={plate} value={plate}>{plate}</option>
+                            ))}
+                          </select>
+                        </td>
                         <td className="px-3 py-2"><input name={`visualInspection-${index}`} defaultValue={specimen?.visualInspection ?? ""} className="input min-w-44" /></td>
                         <td className="px-3 py-2"><input name={`specimenNotes-${index}`} defaultValue={specimen?.notes ?? ""} className="input min-w-40" /></td>
                       </tr>
@@ -4514,4 +4546,66 @@ const testUiLabels: Record<string, string> = {
 
 function testUiLabel(label: string) {
   return testUiLabels[label] ?? label;
+}
+
+/**
+ * Targat e kamionëve — the delivery vehicles a pour came from.
+ *
+ * Three boxes are shown before anyone types, because three is the common case
+ * and an empty list invites the field to be skipped. More are added one at a
+ * time up to MAX_TRUCK_PLATES, rather than showing ten boxes that mostly stay
+ * blank and make the sheet look unfinished.
+ */
+function TruckPlates({ plates, setPlates }: { plates: string[]; setPlates: (plates: string[]) => void }) {
+  const filled = plates.filter((plate) => plate.trim()).length;
+
+  return (
+    <div className="rounded-md border border-line bg-lab-porcelain p-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <label className="text-sm font-medium text-ink">
+          Targat e kamionëve <span className="font-normal text-muted">/ Truck plate numbers</span>
+        </label>
+        <span className="text-xs text-muted">
+          {filled} nga {MAX_TRUCK_PLATES} të lejuara · secili kub i lidhet njërës prej tyre më poshtë
+        </span>
+      </div>
+
+      <div className="mt-3 grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
+        {plates.map((plate, index) => (
+          <div key={index} className="relative">
+            <input
+              value={plate}
+              onChange={(event) => setPlates(plates.map((row, i) => (i === index ? event.target.value : row)))}
+              placeholder={`Targa ${index + 1}`}
+              className="input pr-8 uppercase"
+            />
+            {/* Removing a plate is only offered beyond the first three, so the
+                sheet cannot be left with nowhere to record a delivery. */}
+            {plates.length > 3 ? (
+              <button
+                type="button"
+                onClick={() => setPlates(plates.filter((_, i) => i !== index))}
+                aria-label={`Hiq targën ${index + 1}`}
+                className="absolute inset-y-0 right-2 text-muted transition hover:text-lab-burgundy"
+              >
+                ×
+              </button>
+            ) : null}
+          </div>
+        ))}
+      </div>
+
+      {plates.length < MAX_TRUCK_PLATES ? (
+        <button
+          type="button"
+          onClick={() => setPlates([...plates, ""])}
+          className="mt-3 rounded-md border border-line bg-white px-3 py-1.5 text-sm font-semibold text-lab-burgundy transition hover:border-lab-burgundy hover:bg-lab-burgundy hover:text-white"
+        >
+          + Shto targë
+        </button>
+      ) : (
+        <p className="mt-3 text-xs text-muted">Arritët kufirin prej {MAX_TRUCK_PLATES} targash.</p>
+      )}
+    </div>
+  );
 }

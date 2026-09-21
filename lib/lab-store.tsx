@@ -171,8 +171,10 @@ interface ConcreteInput {
   element?: string;
   otherData?: string;
   strengthClass?: string;
+  truckPlates?: string[];
   specimens: Array<{
     specimenCode: string;
+    truckPlate?: string;
     ageDays: number;
     lengthMm: number;
     widthMm: number;
@@ -2772,6 +2774,9 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             });
           const firstSpecimen = specimens[0];
           const loadedAreaMm2 = firstSpecimen?.loadedAreaMm2 ?? calculateArea(input.cubeLength, input.cubeWidth);
+          // Three boxes are offered before anyone types; empty ones are not
+          // trucks and must not become blank rows in the record.
+          const truckPlates = (input.truckPlates ?? []).map((plate) => plate.trim()).filter(Boolean);
           const concreteTest: ConcreteCompressiveTest = {
             id: previous.concreteTests.find((row) => row.testId === testId)?.id ?? crypto.randomUUID(),
             testId,
@@ -2785,6 +2790,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             ageDays: calculateAgeDays(input.castingDate, input.testDate),
             loadedAreaMm2,
             compressiveStrengthMpa: firstSpecimen?.compressiveStrengthMpa ?? calculateCompressiveStrength(input.maximumLoadKn, loadedAreaMm2),
+            truckPlates,
             specimens,
             createdAt: new Date().toISOString()
           };

@@ -154,9 +154,21 @@ export interface ConcreteCompressiveTest {
   element?: string;
   otherData?: string;
   strengthClass?: string;
+  /**
+   * Targat e kamionëve — the delivery vehicles this pour came from.
+   *
+   * A pour is rarely one truck, and when a cube fails the first question is
+   * which load it came from. Held on the test rather than the sample because
+   * that is where the technician has the delivery notes in front of them.
+   * Capped at MAX_TRUCK_PLATES; empty entries are dropped on save.
+   */
+  truckPlates?: string[];
   specimens?: ConcreteCubeSpecimen[];
   createdAt: string;
 }
+
+/** As many trucks as one pour is ever likely to need. */
+export const MAX_TRUCK_PLATES = 10;
 
 export interface ConcreteCubeSpecimen {
   specimenCode: string;
@@ -169,6 +181,8 @@ export interface ConcreteCubeSpecimen {
   loadedAreaMm2: number;
   compressiveStrengthMpa: number;
   visualInspection: string;
+  /** Which of the pour's trucks this cube was cast from. */
+  truckPlate?: string;
   notes?: string;
 }
 
