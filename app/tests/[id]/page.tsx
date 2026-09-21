@@ -1153,15 +1153,21 @@ export default function TestDetailPage() {
     });
   }
 
+  // Reuse a live report; never a rejected one. `report` falls back to the
+  // rejected row so the page still has something to show after a rejection,
+  // and reusing it here made the button open the very report that was sent
+  // back — the old split, unchanged — instead of drafting its replacement.
   function generateReport() {
     if (!canGenerateReport) return;
-    const reportId = report?.id ?? store.generateReport(activeTest.id);
+    const reportId = nonAsphaltReport?.id ?? store.generateReport(activeTest.id);
     window.setTimeout(() => router.push(`/reports/${reportId}`), 0);
   }
 
   function generateAsphaltReport(kind: AsphaltReportKind) {
     if (!canGenerateAsphaltReport(kind)) return;
-    const existing = store.reports.find((item) => item.testId === activeTest.id && item.reportKind === kind);
+    const existing = store.reports.find(
+      (item) => item.testId === activeTest.id && item.reportKind === kind && item.reportStatus !== "Rejected"
+    );
     const reportId = existing?.id ?? store.generateReport(activeTest.id, kind);
     window.setTimeout(() => router.push(`/reports/${reportId}`), 0);
   }
