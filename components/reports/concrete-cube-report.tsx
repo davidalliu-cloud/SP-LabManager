@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabTest, MortarTest, Project, Report, Sample, SteelTensileTest, ThermalInsulationTest } from "@/lib/types";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
+import { formatPlatesForReport } from "@/lib/truck-plates";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
 import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair, samplingOperator, BiText } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
@@ -40,7 +41,11 @@ export function ConcreteCubeReportPreview({
             maximumLoadKn: concrete.maximumLoadKn,
             compressiveStrengthMpa: concrete.compressiveStrengthMpa,
             visualInspection: concrete.failureType,
-            notes: concrete.notes
+            notes: concrete.notes,
+            // Older tests hold one result rather than a specimen list. With a
+            // single cube the first plate is its plate, by the same rule that
+            // pairs the second plate with the second cube.
+            truckPlate: concrete.truckPlates?.[0]
           }
         ]
       : [];
@@ -55,10 +60,15 @@ export function ConcreteCubeReportPreview({
 
   const paddedSpecimens = [reportSpecimens[0], reportSpecimens[1], reportSpecimens[2]];
   const issueDate = report.issuedAt || report.approvedAt || concrete?.testEndDate || concrete?.testDate || sample?.reportDueDate;
-  const otherData = concrete?.otherData || sample?.notes
+  const recordedOtherData = concrete?.otherData || sample?.notes
     ?.split("|")
     .find((note) => !note.includes("Intervali i akredituar") && !note.includes("Standardi i kampionimit") && !note.match(new RegExp("C\\d+/\\d+")))
     ?.trim();
+  // The delivery trucks behind the cubes on this report, in cube order and
+  // written once each. They sit with the other data rather than in a column
+  // of their own, because a plate describes where a cube came from, not
+  // anything measured about it.
+  const otherData = [recordedOtherData, formatPlatesForReport(reportSpecimens)].filter(Boolean).join(" · ") || undefined;
 
   return (
     <section className="report-a4 concrete-cube-report print-surface relative rounded-md border border-line bg-white p-4 text-[11pt] leading-[1.16] text-black shadow-sm" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
