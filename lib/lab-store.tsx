@@ -1411,6 +1411,13 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<LabState>(() => mergeOfficialClientCodes2026(initialState));
   const [isHydrated, setIsHydrated] = useState(false);
   const [isRemoteChecked, setIsRemoteChecked] = useState(false);
+  // Who Supabase thinks we are. The register is readable only to a signed-in
+  // account, so a visitor who arrives signed out reads nothing — and signing in
+  // afterwards is a client-side navigation, which remounts nothing. Without
+  // this, they would work on whatever their browser had cached and then save it
+  // over the real register. Tracking the account means the load runs again the
+  // moment one appears.
+  const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<SaveState>({ kind: "saved" });
   // Bumped by retrySave() to re-run the save effect on demand (e.g. from the
   // conflict banner) without any state change — so a save that lost a race can
@@ -1420,6 +1427,12 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
   const lastSavedOnlineJson = useRef<string | null>(null);
   const remoteUpdatedAtRef = useRef<string | null>(null);
   const lastSyncedStateRef = useRef<LabState | null>(null);
+  // Whether we have actually read the register this session. The save is a
+  // compare-and-swap against the timestamp we loaded, so a load that never
+  // succeeded leaves nothing to compare and the write goes through blind —
+  // pushing whatever this browser had cached over everyone's work. Refused
+  // reads make that reachable, so nothing saves until a read has come back.
+  const remoteLoadOkRef = useRef(false);
   const currentUser =
     state.users.find((user) => user.email.toLowerCase() === auth.user?.email?.toLowerCase()) ??
     state.users.find((user) => user.role === "Technician") ??
@@ -1503,6 +1516,18 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
   }, [isHydrated, state.auditLog, state.notifications]);
 
   useEffect(() => {
+    if (!hasSupabaseConfig()) return;
+
+    const supabase = createSupabaseBrowserClient();
+    supabase.auth.getUser().then(({ data }) => setAuthUserId(data.user?.id ?? null));
+    const {
+      data: { subscription }
+    } = supabase.auth.onAuthStateChange((_event, session) => setAuthUserId(session?.user?.id ?? null));
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
     if (!isHydrated) return;
 
     if (!hasSupabaseConfig()) {
@@ -1526,6 +1551,8 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
+        remoteLoadOkRef.current = true;
+
         if (!isCancelled && data?.state) {
           const mergedState = mergeWithInitialState(data.state as Partial<LabState>);
           lastSavedOnlineJson.current = JSON.stringify(mergedState);
@@ -1546,7 +1573,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
     return () => {
       isCancelled = true;
     };
-  }, [isHydrated]);
+  }, [isHydrated, authUserId]);
 
   // Live updates: pick up other users' saves without waiting for a page refresh.
   useEffect(() => {
@@ -1596,6 +1623,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isHydrated || !isRemoteChecked || !hasSupabaseConfig()) return;
+    if (!remoteLoadOkRef.current) return;
 
     const timer = window.setTimeout(async () => {
       const json = JSON.stringify(state);

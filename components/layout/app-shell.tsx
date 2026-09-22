@@ -84,22 +84,31 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   if (isLoginPage) return <>{children}</>;
 
-  if ((auth.isConfigured && auth.isLoading) || !store.isReady) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-white px-6">
-        <div className="w-full max-w-sm rounded-lg border border-line bg-white p-6 text-center">
-          <img src="/brand/sarp-logo.png" alt="SARP" className="mx-auto h-auto w-36" />
-          <div className="mt-5 text-sm font-semibold uppercase tracking-[0.12em] text-lab-burgundy">Duke hapur hapësirën e sigurt të laboratorit</div>
-          <div className="mt-1 text-xs text-muted">Ju lutemi prisni...</div>
-        </div>
+  const opening = (
+    <div className="flex min-h-screen items-center justify-center bg-white px-6">
+      <div className="w-full max-w-sm rounded-lg border border-line bg-white p-6 text-center">
+        <img src="/brand/sarp-logo.png" alt="SARP" className="mx-auto h-auto w-36" />
+        <div className="mt-5 text-sm font-semibold uppercase tracking-[0.12em] text-lab-burgundy">Duke hapur hapësirën e sigurt të laboratorit</div>
+        <div className="mt-1 text-xs text-muted">Ju lutemi prisni...</div>
       </div>
-    );
-  }
+    </div>
+  );
+
+  // Settle who the visitor is before waiting on the data, not after.
+  //
+  // The register refuses anonymous reads, so a signed-out visitor's load never
+  // completes. Waiting for the data first would leave them watching this
+  // spinner for as long as they cared to look, with the login page one check
+  // further on and unreachable. Ask for the session, send them to sign in if
+  // there isn't one, and only then wait for the lab's records to arrive.
+  if (auth.isConfigured && auth.isLoading) return opening;
 
   if (auth.isConfigured && !auth.user) {
     router.replace("/login");
     return null;
   }
+
+  if (!store.isReady) return opening;
 
   if (isTechRoute) return <>{children}</>;
 
