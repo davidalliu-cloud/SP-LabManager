@@ -93,7 +93,14 @@ export async function POST(request: Request) {
 
   // Read the reports server-side. The browser does not get to decide which file
   // is attached to which report number.
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+  // Service role only. The publishable key reads nothing from the register
+  // now, and a send that silently found no reports would look to the sender
+  // exactly like a send that went out.
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceKey) {
+    return NextResponse.json({ ok: false, error: "Shërbimi nuk është konfiguruar (mungon SUPABASE_SERVICE_ROLE_KEY)." }, { status: 500 });
+  }
+  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceKey, {
     auth: { persistSession: false }
   });
   // The shared JSON blob (app_state) is the single source of truth. The
