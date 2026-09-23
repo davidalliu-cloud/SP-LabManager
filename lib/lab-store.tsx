@@ -1294,6 +1294,14 @@ function mergeCollectionsPreferLocal(remote: LabState, base: LabState, local: La
         merged.set(id, row);
       }
     }
+    // Absent locally but present in base means this session deleted it.
+    //
+    // That reading is only safe while `local` is the session's FULL state. Pass
+    // a trimmed one — the save payload drops every equipment record nobody has
+    // edited — and this loop reads those absences as deletions and removes
+    // other people's saved work. It did exactly that to a morning of
+    // calibration records, so callers must hand over the whole state and let
+    // the trimming happen at the point of writing.
     for (const id of baseById.keys()) {
       if (!localById.has(id)) merged.delete(id);
     }
@@ -1646,9 +1654,20 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       // their state, merge our actually-changed records on top of it (instead of
       // blindly overwriting), and retry — so two people saving around the same
       // time both keep their work instead of one silently clobbering the other.
+      //
+      // `stateToSave` is always the FULL in-memory state, never a trimmed one.
+      // Trimming happens at the moment of writing, below, and nowhere else.
+      // Handing a trimmed state to the merge cost the Quality Manager a morning
+      // of calibration records: the trim drops the 850-odd equipment records
+      // nobody has edited, the merge reads "in base, absent from local" as
+      // "this session deleted it", and so a conflicting save deleted every
+      // other session's equipment edits from the register on its way past.
       async function attemptSave(expectedUpdatedAt: string | null, stateToSave: LabState, attempt: number): Promise<void> {
         const nowIso = new Date().toISOString();
-        let query = supabase.from("app_state").update({ state: stateToSave, updated_at: nowIso }).eq("id", ONLINE_STATE_ROW_ID);
+        let query = supabase
+          .from("app_state")
+          .update({ state: forPersistence(stateToSave), updated_at: nowIso })
+          .eq("id", ONLINE_STATE_ROW_ID);
         if (expectedUpdatedAt) {
           query = query.eq("updated_at", expectedUpdatedAt);
         }
@@ -1693,7 +1712,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             // Row doesn't exist yet (fresh deployment) - bootstrap it.
             const { error: insertError } = await supabase.from("app_state").upsert({
               id: ONLINE_STATE_ROW_ID,
-              state: stateToSave,
+              state: forPersistence(stateToSave),
               updated_at: nowIso
             });
             if (insertError) {
@@ -1724,7 +1743,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        await attemptSave(remoteUpdatedAtRef.current, forPersistence(state), 0);
+        await attemptSave(remoteUpdatedAtRef.current, state, 0);
       } catch (error) {
         console.warn("Could not save SARP LAB data to Supabase.", error);
         setSaveState({
