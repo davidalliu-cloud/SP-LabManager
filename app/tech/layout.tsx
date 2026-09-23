@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { SaveStatus } from "@/components/layout/save-status";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { ServiceWorkerRegistration } from "@/components/pwa/service-worker-registration";
 import { useAuth } from "@/lib/auth";
@@ -45,6 +46,17 @@ export default function TechLayout({ children }: { children: React.ReactNode }) 
               </button>
             ) : null}
           </div>
+        </div>
+        {/*
+          The technician screens rendered without the desktop shell, and the
+          save indicator lives in that shell — so the people most likely to be
+          on a weak signal, in a lab, were the only ones with no way to tell a
+          saved worksheet from a lost one. They found out the next day, from
+          someone else. It belongs here, where it is on screen the whole time
+          a worksheet is being filled in.
+        */}
+        <div className="flex items-center justify-end border-t border-line/70 px-4 py-1.5">
+          <SaveStatus />
         </div>
         <InstallPrompt />
       </header>

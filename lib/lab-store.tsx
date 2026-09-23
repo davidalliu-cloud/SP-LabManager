@@ -1128,6 +1128,27 @@ const CLEAN_SLATE_RESET_MARKER = "sarp-lab-clean-slate-2026-08-03";
  */
 const KEEP_ACTIVITY_IN_BLOB = false;
 
+/**
+ * How long typing settles before the register is written.
+ *
+ * Every save rewrites the whole row, so each one is a turn in a queue every
+ * open tab is standing in. At 800 ms a single person filling a worksheet
+ * generated a save every few keystrokes, and with three people working the
+ * queue grew until saves were cancelled at the eight-second statement timeout
+ * — which is how an afternoon came to have minutes where nothing saved at all.
+ *
+ * Two and a half seconds cuts the traffic by roughly three quarters and costs
+ * at most a couple of seconds of unsaved typing, which the retry below covers
+ * anyway. The real answer is to stop writing the whole register for a one-field
+ * change, but that is a larger piece of work and this is not a substitute for
+ * it.
+ */
+const SAVE_DEBOUNCE_MS = 2_500;
+
+/** First wait after a failed save; doubles each attempt, capped. */
+const SAVE_RETRY_BASE_MS = 2_000;
+const SAVE_RETRY_MAX_MS = 60_000;
+
 /** What actually gets persisted, as opposed to what is held in memory. */
 function forPersistence(state: LabState): LabState {
   const trimmed = {
@@ -1433,6 +1454,12 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
   // be retried against the current, already-merged in-memory state instead of
   // forcing a reload that would discard it.
   const [saveNonce, setSaveNonce] = useState(0);
+  // A failed save used to wait for the next edit before trying again, so the
+  // last change of a sitting — the one made just before someone put the tablet
+  // down — could sit unsaved indefinitely with only a chip in the corner to say
+  // so. These drive an automatic retry that keeps going until it lands.
+  const retryAttemptRef = useRef(0);
+  const retryTimerRef = useRef<number | null>(null);
   const lastSavedOnlineJson = useRef<string | null>(null);
   const remoteUpdatedAtRef = useRef<string | null>(null);
   const lastSyncedStateRef = useRef<LabState | null>(null);
@@ -1751,10 +1778,47 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           message: error instanceof Error ? error.message : String(error)
         });
       }
-    }, 800);
+    }, SAVE_DEBOUNCE_MS);
 
     return () => window.clearTimeout(timer);
   }, [isHydrated, isRemoteChecked, state, saveNonce]);
+
+  /**
+   * Keeps trying after a failed save, instead of waiting for the next edit.
+   *
+   * Every save is the whole register written to one row, so when several people
+   * work at once they queue behind each other and some are cancelled. That is
+   * survivable if the client comes back; what was not survivable was the old
+   * behaviour, where a failure sat there until the person happened to type
+   * something else. Someone finishing a worksheet and putting the tablet down
+   * did exactly the wrong thing.
+   *
+   * The backoff doubles so that a busy afternoon is not made busier by every
+   * client retrying in step, and the attempt counter is only cleared by an
+   * actual success — "saving" is an attempt in flight, not a result.
+   */
+  useEffect(() => {
+    if (saveState.kind === "saved") {
+      retryAttemptRef.current = 0;
+      return;
+    }
+    if (saveState.kind === "saving") return;
+
+    const attempt = retryAttemptRef.current;
+    retryAttemptRef.current = attempt + 1;
+    const delay = Math.min(SAVE_RETRY_BASE_MS * 2 ** attempt, SAVE_RETRY_MAX_MS);
+    retryTimerRef.current = window.setTimeout(() => {
+      retryTimerRef.current = null;
+      setSaveNonce((n) => n + 1);
+    }, delay);
+
+    return () => {
+      if (retryTimerRef.current) {
+        window.clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = null;
+      }
+    };
+  }, [saveState]);
 
   const value = useMemo<LabStoreValue>(() => {
     function addAudit(draft: LabState, action: string, entityType: string, entityId: string, description: string) {
