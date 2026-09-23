@@ -1094,6 +1094,7 @@ interface LabStoreValue extends LabState {
   issueReport: (reportId: string, destination: string, notes?: string, channel?: "email" | "whatsapp") => void;
   sendReportsToClient: (reportIds: string[], clientEmail: string, notes?: string) => void;
   setReportPdfUrl: (reportId: string, pdfUrl: string) => void;
+  setReportShareToken: (reportId: string, token: string) => void;
   createProcedureRevision: (input: ProcedureRevisionInput) => string;
   submitProcedureRevision: (revisionId: string) => void;
   approveProcedureRevision: (revisionId: string) => void;
@@ -4531,7 +4532,14 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       issueReport(reportId, destination, notes, channel = "email") {
         setState((previous) => {
-          const report = previous.reports.find((row) => row.id === reportId && row.reportStatus === "Approved");
+          // A report already with the client can be sent again — the message is
+          // lost in a chat, the client changes hands, a number was wrong. Each
+          // send is recorded in its own right, so the register shows how many
+          // times a report went out and to where, rather than pretending the
+          // first one was the only one.
+          const report = previous.reports.find(
+            (row) => row.id === reportId && (row.reportStatus === "Approved" || row.reportStatus === "Sent to Client")
+          );
           if (!report) return previous;
           const sentAt = new Date().toISOString();
           const draft: LabState = {
@@ -4556,14 +4564,34 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             notifications: [...previous.notifications],
             auditLog: [...previous.auditLog]
           };
+          const isResend = report.reportStatus === "Sent to Client";
           addAudit(
             draft,
-            "report_sent_to_client",
+            isResend ? "report_resent_to_client" : "report_sent_to_client",
             "report",
             reportId,
-            `${report.reportNumber} sent to ${destination}${channel === "whatsapp" ? " by WhatsApp" : ""}.`
+            `${report.reportNumber} ${isResend ? "sent again" : "sent"} to ${destination}${
+              channel === "whatsapp" ? " by WhatsApp" : ""
+            }.`
           );
           return withDerivedSampleStatuses(draft);
+        });
+      },
+      /**
+       * Fixes this report's share token the first time it is sent.
+       *
+       * Never replaces one that already exists: a client given the link last
+       * month must still be able to open it, and re-issuing the report is
+       * precisely when a new token would break that.
+       */
+      setReportShareToken(reportId, token) {
+        setState((previous) => {
+          const report = previous.reports.find((row) => row.id === reportId);
+          if (!report || report.shareToken) return previous;
+          return {
+            ...previous,
+            reports: previous.reports.map((row) => (row.id === reportId ? { ...row, shareToken: token } : row))
+          };
         });
       },
       setReportPdfUrl(reportId, pdfUrl) {

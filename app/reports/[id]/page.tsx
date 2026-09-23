@@ -9,6 +9,7 @@ import { useLabStore } from "@/lib/lab-store";
 import { canRejectReport, canReviewTests } from "@/lib/permissions";
 import { generateAndStoreReportPdf } from "@/lib/pdf";
 import { formatInternational, toWhatsAppNumber, whatsAppLink } from "@/lib/phone";
+import { newShareToken, reportShareUrl } from "@/lib/report-link";
 
 export default function ReportDetailPage() {
   const params = useParams<{ id: string }>();
@@ -72,6 +73,14 @@ export default function ReportDetailPage() {
   // few cards have an email address typed into the phone field, so the number
   // is parsed rather than trusted.
   const whatsAppNumber = toWhatsAppNumber(client?.phone);
+  const alreadySent = activeReport.reportStatus === "Sent to Client";
+  // Sending again is allowed; the confirmation in sendReportToWhatsApp is what
+  // makes it deliberate.
+  const canSendToClient = activeReport.reportStatus === "Approved" || alreadySent;
+  // A token is minted here but only committed when a message actually goes out,
+  // and never replaces one the report already carries.
+  const mintedShareToken = useRef(newShareToken());
+  const shareToken = activeReport.shareToken ?? mintedShareToken.current;
 
   function downloadApprovedPdf() {
     const originalTitle = document.title;
@@ -163,18 +172,38 @@ export default function ReportDetailPage() {
    * exactly where those go wrong.
    */
   function sendReportToWhatsApp() {
-    if (!whatsAppNumber.ok || activeReport.reportStatus !== "Approved") return;
+    if (!whatsAppNumber.ok || !canSendToClient) return;
+    // Sending again is allowed and sometimes necessary, but it should be a
+    // decision rather than a slip: the client already has this report, and a
+    // second copy arriving unexplained invites them to ask which one counts.
+    if (alreadySent) {
+      const when = activeReport.issuedAt ? new Date(activeReport.issuedAt).toLocaleString("sq-AL") : "më parë";
+      const where = activeReport.issuedTo ? ` te ${activeReport.issuedTo}` : "";
+      const confirmed = window.confirm(
+        `Raporti ${activeReport.reportNumber} i është dërguar tashmë klientit${where} (${when}).\n\nDëshironi ta dërgoni përsëri?`
+      );
+      if (!confirmed) return;
+    }
+
+    const shareUrl = activeReport.pdfUrl
+      ? reportShareUrl(window.location.origin, activeReport.reportNumber, shareToken)
+      : null;
     const message = [
       "Pershendetje,",
       "",
       `Raporti ${activeReport.reportNumber} eshte miratuar${sample?.sampleCode ? ` (kampioni ${sample.sampleCode})` : ""}.`,
-      activeReport.pdfUrl ? "" : null,
-      activeReport.pdfUrl ? `Shkarkoni PDF-ne: ${activeReport.pdfUrl}` : "PDF-ja do t'ju dergohet me email.",
+      shareUrl ? "" : null,
+      shareUrl ? shareUrl : "PDF-ja do t'ju dergohet me email.",
       "",
       "SARP & LAB sh.p.k."
     ]
       .filter((line): line is string => line !== null)
       .join("\n");
+
+    // Fix the token before the message leaves, so the link in it resolves. It
+    // is only ever set once, so sending again reuses the address the client
+    // may already have.
+    if (shareUrl) store.setReportShareToken(activeReport.id, shareToken);
     window.open(whatsAppLink(whatsAppNumber.e164, message), "_blank", "noopener");
     store.issueReport(
       activeReport.id,
@@ -287,10 +316,22 @@ export default function ReportDetailPage() {
                 Dërgo te klienti
               </button>
 
+              {alreadySent ? (
+                <div className="rounded-md border border-[#f0a93a] bg-brand-risk p-3 text-xs text-ink">
+                  <div className="font-semibold">Ky raport i është dërguar tashmë klientit</div>
+                  <p className="mt-1">
+                    {activeReport.issuedVia === "whatsapp" ? "Me WhatsApp" : "Me email"}
+                    {activeReport.issuedTo ? ` te ${activeReport.issuedTo}` : ""}
+                    {activeReport.issuedAt ? `, më ${new Date(activeReport.issuedAt).toLocaleString("sq-AL")}` : ""}.
+                    Mund ta dërgoni përsëri; do t'ju kërkohet të konfirmoni.
+                  </p>
+                </div>
+              ) : null}
+
               {whatsAppNumber.ok ? (
                 <button
                   onClick={sendReportToWhatsApp}
-                  disabled={activeReport.reportStatus !== "Approved"}
+                  disabled={!canSendToClient}
                   className="flex w-full items-center justify-center gap-2 rounded-md bg-[#25D366] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[#1DA851] disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
                   <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 shrink-0" aria-hidden="true">

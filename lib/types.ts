@@ -1282,6 +1282,13 @@ export interface Report {
    */
   issuedVia?: "email" | "whatsapp";
   issuedTo?: string;
+  /**
+   * The secret half of this report's short link, /r/5926-26-<token>.
+   *
+   * Set the first time the report is shared and kept thereafter, so a client
+   * who was given the link yesterday can still open it after it is sent again.
+   */
+  shareToken?: string;
   pdfUrl?: string;
   createdAt: string;
 }
