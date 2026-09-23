@@ -11,7 +11,6 @@ import { admixtureDeterminationsDisagree } from "@/lib/calculations";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { useLabStore } from "@/lib/lab-store";
 import { canEditTestData, canGenerateReportForTest, canReviewTests, canViewClientIdentity } from "@/lib/permissions";
-import { MAX_TRUCK_PLATES } from "@/lib/types";
 import type { AsphaltReportKind, LabTest, LabUser, MasonryUnitCategory, MortarTest, MortarTestKind, Sample } from "@/lib/types";
 
 const aggregateSieveSizes = [125, 80, 63, 37.5, 31.5, 25, 20, 16, 12.5, 8, 4, 2, 1, 0.5, 0.25, 0.125, 0.063, 0];
@@ -4569,9 +4568,11 @@ function testUiLabel(label: string) {
  * Targat e kamionëve — the delivery vehicles a pour came from.
  *
  * Three boxes are shown before anyone types, because three is the common case
- * and an empty list invites the field to be skipped. More are added one at a
- * time up to MAX_TRUCK_PLATES, rather than showing ten boxes that mostly stay
- * blank and make the sheet look unfinished.
+ * and an empty list invites the field to be skipped. More are added as needed,
+ * rather than showing a wall of boxes that mostly stay blank and make the sheet
+ * look unfinished. There is no upper limit: a large pour can arrive on two
+ * dozen loads, and a worksheet that cannot record them all is worse than an
+ * untidy one.
  */
 function TruckPlates({ plates, setPlates }: { plates: string[]; setPlates: (plates: string[]) => void }) {
   const filled = plates.filter((plate) => plate.trim()).length;
@@ -4583,7 +4584,7 @@ function TruckPlates({ plates, setPlates }: { plates: string[]; setPlates: (plat
           Targat e kamionëve <span className="font-normal text-muted">/ Truck plate numbers</span>
         </label>
         <span className="text-xs text-muted">
-          {filled} nga {MAX_TRUCK_PLATES} të lejuara · secili kub i lidhet njërës prej tyre më poshtë
+          {filled} {filled === 1 ? "targë e plotësuar" : "targa të plotësuara"} · secili kub i lidhet njërës prej tyre më poshtë
         </span>
       </div>
 
@@ -4612,17 +4613,26 @@ function TruckPlates({ plates, setPlates }: { plates: string[]; setPlates: (plat
         ))}
       </div>
 
-      {plates.length < MAX_TRUCK_PLATES ? (
+      {/* No ceiling: a large pour can arrive on two dozen loads, and the
+          worksheet has to be able to describe the pour in front of it. The
+          five-at-a-time button is there because adding twenty-four boxes one
+          press at a time is its own kind of limit. */}
+      <div className="mt-3 flex flex-wrap gap-2">
         <button
           type="button"
           onClick={() => setPlates([...plates, ""])}
-          className="mt-3 rounded-md border border-line bg-white px-3 py-1.5 text-sm font-semibold text-lab-burgundy transition hover:border-lab-burgundy hover:bg-lab-burgundy hover:text-white"
+          className="rounded-md border border-line bg-white px-3 py-1.5 text-sm font-semibold text-lab-burgundy transition hover:border-lab-burgundy hover:bg-lab-burgundy hover:text-white"
         >
           + Shto targë
         </button>
-      ) : (
-        <p className="mt-3 text-xs text-muted">Arritët kufirin prej {MAX_TRUCK_PLATES} targash.</p>
-      )}
+        <button
+          type="button"
+          onClick={() => setPlates([...plates, "", "", "", "", ""])}
+          className="rounded-md border border-line bg-white px-3 py-1.5 text-sm font-semibold text-muted transition hover:border-lab-burgundy hover:text-lab-burgundy"
+        >
+          + Shto 5
+        </button>
+      </div>
     </div>
   );
 }

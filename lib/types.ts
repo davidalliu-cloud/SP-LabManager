@@ -160,15 +160,14 @@ export interface ConcreteCompressiveTest {
    * A pour is rarely one truck, and when a cube fails the first question is
    * which load it came from. Held on the test rather than the sample because
    * that is where the technician has the delivery notes in front of them.
-   * Capped at MAX_TRUCK_PLATES; empty entries are dropped on save.
+   * Uncapped: a large pour can run to two dozen loads or more, and a limit
+   * here would mean a worksheet that cannot describe the pour in front of it.
+   * Empty entries are dropped on save.
    */
   truckPlates?: string[];
   specimens?: ConcreteCubeSpecimen[];
   createdAt: string;
 }
-
-/** As many trucks as one pour is ever likely to need. */
-export const MAX_TRUCK_PLATES = 10;
 
 export interface ConcreteCubeSpecimen {
   specimenCode: string;
