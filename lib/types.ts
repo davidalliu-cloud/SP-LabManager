@@ -1273,6 +1273,15 @@ export interface Report {
   issuedBy?: string;
   issuedAt?: string;
   clientEmail?: string;
+  /**
+   * How the report reached the client, and where it was sent.
+   *
+   * §7.8 asks what was issued, to whom and when; clientEmail answered that
+   * while email was the only route. WhatsApp adds a second, and a phone number
+   * written into an email field would make the record worse than no record.
+   */
+  issuedVia?: "email" | "whatsapp";
+  issuedTo?: string;
   pdfUrl?: string;
   createdAt: string;
 }
