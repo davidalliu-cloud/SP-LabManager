@@ -139,18 +139,24 @@ export default function ReportDetailPage() {
   }
 
   function sendReportToClient() {
-    if (!recipientEmail || activeReport.reportStatus !== "Approved") return;
+    if (!recipientEmail || !canSendToClient) return;
+    if (alreadySent && !confirmResend()) return;
+    const shareUrl = activeReport.pdfUrl
+      ? reportShareUrl(window.location.origin, activeReport.reportNumber, shareToken)
+      : null;
     const subject = `Raporti laboratorik SARP LAB - ${activeReport.reportNumber}`;
     const body = [
       "Pershendetje,",
       "",
       `Raporti ${activeReport.reportNumber} eshte miratuar dhe gati per shqyrtim.`,
       "",
-      // Only the stored PDF's signed URL. `${origin}/reports/${id}` used to be
-      // included too, but that is a page inside this app behind a login - a
-      // client receiving it could never open it.
-      activeReport.pdfUrl
-        ? `Shkarkoni PDF-ne e raportit: ${activeReport.pdfUrl}`
+      // The short link rather than the storage URL, for the same reason as the
+      // WhatsApp message: a hundred characters of bucket path and signing token
+      // is a wall of noise the reader can only take on trust. `/reports/<id>`
+      // was tried once and is worse — that page is behind a login the client
+      // does not have.
+      shareUrl
+        ? `Shkarkoni PDF-ne e raportit: ${shareUrl}`
         : "PDF-ja e raportit do te dergohet ne nje email vijues.",
       "",
       "Me respekt,",
@@ -158,6 +164,7 @@ export default function ReportDetailPage() {
     ]
       .filter((line): line is string => line !== null)
       .join("\n");
+    if (shareUrl) store.setReportShareToken(activeReport.id, shareToken);
     window.location.href = `mailto:${encodeURIComponent(recipientEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     store.issueReport(activeReport.id, recipientEmail, `Dërguar me email: ${activeReport.reportNumber}`);
   }
@@ -171,19 +178,22 @@ export default function ReportDetailPage() {
    * strength typed into a chat is an uncontrolled result, and transcription is
    * exactly where those go wrong.
    */
+  /**
+   * Sending again is allowed and sometimes necessary, but it should be a
+   * decision rather than a slip: the client already has this report, and a
+   * second copy arriving unexplained invites them to ask which one counts.
+   */
+  function confirmResend() {
+    const when = activeReport.issuedAt ? new Date(activeReport.issuedAt).toLocaleString("sq-AL") : "më parë";
+    const where = activeReport.issuedTo ? ` te ${activeReport.issuedTo}` : "";
+    return window.confirm(
+      `Raporti ${activeReport.reportNumber} i është dërguar tashmë klientit${where} (${when}).\n\nDëshironi ta dërgoni përsëri?`
+    );
+  }
+
   function sendReportToWhatsApp() {
     if (!whatsAppNumber.ok || !canSendToClient) return;
-    // Sending again is allowed and sometimes necessary, but it should be a
-    // decision rather than a slip: the client already has this report, and a
-    // second copy arriving unexplained invites them to ask which one counts.
-    if (alreadySent) {
-      const when = activeReport.issuedAt ? new Date(activeReport.issuedAt).toLocaleString("sq-AL") : "më parë";
-      const where = activeReport.issuedTo ? ` te ${activeReport.issuedTo}` : "";
-      const confirmed = window.confirm(
-        `Raporti ${activeReport.reportNumber} i është dërguar tashmë klientit${where} (${when}).\n\nDëshironi ta dërgoni përsëri?`
-      );
-      if (!confirmed) return;
-    }
+    if (alreadySent && !confirmResend()) return;
 
     const shareUrl = activeReport.pdfUrl
       ? reportShareUrl(window.location.origin, activeReport.reportNumber, shareToken)
@@ -310,7 +320,7 @@ export default function ReportDetailPage() {
               )}
               <button
                 onClick={sendReportToClient}
-                disabled={activeReport.reportStatus !== "Approved" || !recipientEmail}
+                disabled={!canSendToClient || !recipientEmail}
                 className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300"
               >
                 Dërgo te klienti
