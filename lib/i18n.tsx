@@ -34,6 +34,7 @@ const translations = {
     "nav.complaints": "Complaints",
     "nav.proficiency": "Proficiency Testing",
     "nav.internalAudit": "Internal Audits",
+    "nav.sopRegister": "Test Procedures (SOP)",
     "nav.settings": "Settings",
 
     "status.Registered": "Registered",
@@ -227,6 +228,7 @@ const translations = {
     "nav.complaints": "Ankesat",
     "nav.proficiency": "Testet e zotësisë",
     "nav.internalAudit": "Auditimet e brendshme",
+    "nav.sopRegister": "Procedurat teknike (SOP)",
     "nav.settings": "Cilësimet",
 
     "status.Registered": "Regjistruar",

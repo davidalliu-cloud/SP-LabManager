@@ -99,6 +99,8 @@ import { balancedGroups } from "./report-grouping";
 import { nextReportNumber } from "./report-number";
 import { initialState } from "./seed-data";
 import { deriveSampleStage, SAMPLE_STAGES } from "./sample-stage";
+import { mergeProceduresWithSeed, proceduresForPersistence } from "./procedures";
+import { procedureSeed } from "./procedure-seed";
 import { createSupabaseBrowserClient } from "./supabase/client";
 import { pushAuditEntries, pushNotifications } from "./activity-log";
 import type { AdmixtureTest, AdmixtureDensityRun, AdmixtureDryMassRun, AdmixtureWaterMixRun, AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltMixtureKind, AsphaltReportKind, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabState, LabTest, LabUser, MasonryUnitTest, MortarTest, WaterAnalysisTest, SclerometerTest, MortarTestKind, Notification, Project, Report, Role, Sample, SampleStatus, SteelTensileTest, ThermalInsulationTest } from "./types";
@@ -1154,7 +1156,9 @@ function forPersistence(state: LabState): LabState {
   const trimmed = {
     ...state,
     // Only equipment somebody has actually changed; the rest is in the seed.
-    equipment: equipmentForPersistence(state.equipment, initialState.equipment)
+    equipment: equipmentForPersistence(state.equipment, initialState.equipment),
+    // Same rule for the SOP register: only a procedure with a revision on file.
+    procedures: proceduresForPersistence(state.procedures, procedureSeed)
   };
   if (KEEP_ACTIVITY_IN_BLOB) return trimmed;
   return { ...trimmed, auditLog: [], notifications: [] };
@@ -1414,7 +1418,6 @@ function mergeWithInitialState(saved: Partial<LabState>): LabState {
     aggregateSandEquivalentTests: saved.aggregateSandEquivalentTests ?? initialState.aggregateSandEquivalentTests,
     aggregateSoundnessTests: saved.aggregateSoundnessTests ?? initialState.aggregateSoundnessTests,
     reports: saved.reports ?? initialState.reports,
-    procedures: saved.procedures ?? initialState.procedures,
     procedureRevisions,
     notifications: saved.notifications ?? initialState.notifications,
     auditLog: saved.auditLog ?? initialState.auditLog,
@@ -1430,7 +1433,11 @@ function mergeWithInitialState(saved: Partial<LabState>): LabState {
     auditEntries: saved.auditEntries ?? initialState.auditEntries,
     equipment: isSupersededEquipmentShape(saved.equipment)
       ? initialState.equipment
-      : mergeEquipmentWithSeed(saved.equipment, initialState.equipment)
+      : mergeEquipmentWithSeed(saved.equipment, initialState.equipment),
+    // The 87 SOPs ship with the code; only a procedure somebody has revised is
+    // stored. Matched on code, so the eleven aggregate procedures that predate
+    // the seed are not listed twice.
+    procedures: mergeProceduresWithSeed(saved.procedures, procedureSeed)
   };
 
   return mergeOfficialClientCodes2026(mergedState);
