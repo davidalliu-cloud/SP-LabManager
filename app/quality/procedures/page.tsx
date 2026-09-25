@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { useLabStore } from "@/lib/lab-store";
@@ -152,7 +153,12 @@ export default function ProcedureRegisterPage() {
 
       <p className="mt-6 text-xs leading-5 text-muted">
         Kodet janë riprodhuar tamam si në dokumentat e kontrolluara, përfshirë mospërputhjet e vogla në emërtim.
-        Dokumentet hapen në SharePoint dhe kërkojnë llogarinë e laboratorit.
+        Dokumentet hapen në SharePoint dhe kërkojnë llogarinë e laboratorit. Për rishikimin e një procedure
+        (draft, miratim) përdorni{" "}
+        <Link href="/procedures" className="font-semibold text-lab-burgundy hover:underline">
+          rrjedhën e rishikimit
+        </Link>
+        .
       </p>
     </>
   );
