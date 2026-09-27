@@ -11,6 +11,7 @@ import { formatEuropeanDate } from "@/lib/date-format";
 import { useLabStore } from "@/lib/lab-store";
 import { canManageClients, canViewClientIdentity } from "@/lib/permissions";
 import { getTestResultSummary } from "@/lib/test-result-summary";
+import { monthPeriod } from "@/lib/client-analysis";
 import type { ReportStatus, TestStatus } from "@/lib/types";
 
 const waitingStatuses: TestStatus[] = ["Pending", "Scheduled", "In Progress"];
@@ -44,6 +45,11 @@ export default function ClientDetailPage() {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [search, setSearch] = useState("");
+  // Separate from the table filters above: those narrow what is on screen, this
+  // sets the period the client's summary covers.
+  const defaultPeriod = useMemo(() => monthPeriod(), []);
+  const [analysisFrom, setAnalysisFrom] = useState(defaultPeriod.from);
+  const [analysisTo, setAnalysisTo] = useState(defaultPeriod.to);
 
   const client = store.clients.find((item) => item.id === params.id);
   const projects = store.projects.filter((project) => project.clientId === params.id);
@@ -129,6 +135,50 @@ export default function ClientDetailPage() {
           </div>
         }
       />
+
+      {/*
+        The monthly summary a client is sent, and the sheet that goes in front
+        of an invoice. Defaulted to the current month because that is what is
+        asked for nine times in ten, but any range can be set — a quarter, or
+        the span a particular contract covers.
+      */}
+      <section className="no-print mb-5 rounded-lg border border-line bg-lab-porcelain p-4">
+        <div className="flex flex-wrap items-end gap-3">
+          <div>
+            <label className="text-xs font-semibold uppercase tracking-wide text-muted" htmlFor="analysis-from">
+              Nga
+            </label>
+            <input
+              id="analysis-from"
+              type="date"
+              value={analysisFrom}
+              onChange={(event) => setAnalysisFrom(event.target.value)}
+              className="field mt-1 w-44"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-semibold uppercase tracking-wide text-muted" htmlFor="analysis-to">
+              Deri
+            </label>
+            <input
+              id="analysis-to"
+              type="date"
+              value={analysisTo}
+              onChange={(event) => setAnalysisTo(event.target.value)}
+              className="field mt-1 w-44"
+            />
+          </div>
+          <Link
+            href={`/clients/${client.id}/analysis?from=${analysisFrom}&to=${analysisTo}`}
+            className="btn-primary"
+          >
+            Gjenero përmbledhjen
+          </Link>
+          <p className="basis-full text-xs text-muted sm:basis-auto">
+            Përmbledhje me grafikë dhe listën e raporteve të lëshuara — për klientin dhe për faturën.
+          </p>
+        </div>
+      </section>
 
       <section className="mb-5 grid gap-4 md:grid-cols-4">
         <SummaryCard label="Teste të kryera" value={completedTests} tone="green" />
