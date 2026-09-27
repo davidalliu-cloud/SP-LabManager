@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { MAX_TOTAL_PDF_BYTES, authoriseSender, getGraphToken } from "@/lib/graph-mail";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,11 +19,9 @@ export const dynamic = "force-dynamic";
  * access policy; this route is deliberately independent of that.
  */
 
-/** Graph rejects a request body over ~4 MB. Base64 inflates by ~4/3, so cap the
- *  raw total below that and say so rather than failing at the API. */
-const MAX_TOTAL_PDF_BYTES = 2_800_000;
-
-const ALLOWED_SENDERS = ["d.alliu@sarpandlab.al", "a.duzha@sarpandlab.al"];
+// The size cap, the sender allowlist, the sign-in check and the Graph token all
+// live in lib/graph-mail now, shared with the client-summary send. One copy,
+// because a second would be the one that quietly stops checking who may send.
 
 type SendRequest = {
   reportIds: string[];
@@ -34,48 +33,8 @@ type SendRequest = {
   testToSelf?: boolean;
 };
 
-async function getGraphToken() {
-  const tenantId = process.env.MS_TENANT_ID;
-  const clientId = process.env.MS_CLIENT_ID;
-  const clientSecret = process.env.MS_CLIENT_SECRET;
-  if (!tenantId || !clientId || !clientSecret) {
-    throw new Error("Missing MS_TENANT_ID / MS_CLIENT_ID / MS_CLIENT_SECRET.");
-  }
-  const response = await fetch(`https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      scope: "https://graph.microsoft.com/.default",
-      grant_type: "client_credentials"
-    })
-  });
-  if (!response.ok) throw new Error(`Graph token error ${response.status}: ${await response.text()}`);
-  return ((await response.json()) as { access_token: string }).access_token;
-}
-
-/** Confirms the caller is signed in, and is one of the two people allowed to
- *  release a report. Never trust the browser's word for either. */
-async function authorise(request: Request) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !anonKey) return { error: "Supabase is not configured." as const };
-
-  const authHeader = request.headers.get("authorization") ?? "";
-  const token = authHeader.replace(/^Bearer\s+/i, "");
-  if (!token) return { error: "Not signed in." as const };
-
-  const supabase = createClient(url, anonKey, { auth: { persistSession: false } });
-  const { data, error } = await supabase.auth.getUser(token);
-  const email = data?.user?.email?.trim().toLowerCase();
-  if (error || !email) return { error: "Not signed in." as const };
-  if (!ALLOWED_SENDERS.includes(email)) return { error: "You are not permitted to send reports." as const };
-  return { email };
-}
-
 export async function POST(request: Request) {
-  const auth = await authorise(request);
+  const auth = await authoriseSender(request);
   if ("error" in auth) {
     return NextResponse.json({ ok: false, error: auth.error }, { status: 403 });
   }

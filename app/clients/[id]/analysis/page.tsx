@@ -11,6 +11,7 @@ import { generateAndStoreReportPdf } from "@/lib/pdf";
 import { formatInternational, toWhatsAppNumber, whatsAppLink } from "@/lib/phone";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { useLabStore } from "@/lib/lab-store";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 /**
  * Përmbledhje e punës për klientin — the analysis that goes to a client each
@@ -50,6 +51,8 @@ export default function ClientAnalysisPage() {
   const surfaceRef = useRef<HTMLDivElement>(null);
   const [pdfState, setPdfState] = useState<"idle" | "working" | "error">("idle");
   const [pdfError, setPdfError] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sendMessage, setSendMessage] = useState("");
 
   const whatsApp = toWhatsAppNumber(analysis.client?.phone);
 
@@ -86,21 +89,47 @@ export default function ClientAnalysisPage() {
     );
   }
 
-  function sendByEmail() {
-    if (!record?.pdfUrl || !analysis.client?.email || !confirmResend()) return;
-    const subject = `Përmbledhje e punës laboratorike — ${analysis.client.clientName} — ${formatPeriod(period)}`;
-    const body = [
-      "Pershendetje,",
-      "",
-      `Bashkengjitur permbledhja e punes laboratorike per periudhen ${formatPeriod(period)}.`,
-      "",
-      shareUrl(),
-      "",
-      "Me respekt,",
-      "SARP & LAB sh.p.k."
-    ].join("\n");
-    window.location.href = `mailto:${encodeURIComponent(analysis.client.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    store.recordClientAnalysisSent(params.id, period.from, period.to, analysis.client.email, "email");
+  /**
+   * Sends from njoftime@ with the PDF attached, through the same Graph route
+   * the reports use. Not a mailto: no mail client will attach a file, and the
+   * server reads the PDF and the address from the register rather than taking
+   * the browser's word for what it is sending to whom.
+   *
+   * `testToSelf` routes it to the sender instead of the client, so a summary can
+   * be looked at as the client will receive it before it actually goes.
+   */
+  async function sendByEmail(testToSelf: boolean) {
+    if (!record?.pdfUrl || sending) return;
+    if (!testToSelf && (!analysis.client?.email || !confirmResend())) return;
+    setSending(true);
+    setSendMessage("");
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { data } = await supabase.auth.getSession();
+      const response = await fetch("/api/client-analysis/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${data.session?.access_token ?? ""}`
+        },
+        body: JSON.stringify({ clientId: params.id, from: period.from, to: period.to, testToSelf })
+      });
+      const result = (await response.json()) as { ok: boolean; error?: string; sentTo?: string };
+      if (!result.ok) {
+        setSendMessage(`Nuk u dërgua: ${result.error ?? "gabim i panjohur"}`);
+        return;
+      }
+      if (testToSelf) {
+        setSendMessage(`Kopje testuese u dërgua te ${result.sentTo}. Përmbledhja nuk u shënua si e dërguar.`);
+        return;
+      }
+      store.recordClientAnalysisSent(params.id, period.from, period.to, result.sentTo ?? "", "email");
+      setSendMessage(`Përmbledhja u dërgua te ${result.sentTo} me PDF-në bashkëngjitur.`);
+    } catch (error) {
+      setSendMessage(error instanceof Error ? error.message : "Dërgimi dështoi.");
+    } finally {
+      setSending(false);
+    }
   }
 
   function sendByWhatsApp() {
@@ -154,11 +183,19 @@ export default function ClientAnalysisPage() {
           </button>
 
           <button
-            onClick={sendByEmail}
-            disabled={!record?.pdfUrl || !client.email}
+            onClick={() => sendByEmail(false)}
+            disabled={!record?.pdfUrl || !client.email || sending}
             className="btn-success disabled:cursor-not-allowed disabled:bg-slate-300"
           >
-            Dërgo me email
+            {sending ? "Duke dërguar…" : "Dërgo me email"}
+          </button>
+
+          <button
+            onClick={() => sendByEmail(true)}
+            disabled={!record?.pdfUrl || sending}
+            className="btn-secondary disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Kopje testuese te vetja
           </button>
 
           <button
@@ -205,6 +242,7 @@ export default function ClientAnalysisPage() {
           </p>
         ) : null}
         {pdfState === "error" ? <p className="mt-2 text-xs text-lab-red">{pdfError}</p> : null}
+        {sendMessage ? <p className="mt-2 text-xs font-medium text-ink">{sendMessage}</p> : null}
       </section>
 
       {/* The printed sheet. Everything inside carries its own heading, because a
