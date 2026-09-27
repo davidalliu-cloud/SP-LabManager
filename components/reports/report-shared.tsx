@@ -40,7 +40,9 @@ export function samplingOperator(sample?: Sample) {
 // signatures are collected.
 const SIGNATURE_IMAGES: { match: string; src: string }[] = [
   { match: "astrit", src: "/signatures/astrit-alliu.png" },
-  { match: "adela", src: "/signatures/adela-duzha.png" }
+  { match: "adela", src: "/signatures/adela-duzha.png" },
+  { match: "fatma", src: "/signatures/fatma-laci.png" },
+  { match: "kejsi", src: "/signatures/kejsi-ismaili.png" }
 ];
 
 function signatureImageFor(name?: string) {
