@@ -160,9 +160,17 @@ export function buildReadiness(state: Source, today = new Date()): ReadinessItem
   // at Approved because the lifecycle beyond it is not used here, so counting
   // those would report the lab's normal way of working as a fault, and a page
   // that is wrong on the first day is never trusted on the hundredth.
-  const reportedTestIds = new Set((state.reports ?? []).map((report) => report.testId));
+  //
+  // Nor "status === Completed", which is what this asked for until the
+  // dashboard review of 27 September: no test in the register has ever held
+  // that status — they run Pending to Report Approved — so this criterion could
+  // only ever report all-clear, whatever was actually stuck. A completion date
+  // is the honest signal, and it is cleared when results are rejected.
+  const reportedTestIds = new Set(
+    (state.reports ?? []).filter((report) => report.reportStatus !== "Rejected").map((report) => report.testId)
+  );
   const completedWithoutReport = (state.tests ?? []).filter(
-    (test) => test.status === "Completed" && !reportedTestIds.has(test.id)
+    (test) => test.completedAt && !reportedTestIds.has(test.id)
   ).length;
   items.push({
     key: "reports",

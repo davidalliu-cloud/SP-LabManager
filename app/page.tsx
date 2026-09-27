@@ -1,11 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { StageCell } from "@/components/ui/stage-cell";
 import { SummaryCard } from "@/components/ui/summary-card";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { useI18n } from "@/lib/i18n";
+import { reportIssuedOn } from "@/lib/client-analysis";
+import { buildReadiness } from "@/lib/quality-readiness";
 import { useLabStore } from "@/lib/lab-store";
 import { canViewClientIdentity } from "@/lib/permissions";
 import { sampleLifecycle, testLifecycle } from "@/lib/sample-stage";
@@ -37,50 +40,144 @@ function currentMonthContext() {
   };
 }
 
+/** Today as YYYY-MM-DD, to compare against the stored due dates. */
+function todayIso() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
 export default function DashboardPage() {
   const store = useLabStore();
   const { t } = useI18n();
   const month = currentMonthContext();
+  const today = todayIso();
+
   const samplesThisMonth = store.samples.filter((sample) => sample.dateReceived.startsWith(month.key)).length;
   const completedThisMonth = store.tests.filter((test) => test.completedAt?.startsWith(month.key)).length;
-  // Tests whose result is approved but which still have no report — exactly the
-  // "finished but stuck before a report" instance that is otherwise invisible in
-  // the registers. Listed in the Needs-attention panel below; the count also
-  // feeds the "Reports to prepare" tile.
+
+  // A rejected report was never issued, so it counts for nothing here.
+  const liveReports = store.reports.filter((report) => report.reportStatus !== "Rejected");
+  const reportsIssuedThisMonth = liveReports.filter((report) => reportIssuedOn(report)?.startsWith(month.key)).length;
+
+  // Awaiting a signature. The lifecycle this lab actually uses is
+  // Report Drafted -> Approved -> Sent to Client; "Pending Approval" is counted
+  // too because the app can still set it, not because anything does.
+  const awaitingApproval = store.reports.filter(
+    (report) => report.reportStatus === "Report Drafted" || report.reportStatus === "Pending Approval"
+  ).length;
+
+  // Work finished and not yet reported.
+  //
+  // This asked for tests at status "Approved" until today. No test has ever held
+  // that status — the register runs Pending -> Report Approved — so the tile read
+  // zero every day of its life and the panel beneath it was always empty. A
+  // completion date is the honest signal: it is set when the technician finishes
+  // and cleared again if the results are rejected.
+  const reportedTestIds = new Set(liveReports.map((report) => report.testId));
   const needsReport = store.tests
-    .filter((test) => test.status === "Approved" && !store.reports.some((report) => report.testId === test.id))
+    .filter((test) => test.completedAt && !reportedTestIds.has(test.id))
+    .map((test) => ({ test, sample: store.samples.find((sample) => sample.id === test.sampleId) }))
+    .sort((left, right) => (left.test.completedAt ?? "").localeCompare(right.test.completedAt ?? ""));
+
+  // Unfinished by the same rule, rather than by a list of statuses that has
+  // drifted twice already.
+  const unfinished = store.tests
+    .filter((test) => !test.completedAt)
     .map((test) => ({ test, sample: store.samples.find((sample) => sample.id === test.sampleId) }))
     .sort((left, right) => (left.test.requiredTestDate ?? "").localeCompare(right.test.requiredTestDate ?? ""));
-  const pendingPreparation = needsReport.length;
-  // Tests whose actual testing work is not finished yet — the technicians' queue.
-  const incompleteStatuses: TestStatus[] = ["Pending", "Scheduled", "In Progress", "Delayed", "Rejected"];
-  const needsCompletion = store.tests
-    .filter((test) => incompleteStatuses.includes(test.status))
-    .map((test) => ({ test, sample: store.samples.find((sample) => sample.id === test.sampleId) }))
-    .sort((left, right) => (left.test.requiredTestDate ?? "").localeCompare(right.test.requiredTestDate ?? ""));
-  const pendingApproval = store.reports.filter((report) => report.reportStatus === "Pending Approval").length;
-  const approvedNotIssued = store.reports.filter((report) => report.reportStatus === "Approved").length;
-  // Derived from the due date, the same rule the Delayed Items page and the row
-  // colouring use. This counted status === "Delayed" until 2026-08-27 - a status
-  // no code path ever assigns, so the tile could only ever read zero.
-  const delayed = store.tests.filter((test) => isOverdue(test.requiredTestDate, test.status)).length;
-  const procedureDrafts = store.procedureRevisions.filter((revision) => revision.status === "Draft" || revision.status === "In Review").length;
+
+  // Split, because 125 of the 128 in this queue are cubes waiting out their 7 or
+  // 28 days. A panel that shows 128 when three need you today is one people stop
+  // reading.
+  const dueNow = unfinished.filter(({ test }) => (test.requiredTestDate ?? "") <= today);
+  const scheduledAhead = unfinished.filter(({ test }) => (test.requiredTestDate ?? "") > today);
+  const overdue = store.tests.filter((test) => isOverdue(test.requiredTestDate, test.status)).length;
+
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
   const showClientIdentity = canViewClientIdentity(currentUser?.role);
-  const workflowRows = [
+
+  // --- what the quality manager is answerable for -------------------------
+  // The same computation the readiness page runs, shown here as a strip so a
+  // calibration that has lapsed is visible from the front page rather than only
+  // to whoever opens Quality Management.
+  const readiness = useMemo(
+    () => buildReadiness(store).filter((item) => item.level !== "ok"),
+    [
+      store.equipment,
+      store.environmentReadings,
+      store.nonconformities,
+      store.complaints,
+      store.tests,
+      store.reports,
+      store.proficiencyTests,
+      store.auditEntries
+    ]
+  );
+
+  // --- management snapshot, computed ---------------------------------------
+  // Both of these were hardcoded: the top client was the literal "-" and the
+  // commonest sample was the string "Kubike Betoni / Concrete Cubes". A figure
+  // nobody calculated is worse on this page than no figure at all.
+  const topClient = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const report of liveReports) {
+      if (!reportIssuedOn(report)?.startsWith(month.key)) continue;
+      counts.set(report.clientId, (counts.get(report.clientId) ?? 0) + 1);
+    }
+    const best = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
+    if (!best) return "—";
+    const client = store.clients.find((row) => row.id === best[0]);
+    const name = showClientIdentity ? client?.clientName : undefined;
+    return `${client?.clientCode ?? "—"}${name ? ` · ${name}` : ""} (${best[1]})`;
+  }, [liveReports, month.key, store.clients, showClientIdentity]);
+
+  const commonestSample = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const sample of store.samples) {
+      if (!sample.dateReceived.startsWith(month.key)) continue;
+      counts.set(sample.sampleType, (counts.get(sample.sampleType) ?? 0) + 1);
+    }
+    const best = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
+    return best ? `${best[0]} (${best[1]})` : "—";
+  }, [store.samples, month.key]);
+
+  /**
+   * Days from a sample arriving to its report going out, for reports issued
+   * this month. The span the client experiences, and the one they ask about.
+   * Concrete waits 28 days by design, so it is stated rather than judged.
+   */
+  const averageTurnaround = useMemo(() => {
+    const spans: number[] = [];
+    for (const report of liveReports) {
+      const issued = reportIssuedOn(report);
+      if (!issued?.startsWith(month.key)) continue;
+      const sample = store.samples.find((row) => row.id === report.sampleId);
+      if (!sample?.dateReceived) continue;
+      const days = Math.round(
+        (new Date(issued.slice(0, 10)).getTime() - new Date(sample.dateReceived.slice(0, 10)).getTime()) / 86_400_000
+      );
+      if (Number.isFinite(days) && days >= 0) spans.push(days);
+    }
+    if (!spans.length) return "—";
+    return `${Math.round((spans.reduce((sum, value) => sum + value, 0) / spans.length) * 10) / 10} ditë`;
+  }, [liveReports, month.key, store.samples]);
+
+  // --- what is next ---------------------------------------------------------
+  // Was every sample and every test in the register — 771 rows of it, which is
+  // the tests page with a different heading. The dashboard's job is the next
+  // dozen things, with a link to the rest.
+  const upcomingRows = [
     ...store.samples
       .filter((sample) => !store.tests.some((test) => test.sampleId === sample.id))
       .map((sample) => ({ kind: "sample" as const, sample, test: undefined })),
-    ...store.tests.map((test) => ({
-      kind: "test" as const,
-      test,
-      sample: store.samples.find((sample) => sample.id === test.sampleId)
-    }))
-  ].sort((left, right) => {
-    const leftDate = left.test?.requiredTestDate ?? left.sample?.requiredTestDate ?? "";
-    const rightDate = right.test?.requiredTestDate ?? right.sample?.requiredTestDate ?? "";
-    return leftDate.localeCompare(rightDate);
-  });
+    ...unfinished.map(({ test, sample }) => ({ kind: "test" as const, test, sample }))
+  ]
+    .sort((left, right) => {
+      const leftDate = left.test?.requiredTestDate ?? left.sample?.requiredTestDate ?? "";
+      const rightDate = right.test?.requiredTestDate ?? right.sample?.requiredTestDate ?? "";
+      return leftDate.localeCompare(rightDate);
+    })
+    .slice(0, 12);
 
   return (
     <>
@@ -96,18 +193,57 @@ export default function DashboardPage() {
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
         <SummaryCard label={t("dashboard.samplesThisMonth")} value={samplesThisMonth} detail={month.label} href="/samples" />
         <SummaryCard label={t("dashboard.testsCompleted")} value={completedThisMonth} tone="green" detail={month.label} href="/tests" />
-        <SummaryCard label={t("dashboard.reportsToPrepare")} value={pendingPreparation} tone="purple" href="/reports" />
-        <SummaryCard label={t("dashboard.pendingApproval")} value={pendingApproval} tone="purple" href="/reports" />
-        <SummaryCard label={t("dashboard.approvedNotIssued")} value={approvedNotIssued} tone="green" href="/reports" />
-        <SummaryCard label={t("dashboard.delayedTests")} value={delayed} tone="red" href="/delayed" />
+        <SummaryCard label={t("dashboard.reportsIssued")} value={reportsIssuedThisMonth} tone="green" detail={month.label} href="/reports" />
+        <SummaryCard label={t("dashboard.reportsToPrepare")} value={needsReport.length} tone="purple" href="/reports" />
+        <SummaryCard label={t("dashboard.pendingApproval")} value={awaitingApproval} tone="purple" href="/reports" />
+        <SummaryCard label={t("dashboard.delayedTests")} value={overdue} tone="red" href="/delayed" />
+      </section>
+
+      {/* The quality manager's obligations, from the same computation the
+          readiness page runs. Only what is not in order appears: a calibration
+          that has lapsed should be visible from the front page, and a lab in
+          good order should not have to read a wall of green to learn it. */}
+      <section className="mt-6 surface-card p-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-base font-semibold text-ink">{t("dashboard.quality")}</h2>
+          <Link href="/quality" className="text-sm font-semibold text-lab-burgundy hover:text-lab-purple">
+            {t("dashboard.qualityOpen")}
+          </Link>
+        </div>
+        {readiness.length ? (
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {readiness.map((item) => (
+              <Link
+                key={item.key}
+                href={item.href}
+                className={`block rounded-md border-l-4 p-3 transition hover:brightness-95 ${
+                  item.level === "overdue"
+                    ? "border-l-lab-red bg-red-50"
+                    : "border-l-amber-400 bg-amber-50"
+                }`}
+              >
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-sm font-semibold text-ink">{item.title}</span>
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">§{item.clause}</span>
+                </div>
+                <div className="mt-0.5 text-xs leading-5 text-ink/80">{item.detail}</div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-brand-green">
+            <span className="h-1.5 w-1.5 rounded-full bg-brand-green" aria-hidden="true" />
+            {t("dashboard.qualityClear")}
+          </p>
+        )}
       </section>
 
       <AttentionPanel
-        title={t("dashboard.completionTitle")}
-        description={t("dashboard.completionDescription")}
-        empty={t("dashboard.completionEmpty")}
+        title={t("dashboard.dueTitle")}
+        description={t("dashboard.dueDescription")}
+        empty={t("dashboard.dueEmpty")}
         actionLabel={t("dashboard.completionOpen")}
-        items={needsCompletion}
+        items={dueNow}
         accentClass="border-l-lab-red"
         badgeClass="bg-brand-late text-lab-red"
       />
@@ -122,27 +258,22 @@ export default function DashboardPage() {
         badgeClass="bg-lab-gold/20 text-[#8a5a12]"
       />
 
-      <section className="mt-6 surface-card p-4">
-        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-          <div>
-            <h2 className="text-base font-semibold text-ink">Dosja e procedurave</h2>
-            <p className="mt-1 text-sm text-muted">Procedurat e miratuara, historiku i rishikimeve dhe kontrolli nga Kryelaboranti për dokumentet e kontrolluara.</p>
-          </div>
-          <Link href="/procedures" className="btn-secondary">Hap procedurat</Link>
-        </div>
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
-          <Metric label="SOP agregatesh" value={String(store.procedures.filter((procedure) => procedure.category === "Aggregate").length)} />
-          <Metric label="Rishikime aktuale" value={String(store.procedureRevisions.filter((revision) => revision.status === "Current").length)} />
-          <Metric label="Draft / në rishikim" value={String(procedureDrafts)} />
-        </div>
-      </section>
+      <AttentionPanel
+        title={t("dashboard.aheadTitle")}
+        description={t("dashboard.aheadDescription")}
+        empty={t("dashboard.aheadEmpty")}
+        actionLabel={t("dashboard.completionOpen")}
+        items={scheduledAhead}
+        accentClass="border-l-line"
+        badgeClass="bg-lab-porcelain text-muted"
+      />
 
       <section className="mt-6 surface-card p-4">
         <div>
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <h2 className="text-base font-semibold text-ink">Procesi i kampionëve dhe testeve</h2>
-              <p className="mt-1 text-sm text-muted">Pamje në rreshta për çdo kampion ose test, nga regjistrimi deri te lëshimi i raportit.</p>
+              <h2 className="text-base font-semibold text-ink">{t("dashboard.upcomingTitle")}</h2>
+              <p className="mt-1 text-sm text-muted">{t("dashboard.upcomingDescription")}</p>
             </div>
             <Link href="/tests" className="text-sm font-semibold text-lab-burgundy hover:text-lab-purple">{t("dashboard.openAllTests")}</Link>
           </div>
@@ -163,8 +294,8 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
-                {workflowRows.length ? (
-                  workflowRows.map((row) => (
+                {upcomingRows.length ? (
+                  upcomingRows.map((row) => (
                     <WorkflowRow
                       key={row.test?.id ?? row.sample?.id}
                       row={row}
@@ -185,10 +316,10 @@ export default function DashboardPage() {
       <section className="mt-6 surface-card p-4">
         <h2 className="text-base font-semibold text-ink">{t("dashboard.managementSnapshot")}</h2>
         <div className="mt-4 grid gap-3 md:grid-cols-4">
-          <Metric label={t("dashboard.topClient")} value="-" />
-          <Metric label={t("dashboard.commonSample")} value="Kubike Betoni / Concrete Cubes" />
-          <Metric label={t("dashboard.reportsToPrepare")} value={String(pendingPreparation)} />
-          <Metric label={t("dashboard.nextApproval")} value={`${pendingApproval} raporte`} />
+          <Metric label={t("dashboard.topClient")} value={topClient} />
+          <Metric label={t("dashboard.commonSample")} value={commonestSample} />
+          <Metric label={t("dashboard.averageTurnaround")} value={averageTurnaround} />
+          <Metric label={t("dashboard.sopRegister")} value={`${store.procedures.length}`} />
         </div>
       </section>
     </>
