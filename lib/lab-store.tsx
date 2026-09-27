@@ -103,7 +103,7 @@ import { mergeProceduresWithSeed, proceduresForPersistence } from "./procedures"
 import { procedureSeed } from "./procedure-seed";
 import { createSupabaseBrowserClient } from "./supabase/client";
 import { pushAuditEntries, pushNotifications } from "./activity-log";
-import type { AdmixtureTest, AdmixtureDensityRun, AdmixtureDryMassRun, AdmixtureWaterMixRun, AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltMixtureKind, AsphaltReportKind, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabState, LabTest, LabUser, MasonryUnitTest, MortarTest, WaterAnalysisTest, SclerometerTest, MortarTestKind, Notification, Project, Report, Role, Sample, SampleStatus, SteelTensileTest, ThermalInsulationTest } from "./types";
+import type { AdmixtureTest, AdmixtureDensityRun, AdmixtureDryMassRun, AdmixtureWaterMixRun, AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltMixtureKind, AsphaltReportKind, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ClientAnalysisRecord, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabState, LabTest, LabUser, MasonryUnitTest, MortarTest, WaterAnalysisTest, SclerometerTest, MortarTestKind, Notification, Project, Report, Role, Sample, SampleStatus, SteelTensileTest, ThermalInsulationTest } from "./types";
 
 export interface NewSampleInput {
   clientId: string;
@@ -1097,6 +1097,8 @@ interface LabStoreValue extends LabState {
   sendReportsToClient: (reportIds: string[], clientEmail: string, notes?: string) => void;
   setReportPdfUrl: (reportId: string, pdfUrl: string) => void;
   setReportShareToken: (reportId: string, token: string) => void;
+  saveClientAnalysis: (input: { clientId: string; from: string; to: string; pdfUrl: string; shareToken: string }) => void;
+  recordClientAnalysisSent: (clientId: string, from: string, to: string, destination: string, channel: "email" | "whatsapp") => void;
   createProcedureRevision: (input: ProcedureRevisionInput) => string;
   submitProcedureRevision: (revisionId: string) => void;
   approveProcedureRevision: (revisionId: string) => void;
@@ -1431,6 +1433,7 @@ function mergeWithInitialState(saved: Partial<LabState>): LabState {
     complaints: saved.complaints ?? initialState.complaints,
     proficiencyTests: saved.proficiencyTests ?? initialState.proficiencyTests,
     auditEntries: saved.auditEntries ?? initialState.auditEntries,
+    clientAnalyses: saved.clientAnalyses ?? initialState.clientAnalyses,
     equipment: isSupersededEquipmentShape(saved.equipment)
       ? initialState.equipment
       : mergeEquipmentWithSeed(saved.equipment, initialState.equipment),
@@ -4674,6 +4677,77 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
        * month must still be able to open it, and re-issuing the report is
        * precisely when a new token would break that.
        */
+      /**
+       * Files the summary produced for one client and period.
+       *
+       * Keyed on client and period rather than an id, because that triple is
+       * what the document is. Regenerating the same month replaces the PDF and
+       * keeps the token, so a client who was given the link last week still
+       * opens the current sheet rather than a dead one.
+       */
+      saveClientAnalysis(input) {
+        setState((previous) => {
+          const existing = previous.clientAnalyses.find(
+            (row) => row.clientId === input.clientId && row.from === input.from && row.to === input.to
+          );
+          const record: ClientAnalysisRecord = {
+            id: existing?.id ?? crypto.randomUUID(),
+            clientId: input.clientId,
+            from: input.from,
+            to: input.to,
+            pdfUrl: input.pdfUrl,
+            shareToken: existing?.shareToken ?? input.shareToken,
+            createdAt: existing?.createdAt ?? new Date().toISOString(),
+            createdBy: existing?.createdBy ?? currentUserId,
+            sentAt: existing?.sentAt,
+            sentBy: existing?.sentBy,
+            sentTo: existing?.sentTo,
+            sentVia: existing?.sentVia
+          };
+          const draft: LabState = {
+            ...previous,
+            clientAnalyses: existing
+              ? previous.clientAnalyses.map((row) => (row.id === existing.id ? record : row))
+              : [...previous.clientAnalyses, record],
+            auditLog: [...previous.auditLog]
+          };
+          addAudit(
+            draft,
+            "client_analysis_generated",
+            "client",
+            input.clientId,
+            `Përmbledhje ${input.from} – ${input.to} u gjenerua.`
+          );
+          return draft;
+        });
+      },
+      /** Records that a summary actually went out, and to where. */
+      recordClientAnalysisSent(clientId, from, to, destination, channel) {
+        setState((previous) => {
+          const existing = previous.clientAnalyses.find(
+            (row) => row.clientId === clientId && row.from === from && row.to === to
+          );
+          if (!existing) return previous;
+          const sentAt = new Date().toISOString();
+          const draft: LabState = {
+            ...previous,
+            clientAnalyses: previous.clientAnalyses.map((row) =>
+              row.id === existing.id
+                ? { ...row, sentAt, sentBy: currentUserId, sentTo: destination, sentVia: channel }
+                : row
+            ),
+            auditLog: [...previous.auditLog]
+          };
+          addAudit(
+            draft,
+            "client_analysis_sent",
+            "client",
+            clientId,
+            `Përmbledhje ${from} – ${to} u dërgua te ${destination}${channel === "whatsapp" ? " me WhatsApp" : " me email"}.`
+          );
+          return draft;
+        });
+      },
       setReportShareToken(reportId, token) {
         setState((previous) => {
           const report = previous.reports.find((row) => row.id === reportId);

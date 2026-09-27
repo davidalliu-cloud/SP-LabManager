@@ -1423,6 +1423,35 @@ export interface LabState {
   proficiencyTests: ProficiencyTest[];
   /** Auditimet e brendshme — §8.8, SL-FM-8.8.3. */
   auditEntries: AuditEntry[];
+  /** Përmbledhjet e dërguara klientëve — one per client per period. */
+  clientAnalyses: ClientAnalysisRecord[];
+}
+
+/**
+ * A client summary that was produced and, usually, sent.
+ *
+ * Kept because it accompanies an invoice: when a client asks which figures
+ * their bill was based on, the answer has to be the sheet they were actually
+ * sent, not a fresh one generated today over the same dates. Records change —
+ * a late report, a rejected result — and a summary regenerated next month is a
+ * different document.
+ */
+export interface ClientAnalysisRecord {
+  id: string;
+  clientId: string;
+  /** The period covered, as YYYY-MM-DD. */
+  from: string;
+  to: string;
+  /** The stored PDF; absent until one has been generated. */
+  pdfUrl?: string;
+  /** The secret half of /a/<clientCode>-<token>. Set once and kept. */
+  shareToken: string;
+  createdAt: string;
+  createdBy?: string;
+  sentAt?: string;
+  sentBy?: string;
+  sentTo?: string;
+  sentVia?: "email" | "whatsapp";
 }
 
 /**

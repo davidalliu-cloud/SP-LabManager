@@ -2,10 +2,13 @@
 
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { PageHeader } from "@/components/ui/page-header";
+import { analysisShareUrl, newAnalysisToken } from "@/lib/analysis-link";
 import { buildClientAnalysis, formatPeriod, monthPeriod } from "@/lib/client-analysis";
+import { generateAndStoreReportPdf } from "@/lib/pdf";
+import { formatInternational, toWhatsAppNumber, whatsAppLink } from "@/lib/phone";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { useLabStore } from "@/lib/lab-store";
 
@@ -39,6 +42,82 @@ export default function ClientAnalysisPage() {
     [store.clients, store.projects, store.samples, store.tests, store.reports, store.concreteTests, params.id, period]
   );
 
+  const record = store.clientAnalyses.find(
+    (row) => row.clientId === params.id && row.from === period.from && row.to === period.to
+  );
+  const mintedToken = useRef(newAnalysisToken());
+  const token = record?.shareToken ?? mintedToken.current;
+  const surfaceRef = useRef<HTMLDivElement>(null);
+  const [pdfState, setPdfState] = useState<"idle" | "working" | "error">("idle");
+  const [pdfError, setPdfError] = useState("");
+
+  const whatsApp = toWhatsAppNumber(analysis.client?.phone);
+
+  /**
+   * Renders the sheet to a PDF, stores it, and files the record — which is what
+   * makes the /a/ link resolve. Sending is a separate press, because the sheet
+   * should be looked at before it goes to a client.
+   */
+  async function storePdf() {
+    const surface = surfaceRef.current;
+    if (!surface || !analysis.client) return;
+    setPdfState("working");
+    setPdfError("");
+    try {
+      const name = `analiza-${analysis.client.clientCode}-${period.from}-${period.to}`;
+      const pdfUrl = await generateAndStoreReportPdf(surface, name, record?.pdfUrl);
+      store.saveClientAnalysis({ clientId: params.id, from: period.from, to: period.to, pdfUrl, shareToken: token });
+      setPdfState("idle");
+    } catch (error) {
+      setPdfState("error");
+      setPdfError(error instanceof Error ? error.message : "Gabim i panjohur gjatë gjenerimit të PDF-së.");
+    }
+  }
+
+  function shareUrl() {
+    return analysisShareUrl(window.location.origin, analysis.client!.clientCode, token);
+  }
+
+  function confirmResend() {
+    if (!record?.sentAt) return true;
+    const when = new Date(record.sentAt).toLocaleString("sq-AL");
+    return window.confirm(
+      `Kjo përmbledhje u dërgua tashmë${record.sentTo ? ` te ${record.sentTo}` : ""} (${when}).\n\nDëshironi ta dërgoni përsëri?`
+    );
+  }
+
+  function sendByEmail() {
+    if (!record?.pdfUrl || !analysis.client?.email || !confirmResend()) return;
+    const subject = `Përmbledhje e punës laboratorike — ${analysis.client.clientName} — ${formatPeriod(period)}`;
+    const body = [
+      "Pershendetje,",
+      "",
+      `Bashkengjitur permbledhja e punes laboratorike per periudhen ${formatPeriod(period)}.`,
+      "",
+      shareUrl(),
+      "",
+      "Me respekt,",
+      "SARP & LAB sh.p.k."
+    ].join("\n");
+    window.location.href = `mailto:${encodeURIComponent(analysis.client.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    store.recordClientAnalysisSent(params.id, period.from, period.to, analysis.client.email, "email");
+  }
+
+  function sendByWhatsApp() {
+    if (!record?.pdfUrl || !whatsApp.ok || !confirmResend()) return;
+    const message = [
+      "Pershendetje,",
+      "",
+      `Permbledhja e punes laboratorike per ${formatPeriod(period)}:`,
+      "",
+      shareUrl(),
+      "",
+      "SARP & LAB sh.p.k."
+    ].join("\n");
+    window.open(whatsAppLink(whatsApp.e164, message), "_blank", "noopener");
+    store.recordClientAnalysisSent(params.id, period.from, period.to, formatInternational(whatsApp.e164), "whatsapp");
+  }
+
   if (!analysis.client) return <PageHeader title="Klienti nuk u gjet" />;
 
   const { client } = analysis;
@@ -68,10 +147,70 @@ export default function ClientAnalysisPage() {
         />
       </div>
 
+      <section className="no-print mb-6 rounded-lg border border-line bg-lab-porcelain p-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <button onClick={storePdf} disabled={pdfState === "working"} className="btn-primary disabled:bg-slate-300">
+            {pdfState === "working" ? "Duke gjeneruar…" : record?.pdfUrl ? "Rigjenero PDF-në" : "Gjenero dhe ruaj PDF-në"}
+          </button>
+
+          <button
+            onClick={sendByEmail}
+            disabled={!record?.pdfUrl || !client.email}
+            className="btn-success disabled:cursor-not-allowed disabled:bg-slate-300"
+          >
+            Dërgo me email
+          </button>
+
+          <button
+            onClick={sendByWhatsApp}
+            disabled={!record?.pdfUrl || !whatsApp.ok}
+            className="rounded-md bg-[#25D366] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[#1DA851] disabled:cursor-not-allowed disabled:bg-slate-300"
+          >
+            Dërgo me WhatsApp
+          </button>
+
+          {record?.pdfUrl ? (
+            <a href={record.pdfUrl} target="_blank" rel="noopener noreferrer" className="btn-secondary">
+              Shiko PDF-në e ruajtur
+            </a>
+          ) : null}
+        </div>
+
+        {/* Why the send buttons wait: the link a client opens resolves through
+            the stored PDF, so there is nothing to send until one exists. */}
+        {!record?.pdfUrl ? (
+          <p className="mt-2 text-xs text-muted">
+            Gjeneroni PDF-në së pari — linku që hap klienti çon te dokumenti i ruajtur.
+          </p>
+        ) : (
+          <p className="mt-2 text-xs text-muted">
+            Linku i klientit: <span className="font-semibold text-ink">/a/{client.clientCode}-{token}</span>
+            {record.sentAt ? (
+              <>
+                {" · "}dërguar {record.sentVia === "whatsapp" ? "me WhatsApp" : "me email"}
+                {record.sentTo ? ` te ${record.sentTo}` : ""} më {new Date(record.sentAt).toLocaleString("sq-AL")}
+              </>
+            ) : null}
+          </p>
+        )}
+
+        {!client.email ? (
+          <p className="mt-1 text-xs text-amber-800">Klienti nuk ka email të regjistruar.</p>
+        ) : null}
+        {!whatsApp.ok ? (
+          <p className="mt-1 text-xs text-amber-800">
+            {whatsApp.reason === "not-a-mobile"
+              ? "Numri i klientit nuk është celular, prandaj nuk mund të marrë WhatsApp."
+              : "Klienti nuk ka numër celulari për WhatsApp."}
+          </p>
+        ) : null}
+        {pdfState === "error" ? <p className="mt-2 text-xs text-lab-red">{pdfError}</p> : null}
+      </section>
+
       {/* The printed sheet. Everything inside carries its own heading, because a
           page that leaves the screen has to say what it is without the app
           around it. */}
-      <div className="print-surface space-y-6 rounded-md bg-white">
+      <div ref={surfaceRef} className="print-surface space-y-6 rounded-md bg-white">
         <header className="hidden items-start justify-between gap-4 border-b border-black pb-3 print:flex">
           <div>
             <img src="/brand/sarp-logo.png" alt="SARP" className="h-auto w-[150px]" />
