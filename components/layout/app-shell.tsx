@@ -31,10 +31,9 @@ const navItems: readonly NavNode[] = [
   ["nav.fieldRegister", "/field"],
   ["nav.tests", "/tests"],
   ["nav.reports", "/reports"],
-  // The SOP register lives under Quality Management; this entry points there
-  // rather than at /procedures, which lists one matrix at a time and so showed
-  // eleven aggregate procedures while the other seventy-six sat unseen.
-  ["nav.procedures", "/quality/procedures"],
+  // No top-level Procedurat entry: the SOP register lives under Quality
+  // Management, and two sidebar entries leading to one page is how somebody
+  // ends up asking which of them is the real register.
   ["nav.clients", "/clients"],
   ["nav.projects", "/projects"],
   ["nav.employees", "/employees"],
