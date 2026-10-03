@@ -7,7 +7,8 @@ import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, Responsive
 import { PageHeader } from "@/components/ui/page-header";
 import { analysisShareUrl, newAnalysisToken } from "@/lib/analysis-link";
 import { buildClientAnalysis, formatPeriod, monthPeriod } from "@/lib/client-analysis";
-import { generateAndStoreReportPdf } from "@/lib/pdf";
+import { storePdfBlob } from "@/lib/pdf";
+import { buildSummaryPdf, imageAsDataUrl, type SummaryChart } from "@/lib/summary-pdf";
 import { formatInternational, toWhatsAppNumber, whatsAppLink } from "@/lib/phone";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { useLabStore } from "@/lib/lab-store";
@@ -68,15 +69,30 @@ export default function ClientAnalysisPage() {
     setPdfError("");
     try {
       const name = `analiza-${analysis.client.clientCode}-${period.from}-${period.to}`;
-      const pdfUrl = await generateAndStoreReportPdf(surface, name, record?.pdfUrl, {
-        orientation: "landscape",
-        // A month of pours is as long as it is; sliced across pages at full size
-        // rather than shrunk until the table cannot be read.
-        multiPage: true,
-        // Capture at the sheet's own width so the charts come out drawn at the
-        // size they were measured at, and the PDF is the page on screen.
-        captureWidth: surface.offsetWidth
+
+      // Only the charts are photographed. Everything else is drawn as text in
+      // the PDF, which is what lets a table break between rows instead of
+      // through one, and keeps the file small and the numbers selectable.
+      const [{ default: html2canvas }, logoDataUrl, accreditationDataUrl] = await Promise.all([
+        import("html2canvas"),
+        imageAsDataUrl("/brand/sarp-logo.png"),
+        imageAsDataUrl("/brand/da-accreditation.png")
+      ]);
+
+      const charts: SummaryChart[] = [];
+      for (const node of Array.from(surface.querySelectorAll<HTMLElement>(".summary-chart"))) {
+        const canvas = await html2canvas(node, { scale: 2, backgroundColor: "#ffffff", logging: false });
+        charts.push({ dataUrl: canvas.toDataURL("image/png"), width: canvas.width, height: canvas.height });
+      }
+
+      const blob = await buildSummaryPdf({
+        analysis,
+        issuedBy: store.users.find((user) => user.id === store.currentUserId)?.fullName ?? "—",
+        logoDataUrl,
+        accreditationDataUrl,
+        charts
       });
+      const pdfUrl = await storePdfBlob(blob, name, record?.pdfUrl);
       store.saveClientAnalysis({ clientId: params.id, from: period.from, to: period.to, pdfUrl, shareToken: token });
       setPdfState("idle");
     } catch (error) {
@@ -328,7 +344,7 @@ export default function ClientAnalysisPage() {
             against strength should see both without scrolling. */}
         <div className="grid gap-6 lg:grid-cols-2">
         {analysis.byTestType.length ? (
-          <section className="surface-card p-4">
+          <section className="summary-chart surface-card p-4">
             <h2 className="text-sm font-semibold text-ink">Testet sipas tipit</h2>
             <p className="mt-0.5 text-xs text-muted">Teste të përfunduara dhe raporte të lëshuara në periudhë.</p>
             <div className="mt-4" style={{ height: Math.max(220, analysis.byTestType.length * 34) }}>
@@ -348,7 +364,7 @@ export default function ClientAnalysisPage() {
         ) : null}
 
         {analysis.byMonth.length > 1 ? (
-          <section className="surface-card p-4">
+          <section className="summary-chart surface-card p-4">
             <h2 className="text-sm font-semibold text-ink">Rrjedha sipas mujore</h2>
             <p className="mt-0.5 text-xs text-muted">Vetëm kur periudha përfshin më shumë se një muaj.</p>
             <div className="mt-4 h-64">
@@ -369,7 +385,7 @@ export default function ClientAnalysisPage() {
         ) : null}
 
         {analysis.concrete && strengthChart ? (
-          <section className="surface-card p-4">
+          <section className="summary-chart surface-card p-4">
             <h2 className="text-sm font-semibold text-ink">Rezistenca në shtypje</h2>
             <p className="mt-0.5 text-xs text-muted">
               {analysis.concrete.specimens} kampione · mesatarja {analysis.concrete.averageStrengthMpa} MPa · minimumi{" "}

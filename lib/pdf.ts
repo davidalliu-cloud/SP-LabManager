@@ -124,8 +124,18 @@ export async function generateAndStoreReportPdf(
   options: PdfOptions = {}
 ): Promise<string> {
   const blob = await renderElementToPdfBlob(element, options);
+  return storePdfBlob(blob, reportNumber, previousUrl);
+}
+
+/**
+ * Uploads a finished PDF and returns a long-lived signed URL.
+ *
+ * Separate from the rendering above because the client summary builds its PDF
+ * rather than photographing one, but stores it in exactly the same place.
+ */
+export async function storePdfBlob(blob: Blob, name: string, previousUrl?: string): Promise<string> {
   const supabase = createSupabaseBrowserClient();
-  const safe = reportNumber.replace(/[^a-zA-Z0-9_-]/g, "_");
+  const safe = name.replace(/[^a-zA-Z0-9_-]/g, "_");
   // A unique filename per generation. Supabase's storage CDN caches objects by
   // path for a while, so overwriting one fixed name meant "Shkarko PDF-në e
   // ruajtur" could keep serving a stale, previously-generated copy. A fresh path
