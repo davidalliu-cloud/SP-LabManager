@@ -428,50 +428,84 @@ export default function ClientAnalysisPage() {
                   Çdo set kubikësh: data e betonimit, data e provës, mosha dhe rezultatet.
                 </p>
               </div>
-              <span className="text-xs text-muted">{analysis.concreteRows.length}</span>
+              <span className="whitespace-nowrap text-xs text-muted">
+                {analysis.concreteRows.reduce((sum, row) => sum + row.cubes.length, 0)} kubikë ·{" "}
+                {analysis.concreteRows.length} sete
+              </span>
             </header>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[62rem] text-[12px]">
+              {/* One line per cube. The specimen code carries the register
+                  number and the age within it, so a line still says what it is
+                  after a page break has taken the set's first row with it. */}
+              <table className="w-full min-w-[64rem] text-[12px]">
                 <thead className="border-b border-line text-left text-[10px] uppercase tracking-wide text-muted">
                   <tr>
-                    <th className="px-3 py-2">Nr. regjistri</th>
+                    <th className="px-3 py-2">Kubi</th>
                     <th className="px-3 py-2">Objekti / elementi</th>
                     <th className="px-3 py-2">Klasa</th>
                     <th className="px-3 py-2">Betonimi</th>
                     <th className="px-3 py-2">Prova</th>
                     <th className="px-3 py-2 text-right">Mosha</th>
-                    <th className="px-3 py-2 text-right">Kub.</th>
-                    <th className="px-3 py-2">Rezultatet (MPa)</th>
-                    <th className="px-3 py-2 text-right">Mesatarja</th>
-                    <th className="px-3 py-2">Targat</th>
+                    <th className="px-3 py-2 text-right">Pesha (kg)</th>
+                    <th className="px-3 py-2 text-right">Ngarkesa (kN)</th>
+                    <th className="px-3 py-2 text-right">Rezistenca (MPa)</th>
+                    <th className="px-3 py-2 text-right">Mesatarja e setit</th>
+                    <th className="px-3 py-2">Targa</th>
                     <th className="px-3 py-2">Raporti</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {analysis.concreteRows.map((row, index) => (
-                    <tr key={`${row.sampleCode}-${row.ageDays}-${index}`} className="border-b border-line/70 last:border-0">
-                      <td className="whitespace-nowrap px-3 py-2 font-semibold tabular-nums text-ink">{row.sampleCode}</td>
-                      <td className="px-3 py-2 text-ink">
-                        {row.element}
-                        {row.projectName && row.projectName !== "—" ? (
-                          <span className="block text-[11px] text-muted">{row.projectName}</span>
-                        ) : null}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-2 tabular-nums">{row.strengthClass}</td>
-                      <td className="whitespace-nowrap px-3 py-2 tabular-nums">{formatEuropeanDate(row.castingDate)}</td>
-                      <td className="whitespace-nowrap px-3 py-2 tabular-nums">{formatEuropeanDate(row.testDate)}</td>
-                      <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums">
-                        {row.ageDays ? `${row.ageDays} d` : "—"}
-                      </td>
-                      <td className="px-3 py-2 text-right tabular-nums">{row.specimens}</td>
-                      <td className="px-3 py-2 tabular-nums">{row.strengths.map((value) => value.toFixed(1)).join(" · ") || "—"}</td>
-                      <td className="whitespace-nowrap px-3 py-2 text-right font-semibold tabular-nums text-ink">
-                        {row.averageMpa !== undefined ? row.averageMpa.toFixed(2) : "—"}
-                      </td>
-                      <td className="px-3 py-2 text-[11px] uppercase">{row.truckPlates.join(", ") || "—"}</td>
-                      <td className="whitespace-nowrap px-3 py-2 tabular-nums">{row.reportNumber}</td>
-                    </tr>
-                  ))}
+                  {analysis.concreteRows.flatMap((row, rowIndex) =>
+                    row.cubes.map((cube, cubeIndex) => {
+                      const first = cubeIndex === 0;
+                      return (
+                        <tr
+                          key={`${row.sampleCode}-${row.ageDays}-${rowIndex}-${cube.specimenCode}-${cubeIndex}`}
+                          className={first ? "border-t border-line" : ""}
+                        >
+                          <td className="whitespace-nowrap px-3 py-1.5 font-semibold tabular-nums text-ink">
+                            {cube.specimenCode}
+                          </td>
+                          <td className="px-3 py-1.5 text-ink">
+                            {first ? (
+                              <>
+                                {row.element}
+                                {row.projectName && row.projectName !== "—" ? (
+                                  <span className="block text-[11px] text-muted">{row.projectName}</span>
+                                ) : null}
+                              </>
+                            ) : null}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-1.5 tabular-nums">{first ? row.strengthClass : ""}</td>
+                          <td className="whitespace-nowrap px-3 py-1.5 tabular-nums">
+                            {first ? formatEuropeanDate(row.castingDate) : ""}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-1.5 tabular-nums">
+                            {first ? formatEuropeanDate(row.testDate) : ""}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-1.5 text-right tabular-nums">
+                            {cube.ageDays ? `${cube.ageDays} d` : "—"}
+                          </td>
+                          <td className="px-3 py-1.5 text-right tabular-nums">
+                            {typeof cube.weightKg === "number" && cube.weightKg > 0 ? cube.weightKg.toFixed(2) : "—"}
+                          </td>
+                          <td className="px-3 py-1.5 text-right tabular-nums">
+                            {typeof cube.loadKn === "number" && cube.loadKn > 0 ? cube.loadKn.toFixed(1) : "—"}
+                          </td>
+                          <td className="px-3 py-1.5 text-right font-semibold tabular-nums text-ink">
+                            {typeof cube.strengthMpa === "number" && cube.strengthMpa > 0
+                              ? cube.strengthMpa.toFixed(2)
+                              : "—"}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-1.5 text-right tabular-nums">
+                            {first ? (row.averageMpa !== undefined ? row.averageMpa.toFixed(2) : "—") : ""}
+                          </td>
+                          <td className="px-3 py-1.5 text-[11px] uppercase">{cube.truckPlate ?? "—"}</td>
+                          <td className="whitespace-nowrap px-3 py-1.5 tabular-nums">{first ? row.reportNumber : ""}</td>
+                        </tr>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
             </div>

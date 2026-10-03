@@ -58,11 +58,19 @@ export type ConcreteCubeRow = {
   castingDate: string;
   testDate: string;
   ageDays: number | undefined;
-  specimens: number;
-  strengths: number[];
+  /** One entry per cube, each its own line on the sheet. */
+  cubes: ConcreteCubeLine[];
   averageMpa: number | undefined;
-  truckPlates: string[];
   reportNumber: string;
+};
+
+export type ConcreteCubeLine = {
+  specimenCode: string;
+  ageDays: number | undefined;
+  weightKg: number | undefined;
+  loadKn: number | undefined;
+  strengthMpa: number | undefined;
+  truckPlate: string | undefined;
 };
 
 export type ConcreteSummary = {
@@ -222,17 +230,30 @@ export function buildClientAnalysis(
       if (!result) return undefined;
       const sample = sampleById.get(test.sampleId);
       const specimens = result.specimens?.length ? result.specimens : undefined;
-      const strengths = (specimens
-        ? specimens.map((specimen) => specimen.compressiveStrengthMpa)
-        : [result.compressiveStrengthMpa]
-      ).filter((value) => typeof value === "number" && Number.isFinite(value) && value > 0);
-      const plates = [
-        ...new Set(
-          (specimens?.map((specimen) => specimen.truckPlate) ?? result.truckPlates ?? [])
-            .map((plate) => plate?.trim())
-            .filter((plate): plate is string => Boolean(plate))
-        )
-      ];
+      // One line per cube. Older tests hold a single result rather than a
+      // specimen list, so they become a set of one rather than disappearing.
+      const cubes: ConcreteCubeLine[] = specimens
+        ? specimens.map((specimen) => ({
+            specimenCode: specimen.specimenCode,
+            ageDays: specimen.ageDays,
+            weightKg: specimen.weightKg,
+            loadKn: specimen.maximumLoadKn,
+            strengthMpa: specimen.compressiveStrengthMpa,
+            truckPlate: specimen.truckPlate?.trim() || undefined
+          }))
+        : [
+            {
+              specimenCode: sample?.sampleCode ?? "—",
+              ageDays: result.ageDays,
+              weightKg: result.weight,
+              loadKn: result.maximumLoadKn,
+              strengthMpa: result.compressiveStrengthMpa,
+              truckPlate: result.truckPlates?.[0]?.trim() || undefined
+            }
+          ];
+      const strengths = cubes
+        .map((cube) => cube.strengthMpa)
+        .filter((value): value is number => typeof value === "number" && Number.isFinite(value) && value > 0);
       return {
         sampleCode: sample?.sampleCode ?? "—",
         projectName: projectName(test.projectId),
@@ -243,12 +264,10 @@ export function buildClientAnalysis(
         castingDate: result.castingDate || sample?.concretingDate || "—",
         testDate: result.testEndDate || result.testDate || test.completedAt?.slice(0, 10) || "—",
         ageDays: specimens?.[0]?.ageDays ?? result.ageDays ?? test.scheduledAgeDays,
-        specimens: strengths.length,
-        strengths,
+        cubes,
         averageMpa: strengths.length
           ? round(strengths.reduce((sum, value) => sum + value, 0) / strengths.length, 2)
           : undefined,
-        truckPlates: plates,
         reportNumber: reportByTest.get(test.id)?.reportNumber ?? "—"
       };
     })
