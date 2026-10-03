@@ -30,6 +30,7 @@ export type ClientAnalysis = {
   byTestType: Array<{ label: string; tests: number; reports: number }>;
   byMonth: Array<{ key: string; label: string; samples: number; tests: number; reports: number }>;
   concrete: ConcreteSummary | undefined;
+  concreteRows: ConcreteCubeRow[];
   reportRows: Array<{
     reportNumber: string;
     sampleCode: string;
@@ -38,6 +39,30 @@ export type ClientAnalysis = {
     issuedAt: string | undefined;
     status: string;
   }>;
+};
+
+/**
+ * One line per pour and age — the table this summary exists for.
+ *
+ * A client wants to read down a month of concrete and see, for each set of
+ * cubes: which register number, which element, when it was cast, when it was
+ * broken, at what age, what each cube gave and what the set averaged. That is
+ * the sheet they can put beside their own pour records, and it is the reason
+ * the whole page is landscape.
+ */
+export type ConcreteCubeRow = {
+  sampleCode: string;
+  projectName: string;
+  element: string;
+  strengthClass: string;
+  castingDate: string;
+  testDate: string;
+  ageDays: number | undefined;
+  specimens: number;
+  strengths: number[];
+  averageMpa: number | undefined;
+  truckPlates: string[];
+  reportNumber: string;
 };
 
 export type ConcreteSummary = {
@@ -190,6 +215,54 @@ export function buildClientAnalysis(
   // --- concrete strengths -------------------------------------------------
   const concrete = summariseConcrete(source.concreteTests, periodTests, sampleById);
 
+  const reportByTest = new Map(periodReports.map((report) => [report.testId, report]));
+  const concreteRows: ConcreteCubeRow[] = periodTests
+    .map((test): ConcreteCubeRow | undefined => {
+      const result = source.concreteTests.find((row) => row.testId === test.id);
+      if (!result) return undefined;
+      const sample = sampleById.get(test.sampleId);
+      const specimens = result.specimens?.length ? result.specimens : undefined;
+      const strengths = (specimens
+        ? specimens.map((specimen) => specimen.compressiveStrengthMpa)
+        : [result.compressiveStrengthMpa]
+      ).filter((value) => typeof value === "number" && Number.isFinite(value) && value > 0);
+      const plates = [
+        ...new Set(
+          (specimens?.map((specimen) => specimen.truckPlate) ?? result.truckPlates ?? [])
+            .map((plate) => plate?.trim())
+            .filter((plate): plate is string => Boolean(plate))
+        )
+      ];
+      return {
+        sampleCode: sample?.sampleCode ?? "—",
+        projectName: projectName(test.projectId),
+        // Element as the worksheet recorded it, falling back to how the sample
+        // was described at reception — which is what it is called on site.
+        element: result.element || sample?.sampleDescription || "—",
+        strengthClass: result.strengthClass || sample?.notes?.match(/C\d+\/\d+/)?.[0] || "—",
+        castingDate: result.castingDate || sample?.concretingDate || "—",
+        testDate: result.testEndDate || result.testDate || test.completedAt?.slice(0, 10) || "—",
+        ageDays: specimens?.[0]?.ageDays ?? result.ageDays ?? test.scheduledAgeDays,
+        specimens: strengths.length,
+        strengths,
+        averageMpa: strengths.length
+          ? round(strengths.reduce((sum, value) => sum + value, 0) / strengths.length, 2)
+          : undefined,
+        truckPlates: plates,
+        reportNumber: reportByTest.get(test.id)?.reportNumber ?? "—"
+      };
+    })
+    .filter((row): row is ConcreteCubeRow => Boolean(row));
+
+  // Reading order is the pour: when it was cast, then which register number,
+  // then 7-day before 28-day — the sequence the client's own site diary runs in.
+  concreteRows.sort(
+    (a: ConcreteCubeRow, b: ConcreteCubeRow) =>
+      a.castingDate.localeCompare(b.castingDate) ||
+      a.sampleCode.localeCompare(b.sampleCode) ||
+      (a.ageDays ?? 0) - (b.ageDays ?? 0)
+  );
+
   // --- the invoice line ---------------------------------------------------
   const reportRows = periodReports
     .map((report) => {
@@ -216,6 +289,7 @@ export function buildClientAnalysis(
     byTestType,
     byMonth,
     concrete,
+    concreteRows,
     reportRows
   };
 }

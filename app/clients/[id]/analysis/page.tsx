@@ -68,7 +68,12 @@ export default function ClientAnalysisPage() {
     setPdfError("");
     try {
       const name = `analiza-${analysis.client.clientCode}-${period.from}-${period.to}`;
-      const pdfUrl = await generateAndStoreReportPdf(surface, name, record?.pdfUrl);
+      const pdfUrl = await generateAndStoreReportPdf(surface, name, record?.pdfUrl, {
+        orientation: "landscape",
+        // A month of pours is as long as it is; sliced across pages at full size
+        // rather than shrunk until the table cannot be read.
+        multiPage: true
+      });
       store.saveClientAnalysis({ clientId: params.id, from: period.from, to: period.to, pdfUrl, shareToken: token });
       setPdfState("idle");
     } catch (error) {
@@ -159,6 +164,13 @@ export default function ClientAnalysisPage() {
 
   return (
     <>
+      {/*
+        Landscape, because the cube table has eleven columns and a client should
+        not have to turn the page sideways to read their own results. @page is
+        global when printing, which is harmless: only one page prints at a time.
+      */}
+      <style>{`@media print { @page { size: A4 landscape; margin: 10mm; } }`}</style>
+
       <div className="no-print">
         <PageHeader
           title={`Përmbledhje — ${client.clientName}`}
@@ -249,16 +261,37 @@ export default function ClientAnalysisPage() {
           page that leaves the screen has to say what it is without the app
           around it. */}
       <div ref={surfaceRef} className="print-surface space-y-6 rounded-md bg-white">
-        <header className="hidden items-start justify-between gap-4 border-b border-black pb-3 print:flex">
-          <div>
-            <img src="/brand/sarp-logo.png" alt="SARP" className="h-auto w-[150px]" />
+        {/* The sheet's own header. On screen as well as in print: the operator
+            should see the document the client will receive, not a version of it. */}
+        <header className="grid grid-cols-[170px_1fr_90px] items-start gap-4 border-b-2 border-black pb-3">
+          <img src="/brand/sarp-logo.png" alt="SARP & LAB" className="h-auto w-[168px]" />
+          <div className="pt-1 text-center">
+            <div className="text-[15px] font-bold uppercase tracking-wide text-black">
+              Përmbledhje e punës laboratorike
+            </div>
+            <div className="text-[11px] italic text-black/70">Laboratory work summary</div>
+            <div className="mt-2 text-[13px] font-semibold text-black">{client.clientName}</div>
+            <div className="text-[11px] text-black/80">
+              {client.clientCode}
+              {client.address ? ` · ${client.address}` : ""}
+            </div>
           </div>
-          <div className="text-right text-[10pt]">
-            <div className="font-bold uppercase">Përmbledhje e punës laboratorike</div>
-            <div>{client.clientName} · {client.clientCode}</div>
-            <div>{formatPeriod(period)}</div>
-          </div>
+          <img
+            src="/brand/da-accreditation.png"
+            alt="DA akreditim ISO/IEC 17025 LT 069"
+            className="ml-auto h-auto w-[88px]"
+          />
         </header>
+
+        <div className="grid grid-cols-2 gap-x-8 gap-y-1 border-b border-black/30 pb-2 text-[11px] text-black sm:grid-cols-4">
+          <HeaderField label="Periudha / Period" value={formatPeriod(period)} />
+          <HeaderField label="Lëshuar më / Issued" value={formatEuropeanDate(new Date().toISOString())} />
+          <HeaderField label="Raporte / Reports" value={String(analysis.reportsIssued)} />
+          <HeaderField
+            label="Lëshoi / Issued by"
+            value={store.users.find((user) => user.id === store.currentUserId)?.fullName ?? "—"}
+          />
+        </div>
 
         {nothing ? (
           <div className="rounded-lg border border-line bg-lab-porcelain p-6 text-sm text-ink">
@@ -281,6 +314,9 @@ export default function ClientAnalysisPage() {
           />
         </section>
 
+        {/* Two across: landscape has the width, and a client comparing volume
+            against strength should see both without scrolling. */}
+        <div className="grid gap-6 lg:grid-cols-2">
         {analysis.byTestType.length ? (
           <section className="surface-card p-4">
             <h2 className="text-sm font-semibold text-ink">Testet sipas tipit</h2>
@@ -351,6 +387,8 @@ export default function ClientAnalysisPage() {
           </section>
         ) : null}
 
+        </div>
+
         {analysis.projects.length ? (
           <section className="surface-card overflow-hidden">
             <header className="border-b border-line bg-lab-porcelain px-4 py-2.5">
@@ -378,6 +416,69 @@ export default function ClientAnalysisPage() {
                 </tbody>
               </table>
             </div>
+          </section>
+        ) : null}
+
+        {analysis.concreteRows.length ? (
+          <section className="surface-card overflow-hidden">
+            <header className="flex items-baseline justify-between gap-3 border-b border-line bg-lab-porcelain px-4 py-2.5">
+              <div>
+                <h2 className="text-sm font-semibold text-ink">Rezistenca në shtypje — kubikë betoni</h2>
+                <p className="text-xs text-muted">
+                  Çdo set kubikësh: data e betonimit, data e provës, mosha dhe rezultatet.
+                </p>
+              </div>
+              <span className="text-xs text-muted">{analysis.concreteRows.length}</span>
+            </header>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[62rem] text-[12px]">
+                <thead className="border-b border-line text-left text-[10px] uppercase tracking-wide text-muted">
+                  <tr>
+                    <th className="px-3 py-2">Nr. regjistri</th>
+                    <th className="px-3 py-2">Objekti / elementi</th>
+                    <th className="px-3 py-2">Klasa</th>
+                    <th className="px-3 py-2">Betonimi</th>
+                    <th className="px-3 py-2">Prova</th>
+                    <th className="px-3 py-2 text-right">Mosha</th>
+                    <th className="px-3 py-2 text-right">Kub.</th>
+                    <th className="px-3 py-2">Rezultatet (MPa)</th>
+                    <th className="px-3 py-2 text-right">Mesatarja</th>
+                    <th className="px-3 py-2">Targat</th>
+                    <th className="px-3 py-2">Raporti</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {analysis.concreteRows.map((row, index) => (
+                    <tr key={`${row.sampleCode}-${row.ageDays}-${index}`} className="border-b border-line/70 last:border-0">
+                      <td className="whitespace-nowrap px-3 py-2 font-semibold tabular-nums text-ink">{row.sampleCode}</td>
+                      <td className="px-3 py-2 text-ink">
+                        {row.element}
+                        {row.projectName && row.projectName !== "—" ? (
+                          <span className="block text-[11px] text-muted">{row.projectName}</span>
+                        ) : null}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-2 tabular-nums">{row.strengthClass}</td>
+                      <td className="whitespace-nowrap px-3 py-2 tabular-nums">{formatEuropeanDate(row.castingDate)}</td>
+                      <td className="whitespace-nowrap px-3 py-2 tabular-nums">{formatEuropeanDate(row.testDate)}</td>
+                      <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums">
+                        {row.ageDays ? `${row.ageDays} d` : "—"}
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums">{row.specimens}</td>
+                      <td className="px-3 py-2 tabular-nums">{row.strengths.map((value) => value.toFixed(1)).join(" · ") || "—"}</td>
+                      <td className="whitespace-nowrap px-3 py-2 text-right font-semibold tabular-nums text-ink">
+                        {row.averageMpa !== undefined ? row.averageMpa.toFixed(2) : "—"}
+                      </td>
+                      <td className="px-3 py-2 text-[11px] uppercase">{row.truckPlates.join(", ") || "—"}</td>
+                      <td className="whitespace-nowrap px-3 py-2 tabular-nums">{row.reportNumber}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="border-t border-line px-4 py-2 text-[11px] leading-5 text-muted">
+              Mesatarja është e kubikëve të këtij seti. Konformiteti me klasën vlerësohet sipas EN 206 mbi të gjithë
+              derdhjen dhe nuk deklarohet këtu.
+            </p>
           </section>
         ) : null}
 
@@ -421,6 +522,15 @@ export default function ClientAnalysisPage() {
         </p>
       </div>
     </>
+  );
+}
+
+function HeaderField({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <span className="font-semibold uppercase tracking-wide text-black/60">{label}: </span>
+      <span className="tabular-nums text-black">{value}</span>
+    </div>
   );
 }
 

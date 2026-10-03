@@ -3,7 +3,7 @@ import { createSupabaseBrowserClient } from "./supabase/client";
 const A4_WIDTH_MM = 210;
 const A4_HEIGHT_MM = 297;
 
-async function renderElementToPdfBlob(element: HTMLElement): Promise<Blob> {
+async function renderElementToPdfBlob(element: HTMLElement, options: PdfOptions = {}): Promise<Blob> {
   const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
 
   // html2canvas renders the DOM under *screen* CSS and ignores @media print, so the
@@ -35,25 +35,68 @@ async function renderElementToPdfBlob(element: HTMLElement): Promise<Blob> {
     }
   });
 
-  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
+  const landscape = options.orientation === "landscape";
+  const pageWidthMm = landscape ? A4_HEIGHT_MM : A4_WIDTH_MM;
+  const pageHeightMm = landscape ? A4_WIDTH_MM : A4_HEIGHT_MM;
+  const pdf = new jsPDF({
+    orientation: landscape ? "landscape" : "portrait",
+    unit: "mm",
+    format: "a4",
+    compress: true
+  });
   // Use PNG (lossless) rather than JPEG: the reports are thin 1px rules and small
   // text, which JPEG compression blurs and smears. PNG keeps the lines crisp.
-  const imageData = canvas.toDataURL("image/png");
-  const naturalPageHeightMm = (canvas.height * A4_WIDTH_MM) / canvas.width;
+  const naturalPageHeightMm = (canvas.height * pageWidthMm) / canvas.width;
 
-  if (naturalPageHeightMm <= A4_HEIGHT_MM) {
-    pdf.addImage(imageData, "PNG", 0, 0, A4_WIDTH_MM, naturalPageHeightMm);
-  } else {
-    // Content is taller than one page at full width: shrink the whole image
-    // proportionally so it still fits on a single page, centered horizontally,
-    // rather than splitting it across multiple pages.
-    const fittedWidthMm = (A4_HEIGHT_MM / naturalPageHeightMm) * A4_WIDTH_MM;
-    const xOffsetMm = (A4_WIDTH_MM - fittedWidthMm) / 2;
-    pdf.addImage(imageData, "PNG", xOffsetMm, 0, fittedWidthMm, A4_HEIGHT_MM);
+  if (naturalPageHeightMm <= pageHeightMm) {
+    pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, pageWidthMm, naturalPageHeightMm);
+    return pdf.output("blob");
+  }
+
+  if (!options.multiPage) {
+    // A report is one sheet by definition, so content taller than the page is
+    // shrunk to fit rather than split — a report continuing overleaf would be a
+    // different document.
+    const fittedWidthMm = (pageHeightMm / naturalPageHeightMm) * pageWidthMm;
+    const xOffsetMm = (pageWidthMm - fittedWidthMm) / 2;
+    pdf.addImage(canvas.toDataURL("image/png"), "PNG", xOffsetMm, 0, fittedWidthMm, pageHeightMm);
+    return pdf.output("blob");
+  }
+
+  // A client summary is as long as the month was. Shrinking a year of pours onto
+  // one sheet would make it unreadable, so it is sliced across pages at the same
+  // scale — the table simply continues, as a statement of account does.
+  const pageHeightPx = Math.floor((canvas.width * pageHeightMm) / pageWidthMm);
+  const slice = document.createElement("canvas");
+  slice.width = canvas.width;
+  const context = slice.getContext("2d");
+  if (!context) throw new Error("Could not prepare the page canvas.");
+
+  for (let offset = 0; offset < canvas.height; offset += pageHeightPx) {
+    const sliceHeight = Math.min(pageHeightPx, canvas.height - offset);
+    slice.height = sliceHeight;
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, slice.width, sliceHeight);
+    context.drawImage(canvas, 0, offset, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
+    if (offset > 0) pdf.addPage();
+    pdf.addImage(
+      slice.toDataURL("image/png"),
+      "PNG",
+      0,
+      0,
+      pageWidthMm,
+      (sliceHeight * pageWidthMm) / canvas.width
+    );
   }
 
   return pdf.output("blob");
 }
+
+export type PdfOptions = {
+  orientation?: "portrait" | "landscape";
+  /** Slice across pages instead of shrinking to fit one. */
+  multiPage?: boolean;
+};
 
 /**
  * Generates a PDF from the given report DOM node, uploads it to the private
@@ -64,9 +107,10 @@ async function renderElementToPdfBlob(element: HTMLElement): Promise<Blob> {
 export async function generateAndStoreReportPdf(
   element: HTMLElement,
   reportNumber: string,
-  previousUrl?: string
+  previousUrl?: string,
+  options: PdfOptions = {}
 ): Promise<string> {
-  const blob = await renderElementToPdfBlob(element);
+  const blob = await renderElementToPdfBlob(element, options);
   const supabase = createSupabaseBrowserClient();
   const safe = reportNumber.replace(/[^a-zA-Z0-9_-]/g, "_");
   // A unique filename per generation. Supabase's storage CDN caches objects by
