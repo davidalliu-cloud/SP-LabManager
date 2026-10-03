@@ -26,7 +26,14 @@ async function renderElementToPdfBlob(element: HTMLElement, options: PdfOptions 
     // produced a different PDF on a laptop and on a wide monitor. A fixed width
     // wide enough to clear every breakpoint makes the output deterministic and
     // matches the layout the reports were designed in.
-    windowWidth: 1400,
+    // Reports are captured at a fixed width so the same report produces the
+    // same PDF on a laptop and a wide monitor. A summary is captured at its own
+    // on-screen width instead: its charts are SVG sized to the container they
+    // were measured in, so re-laying the clone out at a different width leaves
+    // the chart drawn at one size inside a box of another. Capturing what is on
+    // screen is also the point of the summary — it should reach the client as
+    // the operator saw it.
+    windowWidth: options.captureWidth ?? 1400,
     windowHeight: 2000,
     onclone: (clonedDoc) => {
       clonedDoc
@@ -96,6 +103,12 @@ export type PdfOptions = {
   orientation?: "portrait" | "landscape";
   /** Slice across pages instead of shrinking to fit one. */
   multiPage?: boolean;
+  /**
+   * Width the cloned document lays out against. Reports pin this so the same
+   * report produces the same PDF on any screen; a summary passes its own width
+   * so what is captured is what was on screen.
+   */
+  captureWidth?: number;
 };
 
 /**

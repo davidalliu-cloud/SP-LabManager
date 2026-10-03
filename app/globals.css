@@ -1296,3 +1296,57 @@ textarea {
 .print-surface.wet-signature .signature-block-img {
   visibility: hidden !important;
 }
+
+/* ------------------------------------------------------------------ *
+ * Client summary — the monthly sheet sent to clients.
+ *
+ * Its own surface rather than `.print-surface`, which belongs to the
+ * reports: that class is pinned to 210mm portrait on the PDF path and
+ * flattens every bold weight for report readability. Both are right for
+ * a report and wrong for a landscape summary whose point is a wide
+ * table with the strengths standing out.
+ *
+ * The aim here is that the PDF, the printed page and the screen are the
+ * same document. So the rules below only remove what is screen
+ * furniture — shadows, rounded corners — and fix the sheet to the
+ * printable width of a landscape A4.
+ * ------------------------------------------------------------------ */
+.summary-sheet {
+  background: #fff;
+}
+
+/* Keep a table row intact across a page break where the browser can. */
+.summary-sheet tr {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.summary-sheet thead {
+  display: table-header-group;
+}
+
+@media print {
+  .summary-sheet {
+    /* A4 landscape less the 10mm margins set by @page on the summary. */
+    width: 277mm !important;
+    max-width: 277mm !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* A document that leaves the lab is black, not the app's ink violet. */
+  .summary-sheet,
+  .summary-sheet .text-ink {
+    color: #000 !important;
+  }
+
+  /* Cards are screen furniture; on paper the rules carry the structure. */
+  .summary-sheet .surface-card {
+    box-shadow: none !important;
+    border-color: #999 !important;
+    break-inside: auto;
+  }
+}

@@ -72,7 +72,10 @@ export default function ClientAnalysisPage() {
         orientation: "landscape",
         // A month of pours is as long as it is; sliced across pages at full size
         // rather than shrunk until the table cannot be read.
-        multiPage: true
+        multiPage: true,
+        // Capture at the sheet's own width so the charts come out drawn at the
+        // size they were measured at, and the PDF is the page on screen.
+        captureWidth: surface.offsetWidth
       });
       store.saveClientAnalysis({ clientId: params.id, from: period.from, to: period.to, pdfUrl, shareToken: token });
       setPdfState("idle");
@@ -260,7 +263,14 @@ export default function ClientAnalysisPage() {
       {/* The printed sheet. Everything inside carries its own heading, because a
           page that leaves the screen has to say what it is without the app
           around it. */}
-      <div ref={surfaceRef} className="print-surface space-y-6 rounded-md bg-white">
+      {/*
+        Deliberately not `print-surface`. That class belongs to the reports and
+        carries their rules with it: the PDF path pins it to 210mm portrait and
+        a readability rule flattens every bold weight. Applied here it squeezed
+        a landscape sheet into a portrait column and took the emphasis off the
+        strengths. The summary gets its own surface, and its own print rules.
+      */}
+      <div ref={surfaceRef} className="summary-sheet space-y-6 rounded-md bg-white p-6">
         {/* The sheet's own header. On screen as well as in print: the operator
             should see the document the client will receive, not a version of it. */}
         <header className="grid grid-cols-[170px_1fr_90px] items-start gap-4 border-b-2 border-black pb-3">
