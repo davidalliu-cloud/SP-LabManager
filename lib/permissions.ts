@@ -36,8 +36,21 @@ export function canViewClientIdentity(role?: Role) {
   return role === "Admin / Managing Director" || role === "Chief of Lab" || role === "Document Controller";
 }
 
+/**
+ * Who may point a registered sample at its client and project.
+ *
+ * Reception books samples in before the client is settled, so whoever runs
+ * reception has to be able to finish the job — otherwise the sample waits on
+ * the Chief of Lab for a step that is pure administration. The Operations
+ * Manager is that person here.
+ *
+ * Note this is not the same right as seeing who the client is: a role without
+ * `canViewClientIdentity` picks from a list of client codes with no names
+ * against them, which is what keeps the testing itself impartial. The sample
+ * page already draws the list that way.
+ */
 export function canAssignSampleClient(role?: Role) {
-  return isSuperAdmin(role) || role === "Chief of Lab";
+  return isSuperAdmin(role) || role === "Chief of Lab" || role === "Operations Manager";
 }
 
 export function canRegisterSamples(role?: Role) {
