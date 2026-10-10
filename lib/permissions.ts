@@ -32,8 +32,26 @@ export function canManageClients(role?: Role) {
   return isSuperAdmin(role) || role === "Chief of Lab";
 }
 
+/**
+ * Who may see which client a sample belongs to.
+ *
+ * The restriction exists for impartiality (§4.1): whoever runs the test should
+ * not know whose concrete it is, so technicians see a client code and nothing
+ * else. It is not a confidentiality rule — it is there to keep the result
+ * uninfluenced.
+ *
+ * So the line falls between people who perform tests and people who run the
+ * business of the lab. The Operations Manager books the samples in, assigns
+ * them and answers the client on the phone; withholding the name made that job
+ * harder without making any result more impartial.
+ */
 export function canViewClientIdentity(role?: Role) {
-  return role === "Admin / Managing Director" || role === "Chief of Lab" || role === "Document Controller";
+  return (
+    role === "Admin / Managing Director" ||
+    role === "Chief of Lab" ||
+    role === "Document Controller" ||
+    role === "Operations Manager"
+  );
 }
 
 /**
