@@ -35,7 +35,14 @@ const sampleTypeDisplayNames: Record<string, string> = {
   // uppercase filter drops it — mapping it to a bilingual name is what makes the
   // family selectable at all.
   "ELEMENT MURATURE 1. TULLA QERAMIKE, SILIKATE, BETONI, 2. BLLOK BETONI": "Element Muraturë / Masonry Units",
-  "UJË PËR BETON": "Ujë për Beton / Water for Concrete"
+  "UJË PËR BETON": "Ujë për Beton / Water for Concrete",
+  // Kerbs and paving flags were in the same position again: accredited since the
+  // scope was written (AT-044 to AT-046 under EN 1340, AT-047 to AT-049 under
+  // EN 1339) but unnamed here, so the uppercase filter dropped both families and
+  // neither could be registered. The wording follows the report headers —
+  // SL-RA-ET-7.8/1.2 and /1.3 — rather than being invented here.
+  "ELEMENT TROTUARËSH BORDURA BETONI": "Bordurë Betoni / Concrete Kerb Units",
+  "ELEMENT TROTUARËSH PLLAKA BETONI": "Pllakë Betoni / Concrete Paving Flags"
 };
 
 const sampleTypeAliases: Record<string, string> = {
@@ -83,6 +90,20 @@ const sampleTypeAliases: Record<string, string> = {
   "Masonry Unit": "Element Muraturë / Masonry Units",
   "Masonry Units": "Element Muraturë / Masonry Units",
   "Element Muraturë / Masonry Units": "Element Muraturë / Masonry Units",
+  // Kerbs and paving flags, under every spelling the register is likely to hold
+  // them — with and without the diacritic, Albanian and English.
+  "Bordure Betoni": "Bordurë Betoni / Concrete Kerb Units",
+  "Bordurë Betoni": "Bordurë Betoni / Concrete Kerb Units",
+  "Bordura Betoni": "Bordurë Betoni / Concrete Kerb Units",
+  "Concrete Kerb": "Bordurë Betoni / Concrete Kerb Units",
+  "Concrete Kerb Units": "Bordurë Betoni / Concrete Kerb Units",
+  "Bordurë Betoni / Concrete Kerb Units": "Bordurë Betoni / Concrete Kerb Units",
+  "Pllake Betoni": "Pllakë Betoni / Concrete Paving Flags",
+  "Pllakë Betoni": "Pllakë Betoni / Concrete Paving Flags",
+  "Pllaka Betoni": "Pllakë Betoni / Concrete Paving Flags",
+  "Concrete Paving Flag": "Pllakë Betoni / Concrete Paving Flags",
+  "Concrete Paving Flags": "Pllakë Betoni / Concrete Paving Flags",
+  "Pllakë Betoni / Concrete Paving Flags": "Pllakë Betoni / Concrete Paving Flags",
   "UJË PËR BETON": "Ujë për Beton / Water for Concrete",
   "Ujë": "Ujë për Beton / Water for Concrete",
   "Uje": "Ujë për Beton / Water for Concrete",
@@ -440,6 +461,75 @@ export function isMasonryUnitAccreditedTest(testIdOrType?: string) {
 
 export function isMasonryUnitSampleType(sampleType: string) {
   return normalizeSampleType(sampleType) === "Element Muraturë / Masonry Units";
+}
+
+/**
+ * AT-044 to AT-046 (bordura betoni, BS EN 1340) and AT-047 to AT-049 (pllaka
+ * betoni, BS EN 1339).
+ *
+ * Both families work as masonry units do: the three determinations —
+ * dimensions (Annex C), water absorption (Annex E) and bending strength
+ * (Annex F) — are accredited separately but run on one delivered set of
+ * elements, across two worksheets, and reported on one certificate. So
+ * registration stores one combined "test" rather than one of the three rows,
+ * and this is the name and the standard that appear on it.
+ */
+const KERB_UNIT_TEST_IDS = new Set(["AT-044", "AT-045", "AT-046"]);
+const PAVING_FLAG_TEST_IDS = new Set(["AT-047", "AT-048", "AT-049"]);
+
+export const KERB_UNIT_PACKAGE_NAME =
+  "Përcaktimi i karakteristikave fiziko-mekanike të bordurave të betonit";
+export const KERB_UNIT_PACKAGE_STANDARD = "BS EN 1340:2003";
+
+export const PAVING_FLAG_PACKAGE_NAME =
+  "Përcaktimi i karakteristikave fiziko-mekanike të pllakave të betonit";
+export const PAVING_FLAG_PACKAGE_STANDARD = "BS EN 1339:2003";
+
+// As with masonry, only the package name identifies the family by its stored
+// testType. The three sub-test names must NOT be listed: "Përcaktimi i
+// dimensioneve", "Përcaktimi i absorbimit të ujit" and "Përcaktimi i
+// rezistencës në përkulje" are shared word for word with other families —
+// the last one is also the concrete cube flexural test — so matching on them
+// would route other work to these worksheets.
+
+export function isKerbUnitSampleType(sampleType: string) {
+  return normalizeSampleType(sampleType) === "Bordurë Betoni / Concrete Kerb Units";
+}
+
+export function isPavingFlagSampleType(sampleType: string) {
+  return normalizeSampleType(sampleType) === "Pllakë Betoni / Concrete Paving Flags";
+}
+
+export function isKerbUnitAccreditedTest(testIdOrType?: string) {
+  if (!testIdOrType) return false;
+  return KERB_UNIT_TEST_IDS.has(testIdOrType) || testIdOrType === KERB_UNIT_PACKAGE_NAME;
+}
+
+export function isPavingFlagAccreditedTest(testIdOrType?: string) {
+  if (!testIdOrType) return false;
+  return PAVING_FLAG_TEST_IDS.has(testIdOrType) || testIdOrType === PAVING_FLAG_PACKAGE_NAME;
+}
+
+/** Either family — both are driven by the same worksheets and report builder. */
+export function isPavingElementSampleType(sampleType: string) {
+  return isKerbUnitSampleType(sampleType) || isPavingFlagSampleType(sampleType);
+}
+
+export function isPavingElementAccreditedTest(testIdOrType?: string) {
+  return isKerbUnitAccreditedTest(testIdOrType) || isPavingFlagAccreditedTest(testIdOrType);
+}
+
+/**
+ * Which of the two families a sample or test belongs to. The sample type is
+ * authoritative when it is one of the two; the stored test type decides for a
+ * sample whose type was written some other way.
+ */
+export function pavingElementKind(sampleType?: string, testIdOrType?: string): "kerb" | "flag" | undefined {
+  if (sampleType && isKerbUnitSampleType(sampleType)) return "kerb";
+  if (sampleType && isPavingFlagSampleType(sampleType)) return "flag";
+  if (isKerbUnitAccreditedTest(testIdOrType)) return "kerb";
+  if (isPavingFlagAccreditedTest(testIdOrType)) return "flag";
+  return undefined;
 }
 
 export function isMortarSampleType(sampleType: string) {

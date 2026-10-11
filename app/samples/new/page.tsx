@@ -11,9 +11,15 @@ import {
   isAsphaltSampleType,
   isConcreteCompressiveAccreditedTest,
   isMasonryUnitSampleType,
+  isPavingElementSampleType,
   isSteelSampleType,
+  KERB_UNIT_PACKAGE_NAME,
+  KERB_UNIT_PACKAGE_STANDARD,
   MASONRY_UNIT_PACKAGE_NAME,
-  MASONRY_UNIT_PACKAGE_STANDARD
+  MASONRY_UNIT_PACKAGE_STANDARD,
+  pavingElementKind,
+  PAVING_FLAG_PACKAGE_NAME,
+  PAVING_FLAG_PACKAGE_STANDARD
 } from "@/lib/accredited-tests";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { isFieldSampleType } from "@/lib/field-register";
@@ -64,6 +70,11 @@ export default function NewSamplePage() {
   // Masonry units are registered as one package: no sub-test choice; all four
   // determinations are run together and reported on one SL-RA-EM report.
   const isMasonryUnit = isMasonryUnitSampleType(sampleType);
+  // Kerbs and paving flags register the same way: the three accredited
+  // determinations are run on one delivered set across two worksheets and come
+  // out on one report, so there is no sub-test to choose.
+  const isPavingElement = isPavingElementSampleType(sampleType);
+  const pavingKind = pavingElementKind(sampleType);
   const showSteelWorksheet = isSteelSampleType(sampleType);
   const showAsphaltWorksheet = isAsphaltSampleType(sampleType);
   const canAddMaterials = isAggregateGranulometrySampleType(sampleType);
@@ -230,8 +241,20 @@ export default function NewSamplePage() {
       deliveredBy: String(form.get("deliveredBy")),
       collectedBy: String(form.get("collectedBy") || "").trim() || "Violeta Biba",
       concretingDate: showConcreteSchedule ? String(form.get("concretingDate") || concretingDate) : "",
-      requestedTestType: isMasonryUnit ? MASONRY_UNIT_PACKAGE_NAME : (selectedTest?.testName ?? String(form.get("requestedTestType"))),
-      standard: isMasonryUnit ? MASONRY_UNIT_PACKAGE_STANDARD : (selectedTest?.standard || "Standardi nuk është përcaktuar në listën e akreditimit"),
+      requestedTestType: isMasonryUnit
+        ? MASONRY_UNIT_PACKAGE_NAME
+        : pavingKind === "kerb"
+          ? KERB_UNIT_PACKAGE_NAME
+          : pavingKind === "flag"
+            ? PAVING_FLAG_PACKAGE_NAME
+            : (selectedTest?.testName ?? String(form.get("requestedTestType"))),
+      standard: isMasonryUnit
+        ? MASONRY_UNIT_PACKAGE_STANDARD
+        : pavingKind === "kerb"
+          ? KERB_UNIT_PACKAGE_STANDARD
+          : pavingKind === "flag"
+            ? PAVING_FLAG_PACKAGE_STANDARD
+            : (selectedTest?.standard || "Standardi nuk është përcaktuar në listën e akreditimit"),
       requiredTestDate,
       reportDueDate,
       assignedTechnician: String(form.get("assignedTechnician") || ""),
@@ -276,9 +299,15 @@ export default function NewSamplePage() {
             ))}
           </select>
         </Field>
-        {isMasonryUnit ? (
+        {isMasonryUnit || isPavingElement ? (
           <Field label="Testi i akredituar i kërkuar">
-            <div className="input flex items-center bg-lab-porcelain text-muted">Paketë e plotë — të gjitha testet e muraturës / Full package — all masonry tests</div>
+            <div className="input flex items-center bg-lab-porcelain text-muted">
+              {isMasonryUnit
+                ? "Paketë e plotë — të gjitha testet e muraturës / Full package — all masonry tests"
+                : pavingKind === "kerb"
+                  ? "Paketë e plotë — dimensionet, absorbimi, përkulja (EN 1340) / Full package"
+                  : "Paketë e plotë — dimensionet, absorbimi, përkulja (EN 1339) / Full package"}
+            </div>
           </Field>
         ) : (
           <Field label="Testi i akredituar i kërkuar">

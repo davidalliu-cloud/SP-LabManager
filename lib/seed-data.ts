@@ -66,6 +66,7 @@ export const initialState: LabState = {
   cementBlaineTests: [],
   admixtureTests: [],
   masonryUnitTests: [],
+  pavingElementTests: [],
   waterAnalysisTests: [],
   sclerometerTests: [],
   mortarTests: [],

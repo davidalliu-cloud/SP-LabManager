@@ -1389,6 +1389,8 @@ export interface LabState {
   cementBlaineTests: CementBlaineTest[];
   admixtureTests: AdmixtureTest[];
   masonryUnitTests: MasonryUnitTest[];
+  /** Bordura dhe pllaka betoni — EN 1340 / EN 1339. */
+  pavingElementTests: PavingElementTest[];
   waterAnalysisTests: WaterAnalysisTest[];
   sclerometerTests: SclerometerTest[];
   mortarTests: MortarTest[];
@@ -1570,6 +1572,131 @@ export interface MasonryUnitTest {
   notes?: string;
   specimens: MasonryUnitSpecimen[];
   averages: MasonryUnitAverages;
+  createdAt: string;
+}
+
+/**
+ * Bordura betoni (BS EN 1340) dhe pllaka betoni (BS EN 1339).
+ *
+ * The two families are measured the same way and differ only in what the
+ * report calls each dimension, so one record covers both and `kind` selects
+ * the controlled forms it belongs to:
+ *
+ *   kerb — SL-FP-ET-BB-7.5.1.1 + SL-FP-ET-BB-7.5.1.2 -> SL-RA-ET-7.8/1.2
+ *   flag — SL-FP-ET-PB-7.5.1.1 + SL-FP-ET-PB-7.5.1.2 -> SL-RA-ET-7.8/1.3
+ *
+ * Both worksheets are mirrored exactly: bending takes up to eight specimens,
+ * dimensions and water absorption take three. Every measured field is
+ * optional; a determination that was not run stays blank and is left out of
+ * the mean rather than averaged in as a zero.
+ */
+export type PavingElementKind = "kerb" | "flag";
+
+/** One specimen on the bending worksheet (…-7.5.1.1), up to eight. */
+export interface PavingElementBendingSpecimen {
+  specimenCode: string;
+  /** L — distance between the two supports, mm. */
+  spanMm?: number;
+  /**
+   * Kerbs: l, the second moment of area from the working dimensions (mm⁴ —
+   * the template prints "mm", which is an error in the form).
+   * Flags: b, the width of the tested surface, mm.
+   */
+  sectionMm?: number;
+  /**
+   * Kerbs: y, centre to the extreme fibre where the load acts — the kerb's
+   * width, mm. Flags: t, the height (thickness) of the tested surface, mm.
+   */
+  extremeFibreMm?: number;
+  /** P — breaking load, N. */
+  breakingLoadN?: number;
+  /**
+   * T — bending strength, MPa, as the technician calculated it. Entered, not
+   * derived: neither controlled form carries the formula, so the report shows
+   * only this value. `crossCheckMpa` holds the app's own calculation for
+   * comparison and never reaches the report.
+   */
+  bendingStrengthMpa?: number;
+  /** Derived cross-check only — see bendingStrengthMpa. */
+  crossCheckMpa?: number;
+}
+
+/** One specimen on the dimensions + absorption worksheet (…-7.5.1.2), three. */
+export interface PavingElementDimensionSpecimen {
+  specimenCode: string;
+  /** a — length of the specimen, mm. */
+  lengthMm?: number;
+  /** b — kerbs: thickness; flags: width. mm. */
+  widthMm?: number;
+  /** Kerbs: h, height. Flags: thickness. mm. */
+  heightMm?: number;
+  /**
+   * Flags only — length of the diagonals (d), which SL-RA-ET-7.8/1.3 reports
+   * but SL-FP-ET-PB-7.5.1.2 has no cell for. Recorded here so the report can
+   * carry it; see the note on the worksheet.
+   */
+  diagonalMm?: number;
+  /** w — mass of the specimen, kg. */
+  massKg?: number;
+  /** M1 — mass after immersion at 20 ± 5 °C to constant mass, g. */
+  saturatedMassG?: number;
+  /** M2 — mass after drying at 105 ± 5 °C to constant mass, g. */
+  dryMassG?: number;
+  /** Derived: Wa = (M1 − M2) / M2 × 100. */
+  waterAbsorptionPercent?: number;
+}
+
+/**
+ * The three visual judgements the report carries per specimen — appearance,
+ * surface texture and colour. They are observations, not measurements, so they
+ * are free text and have no mean.
+ */
+export interface PavingElementAppearance {
+  appearance?: string;
+  texture?: string;
+  colour?: string;
+}
+
+export interface PavingElementAverages {
+  /** Kerbs: L. Flags: not reported (the report shows the diagonals instead). */
+  lengthMm?: number;
+  /** Kerbs: W. Flags: not reported. */
+  widthMm?: number;
+  /** Kerbs: H. Flags: t (thickness). */
+  heightMm?: number;
+  /** Flags: d. */
+  diagonalMm?: number;
+  waterAbsorptionPercent?: number;
+  breakingLoadN?: number;
+  bendingStrengthMpa?: number;
+}
+
+export interface PavingElementTest {
+  id: string;
+  testId: string;
+  kind: PavingElementKind;
+  productDescription?: string;
+  manufacturer?: string;
+  /** Bending worksheet dates (…-7.5.1.1). */
+  testStartDate?: string;
+  testEndDate?: string;
+  /** Dimensions section of …-7.5.1.2, which runs on its own dates. */
+  dimensionStartDate?: string;
+  dimensionEndDate?: string;
+  /** Absorption section of …-7.5.1.2 — a minimum of three days each way. */
+  absorptionStartDate?: string;
+  absorptionEndDate?: string;
+  temperature?: string;
+  humidity?: string;
+  testingLocation?: string;
+  technicianName: string;
+  checkedBy?: string;
+  notes?: string;
+  /** One entry per reported specimen, in report order. */
+  appearance: PavingElementAppearance[];
+  bending: PavingElementBendingSpecimen[];
+  dimensions: PavingElementDimensionSpecimen[];
+  averages: PavingElementAverages;
   createdAt: string;
 }
 

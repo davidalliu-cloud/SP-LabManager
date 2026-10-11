@@ -65,7 +65,9 @@ import {
   calculateWaterDemandPercent,
   calculateUnitWeightKgPerM,
   deriveMasonryUnitSpecimen,
-  averageMasonryColumn,
+  averageOptionalColumn,
+  derivePavingBendingSpecimen,
+  derivePavingDimensionSpecimen,
   deriveWaterDensityRun,
   deriveWaterChlorideRun,
   deriveWaterSulfateRun,
@@ -103,7 +105,7 @@ import { mergeProceduresWithSeed, proceduresForPersistence } from "./procedures"
 import { procedureSeed } from "./procedure-seed";
 import { createSupabaseBrowserClient } from "./supabase/client";
 import { pushAuditEntries, pushNotifications } from "./activity-log";
-import type { AdmixtureTest, AdmixtureDensityRun, AdmixtureDryMassRun, AdmixtureWaterMixRun, AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltMixtureKind, AsphaltReportKind, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ClientAnalysisRecord, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabState, LabTest, LabUser, MasonryUnitTest, MortarTest, WaterAnalysisTest, SclerometerTest, MortarTestKind, Notification, Project, Report, Role, Sample, SampleStatus, SteelTensileTest, ThermalInsulationTest } from "./types";
+import type { AdmixtureTest, AdmixtureDensityRun, AdmixtureDryMassRun, AdmixtureWaterMixRun, AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltMixtureKind, AsphaltReportKind, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ClientAnalysisRecord, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabState, LabTest, LabUser, MasonryUnitTest, MortarTest, PavingElementKind, PavingElementTest, WaterAnalysisTest, SclerometerTest, MortarTestKind, Notification, Project, Report, Role, Sample, SampleStatus, SteelTensileTest, ThermalInsulationTest } from "./types";
 
 export interface NewSampleInput {
   clientId: string;
@@ -498,6 +500,43 @@ interface WaterAnalysisInput {
   sulfateEndDate?: string;
   sulfate1: { sampleMassG?: number; emptyCrucibleG?: number; crucibleAndResidueG?: number };
   sulfate2: { sampleMassG?: number; emptyCrucibleG?: number; crucibleAndResidueG?: number };
+}
+
+interface PavingElementInput {
+  kind: PavingElementKind;
+  productDescription?: string;
+  manufacturer?: string;
+  testStartDate?: string;
+  testEndDate?: string;
+  dimensionStartDate?: string;
+  dimensionEndDate?: string;
+  absorptionStartDate?: string;
+  absorptionEndDate?: string;
+  temperature?: string;
+  humidity?: string;
+  testingLocation?: string;
+  technicianName: string;
+  checkedBy?: string;
+  notes?: string;
+  appearance: Array<{ appearance?: string; texture?: string; colour?: string }>;
+  bending: Array<{
+    specimenCode: string;
+    spanMm?: number;
+    sectionMm?: number;
+    extremeFibreMm?: number;
+    breakingLoadN?: number;
+    bendingStrengthMpa?: number;
+  }>;
+  dimensions: Array<{
+    specimenCode: string;
+    lengthMm?: number;
+    widthMm?: number;
+    heightMm?: number;
+    diagonalMm?: number;
+    massKg?: number;
+    saturatedMassG?: number;
+    dryMassG?: number;
+  }>;
 }
 
 interface MasonryUnitInput {
@@ -1069,6 +1108,7 @@ interface LabStoreValue extends LabState {
   saveCementBlaineTest: (testId: string, input: CementBlaineInput) => void;
   saveAdmixtureTest: (testId: string, input: AdmixtureInput) => void;
   saveMasonryUnitTest: (testId: string, input: MasonryUnitInput) => void;
+  savePavingElementTest: (testId: string, input: PavingElementInput) => void;
   saveWaterAnalysisTest: (testId: string, input: WaterAnalysisInput) => void;
   saveSclerometerTest: (testId: string, input: SclerometerInput) => void;
   saveMortarTest: (testId: string, input: MortarInput) => void;
@@ -1390,6 +1430,7 @@ function mergeWithInitialState(saved: Partial<LabState>): LabState {
     // falls back to the empty array rather than arriving as undefined and
     // crashing the first .find() that touches it.
     masonryUnitTests: saved.masonryUnitTests ?? initialState.masonryUnitTests,
+    pavingElementTests: saved.pavingElementTests ?? initialState.pavingElementTests,
     waterAnalysisTests: saved.waterAnalysisTests ?? initialState.waterAnalysisTests,
     sclerometerTests: saved.sclerometerTests ?? initialState.sclerometerTests,
     concreteTests: saved.concreteTests ?? initialState.concreteTests,
@@ -2459,6 +2500,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             aggregateChemicalTests: previous.aggregateChemicalTests.filter((row) => !linkedTestIds.has(row.testId)),
             admixtureTests: previous.admixtureTests.filter((row) => !linkedTestIds.has(row.testId)),
             masonryUnitTests: previous.masonryUnitTests.filter((row) => !linkedTestIds.has(row.testId)),
+            pavingElementTests: previous.pavingElementTests.filter((row) => !linkedTestIds.has(row.testId)),
             waterAnalysisTests: previous.waterAnalysisTests.filter((row) => !linkedTestIds.has(row.testId)),
             sclerometerTests: previous.sclerometerTests.filter((row) => !linkedTestIds.has(row.testId)),
             aggregateLosAngelesTests: previous.aggregateLosAngelesTests.filter((row) => !linkedTestIds.has(row.testId)),
@@ -3509,19 +3551,19 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             notes: input.notes,
             specimens,
             averages: {
-              lengthMm: averageMasonryColumn(specimens.map((row) => row.lengthMm), 1),
-              widthMm: averageMasonryColumn(specimens.map((row) => row.widthMm), 1),
-              heightMm: averageMasonryColumn(specimens.map((row) => row.heightMm), 1),
-              shellWebLongitudinalMm: averageMasonryColumn(specimens.map((row) => row.shellWebLongitudinalMm), 2),
-              shellWebTransverseMm: averageMasonryColumn(specimens.map((row) => row.shellWebTransverseMm), 2),
-              meanHoleDepthMm: averageMasonryColumn(specimens.map((row) => row.meanHoleDepthMm), 1),
-              combinedThicknessLongitudinalPercent: averageMasonryColumn(specimens.map((row) => row.combinedThicknessLongitudinalPercent), 2),
-              combinedThicknessTransversePercent: averageMasonryColumn(specimens.map((row) => row.combinedThicknessTransversePercent), 2),
-              grossDryDensityKgM3: averageMasonryColumn(specimens.map((row) => row.grossDryDensityKgM3), 0),
-              netDryDensityKgM3: averageMasonryColumn(specimens.map((row) => row.netDryDensityKgM3), 0),
-              waterAbsorptionPercent: averageMasonryColumn(specimens.map((row) => row.waterAbsorptionPercent), 2),
-              compressiveStrengthMpa: averageMasonryColumn(specimens.map((row) => row.compressiveStrengthMpa), 2),
-              normalisedStrengthMpa: averageMasonryColumn(specimens.map((row) => row.normalisedStrengthMpa), 2)
+              lengthMm: averageOptionalColumn(specimens.map((row) => row.lengthMm), 1),
+              widthMm: averageOptionalColumn(specimens.map((row) => row.widthMm), 1),
+              heightMm: averageOptionalColumn(specimens.map((row) => row.heightMm), 1),
+              shellWebLongitudinalMm: averageOptionalColumn(specimens.map((row) => row.shellWebLongitudinalMm), 2),
+              shellWebTransverseMm: averageOptionalColumn(specimens.map((row) => row.shellWebTransverseMm), 2),
+              meanHoleDepthMm: averageOptionalColumn(specimens.map((row) => row.meanHoleDepthMm), 1),
+              combinedThicknessLongitudinalPercent: averageOptionalColumn(specimens.map((row) => row.combinedThicknessLongitudinalPercent), 2),
+              combinedThicknessTransversePercent: averageOptionalColumn(specimens.map((row) => row.combinedThicknessTransversePercent), 2),
+              grossDryDensityKgM3: averageOptionalColumn(specimens.map((row) => row.grossDryDensityKgM3), 0),
+              netDryDensityKgM3: averageOptionalColumn(specimens.map((row) => row.netDryDensityKgM3), 0),
+              waterAbsorptionPercent: averageOptionalColumn(specimens.map((row) => row.waterAbsorptionPercent), 2),
+              compressiveStrengthMpa: averageOptionalColumn(specimens.map((row) => row.compressiveStrengthMpa), 2),
+              normalisedStrengthMpa: averageOptionalColumn(specimens.map((row) => row.normalisedStrengthMpa), 2)
             },
             createdAt: previous.masonryUnitTests.find((row) => row.testId === testId)?.createdAt ?? new Date().toISOString()
           };
@@ -3535,6 +3577,72 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             auditLog: [...previous.auditLog]
           };
           addAudit(draft, "test_data_saved", "test", testId, "Masonry unit (EN 772) data saved.");
+          return draft;
+        });
+      },
+      savePavingElementTest(testId, input) {
+        setState((previous) => {
+          if (!canCurrentUserEditTest(previous, testId)) return previous;
+          const bending = input.bending.map((row) => ({
+            ...row,
+            ...derivePavingBendingSpecimen(row, input.kind)
+          }));
+          const dimensions = input.dimensions.map((row) => ({
+            ...row,
+            ...derivePavingDimensionSpecimen(row)
+          }));
+          const existingRow = previous.pavingElementTests.find((row) => row.testId === testId);
+          // Dimensions and absorption are measured on three elements, bending
+          // on up to eight, so every mean covers only the rows that carry a
+          // reading for that column — exactly as the AVERAGE() cells on the
+          // controlled report behave over blank cells.
+          const pavingTest: PavingElementTest = {
+            id: existingRow?.id ?? crypto.randomUUID(),
+            testId,
+            kind: input.kind,
+            productDescription: input.productDescription,
+            manufacturer: input.manufacturer,
+            testStartDate: input.testStartDate,
+            testEndDate: input.testEndDate,
+            dimensionStartDate: input.dimensionStartDate,
+            dimensionEndDate: input.dimensionEndDate,
+            absorptionStartDate: input.absorptionStartDate,
+            absorptionEndDate: input.absorptionEndDate,
+            temperature: input.temperature,
+            humidity: input.humidity,
+            testingLocation: input.testingLocation,
+            technicianName: input.technicianName,
+            checkedBy: input.checkedBy,
+            notes: input.notes,
+            appearance: input.appearance,
+            bending,
+            dimensions,
+            averages: {
+              lengthMm: averageOptionalColumn(dimensions.map((row) => row.lengthMm), 1),
+              widthMm: averageOptionalColumn(dimensions.map((row) => row.widthMm), 1),
+              heightMm: averageOptionalColumn(dimensions.map((row) => row.heightMm), 1),
+              diagonalMm: averageOptionalColumn(dimensions.map((row) => row.diagonalMm), 1),
+              waterAbsorptionPercent: averageOptionalColumn(dimensions.map((row) => row.waterAbsorptionPercent), 2),
+              breakingLoadN: averageOptionalColumn(bending.map((row) => row.breakingLoadN), 0),
+              bendingStrengthMpa: averageOptionalColumn(bending.map((row) => row.bendingStrengthMpa), 2)
+            },
+            createdAt: existingRow?.createdAt ?? new Date().toISOString()
+          };
+          const draft: LabState = {
+            ...previous,
+            pavingElementTests: existingRow
+              ? previous.pavingElementTests.map((row) => (row.testId === testId ? pavingTest : row))
+              : [pavingTest, ...previous.pavingElementTests],
+            tests: previous.tests.map((test) => (test.id === testId ? { ...test, status: "In Progress" } : test)),
+            auditLog: [...previous.auditLog]
+          };
+          addAudit(
+            draft,
+            "test_data_saved",
+            "test",
+            testId,
+            input.kind === "kerb" ? "Concrete kerb (EN 1340) data saved." : "Concrete paving flag (EN 1339) data saved."
+          );
           return draft;
         });
       },

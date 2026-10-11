@@ -83,6 +83,39 @@ export function getTestResultSummary(store: LabState, test: LabTest): TestResult
     };
   }
 
+  const paving = store.pavingElementTests.find((item) => item.testId === test.id);
+  if (paving) {
+    const parts: string[] = [];
+    const bent = paving.bending.filter((row) => typeof row.bendingStrengthMpa === "number").length;
+    // Only the determinations that were actually run appear, so a set that was
+    // measured but not broken does not read as 0 MPa.
+    if (paving.kind === "kerb" && paving.averages.lengthMm !== undefined) {
+      parts.push(
+        `Përmasat: ${formatNumber(paving.averages.lengthMm, 1)} × ${formatNumber(paving.averages.widthMm, 1)} × ${formatNumber(paving.averages.heightMm, 1)} mm`
+      );
+    }
+    if (paving.kind === "flag" && (paving.averages.diagonalMm !== undefined || paving.averages.heightMm !== undefined)) {
+      parts.push(`Diagonalet: ${formatNumber(paving.averages.diagonalMm, 1)} mm; trashësia: ${formatNumber(paving.averages.heightMm, 1)} mm`);
+    }
+    if (paving.averages.waterAbsorptionPercent !== undefined) {
+      parts.push(`Absorbimi: ${formatNumber(paving.averages.waterAbsorptionPercent)} %`);
+    }
+    if (paving.averages.bendingStrengthMpa !== undefined) {
+      parts.push(`Rezistenca në përkulje: ${formatNumber(paving.averages.bendingStrengthMpa)} MPa (${bent} elementë)`);
+    }
+    return {
+      testStartDate: paving.testStartDate,
+      testEndDate: paving.testEndDate,
+      technicianName: paving.technicianName,
+      checkedBy: paving.checkedBy,
+      result: parts.length
+        ? parts.join("; ")
+        : paving.kind === "kerb"
+          ? "Bordurë betoni: pa matje të plotësuara"
+          : "Pllakë betoni: pa matje të plotësuara"
+    };
+  }
+
   const admixture = store.admixtureTests.find((item) => item.testId === test.id);
   if (admixture) {
     return {

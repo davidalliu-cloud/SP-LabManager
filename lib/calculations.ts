@@ -493,12 +493,12 @@ const finiteNumber = (value?: number): value is number => typeof value === "numb
 /**
  * Mean of the specimens that carry a value for this column.
  *
- * Zeros are kept, because zero is a legitimate reading for a masonry column
- * (an absorption of 0.0 %) whereas a missing reading is not. Returns undefined
+ * Zeros are kept, because zero is a legitimate reading (an absorption of
+ * 0.0 %) whereas a missing reading is not. Returns undefined
  * when nothing was measured, so a half-finished test reports a blank rather
  * than a number.
  */
-export function averageMasonryColumn(values: Array<number | undefined>, decimals = 2) {
+export function averageOptionalColumn(values: Array<number | undefined>, decimals = 2) {
   const usable = values.filter(finiteNumber);
   if (!usable.length) return undefined;
   return round(usable.reduce((sum, value) => sum + value, 0) / usable.length, decimals);
@@ -775,4 +775,47 @@ export function deriveSclerometerResults(input: {
   const strengthMin = finiteReading(rck) && finiteReading(delta) ? round(rck - delta, 2) : undefined;
 
   return { reboundCount, averageRebound, strengthMax, strengthMin };
+}
+
+/**
+ * Bordura betoni (BS EN 1340) dhe pllaka betoni (BS EN 1339).
+ *
+ * Water absorption is the formula the controlled worksheet itself carries:
+ * Wa = (M1 − M2) / M2 × 100.
+ *
+ * The bending strength is a cross-check only. Neither SL-FP-ET-BB-7.5.1.1 nor
+ * SL-FP-ET-PB-7.5.1.1 carries a formula, so the technician calculates T
+ * outside the sheet and types it in; the report prints what they typed. What
+ * is returned here is the value implied by the parameters the two forms do
+ * collect — for kerbs T = P·L·y / l from the second moment of area and the
+ * distance to the extreme fibre, and for flags the three-point bending
+ * expression T = 1.5·P·L / (b·t²). It is shown beside the entered value so a
+ * slip is caught before the report is drawn, and it never reaches the report.
+ */
+export function derivePavingBendingSpecimen(
+  input: { spanMm?: number; sectionMm?: number; extremeFibreMm?: number; breakingLoadN?: number },
+  kind: "kerb" | "flag"
+) {
+  const { spanMm, sectionMm, extremeFibreMm, breakingLoadN } = input;
+  if (!finiteNumber(spanMm) || !finiteNumber(sectionMm) || !finiteNumber(extremeFibreMm) || !finiteNumber(breakingLoadN)) {
+    return { crossCheckMpa: undefined };
+  }
+  if (spanMm <= 0 || sectionMm <= 0 || extremeFibreMm <= 0 || breakingLoadN <= 0) {
+    return { crossCheckMpa: undefined };
+  }
+  const crossCheckMpa =
+    kind === "kerb"
+      ? round((breakingLoadN * spanMm * extremeFibreMm) / sectionMm, 2)
+      : round((1.5 * breakingLoadN * spanMm) / (sectionMm * extremeFibreMm * extremeFibreMm), 2);
+  return { crossCheckMpa };
+}
+
+/** Wa = (M1 − M2) / M2 × 100, exactly as the worksheet computes it. */
+export function derivePavingDimensionSpecimen(input: { saturatedMassG?: number; dryMassG?: number }) {
+  const { saturatedMassG, dryMassG } = input;
+  const waterAbsorptionPercent =
+    finiteNumber(saturatedMassG) && finiteNumber(dryMassG) && dryMassG > 0
+      ? round(((saturatedMassG - dryMassG) / dryMassG) * 100, 2)
+      : undefined;
+  return { waterAbsorptionPercent };
 }

@@ -6,7 +6,7 @@ import { Dispatch, FormEvent, SetStateAction, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { StageCell } from "@/components/ui/stage-cell";
 import { testLifecycle } from "@/lib/sample-stage";
-import { getMortarTestKind, isAggregateAcvAccreditedTest, isAggregateBulkDensityAccreditedTest, isAggregateChemicalAccreditedTest, isAggregateDensityAbsorptionAccreditedTest, isAggregateElongationIndexAccreditedTest, isAggregateFillerDensityAccreditedTest, isAggregateFlakinessIndexAccreditedTest, isAggregateFreezeThawAccreditedTest, isAggregateGranulometrySampleType, isAggregateLosAngelesAccreditedTest, isAggregateSandEquivalentAccreditedTest, isAggregateShapeIndexAccreditedTest, isAggregateSoundnessAccreditedTest, isAsphaltAccreditedTest, isAdmixtureAccreditedTest, isMasonryUnitAccreditedTest, isWaterAnalysisAccreditedTest, isSclerometerAccreditedTest, isCementBlaineAstmAccreditedTest, isCementBlaineBsEnAccreditedTest, isCementConsistencyAccreditedTest, isCementStrengthAccreditedTest, isConcreteCoreAccreditedTest, isConcreteDensityAccreditedTest, isConcreteFlexuralAccreditedTest, isConcreteIndirectTensileAccreditedTest, isConcreteWaterPenetrationAccreditedTest, isMortarAccreditedTest, isSteelSampleType, isThermalInsulationAccreditedTest, isMasonryUnitSampleType } from "@/lib/accredited-tests";
+import { getMortarTestKind, isAggregateAcvAccreditedTest, isAggregateBulkDensityAccreditedTest, isAggregateChemicalAccreditedTest, isAggregateDensityAbsorptionAccreditedTest, isAggregateElongationIndexAccreditedTest, isAggregateFillerDensityAccreditedTest, isAggregateFlakinessIndexAccreditedTest, isAggregateFreezeThawAccreditedTest, isAggregateGranulometrySampleType, isAggregateLosAngelesAccreditedTest, isAggregateSandEquivalentAccreditedTest, isAggregateShapeIndexAccreditedTest, isAggregateSoundnessAccreditedTest, isAsphaltAccreditedTest, isAdmixtureAccreditedTest, isMasonryUnitAccreditedTest, isWaterAnalysisAccreditedTest, isSclerometerAccreditedTest, isCementBlaineAstmAccreditedTest, isCementBlaineBsEnAccreditedTest, isCementConsistencyAccreditedTest, isCementStrengthAccreditedTest, isConcreteCoreAccreditedTest, isConcreteDensityAccreditedTest, isConcreteFlexuralAccreditedTest, isConcreteIndirectTensileAccreditedTest, isConcreteWaterPenetrationAccreditedTest, isMortarAccreditedTest, isSteelSampleType, isThermalInsulationAccreditedTest, isMasonryUnitSampleType, isPavingElementAccreditedTest, isPavingElementSampleType, pavingElementKind } from "@/lib/accredited-tests";
 import { admixtureDeterminationsDisagree } from "@/lib/calculations";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { useLabStore } from "@/lib/lab-store";
@@ -18,6 +18,20 @@ const mortarSieveSizes = [8, 4, 2, 1, 0.5, 0.25, 0.125, 0.063, 0.0001];
 const asphaltSieveSizes = [31.5, 25, 20, 16, 12.5, 8, 4, 2, 0.5, 0.25, 0.063, 0];
 // BS EN 772-1 and 772-16 both test six units.
 const MASONRY_SPECIMEN_ROWS = [1, 2, 3, 4, 5, 6];
+// Kerbs and paving flags: eight elements on the bending worksheet, three on
+// the dimensions-and-absorption worksheet, as both controlled forms are ruled.
+const PAVING_BENDING_ROWS = [1, 2, 3, 4, 5, 6, 7, 8];
+const PAVING_DIMENSION_ROWS = [1, 2, 3];
+
+/**
+ * Whether an entered bending strength is more than 2 % away from the value the
+ * worksheet's own parameters imply. The entered value is what the report
+ * carries; this only decides whether to flag it for a second look.
+ */
+function pavingStrengthDisagrees(entered?: number, crossCheck?: number) {
+  if (typeof entered !== "number" || typeof crossCheck !== "number" || crossCheck <= 0) return false;
+  return Math.abs(entered - crossCheck) / crossCheck > 0.02;
+}
 // The template records sixteen hammer blows in its working column.
 const SCLEROMETER_READING_SLOTS = Array.from({ length: 16 }, (_, index) => index + 1);
 const SCLEROMETER_ANGLES = ["0°", "+90°", "-90°", "+45°", "-45°"];
@@ -51,6 +65,7 @@ export default function TestDetailPage() {
   const waterAnalysis = store.waterAnalysisTests.find((item) => item.testId === activeTest.id);
   const sclerometer = store.sclerometerTests.find((item) => item.testId === activeTest.id);
   const masonryUnit = store.masonryUnitTests.find((item) => item.testId === activeTest.id);
+  const pavingElement = store.pavingElementTests.find((item) => item.testId === activeTest.id);
   const cementStrength = store.cementStrengthTests.find((item) => item.testId === activeTest.id);
   const cementBlaine = store.cementBlaineTests.find((item) => item.testId === activeTest.id);
   const mortar = store.mortarTests.find((item) => item.testId === activeTest.id);
@@ -505,6 +520,55 @@ export default function TestDetailPage() {
         netVolumeMm3: optionalNumber(form.get(`masonryNetVolume-${index}`)),
         loadedAreaMm2: optionalNumber(form.get(`masonryLoadedArea-${index}`)),
         maximumLoadKn: optionalNumber(form.get(`masonryLoad-${index}`))
+      }))
+    });
+  }
+
+  function submitPavingElement(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const text = (key: string) => String(form.get(key) ?? "").trim();
+    // The three visual judgements are nearly always the same for every element,
+    // so one shared value fills all eight rows and a per-row entry overrides it.
+    const sharedLook = { appearance: text("appearanceAll"), texture: text("textureAll"), colour: text("colourAll") };
+    store.savePavingElementTest(activeTest.id, {
+      kind: pavingKind ?? "kerb",
+      productDescription: text("productDescription"),
+      manufacturer: text("manufacturer"),
+      testStartDate: text("testStartDate"),
+      testEndDate: text("testEndDate"),
+      dimensionStartDate: text("dimensionStartDate"),
+      dimensionEndDate: text("dimensionEndDate"),
+      absorptionStartDate: text("absorptionStartDate"),
+      absorptionEndDate: text("absorptionEndDate"),
+      temperature: text("temperature"),
+      humidity: text("humidity"),
+      testingLocation: text("testingLocation"),
+      technicianName: text("technicianName"),
+      checkedBy: text("checkedBy"),
+      notes: text("notes"),
+      appearance: PAVING_BENDING_ROWS.map((index) => ({
+        appearance: text(`pavLook-${index}`) || sharedLook.appearance || undefined,
+        texture: text(`pavTexture-${index}`) || sharedLook.texture || undefined,
+        colour: text(`pavColour-${index}`) || sharedLook.colour || undefined
+      })),
+      bending: PAVING_BENDING_ROWS.map((index) => ({
+        specimenCode: text(`pavBendCode-${index}`) || String(index),
+        spanMm: optionalNumber(form.get(`pavBendSpan-${index}`)),
+        sectionMm: optionalNumber(form.get(`pavBendSection-${index}`)),
+        extremeFibreMm: optionalNumber(form.get(`pavBendFibre-${index}`)),
+        breakingLoadN: optionalNumber(form.get(`pavBendLoad-${index}`)),
+        bendingStrengthMpa: optionalNumber(form.get(`pavBendStrength-${index}`))
+      })),
+      dimensions: PAVING_DIMENSION_ROWS.map((index) => ({
+        specimenCode: text(`pavDimCode-${index}`) || String(index),
+        lengthMm: optionalNumber(form.get(`pavDimLength-${index}`)),
+        widthMm: optionalNumber(form.get(`pavDimWidth-${index}`)),
+        heightMm: optionalNumber(form.get(`pavDimHeight-${index}`)),
+        diagonalMm: optionalNumber(form.get(`pavDimDiagonal-${index}`)),
+        massKg: optionalNumber(form.get(`pavDimMass-${index}`)),
+        saturatedMassG: optionalNumber(form.get(`pavDimM1-${index}`)),
+        dryMassG: optionalNumber(form.get(`pavDimM2-${index}`))
       }))
     });
   }
@@ -1186,6 +1250,8 @@ export default function TestDetailPage() {
   const isWaterAnalysisTest = isWaterAnalysisAccreditedTest(activeTest.testType);
   const isSclerometerTest = isSclerometerAccreditedTest(activeTest.testType);
   const isMasonryUnitTest = isMasonryUnitAccreditedTest(activeTest.testType) || isMasonryUnitSampleType(sample?.sampleType ?? "");
+  const isPavingElementTest = isPavingElementAccreditedTest(activeTest.testType) || isPavingElementSampleType(sample?.sampleType ?? "");
+  const pavingKind = pavingElementKind(sample?.sampleType, activeTest.testType);
   const isCementStrengthTest = isCementStrengthAccreditedTest(activeTest.testType);
   const isCementBlaineBsEnTest = isCementBlaineBsEnAccreditedTest(activeTest.testType);
   const isCementBlaineAstmTest = isCementBlaineAstmAccreditedTest(activeTest.testType);
@@ -1491,6 +1557,271 @@ export default function TestDetailPage() {
                 : averages?.compressiveStrengthMpa !== undefined
                   ? `Rezistenca ${averages.compressiveStrengthMpa} MPa nga ${crushed} njësi, pa normalizim.`
                   : "Ruani matjet për të llogaritur rezultatet."
+            }
+            canEdit={canEditWorksheet}
+            canGenerateReport={canGenerateReport}
+            canReview={canReviewTest}
+            reviewPending={isAwaitingTechnicalReview}
+            approveTest={approveTechnicalResult}
+            rejectTest={rejectTechnicalResult}
+            technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName}
+          />
+        </div>
+      </>
+    );
+  }
+
+  if (isPavingElementTest && pavingKind) {
+    const isKerb = pavingKind === "kerb";
+    const averages = pavingElement?.averages;
+    const bentCount = (pavingElement?.bending ?? []).filter((row) => typeof row.bendingStrengthMpa === "number").length;
+    // The cross-check is the app's own calculation from the parameters the
+    // worksheet collects. It never reaches the report; it is here so a slip in
+    // the hand calculation is caught before the report is drawn.
+    const disagreeing = (pavingElement?.bending ?? []).filter((row) => pavingStrengthDisagrees(row.bendingStrengthMpa, row.crossCheckMpa)).length;
+    const sharedLook = pavingElement?.appearance?.[0];
+    return (
+      <>
+        <PageHeader
+          title={activeTest.testCode}
+          description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / ${isKerb ? "Bordurë betoni" : "Pllakë betoni"}`}
+          action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />}
+        />
+        <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
+          <form onSubmit={submitPavingElement} className="surface-card"><fieldset disabled={!canEditWorksheet} className="m-0 min-w-0 border-0 p-0 disabled:opacity-70">
+            <div className="border-b border-line bg-lab-porcelain px-5 py-4">
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-lab-burgundy">Fletë pune</div>
+              <h2 className="mt-1 text-lg font-semibold text-ink">
+                {isKerb ? "Bordurë betoni" : "Pllakë betoni"} / <span className="italic font-normal">{isKerb ? "Concrete kerb units" : "Concrete paving flags"}</span>
+              </h2>
+              <p className="mt-1 text-sm text-muted">
+                {isKerb
+                  ? "SL-FP-ET-BB-7.5.1.1 (rezistenca në përkulje) dhe SL-FP-ET-BB-7.5.1.2 (dimensionet dhe absorbimi), sipas BS EN 1340:2003."
+                  : "SL-FP-ET-PB-7.5.1.1 (rezistenca në përkulje) dhe SL-FP-ET-PB-7.5.1.2 (dimensionet dhe absorbimi), sipas BS EN 1339:2003."}
+                {" "}Të dyja fletët plotësohen këtu dhe nxjerrin një raport të vetëm.
+              </p>
+            </div>
+
+            <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
+              <Field label="Register number"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
+              <Field label="Sample type"><input className="input bg-lab-porcelain" value={sample?.sampleType ?? ""} readOnly /></Field>
+              <Field label="Applied standard"><input className="input bg-lab-porcelain" value={activeTest.standard || (isKerb ? "BS EN 1340:2003" : "BS EN 1339:2003")} readOnly /></Field>
+              <Field label="Produkti / Product"><input name="productDescription" defaultValue={pavingElement?.productDescription ?? sample?.sampleDescription ?? ""} className="input" /></Field>
+              <Field label="Prodhuesi / Manufacturer"><input name="manufacturer" defaultValue={pavingElement?.manufacturer ?? ""} className="input" /></Field>
+              <Field label="Testing location"><input name="testingLocation" defaultValue={pavingElement?.testingLocation ?? "01/A (Lab. Fiziko-Mekanik / Physical-Mechanical laboratory)"} className="input" /></Field>
+              <Field label="Technician"><EmployeeSelect name="technicianName" employees={activeEmployees} required value={pavingElement?.technicianName ?? ""} /></Field>
+              <Field label="Checked by"><EmployeeSelect name="checkedBy" employees={activeEmployees} value={pavingElement?.checkedBy ?? ""} /></Field>
+              <Field label="Temperature"><input name="temperature" defaultValue={pavingElement?.temperature ?? ""} className="input" /></Field>
+              <Field label="Relative humidity"><input name="humidity" defaultValue={pavingElement?.humidity ?? ""} className="input" /></Field>
+            </div>
+
+            {/* --- Worksheet 1: bending strength, up to eight specimens --- */}
+            <div className="border-b border-line p-5">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">
+                Rezistenca në përkulje / <span className="italic font-normal normal-case">Bending strength</span>
+                <span className="ml-2 font-normal normal-case text-muted">{isKerb ? "SL-FP-ET-BB-7.5.1.1" : "SL-FP-ET-PB-7.5.1.1"}</span>
+              </h3>
+              <div className="mt-3 grid gap-4 md:grid-cols-2">
+                <Field label="Data e fillimit të testimit"><input name="testStartDate" type="date" defaultValue={pavingElement?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
+                <Field label="Data e mbarimit të testimit"><input name="testEndDate" type="date" defaultValue={pavingElement?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
+              </div>
+              <p className="mt-3 text-xs text-muted">
+                Rezistenca në përkulje (T) shkruhet nga ju, pikërisht si në fletën e kontrolluar — formula nuk është në fletë.
+                Kolona e fundit është vetëm kontroll i llogaritur nga aplikacioni{" "}
+                {isKerb ? "(T = P·L·y / l)" : "(T = 1.5·P·L / (b·t²))"} dhe nuk shkon në raport.
+              </p>
+              <div className="mt-3 overflow-x-auto">
+                <table className="w-full min-w-[1100px] text-left text-sm">
+                  <thead className="table-head">
+                    <tr>
+                      <th className="px-2 py-2">Nr.</th>
+                      <th className="px-2 py-2">Kodi i kampionit</th>
+                      <th className="px-2 py-2">L — distanca midis suporteve [mm]</th>
+                      <th className="px-2 py-2">{isKerb ? "l — momenti i dytë i sipërfaqes [mm⁴]" : "b — gjerësia e sipërfaqes që testohet [mm]"}</th>
+                      <th className="px-2 py-2">{isKerb ? "y — qendra deri në ekstrem (gjerësia) [mm]" : "t — lartësia e sipërfaqes që testohet [mm]"}</th>
+                      <th className="px-2 py-2">P — ngarkesa në thyerje [N]</th>
+                      <th className="px-2 py-2">T — rezistenca [MPa]</th>
+                      <th className="px-2 py-2">Kontroll [MPa]</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line">
+                    {PAVING_BENDING_ROWS.map((index) => {
+                      const row = pavingElement?.bending[index - 1];
+                      const mismatch = pavingStrengthDisagrees(row?.bendingStrengthMpa, row?.crossCheckMpa);
+                      return (
+                        <tr key={index}>
+                          <td className="px-2 py-2 font-semibold text-ink">{index}</td>
+                          <td className="px-2 py-2"><input name={`pavBendCode-${index}`} defaultValue={row?.specimenCode ?? `${sample?.sampleCode ?? "Kampioni"}/${index}`} className="input min-w-32" /></td>
+                          <td className="px-2 py-2"><input name={`pavBendSpan-${index}`} type="number" step="0.1" min="0" defaultValue={row?.spanMm ?? ""} className="input min-w-24" /></td>
+                          <td className="px-2 py-2"><input name={`pavBendSection-${index}`} type="number" step="0.01" min="0" defaultValue={row?.sectionMm ?? ""} className="input min-w-28" /></td>
+                          <td className="px-2 py-2"><input name={`pavBendFibre-${index}`} type="number" step="0.1" min="0" defaultValue={row?.extremeFibreMm ?? ""} className="input min-w-24" /></td>
+                          <td className="px-2 py-2"><input name={`pavBendLoad-${index}`} type="number" step="1" min="0" defaultValue={row?.breakingLoadN ?? ""} className="input min-w-28" /></td>
+                          <td className="px-2 py-2"><input name={`pavBendStrength-${index}`} type="number" step="0.01" min="0" defaultValue={row?.bendingStrengthMpa ?? ""} className="input min-w-24" /></td>
+                          <td className={`px-2 py-2 font-semibold ${mismatch ? "text-brand-late" : "text-muted"}`}>
+                            {row?.crossCheckMpa ?? "—"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {disagreeing ? (
+                <div className="mt-3 rounded-md border border-[#f0a93a] bg-brand-risk p-3 text-xs font-semibold text-ink">
+                  {disagreeing === 1 ? "Një kampion ka" : `${disagreeing} kampione kanë`} rezistencë të shkruar që ndryshon më shumë
+                  se 2 % nga kontrolli i llogaritur. Kontrolloni llogaritjen ose parametrat përpara se të nxirrni raportin.
+                </div>
+              ) : null}
+            </div>
+
+            {/* --- Worksheet 2: dimensions and water absorption, three specimens --- */}
+            <div className="border-b border-line p-5">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">
+                Dimensionet dhe absorbimi i ujit / <span className="italic font-normal normal-case">Dimensions and water absorption</span>
+                <span className="ml-2 font-normal normal-case text-muted">{isKerb ? "SL-FP-ET-BB-7.5.1.2" : "SL-FP-ET-PB-7.5.1.2"}</span>
+              </h3>
+              <div className="mt-3 grid gap-4 md:grid-cols-4">
+                <Field label="Dimensionet — fillimi"><input name="dimensionStartDate" type="date" defaultValue={pavingElement?.dimensionStartDate ?? ""} className="input" /></Field>
+                <Field label="Dimensionet — mbarimi"><input name="dimensionEndDate" type="date" defaultValue={pavingElement?.dimensionEndDate ?? ""} className="input" /></Field>
+                <Field label="Absorbimi — fillimi"><input name="absorptionStartDate" type="date" defaultValue={pavingElement?.absorptionStartDate ?? ""} className="input" /></Field>
+                <Field label="Absorbimi — mbarimi"><input name="absorptionEndDate" type="date" defaultValue={pavingElement?.absorptionEndDate ?? ""} className="input" /></Field>
+              </div>
+              <p className="mt-3 text-xs text-muted">
+                M1 është pesha pas zhytjes në ujë 20 ± 5 °C deri në masë konstante, M2 pesha pas tharjes në 105 ± 5 °C. Absorbimi
+                Wa = (M1 − M2) / M2 × 100 llogaritet vetë.
+                {isKerb
+                  ? ""
+                  : " Gjatësia e diagonaleve (d) raportohet në SL-RA-ET-7.8/1.3 por fleta e kontrolluar nuk ka rresht për të — regjistrohet këtu."}
+              </p>
+              <div className="mt-3 overflow-x-auto">
+                <table className="w-full min-w-[1100px] text-left text-sm">
+                  <thead className="table-head">
+                    <tr>
+                      <th className="px-2 py-2">Nr.</th>
+                      <th className="px-2 py-2">Kodi i kampionit</th>
+                      <th className="px-2 py-2">a — gjatësia [mm]</th>
+                      <th className="px-2 py-2">{isKerb ? "b — trashësia (W në raport) [mm]" : "b — gjerësia [mm]"}</th>
+                      <th className="px-2 py-2">{isKerb ? "h — lartësia [mm]" : "t — trashësia [mm]"}</th>
+                      {isKerb ? null : <th className="px-2 py-2">d — diagonalet [mm]</th>}
+                      <th className="px-2 py-2">w — pesha [kg]</th>
+                      <th className="px-2 py-2">M1 [g]</th>
+                      <th className="px-2 py-2">M2 [g]</th>
+                      <th className="px-2 py-2">Wa [%]</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line">
+                    {PAVING_DIMENSION_ROWS.map((index) => {
+                      const row = pavingElement?.dimensions[index - 1];
+                      return (
+                        <tr key={index}>
+                          <td className="px-2 py-2 font-semibold text-ink">{index}</td>
+                          <td className="px-2 py-2"><input name={`pavDimCode-${index}`} defaultValue={row?.specimenCode ?? `${sample?.sampleCode ?? "Kampioni"}/${index}`} className="input min-w-32" /></td>
+                          <td className="px-2 py-2"><input name={`pavDimLength-${index}`} type="number" step="0.1" min="0" defaultValue={row?.lengthMm ?? ""} className="input min-w-24" /></td>
+                          <td className="px-2 py-2"><input name={`pavDimWidth-${index}`} type="number" step="0.1" min="0" defaultValue={row?.widthMm ?? ""} className="input min-w-24" /></td>
+                          <td className="px-2 py-2"><input name={`pavDimHeight-${index}`} type="number" step="0.1" min="0" defaultValue={row?.heightMm ?? ""} className="input min-w-24" /></td>
+                          {isKerb ? null : (
+                            <td className="px-2 py-2"><input name={`pavDimDiagonal-${index}`} type="number" step="0.1" min="0" defaultValue={row?.diagonalMm ?? ""} className="input min-w-24" /></td>
+                          )}
+                          <td className="px-2 py-2"><input name={`pavDimMass-${index}`} type="number" step="0.001" min="0" defaultValue={row?.massKg ?? ""} className="input min-w-24" /></td>
+                          <td className="px-2 py-2"><input name={`pavDimM1-${index}`} type="number" step="0.1" min="0" defaultValue={row?.saturatedMassG ?? ""} className="input min-w-24" /></td>
+                          <td className="px-2 py-2"><input name={`pavDimM2-${index}`} type="number" step="0.1" min="0" defaultValue={row?.dryMassG ?? ""} className="input min-w-24" /></td>
+                          <td className="px-2 py-2 font-semibold text-ink">{row?.waterAbsorptionPercent ?? "Ruaj"}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* --- The visual judgements the report carries for all eight elements --- */}
+            <div className="border-b border-line p-5">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">
+                Vlerësimi pamor / <span className="italic font-normal normal-case">Visual assessment</span>
+              </h3>
+              <p className="mt-1 text-xs text-muted">
+                Raporti mban aparencën, uniformitetin e sipërfaqes dhe ngjyrën për secilin element. Zakonisht janë të njëjta për të
+                gjithë, ndaj shkruani vlerat e përbashkëta këtu; hapni listën vetëm kur një element ndryshon.
+              </p>
+              <div className="mt-3 grid gap-4 md:grid-cols-3">
+                <Field label="Aparenca / Aparence"><input name="appearanceAll" defaultValue={sharedLook?.appearance ?? ""} className="input" placeholder="p.sh. E rregullt / Regular" /></Field>
+                <Field label="Uniformiteti i sipërfaqes / Texture"><input name="textureAll" defaultValue={sharedLook?.texture ?? ""} className="input" placeholder="p.sh. Uniform / Uniform" /></Field>
+                <Field label="Ngjyra / Colour"><input name="colourAll" defaultValue={sharedLook?.colour ?? ""} className="input" placeholder="p.sh. Gri / Grey" /></Field>
+              </div>
+              <details className="mt-4">
+                <summary className="cursor-pointer text-sm font-medium text-lab-burgundy">Vlera të veçanta për element</summary>
+                <div className="mt-3 overflow-x-auto">
+                  <table className="w-full min-w-[700px] text-left text-sm">
+                    <thead className="table-head">
+                      <tr>
+                        <th className="px-2 py-2">Nr.</th>
+                        <th className="px-2 py-2">Aparenca</th>
+                        <th className="px-2 py-2">Uniformiteti</th>
+                        <th className="px-2 py-2">Ngjyra</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-line">
+                      {PAVING_BENDING_ROWS.map((index) => {
+                        const row = pavingElement?.appearance[index - 1];
+                        return (
+                          <tr key={index}>
+                            <td className="px-2 py-2 font-semibold text-ink">{index}</td>
+                            <td className="px-2 py-2"><input name={`pavLook-${index}`} defaultValue={row?.appearance ?? ""} className="input min-w-32" placeholder="si të përbashkëta" /></td>
+                            <td className="px-2 py-2"><input name={`pavTexture-${index}`} defaultValue={row?.texture ?? ""} className="input min-w-32" placeholder="si të përbashkëta" /></td>
+                            <td className="px-2 py-2"><input name={`pavColour-${index}`} defaultValue={row?.colour ?? ""} className="input min-w-32" placeholder="si të përbashkëta" /></td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+            </div>
+
+            <div className="p-5">
+              <div className="grid gap-4 md:grid-cols-2">
+                <InfoInline
+                  label={isKerb ? "Përmasat mesatare / Mean dimensions" : "Diagonalet / trashësia mesatare"}
+                  value={
+                    isKerb
+                      ? averages?.lengthMm !== undefined
+                        ? `${averages.lengthMm} × ${averages.widthMm ?? "-"} × ${averages.heightMm ?? "-"} mm`
+                        : "Ruaj për ta llogaritur"
+                      : averages?.diagonalMm !== undefined || averages?.heightMm !== undefined
+                        ? `d ${averages?.diagonalMm ?? "-"} mm · t ${averages?.heightMm ?? "-"} mm`
+                        : "Ruaj për ta llogaritur"
+                  }
+                />
+                <InfoInline
+                  label="Absorbimi mesatar / Mean absorption"
+                  value={averages?.waterAbsorptionPercent !== undefined ? `${averages.waterAbsorptionPercent} %` : "Ruaj për ta llogaritur"}
+                />
+                <InfoInline
+                  label="Ngarkesa mesatare / Mean load"
+                  value={averages?.breakingLoadN !== undefined ? `${averages.breakingLoadN} N` : "Ruaj për ta llogaritur"}
+                />
+                <InfoInline
+                  label="Rezistenca mesatare / Mean strength"
+                  value={averages?.bendingStrengthMpa !== undefined ? `${averages.bendingStrengthMpa} MPa (${bentCount} elementë)` : "Ruaj për ta llogaritur"}
+                />
+              </div>
+              <div className="mt-4"><label className="text-sm font-medium text-ink">Shënime / Notes</label><textarea name="notes" rows={3} defaultValue={pavingElement?.notes ?? ""} className="input mt-1" /></div>
+            </div>
+
+            <div className="flex justify-end border-t border-line p-5">
+              <button type="submit" className="btn-primary">Ruaj rezultatet</button>
+            </div>
+          </fieldset></form>
+          <TestActionsSidebar
+            ready={Boolean(pavingElement)}
+            activeTest={activeTest}
+            reportId={report?.id}
+            complete={complete}
+            generateReport={generateReport}
+            message={
+              averages?.bendingStrengthMpa !== undefined
+                ? `Rezistenca mesatare ${averages.bendingStrengthMpa} MPa nga ${bentCount} elementë.`
+                : "Ruani matjet e dy fletëve për të llogaritur rezultatet."
             }
             canEdit={canEditWorksheet}
             canGenerateReport={canGenerateReport}
