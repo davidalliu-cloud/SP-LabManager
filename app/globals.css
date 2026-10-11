@@ -24,7 +24,10 @@ body {
   margin: 0;
   color: var(--app-ink);
   font-family: -apple-system, "Helvetica Neue", "Avenir Next", "Segoe UI", Arial, sans-serif;
-  background: #ffffff;
+  /* The HR app sits on #FAFAFA rather than pure white, which is what lets a
+     white card read as a card. Reports paint their own white ground, so the
+     printed documents are unaffected. */
+  background: #FAFAFA;
 }
 
 h1,
@@ -46,6 +49,12 @@ textarea {
   @page {
     size: A4;
     margin: 0;
+  }
+
+  /* The screen sits on #FAFAFA; paper does not. */
+  html,
+  body {
+    background: #ffffff !important;
   }
 
   html,
@@ -989,7 +998,7 @@ textarea {
 
 @layer components {
   .input {
-    @apply w-full rounded-md border border-line bg-white px-3 py-2 text-sm text-ink outline-none transition placeholder:text-slate-400 focus:border-lab-burgundy focus:ring-2 focus:ring-lab-burgundy/15;
+    @apply w-full rounded-[0.7rem] border border-line bg-white px-3 py-2 text-sm text-ink outline-none transition placeholder:text-slate-400 focus:border-lab-burgundy focus:ring-2 focus:ring-lab-burgundy/15;
   }
 
   /*
@@ -1003,7 +1012,7 @@ textarea {
    * weight on the value.
    */
   .field {
-    @apply w-full rounded-md border border-slate-300 bg-white px-3 py-2.5 text-sm font-medium text-ink shadow-sm outline-none transition placeholder:font-normal placeholder:text-slate-400 focus:border-lab-burgundy focus:ring-2 focus:ring-lab-burgundy/20;
+    @apply w-full rounded-[0.7rem] border border-slate-300 bg-white px-3 py-2.5 text-sm font-medium text-ink shadow-sm outline-none transition placeholder:font-normal placeholder:text-slate-400 focus:border-lab-burgundy focus:ring-2 focus:ring-lab-burgundy/20;
   }
 
   /*
@@ -1023,11 +1032,11 @@ textarea {
   }
 
   .surface-card {
-    @apply rounded-lg border border-line bg-white;
+    @apply rounded-[0.85rem] border border-line bg-white;
   }
 
   .soft-panel {
-    @apply rounded-lg border border-line bg-[#FAFAFA];
+    @apply rounded-[0.85rem] border border-line bg-[#F4F4F5];
   }
 
   .table-head {
@@ -1035,15 +1044,15 @@ textarea {
   }
 
   .btn-primary {
-    @apply rounded-md bg-lab-burgundy px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#44122f] focus:outline-none focus:ring-2 focus:ring-lab-burgundy/20;
+    @apply rounded-[0.7rem] bg-lab-burgundy px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#44122f] focus:outline-none focus:ring-2 focus:ring-lab-burgundy/20;
   }
 
   .btn-success {
-    @apply rounded-md bg-brand-green px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0e9d6e] focus:outline-none focus:ring-2 focus:ring-brand-green/20;
+    @apply rounded-[0.7rem] bg-brand-green px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0e9d6e] focus:outline-none focus:ring-2 focus:ring-brand-green/20;
   }
 
   .btn-secondary {
-    @apply rounded-md border border-line bg-white px-5 py-2.5 text-sm font-semibold text-ink transition hover:border-lab-burgundy hover:bg-lab-burgundy hover:text-white;
+    @apply rounded-[0.7rem] border border-line bg-white px-5 py-2.5 text-sm font-semibold text-ink transition hover:border-lab-burgundy hover:bg-lab-burgundy hover:text-white;
   }
 }
 

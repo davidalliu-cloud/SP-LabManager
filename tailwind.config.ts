@@ -8,6 +8,16 @@ const config: Config = {
         ink: "#373455",
         muted: "#666666",
         line: "#E3E3E3",
+        // The HR app's sidebar, so the two read as one product. Its brand
+        // colours were already identical to these — #5B193F, #373455, #E3E3E3 —
+        // and the rail was the only real difference between them.
+        sidebar: {
+          DEFAULT: "#1C1620",
+          ink: "#D9D2DC",
+          accent: "#3A2430",
+          active: "#F3CFE0",
+          line: "#2C2430"
+        },
         brand: {
           risk: "#FFBD59",
           late: "#FF5757",

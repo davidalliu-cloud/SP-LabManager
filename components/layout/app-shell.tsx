@@ -131,12 +131,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </svg>
         Versioni Mobil
       </Link>
-      <aside className="no-print fixed inset-y-0 left-0 z-30 hidden w-72 flex-col overflow-hidden border-r border-line bg-white lg:flex">
-        <div className="shrink-0 border-b border-line px-6 py-8">
-          <img src="/brand/sarp-logo.png" alt="SARP" className="h-auto w-40" />
-          <div className="mt-6 text-[11px] font-semibold uppercase tracking-[0.2em] text-lab-burgundy">SARP Laboratory</div>
-          <div className="mt-2 text-xl font-bold tracking-[-0.01em] leading-tight text-ink">{t("brand.lab")}</div>
-          <div className="mt-2 max-w-[13rem] text-xs leading-5 text-muted">{t("brand.domain")}</div>
+      <aside className="no-print fixed inset-y-0 left-0 z-30 hidden w-72 flex-col overflow-hidden bg-sidebar lg:flex">
+        <div className="shrink-0 border-b border-sidebar-line px-6 py-8">
+          {/* The logo is dark ink on transparent, so it needs lifting off a dark
+              ground the way it does on the login panel. */}
+          <img src="/brand/sarp-logo.png" alt="SARP" className="h-auto w-40 brightness-0 invert" />
+          <div className="mt-6 text-[11px] font-semibold uppercase tracking-[0.2em] text-sidebar-active">SARP Laboratory</div>
+          <div className="mt-2 text-xl font-bold tracking-[-0.01em] leading-tight text-white">{t("brand.lab")}</div>
+          <div className="mt-2 max-w-[13rem] text-xs leading-5 text-sidebar-ink/70">{t("brand.domain")}</div>
         </div>
         <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-5">
           {navItems
@@ -195,11 +197,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * Sidebar links, in the HR app's palette: a dark plum rail with light text,
+ * the open page lifted on a lighter plum rather than outlined.
+ *
+ * The brand colours were already identical between the two apps — #5B193F,
+ * #373455, #E3E3E3. What differed was the rail: white there, dark here. The
+ * dark rail is what makes the two read as one product, and it pushes the
+ * content forward, which suits a screen that is mostly tables.
+ */
 const linkClass = (active: boolean, indented = false) =>
-  `mb-1 flex min-h-11 items-center border-l-2 text-sm font-medium transition ${indented ? "pl-8 pr-4" : "px-4"} ${
+  `mb-1 flex min-h-11 items-center rounded-[0.7rem] text-sm font-medium transition ${indented ? "pl-7 pr-4" : "px-4"} ${
     active
-      ? "border-lab-burgundy bg-lab-burgundy/5 text-lab-burgundy font-semibold hover:bg-lab-burgundy hover:text-white"
-      : "border-transparent text-ink hover:bg-lab-burgundy hover:text-white"
+      ? "bg-sidebar-accent text-sidebar-active font-semibold"
+      : "text-sidebar-ink hover:bg-sidebar-accent/60 hover:text-sidebar-active"
   }`;
 
 function NavLink({
@@ -248,10 +259,10 @@ function NavGroupSection({
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
-        className={`flex min-h-11 w-full items-center justify-between border-l-2 px-4 text-sm font-medium transition ${
+        className={`flex min-h-11 w-full items-center justify-between rounded-[0.7rem] px-4 text-sm font-medium transition ${
           holdsCurrentPage
-            ? "border-lab-burgundy text-lab-burgundy font-semibold"
-            : "border-transparent text-ink hover:bg-lab-burgundy hover:text-white"
+            ? "text-sidebar-active font-semibold"
+            : "text-sidebar-ink hover:bg-sidebar-accent/60 hover:text-sidebar-active"
         }`}
       >
         <span>{t(group.label)}</span>
