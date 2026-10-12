@@ -3,7 +3,7 @@ import { getAccreditedTestById, normalizeSampleType } from "./accredited-tests";
 /**
  * Rregjistri i Terrenit — work carried out on site rather than in the lab.
  *
- * These four are registered in the field register and nowhere else. They are
+ * These three are registered in the field register and nowhere else. They are
  * ordinary samples underneath, so once registered they flow into the test
  * register and the report register exactly like lab work; only the point of
  * entry differs. That is also why they cannot be a separate record type: a
@@ -37,13 +37,15 @@ export const FIELD_WORK_OPTIONS: FieldWorkOption[] = [
     accreditedTestId: "AT-057",
     sampleType: "Piastra Dinamike / Dynamic Plate",
     label: "Piastra dinamike / Dynamic plate"
-  },
-  {
-    accreditedTestId: "AT-CONC-CORE-COMP",
-    sampleType: "Karrota Betoni / Concrete Cores",
-    label: "Karrota betoni / Concrete cores"
   }
 ];
+
+// Concrete cores (karrota) were here until 12 October 2026. They are cut on
+// site but everything the laboratory does with them — measuring, capping,
+// crushing — happens in the lab, and they are now registered in the laboratory
+// register like any other delivered sample. The one core already registered in
+// the field series keeps its number (1-01/08): its report is issued and the
+// number is printed on it.
 
 const FIELD_SAMPLE_TYPES = new Set(FIELD_WORK_OPTIONS.map((option) => option.sampleType));
 
