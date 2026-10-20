@@ -40,17 +40,26 @@ export function canManageClients(role?: Role) {
  * else. It is not a confidentiality rule — it is there to keep the result
  * uninfluenced.
  *
- * So the line falls between people who perform tests and people who run the
- * business of the lab. The Operations Manager books the samples in, assigns
- * them and answers the client on the phone; withholding the name made that job
- * harder without making any result more impartial.
+ * The line therefore used to fall between people who perform tests and people
+ * who run the business of the lab. The Operations Manager books the samples in,
+ * assigns them and answers the client on the phone; withholding the name made
+ * that job harder without making any result more impartial.
+ *
+ * The Lab Engineer sits on both sides of that line — they register the sample,
+ * assign its client, run the test and prepare the report — and on 20 October
+ * 2026 David ruled they see the name throughout. The impartiality safeguard for
+ * them is therefore not blindness to the client but the separation of approval:
+ * the Chief of Lab signs off every result an engineer produces, and no engineer
+ * can approve their own work. Technicians, who only perform tests, still see a
+ * client code and nothing else.
  */
 export function canViewClientIdentity(role?: Role) {
   return (
     role === "Admin / Managing Director" ||
     role === "Chief of Lab" ||
     role === "Document Controller" ||
-    role === "Operations Manager"
+    role === "Operations Manager" ||
+    role === "Lab Engineer"
   );
 }
 
