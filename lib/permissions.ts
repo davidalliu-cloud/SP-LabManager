@@ -68,7 +68,12 @@ export function canViewClientIdentity(role?: Role) {
  * page already draws the list that way.
  */
 export function canAssignSampleClient(role?: Role) {
-  return isSuperAdmin(role) || role === "Chief of Lab" || role === "Operations Manager";
+  return (
+    isSuperAdmin(role) ||
+    role === "Chief of Lab" ||
+    role === "Operations Manager" ||
+    role === "Lab Engineer"
+  );
 }
 
 export function canRegisterSamples(role?: Role) {
@@ -76,6 +81,7 @@ export function canRegisterSamples(role?: Role) {
     isSuperAdmin(role) ||
     role === "Chief of Lab" ||
     role === "Operations Manager" ||
+    role === "Lab Engineer" ||
     isTechnicianRole(role) ||
     role === "Quality Manager"
   );
@@ -200,7 +206,8 @@ export function canGenerateReportForTest(role?: Role, status?: TestStatus, hasRe
   const canPrepareReports =
     role === "Admin / Managing Director" ||
     role === "Chief of Lab" ||
-    role === "Document Controller";
+    role === "Document Controller" ||
+    role === "Lab Engineer";
 
   if (!canPrepareReports) return false;
   if (hasReport) return true;

@@ -4,6 +4,10 @@ export type Role =
   | "Quality Manager"
   | "Operations Manager"
   | "Document Controller"
+  // Runs the whole cycle on a sample except the sign-off: registers it, points
+  // it at its client, performs the test and prepares the report. Approval stays
+  // with the Chief of Lab, so an engineer never passes their own work.
+  | "Lab Engineer"
   | "Technician"
   | "Chief Technician";
 

@@ -4506,7 +4506,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           addRoleNotification(
             draft,
             previous.users,
-            ["Admin / Managing Director", "Document Controller"],
+            ["Admin / Managing Director", "Document Controller", "Lab Engineer"],
             "Test i miratuar për raport",
             `${test.testCode} është miratuar teknikisht dhe mund të përgatitet raporti.`,
             testId
@@ -4697,7 +4697,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           addRoleNotification(
             draft,
             previous.users,
-            ["Admin / Managing Director", "Document Controller"],
+            ["Admin / Managing Director", "Document Controller", "Lab Engineer"],
             "Report approved",
             `${report.reportNumber} is ready to issue.`,
             report.testId,

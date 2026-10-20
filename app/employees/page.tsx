@@ -32,6 +32,7 @@ const roles: Role[] = [
   "Quality Manager",
   "Operations Manager",
   "Document Controller",
+  "Lab Engineer",
   "Technician",
   "Chief Technician"
 ];
@@ -42,6 +43,7 @@ const roleLabels: Record<Role, string> = {
   "Quality Manager": "Menaxher i Cilësisë",
   "Operations Manager": "Menaxher Operacional",
   "Document Controller": "Kontrollues Dokumentesh",
+  "Lab Engineer": "Inxhinier Laboratori",
   Technician: "Teknik",
   "Chief Technician": "Kryetekniku"
 };
