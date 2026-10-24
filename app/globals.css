@@ -1511,3 +1511,13 @@ textarea {
 .steel-report.pdf-capture .official-disclaimers {
   font-size: 6.2pt !important;
 }
+
+/* The same html2canvas baseline problem on the three ruled fields that are not
+   table cells — temperature, humidity and the report issue date (and the notes
+   line, which has it too whenever a note is entered). Their value sits on a
+   border-bottom, and in the capture the rule was drawn through the digits and
+   the degree sign. A little padding underneath drops the rule clear of them;
+   on these four boxes it costs a couple of millimetres on the page at most. */
+.steel-report.pdf-capture .official-underline {
+  padding-bottom: 4px !important;
+}

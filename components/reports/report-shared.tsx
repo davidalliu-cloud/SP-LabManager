@@ -346,9 +346,9 @@ export function OfficialEnvironmental({ temperature, humidity }: { temperature?:
       <div className="font-bold uppercase">KUSHTET AMBJENTALE NË TË CILAT ZHVILLOHET TESTI / <span className="italic font-normal normal-case">ENVIRONMENTAL CONDITIONS</span>:</div>
       <div className="grid grid-cols-[145px_135px] gap-x-3 font-normal">
         <span>Temperatura / <span className="italic">Temperature</span>:</span>
-        <span className="border-b border-black text-center">{temperature || "-"}{temperature ? " °C" : ""}</span>
+        <span className="official-underline border-b border-black text-center">{temperature || "-"}{temperature ? " °C" : ""}</span>
         <span>Lagështia / <span className="italic">Humidity</span>:</span>
-        <span className="border-b border-black text-center">{humidity || "-"}{humidity ? "%" : ""}</span>
+        <span className="official-underline border-b border-black text-center">{humidity || "-"}{humidity ? "%" : ""}</span>
       </div>
     </div>
   );
@@ -392,7 +392,7 @@ export function OfficialNotesAndFooter({
     <>
       <div className="mt-4 grid grid-cols-[120px_1fr] items-end gap-2 text-[9.5pt]">
         <div className="pl-14">Shënime / <span className="italic">Notes</span>:</div>
-        <div className="min-h-4 border-b border-black">{notes}</div>
+        <div className="official-underline min-h-4 border-b border-black">{notes}</div>
       </div>
       <div className={layout === "flow" ? "official-footer-flow" : "official-footer-cluster"}>
         <SignaturePair
@@ -413,7 +413,7 @@ export function OfficialNotesAndFooter({
         </div>
         <div className="official-issue-date mt-2 grid grid-cols-[285px_150px] items-end gap-4 text-[6pt]">
           <div>Data e lëshimit të Raportit të Testimit / <span className="italic">Test Report Issue Date:</span></div>
-          <div className="border-b border-black text-center">{formatEuropeanDate(issueDate)}</div>
+          <div className="official-underline border-b border-black text-center">{formatEuropeanDate(issueDate)}</div>
         </div>
         <footer className="official-footer mt-2 text-center text-[6pt] leading-tight text-blue-700">
           <div className="font-bold">SARP &amp; LAB</div>
