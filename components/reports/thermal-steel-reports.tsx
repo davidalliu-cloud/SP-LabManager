@@ -138,7 +138,7 @@ export function SteelReportPreview({
   const issueDate = report.issuedAt || report.approvedAt || steel.testEndDate || sample?.reportDueDate;
 
   return (
-    <OfficialReportShell report={report} code="SL-RA-H-7.8/1.1" title="RAPORT TESTIMI / TEST REPORT" className="compact-official-report">
+    <OfficialReportShell report={report} code="SL-RA-H-7.8/1.1" title="RAPORT TESTIMI / TEST REPORT" className="compact-official-report steel-report">
       <OfficialMetaGrid entries={[
         { sq: "KLIENTI", en: "CLIENT", value: client?.clientName },
         { sq: "ADRESA", en: "ADRESS", value: client?.address },
@@ -150,7 +150,7 @@ export function SteelReportPreview({
         { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: sample?.dateReceived },
         { sq: "OPERATORI I MARRJES SË KAMPIONIT", en: "SAMPLING OPERATOR", value: samplingOperator(sample) }
       ]} />
-      <div className="mt-1 grid grid-cols-[315px_1fr] gap-x-8 gap-y-1 text-[10pt] leading-[1.15]">
+      <div className="official-meta mt-1 grid grid-cols-[315px_1fr] gap-x-8 gap-y-1 text-[10pt] leading-[1.15]">
         <OfficialTestingDates start={steel.testStartDate} end={steel.testEndDate} />
         <OfficialMetaGrid className="contents" entries={[
           { sq: "TESTI", en: "TEST", value: "PËRCAKTIMI I KARAKTERISTIKAVE FIZIKO-MEKANIKE PËR MATERIALE METALIKE / METALLIC MATERIALS - TENSILE TESTING" },
@@ -214,7 +214,12 @@ export function SteelReportPreview({
         </tbody>
       </table>
       <OfficialAsterisk />
-      <OfficialNotesAndFooter notes={steel.notes} testedBy={steel.technicianName || report.draftedBy} responsible={steel.checkedBy} issueDate={issueDate} />
+      {/* "flow" rather than the family default "pinned": the pinned cluster is
+          absolutely positioned at the foot of a fixed 296mm sheet, so once the
+          content above grew past it the signatures and stamp were drawn across
+          the results table. Flowing it under the notes makes that impossible,
+          and the .steel-report rules below keep the whole page inside one A4. */}
+      <OfficialNotesAndFooter notes={steel.notes} testedBy={steel.technicianName || report.draftedBy} responsible={steel.checkedBy} issueDate={issueDate} layout="flow" />
     </OfficialReportShell>
   );
 }

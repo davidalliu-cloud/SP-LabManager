@@ -315,7 +315,7 @@ export function OfficialReportShell({
 
 export function OfficialMetaGrid({ entries, className = "mt-6" }: { entries: OfficialMetaEntry[]; className?: string }) {
   return (
-    <div className={`${className} grid grid-cols-[315px_1fr] gap-x-8 gap-y-0.5 text-[10pt] leading-[1.15]`}>
+    <div className={`${className} official-meta grid grid-cols-[315px_1fr] gap-x-8 gap-y-0.5 text-[10pt] leading-[1.15]`}>
       {entries.map((entry) => (
         <div className="contents" key={`${entry.sq}-${entry.en}`}>
           <div className="font-bold uppercase">{entry.sq} / <span className="italic font-normal normal-case">{entry.en}</span>:</div>
