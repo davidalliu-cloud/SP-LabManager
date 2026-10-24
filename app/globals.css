@@ -1365,27 +1365,26 @@ textarea {
  *
  * The official family pins its footer cluster absolutely to the foot of a
  * fixed 296mm sheet. This report's content outgrew that: at 7.1pt the tables
- * ran to 281mm while the cluster started at 225mm, so html2canvas rasterised
- * the signatures and the stamp straight across the results table. Report
- * 5739/26 was generated like that.
+ * ran to 281mm while the cluster began at 225mm, so html2canvas rasterised the
+ * signatures and the stamp straight across the results table. The sheet is
+ * also overflow:hidden, so the page was then scaled to fit and the type landed
+ * at roughly 6pt however it was set. Report 5739/26 went out like that.
  *
- * The fix is the one the concrete cube report uses: let the footer flow under
- * the notes, so an overlap is impossible by construction, and compact the page
- * until the whole thing fits. The metadata block paid for most of it — the
+ * So: the footer flows under the notes, which makes an overlap impossible by
+ * construction rather than by leaving enough room, and the page is compacted
+ * until it genuinely fits. The metadata block paid for most of it — the
  * family's 315px label column wrapped those long bilingual labels onto three
  * lines each, and the two grids together cost 114mm of a 296mm page.
  *
- * Measured on 5739/26 the content now ends at 280mm, leaving room for roughly
- * five more wrapped lines of client, project or standard before anything is at
- * risk of being clipped.
+ * Measured on 5739/26 the content ends at 284mm, leaving room for about four
+ * more wrapped lines of client, project or standard.
  * -------------------------------------------------------------------- */
 
 /* Uniform thin grid lines, as .cube-table does it. With border-collapse
    html2canvas strokes each cell's border separately, so shared internal lines
    stack to ~2px while the outer edge stays 1px. Drawing each line exactly once
    — right + bottom on every cell, the table supplying the top + left edges —
-   makes every rule a single 1px stroke. Applies on screen and in both export
-   paths so the preview and the PDF agree. */
+   makes every rule a single 1px stroke. */
 .steel-report .official-table {
   border-top: 1px solid #000;
   border-left: 1px solid #000;
@@ -1398,50 +1397,53 @@ textarea {
   border-bottom-width: 1px !important;
 }
 
-/* The compacted single-page layout. KEEP THE TWO COPIES IN SYNC: @media print
-   drives browser printing, .pdf-capture drives the html2canvas export, and
-   html2canvas ignores @media print entirely. */
+/* Browser printing. The browser lays the text out itself, so the cells just
+   need balanced padding; the capture below needs more than that. */
 @media print {
   .steel-report {
-    font-size: 7.6pt !important;
+    font-size: 7.4pt !important;
     line-height: 1.12 !important;
     padding: 5mm 9mm 5mm !important;
   }
 
   .steel-report > * {
-    margin-top: 4px !important;
+    margin-top: 3px !important;
   }
 
   .steel-report > header {
     margin-top: 0 !important;
   }
 
+  .steel-report header img[alt="SARP"] {
+    width: 92px !important;
+  }
+
+  .steel-report header img[alt^="DA"] {
+    width: 60px !important;
+  }
+
   .steel-report .official-meta {
-    font-size: 7.6pt !important;
+    font-size: 7.4pt !important;
     line-height: 1.1 !important;
     grid-template-columns: 254px 1fr !important;
     column-gap: 12px !important;
     row-gap: 1px !important;
   }
 
-  .steel-report .official-table {
-    font-size: 7.2pt !important;
-    line-height: 1.08 !important;
-  }
-
   .steel-report .official-table th,
   .steel-report .official-table td {
-    padding: 2px 4px !important;
+    font-size: 7pt !important;
+    padding: 3px 4px !important;
+    line-height: 1.15 !important;
+    vertical-align: middle !important;
   }
 
   .steel-report .official-footer-flow {
-    margin-top: 4mm !important;
+    margin-top: 3mm !important;
   }
 
-  /* 30mm of signing space is more than this page can spare; 22mm still leaves
-     room for a wet signature over the printed name. */
   .steel-report .signature-block-img {
-    height: 22mm !important;
+    height: 19mm !important;
   }
 
   .steel-report .official-disclaimers {
@@ -1449,44 +1451,61 @@ textarea {
   }
 }
 
+/* The html2canvas capture. Same page geometry as print, with one difference
+   that matters: html2canvas does not place text in a table cell the way the
+   browser does. It ignores vertical-align and sets the baseline low in the
+   cell, so with balanced padding the descenders of j, p and g in "kampionit",
+   "Gjatësia" and "Original" were struck through by the row's bottom rule —
+   which is what the regenerated 5739/26 showed.
+   The compensation is to move the cell's padding from the top to the bottom:
+   top-align the content and give it 8px of clearance underneath. The row ends
+   up the same height, so the page still fits, and the measured gap between the
+   lowest glyph and the rule goes from -5px to +5px (at scale 2).
+   KEEP IN SYNC with the @media print block above, apart from that padding. */
 .steel-report.pdf-capture {
-  font-size: 7.6pt !important;
+  font-size: 7.4pt !important;
   line-height: 1.12 !important;
   padding: 5mm 9mm 5mm !important;
 }
 
 .steel-report.pdf-capture > * {
-  margin-top: 4px !important;
+  margin-top: 3px !important;
 }
 
 .steel-report.pdf-capture > header {
   margin-top: 0 !important;
 }
 
+.steel-report.pdf-capture header img[alt="SARP"] {
+  width: 92px !important;
+}
+
+.steel-report.pdf-capture header img[alt^="DA"] {
+  width: 60px !important;
+}
+
 .steel-report.pdf-capture .official-meta {
-  font-size: 7.6pt !important;
+  font-size: 7.4pt !important;
   line-height: 1.1 !important;
   grid-template-columns: 254px 1fr !important;
   column-gap: 12px !important;
   row-gap: 1px !important;
 }
 
-.steel-report.pdf-capture .official-table {
-  font-size: 7.2pt !important;
-  line-height: 1.08 !important;
-}
-
 .steel-report.pdf-capture .official-table th,
 .steel-report.pdf-capture .official-table td {
-  padding: 2px 4px !important;
+  font-size: 7pt !important;
+  padding: 0 4px 8px !important;
+  line-height: 1.05 !important;
+  vertical-align: top !important;
 }
 
 .steel-report.pdf-capture .official-footer-flow {
-  margin-top: 4mm !important;
+  margin-top: 3mm !important;
 }
 
 .steel-report.pdf-capture .signature-block-img {
-  height: 22mm !important;
+  height: 19mm !important;
 }
 
 .steel-report.pdf-capture .official-disclaimers {
