@@ -78,6 +78,7 @@ import { useAuth } from "./auth";
 import { officialClientCodes2026 } from "./client-directory";
 import { canAssignSampleClient, canDeleteSamples, canEditSampleAfterRegistration, canEditTestData, canReviewTests, canGenerateReportForTest, canAmendEnvironment, canCloseNonconformity, canManageClients, canManageEmployees, canManageEquipment, canRaiseNonconformity, canRecordEnvironment, canRewriteSample, isSampleLocked } from "./permissions";
 import { isFieldSampleType } from "./field-register";
+import { properName } from "./proper-case";
 import { FIELD_SERIES, LAB_SERIES, nextSampleCode } from "./sample-code";
 import type { EnvironmentReading, EnvironmentReadingInput } from "./environment";
 import type { AuditEntry, AuditEntryInput } from "./internal-audit";
@@ -1052,6 +1053,14 @@ interface ProcedureRevisionInput {
 }
 
 interface LabStoreValue extends LabState {
+  /**
+   * The stored client and project records, with their names exactly as the
+   * register holds them. `clients` and `projects` carry the same records with
+   * the names tidied for display; these are for the places that must show what
+   * is on file — the accredited test report, and the form that edits a name.
+   */
+  rawClients: Client[];
+  rawProjects: Project[];
   currentUserId: string;
   /** Whether the most recent change actually reached the server. */
   saveState: SaveState;
@@ -1520,6 +1529,18 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
   // pushing whatever this browser had cached over everyone's work. Refused
   // reads make that reachable, so nothing saves until a read has come back.
   const remoteLoadOkRef = useRef(false);
+  // Display copies, rebuilt only when the stored records change. Everything
+  // that reads `store.clients` / `store.projects` — every register, every
+  // detail page, every summary — gets the tidied name without having to ask.
+  const displayClients = useMemo(
+    () => state.clients.map((client) => ({ ...client, clientName: properName(client.clientName) })),
+    [state.clients]
+  );
+  const displayProjects = useMemo(
+    () => state.projects.map((project) => ({ ...project, projectName: properName(project.projectName) })),
+    [state.projects]
+  );
+
   const currentUser =
     state.users.find((user) => user.email.toLowerCase() === auth.user?.email?.toLowerCase()) ??
     state.users.find((user) => user.role === "Technician") ??
@@ -1998,6 +2019,14 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
 
     return {
       ...state,
+      // Names are title-cased for the screens only. The records in `state` — and
+      // so everything forPersistence writes — keep whatever the client's own
+      // paperwork says, because this is a presentation rule and not a
+      // migration of 154 clients' legal names.
+      clients: displayClients,
+      projects: displayProjects,
+      rawClients: state.clients,
+      rawProjects: state.projects,
       currentUserId,
       saveState,
       retrySave() {

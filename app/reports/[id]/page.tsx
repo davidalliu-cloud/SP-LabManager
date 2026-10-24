@@ -24,8 +24,10 @@ export default function ReportDetailPage() {
   const activeReport = report;
   const test = store.tests.find((item) => item.id === activeReport.testId);
   const sample = store.samples.find((item) => item.id === activeReport.sampleId);
-  const client = store.clients.find((item) => item.id === activeReport.clientId);
-  const project = store.projects.find((item) => item.id === activeReport.projectId);
+  // The accredited certificate names the client as the register holds it —
+  // their legal name on their own paperwork — not the tidied display copy.
+  const client = store.rawClients.find((item) => item.id === activeReport.clientId);
+  const project = store.rawProjects.find((item) => item.id === activeReport.projectId);
   const concrete = store.concreteTests.find((item) => item.testId === activeReport.testId);
   const concreteWater = store.concreteWaterPenetrationTests.find((item) => item.testId === activeReport.testId);
   const concreteFlexural = store.concreteFlexuralTests.find((item) => item.testId === activeReport.testId);

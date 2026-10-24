@@ -193,9 +193,11 @@ export default function ClientsPage() {
   }
 
   function editClient(clientId: string) {
-    const client = store.clients.find((item) => item.id === clientId);
+    // Edit what is stored, not the tidied display copy, so opening a client and
+    // saving it does not quietly rewrite its name.
+    const client = store.rawClients.find((item) => item.id === clientId);
     if (!client) return;
-    const project = store.projects.find((item) => item.clientId === client.id);
+    const project = store.rawProjects.find((item) => item.clientId === client.id);
 
     setEditingClientId(client.id);
     setSelectedErpId("");
