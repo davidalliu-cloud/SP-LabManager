@@ -83,6 +83,36 @@ export function ThermalReportRow({ no, labelSq, labelEn, standard, unit, values,
   );
 }
 
+/**
+ * Unit weight limits per nominal diameter, kg/m.
+ *
+ * This is the lookup table the controlled form carries in its hidden columns
+ * (SL-RA-H-7.8/1.1 v8, X40:AA55) and reads with VLOOKUP against the nominal
+ * diameter. The values are reproduced exactly as the sheet prints them so the
+ * app's report and the paper form never disagree over a digit.
+ *
+ * Ø 26 and Ø 28 are tabulated with a nominal mass only — the sheet carries no
+ * min or max for them — so those two report a dash rather than a number.
+ */
+const UNIT_WEIGHT_LIMITS: Record<number, { min?: string; max?: string }> = {
+  6: { min: "0.209", max: "0.235" },
+  7: { min: "0.284", max: "0.320" },
+  8: { min: "0.371", max: "0.419" },
+  10: { min: "0.589", max: "0.645" },
+  12: { min: "0.848", max: "0.928" },
+  14: { min: "1.16", max: "1.26" },
+  16: { min: "1.51", max: "1.65" },
+  18: { min: "1.91", max: "2.10" },
+  20: { min: "2.36", max: "2.58" },
+  22: { min: "2.87", max: "3.14" },
+  24: { min: "3.38", max: "3.68" },
+  25: { min: "3.68", max: "4.02" },
+  26: {},
+  28: {},
+  30: { min: "5.29", max: "5.85" },
+  32: { min: "6.03", max: "6.59" }
+};
+
 export function SteelReportPreview({
   report,
   test,
@@ -100,6 +130,11 @@ export function SteelReportPreview({
 }) {
   const reportSpecimens = report.specimenCodes?.length ? steel.specimens.filter((specimen) => report.specimenCodes.includes(specimen.specimenCode)) : steel.specimens.slice(0, 3);
   const diameter = reportSpecimens[0]?.nominalDiameterMm || reportSpecimens[0]?.actualDiameterMm;
+  // Looked up on the NOMINAL diameter only. The controlled sheet's VLOOKUP uses
+  // an approximate match, which would quietly hand a bar no one tabulated the
+  // limits of the next size down; an untabulated diameter reports a dash here
+  // instead, so nobody reads a Ø 9 bar against Ø 8 limits.
+  const unitWeightLimits = UNIT_WEIGHT_LIMITS[reportSpecimens[0]?.nominalDiameterMm ?? -1] ?? {};
   const issueDate = report.issuedAt || report.approvedAt || steel.testEndDate || sample?.reportDueDate;
 
   return (
@@ -127,11 +162,35 @@ export function SteelReportPreview({
 
       <table className="official-table official-classification mt-5 mx-auto w-[82%] border-collapse text-center text-[8.5pt]">
         <thead>
-          <tr><th colSpan={6}>Klasifikimi / <span>Classification</span></th></tr>
-          <tr><th><BiText>Grade / Grada</BiText></th><th><BiText>Forca maksimale e ushtruar / Upper yield strength Re</BiText><br />[MPa]</th><th><BiText>Forca e tërheqjes / Tensile strength Rm</BiText><br />[MPa]</th><th>Rm / Re<br />Ratio</th><th><BiText>Përqindja e zgjatimit pas këputjes / Percentage elongation after fracture A</BiText><br />[%]</th><th><BiText>Pesha njësi e kampionit / Unit weight of sample Pn</BiText><br />[kg/ml]</th></tr>
+          <tr><th colSpan={7}>Klasifikimi / <span>Classification</span></th></tr>
+          <tr>
+            <th rowSpan={2}><BiText>Grade / Grada</BiText></th>
+            <th rowSpan={2}><BiText>Forca maksimale e ushtruar / Upper yield strength Re</BiText><br />[MPa]</th>
+            <th rowSpan={2}><BiText>Forca e tërheqjes / Tensile strength Rm</BiText><br />[MPa]</th>
+            <th rowSpan={2}>Rm / Re<br />Ratio</th>
+            <th rowSpan={2}><BiText>Përqindja e zgjatimit pas këputjes / Percentage elongation after fracture A</BiText><br />[%]</th>
+            {/* One pair of limits for the whole table: the unit weight a bar of
+                this nominal diameter must fall between, whichever grade it is. */}
+            <th colSpan={2}><BiText>Pesha njësi e kampionit / Unit weight of sample Pn</BiText><br />[kg/ml]</th>
+          </tr>
+          <tr><th>Min</th><th>Max</th></tr>
         </thead>
         <tbody>
-          {["B500B", "B500C", "B450C", "B500S", "S500MC"].map((grade) => <tr key={grade}><td className="font-bold">{grade}</td><td>&gt; 500</td><td>{grade === "B450C" ? "> 540" : "-"}</td><td>{grade === "B500C" ? "1.15 - 1.35" : "> 1.06"}</td><td>{grade === "B500C" ? "> 14" : "-"}</td><td>{reportSpecimens.map((s) => s.unitWeightKgPerM).filter(Boolean).join("   ")}</td></tr>)}
+          {["B500B", "B500C", "B450C", "B500S", "S500MC"].map((grade, index) => (
+            <tr key={grade}>
+              <td className="font-bold">{grade}</td>
+              <td>{grade === "B450C" ? "> 450" : "> 500"}</td>
+              <td>{grade === "B450C" ? "> 540" : grade === "S500MC" ? "550 - 700" : "-"}</td>
+              <td>{grade === "B500C" || grade === "B450C" ? "1.15 - 1.35" : grade === "S500MC" ? "-" : "> 1.06"}</td>
+              <td>{grade === "B500C" ? "> 14" : grade === "S500MC" ? "> 12" : "-"}</td>
+              {index === 0 ? (
+                <>
+                  <td rowSpan={5} className="align-middle">{unitWeightLimits.min ?? "-"}</td>
+                  <td rowSpan={5} className="align-middle">{unitWeightLimits.max ?? "-"}</td>
+                </>
+              ) : null}
+            </tr>
+          ))}
         </tbody>
       </table>
 
