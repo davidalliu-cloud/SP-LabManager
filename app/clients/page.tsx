@@ -2,11 +2,14 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FilterChips, FilterField, useParamState } from "@/components/ui/filter-bar";
+import type { FilterChip } from "@/components/ui/filter-bar";
 import { PageHeader } from "@/components/ui/page-header";
-import { SimpleTable } from "@/components/ui/simple-table";
 import { futureErpClients } from "@/lib/client-directory";
+import { useI18n } from "@/lib/i18n";
 import { useLabStore } from "@/lib/lab-store";
 import { canManageClients, canViewClientIdentity } from "@/lib/permissions";
+import { buildHaystack, matchesHaystack, tokeniseQuery } from "@/lib/search";
 
 const emptyClientDraft = {
   clientCode: "",
@@ -23,6 +26,16 @@ const emptyClientDraft = {
 };
 
 type ClientDraft = typeof emptyClientDraft;
+
+/** Frozen panes, as the sample and report registers do it: the header row pins
+ *  to the top of the scroll area and the client code pins to the left, so nine
+ *  columns can be read without losing track of whose row it is. The pinned cell
+ *  carries its own background, or the columns it overlaps show through it as
+ *  they scroll past — and it follows the row's hover colour for the same
+ *  reason. */
+const STICKY_HEAD = "sticky top-0 z-20 bg-white";
+const STICKY_CORNER = "sticky left-0 top-0 z-30 bg-white";
+const STICKY_CELL = "sticky left-0 z-10 bg-white transition-colors group-hover:bg-lab-burgundy";
 
 function clientCodeNumber(code: string) {
   const match = /^K(\d+)$/i.exec(code.trim());
@@ -81,6 +94,66 @@ export default function ClientsPage() {
     () => [...store.clients].sort((left, right) => compareClientCodes(left.clientCode, right.clientCode)),
     [store.clients]
   );
+
+  const { t } = useI18n();
+  const [query, setQuery] = useParamState("q", "");
+  const [clientFilter, setClientFilter] = useParamState("client", "all");
+
+  // One searchable string per client, built once rather than per keystroke.
+  // Everything on the row is indexed — code, name, project, address, contact,
+  // email, phone, NIPT and notes — so whichever of them the person happens to
+  // have in front of them finds the client.
+  const rows = useMemo(
+    () =>
+      sortedClients.map((client) => {
+        const project = store.projects.find((item) => item.clientId === client.id);
+        return {
+          client,
+          project,
+          haystack: buildHaystack([
+            client.clientCode,
+            client.clientName,
+            project?.projectName,
+            project?.location,
+            client.address,
+            client.contactPerson,
+            client.email,
+            client.phone,
+            niptFromNotes(client.notes),
+            client.notes
+          ])
+        };
+      }),
+    [sortedClients, store.projects]
+  );
+
+  const queryTokens = useMemo(() => tokeniseQuery(query), [query]);
+  const visibleRows = useMemo(
+    () =>
+      rows.filter((row) => {
+        if (clientFilter !== "all" && row.client.id !== clientFilter) return false;
+        return matchesHaystack(row.haystack, queryTokens);
+      }),
+    [rows, clientFilter, queryTokens]
+  );
+
+  const chips: FilterChip[] = [];
+  if (query.trim()) {
+    chips.push({ key: "q", label: `${t("filters.search")}: “${query.trim()}”`, onRemove: () => setQuery("") });
+  }
+  if (clientFilter !== "all") {
+    const picked = store.clients.find((item) => item.id === clientFilter);
+    chips.push({
+      key: "client",
+      label: `${t("filters.client")}: ${[picked?.clientCode, picked?.clientName].filter(Boolean).join(" — ")}`,
+      onRemove: () => setClientFilter("all")
+    });
+  }
+
+  function clearFilters() {
+    setQuery("");
+    setClientFilter("all");
+  }
 
   function openNewForm() {
     setEditingClientId("");
@@ -285,31 +358,65 @@ export default function ClientsPage() {
       ) : null}
 
       {canViewClients ? (
-      <SimpleTable>
+        <div className="no-print mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-[2fr_1fr]">
+          <FilterField label={t("filters.search")}>
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Kodi, emri, projekti, NIPT, email, telefoni…"
+              className="input mt-1"
+            />
+          </FilterField>
+          <FilterField label="Zgjidh klientin">
+            <select value={clientFilter} onChange={(event) => setClientFilter(event.target.value)} className="input mt-1">
+              <option value="all">Të gjithë klientët ({sortedClients.length})</option>
+              {sortedClients.map((client) => (
+                <option key={client.id} value={client.id}>
+                  {client.clientCode} — {client.clientName}
+                </option>
+              ))}
+            </select>
+          </FilterField>
+        </div>
+      ) : null}
+
+      {canViewClients ? (
+        <FilterChips
+          chips={chips}
+          resultCount={visibleRows.length}
+          onClearAll={clearFilters}
+          countLabel={t("filters.results.clients")}
+        />
+      ) : null}
+
+      {canViewClients ? (
+      <div className="surface-card overflow-hidden">
+        {/* Scrolls inside itself so the header row and the client code stay put
+            while the other seven columns move. */}
+        <div className="register-scroll max-h-[70vh] overflow-auto">
         <table className="w-full min-w-[1180px] text-left text-sm">
           <thead className="table-head">
             <tr>
-              <th className="px-4 py-3">Kodi i klientit</th>
-              <th className="px-4 py-3">Klienti</th>
-              <th className="px-4 py-3">Projekti / objekti</th>
-              <th className="px-4 py-3">Adresa</th>
-              <th className="px-4 py-3">Kontakti</th>
-              <th className="px-4 py-3">Email</th>
-              <th className="px-4 py-3">Telefoni</th>
-              <th className="px-4 py-3">Shënime</th>
-              {canEditClients ? <th className="px-4 py-3">Veprime</th> : null}
+              <th className={`${STICKY_CORNER} px-4 py-3`}>Kodi i klientit</th>
+              <th className={`${STICKY_HEAD} px-4 py-3`}>Klienti</th>
+              <th className={`${STICKY_HEAD} px-4 py-3`}>Projekti / objekti</th>
+              <th className={`${STICKY_HEAD} px-4 py-3`}>Adresa</th>
+              <th className={`${STICKY_HEAD} px-4 py-3`}>Kontakti</th>
+              <th className={`${STICKY_HEAD} px-4 py-3`}>Email</th>
+              <th className={`${STICKY_HEAD} px-4 py-3`}>Telefoni</th>
+              <th className={`${STICKY_HEAD} px-4 py-3`}>Shënime</th>
+              {canEditClients ? <th className={`${STICKY_HEAD} px-4 py-3`}>Veprime</th> : null}
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
-            {sortedClients.map((client) => {
-              const project = store.projects.find((item) => item.clientId === client.id);
+            {visibleRows.map(({ client, project }) => {
               return (
                 <tr
                   key={client.id}
                   onClick={() => router.push(`/clients/${client.id}`)}
                   className="group cursor-pointer transition-colors hover:bg-lab-burgundy hover:text-white"
                 >
-                  <td className="px-4 py-3 font-semibold">
+                  <td className={`${STICKY_CELL} px-4 py-3 font-semibold`}>
                     <span className="text-lab-burgundy underline group-hover:text-white">{client.clientCode}</span>
                   </td>
                   <td className="px-4 py-3">{client.clientName}</td>
@@ -348,9 +455,20 @@ export default function ClientsPage() {
                 </tr>
               );
             })}
+            {visibleRows.length === 0 ? (
+              <tr>
+                <td colSpan={canEditClients ? 9 : 8} className="px-4 py-10 text-center text-sm text-muted">
+                  Asnjë klient nuk përputhet me filtrat.{" "}
+                  <button type="button" onClick={clearFilters} className="font-semibold text-lab-burgundy underline">
+                    Pastro filtrat
+                  </button>
+                </td>
+              </tr>
+            ) : null}
           </tbody>
         </table>
-      </SimpleTable>
+        </div>
+      </div>
       ) : null}
     </>
   );
