@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { SaveStatus } from "@/components/layout/save-status";
+import { NotificationDropdown } from "@/components/notifications/notification-dropdown";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
 import { ServiceWorkerRegistration } from "@/components/pwa/service-worker-registration";
 import { useAuth } from "@/lib/auth";
@@ -28,6 +29,13 @@ export default function TechLayout({ children }: { children: React.ReactNode }) 
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {/*
+              The bell lived only in the desktop shell, so a mobile-only
+              technician — the person a rejected test is addressed to — had no
+              way of ever seeing one. Rejected work sat until somebody noticed
+              it by eye.
+            */}
+            <NotificationDropdown />
             {!isTechnician ? (
               <Link
                 href="/"

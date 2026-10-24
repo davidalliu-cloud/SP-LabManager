@@ -1,5 +1,6 @@
 import { accreditedSampleTypes } from "./accredited-tests";
 import type { LabState, Sample } from "./types";
+import { WORKSHEET_COLLECTIONS } from "./worksheets";
 
 /**
  * Laboratory performance, over a period rather than a single month.
@@ -29,19 +30,6 @@ import type { LabState, Sample } from "./types";
  */
 
 export type PerformancePeriod = { from: string; to: string };
-
-/** Every worksheet collection, which together say who performed each test. */
-const WORKSHEET_COLLECTIONS = [
-  "concreteTests", "concreteWaterPenetrationTests", "concreteFlexuralTests", "concreteDensityTests",
-  "concreteIndirectTensileTests", "concreteCoreTests", "asphaltTests", "thermalInsulationTests",
-  "cementConsistencyTests", "cementStrengthTests", "cementBlaineTests", "admixtureTests",
-  "masonryUnitTests", "pavingElementTests", "waterAnalysisTests", "sclerometerTests", "mortarTests",
-  "steelTests", "aggregateTests", "aggregateChemicalTests", "aggregateLosAngelesTests",
-  "aggregateFreezeThawTests", "aggregateAcvTests", "aggregateDensityAbsorptionTests",
-  "aggregateFillerDensityTests", "aggregateShapeIndexTests", "aggregateFlakinessIndexTests",
-  "aggregateElongationIndexTests", "aggregateBulkDensityTests", "aggregateSandEquivalentTests",
-  "aggregateSoundnessTests"
-] as const;
 
 type WorksheetRow = { testId?: string; technicianName?: string; checkedBy?: string };
 

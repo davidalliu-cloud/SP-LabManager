@@ -79,6 +79,7 @@ import { officialClientCodes2026 } from "./client-directory";
 import { canAssignSampleClient, canDeleteSamples, canEditSampleAfterRegistration, canEditTestData, canReviewTests, canGenerateReportForTest, canAmendEnvironment, canCloseNonconformity, canManageClients, canManageEmployees, canManageEquipment, canRaiseNonconformity, canRecordEnvironment, canRewriteSample, isSampleLocked } from "./permissions";
 import { isFieldSampleType } from "./field-register";
 import { properName } from "./proper-case";
+import { worksheetPerformerId } from "./worksheets";
 import { FIELD_SERIES, LAB_SERIES, nextSampleCode } from "./sample-code";
 import type { EnvironmentReading, EnvironmentReadingInput } from "./environment";
 import type { AuditEntry, AuditEntryInput } from "./internal-audit";
@@ -4559,7 +4560,15 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             notifications: [...previous.notifications],
             auditLog: [...previous.auditLog]
           };
-          addNotification(draft, test.assignedTechnician, "Testi u refuzua", rejectionNote, testId);
+          // Tell both the person the work was booked to and the person who
+          // actually signed the worksheet. They are usually different here —
+          // nearly every test is booked to one technician — and a rejection
+          // that reaches only the booking is a rejection nobody acts on.
+          const performerId = worksheetPerformerId(previous, testId, previous.users);
+          const toNotify = new Set([test.assignedTechnician, performerId].filter(Boolean) as string[]);
+          for (const userId of toNotify) {
+            addNotification(draft, userId, `${test.testCode}: testi u refuzua`, rejectionNote, testId);
+          }
           addAudit(draft, "test_result_rejected", "test", testId, `${test.testCode} rejected after technical review: ${rejectionNote}`);
           return withDerivedSampleStatuses(draft);
         });
@@ -4752,9 +4761,18 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             notifications: [...previous.notifications],
             auditLog: [...previous.auditLog]
           };
-          const rejectionMessage = comments || `${report.reportNumber} requires correction.`;
-          if (report.draftedBy) {
-            addNotification(draft, report.draftedBy, "Report rejected", rejectionMessage, report.testId, reportId);
+          const rejectionMessage = comments || `Raporti ${report.reportNumber} duhet korrigjuar.`;
+          // Whoever drafted it, plus the technician whose result it carries.
+          // draftedBy is almost always the Chief of Lab, who is the one doing
+          // the rejecting, so on its own this notified nobody who had to act.
+          // Rejecting a report sends the test back to Rejected as well, so the
+          // person who ran it is the one with work to redo.
+          const reportPerformerId = report.testId
+            ? worksheetPerformerId(previous, report.testId, previous.users)
+            : undefined;
+          const reportRecipients = new Set([report.draftedBy, reportPerformerId].filter(Boolean) as string[]);
+          for (const userId of reportRecipients) {
+            addNotification(draft, userId, `${report.reportNumber}: raporti u refuzua`, rejectionMessage, report.testId, reportId);
           }
           addAudit(draft, "report_rejected", "report", reportId, `${report.reportNumber} rejected.`);
           return withDerivedSampleStatuses(draft);
