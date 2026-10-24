@@ -175,6 +175,7 @@ const translations = {
     "filters.remove": "Remove filter",
     "filters.results": "samples",
     "filters.results.clients": "clients",
+    "filters.results.projects": "projects",
 
     "employees.title": "Employees",
     "employees.description": "Manage technicians and engineers who handle sample retrieval, testing, reporting, and approvals.",
@@ -384,6 +385,7 @@ const translations = {
     "filters.remove": "Hiq filtrin",
     "filters.results": "kampionë",
     "filters.results.clients": "klientë",
+    "filters.results.projects": "projekte",
 
     "employees.title": "Punonjësit",
     "employees.description": "Menaxho teknikët dhe inxhinierët që merren me marrjen e kampionëve, testimin, raportimin dhe miratimet.",
