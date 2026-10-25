@@ -1572,6 +1572,10 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
     state.users[0];
   const currentUserId = currentUser?.id ?? "u-admin";
   const currentRole = currentUser?.role;
+  // Offers are permitted by name rather than by role, so the store needs the
+  // address and not just the role. Both are strings, which is how passing the
+  // wrong one typechecks and then refuses every write in silence.
+  const currentEmail = currentUser?.email;
 
   useEffect(() => {
     try {
@@ -5093,7 +5097,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
 
       saveOffer(input) {
-        if (!canGenerateOffers(currentRole)) return undefined;
+        if (!canGenerateOffers(currentEmail)) return undefined;
         const id = input.id ?? crypto.randomUUID();
         setState((previous) => {
           const existing = previous.offers.find((offer) => offer.id === id);
@@ -5126,7 +5130,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
 
       setOfferStatus(id, status, notes) {
-        if (!canGenerateOffers(currentRole)) return;
+        if (!canGenerateOffers(currentEmail)) return;
         setState((previous) => {
           const offer = previous.offers.find((row) => row.id === id);
           if (!offer || (offer.status === status && notes === undefined)) return previous;
@@ -5145,7 +5149,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
 
       removeOffer(id) {
-        if (!canGenerateOffers(currentRole)) return;
+        if (!canGenerateOffers(currentEmail)) return;
         setState((previous) => {
           const offer = previous.offers.find((row) => row.id === id);
           if (!offer) return previous;
@@ -5193,7 +5197,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
         return projectId;
       }
     };
-  }, [state, currentUserId, currentRole, saveState]);
+  }, [state, currentUserId, currentRole, currentEmail, saveState]);
 
   return <LabStoreContext.Provider value={value}>{children}</LabStoreContext.Provider>;
 }

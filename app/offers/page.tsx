@@ -6,6 +6,7 @@ import { FilterChips, FilterField, useParamState } from "@/components/ui/filter-
 import type { FilterChip } from "@/components/ui/filter-bar";
 import { PageHeader } from "@/components/ui/page-header";
 import { useLabStore } from "@/lib/lab-store";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { money } from "@/lib/offer-fields";
 import { offerFileName } from "@/lib/offer-fill";
 import { canGenerateOffers } from "@/lib/permissions";
@@ -45,7 +46,7 @@ const albanian = (iso?: string) => {
 export default function OffersRegisterPage() {
   const store = useLabStore();
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
-  const allowed = canGenerateOffers(currentUser?.role);
+  const allowed = canGenerateOffers(currentUser?.email);
 
   const [query, setQuery] = useParamState("q");
   const [status, setStatus] = useParamState("status");
@@ -99,9 +100,15 @@ export default function OffersRegisterPage() {
     setBusy(offer.id);
     setProblem("");
     try {
+      // The route decides who may generate an offer, against this token.
+      const supabase = createSupabaseBrowserClient();
+      const { data } = await supabase.auth.getSession();
       const response = await fetch("/api/offers/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${data.session?.access_token ?? ""}`
+        },
         body: JSON.stringify({ kind: offer.kind, values: offer.values })
       });
       if (!response.ok) {

@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CataloguePicker } from "@/components/offers/catalogue-picker";
 import { PageHeader } from "@/components/ui/page-header";
 import { useLabStore } from "@/lib/lab-store";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { OFFER_CATALOGUE } from "@/lib/offer-catalogue";
 import {
   GEOTECH_FIXED_TOTAL,
@@ -84,7 +85,7 @@ export default function NewOfferPage() {
 
   const template = OFFER_TEMPLATES[kind];
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
-  const allowed = canGenerateOffers(currentUser?.role);
+  const allowed = canGenerateOffers(currentUser?.email);
 
   // Reopening an offer: the stored form is the whole of it, including the
   // catalogue selection and the quantities, so the number stays as issued.
@@ -233,9 +234,15 @@ export default function NewOfferPage() {
     setDone("");
     try {
       const values = assembleValues();
+      // The route decides who may generate an offer, against this token.
+      const supabase = createSupabaseBrowserClient();
+      const { data } = await supabase.auth.getSession();
       const response = await fetch("/api/offers/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${data.session?.access_token ?? ""}`
+        },
         body: JSON.stringify({ kind, values })
       });
 

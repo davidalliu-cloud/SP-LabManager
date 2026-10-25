@@ -1,7 +1,7 @@
 /**
  * The two offer templates, described field by field.
  *
- * `public/offer-templates/*.docx` are the Word templates themselves, untouched.
+ * `offer-templates/*.docx` are the Word templates themselves, untouched. They
  * Everything variable in them is written as a bracketed marker in a yellow
  * highlighted run — `[nr]`, `[PLOTËSO: adresa]`, `[..]` — and this file says
  * what each marker means, in the order the markers appear in the document.
@@ -55,8 +55,13 @@ export interface OfferTemplate {
   kind: OfferKind;
   title: string;
   subtitle: string;
-  /** Served from `public/`, so the route fetches it rather than reading the filesystem. */
-  file: string;
+  /**
+   * The file name under `offer-templates/`, read by the route.
+   *
+   * Deliberately not under `public/`: anything there is served to anyone who
+   * knows the path, and these two files are the whole 2026 price list.
+   */
+  templateFile: string;
   /** Download name, with `{nr}` and `{klienti}` filled in. */
   download: string;
   groups: string[];
@@ -499,7 +504,7 @@ export const OFFER_TEMPLATES: Record<OfferKind, OfferTemplate> = {
     kind: "lab",
     title: "Ofertë laboratorike – testimi i materialeve",
     subtitle: "Katalogu i plotë i testimeve me çmimet njësi 2026; klienti zgjedh testimet më pas.",
-    file: "/offer-templates/oferta-laboratorike.docx",
+    templateFile: "oferta-laboratorike.docx",
     download: "SL-OF-{nr}-2026 Oferta Laboratorike - {klienti}.docx",
     groups: ["Oferta", "Klienti", "Objekti", "Ekipi", "Kredencialet", "Kushtet tregtare"],
     fields: LAB_FIELDS,
@@ -509,7 +514,7 @@ export const OFFER_TEMPLATES: Record<OfferKind, OfferTemplate> = {
     kind: "geotech",
     title: "Ofertë investigim gjeoteknik dhe sizmik",
     subtitle: "Shpime, MASW dhe studim sizmologjik, me preventiv të çmimuar sipas sasive.",
-    file: "/offer-templates/oferta-gjeoteknike.docx",
+    templateFile: "oferta-gjeoteknike.docx",
     download: "SL-OF-{nr}-2026 Oferta Gjeoteknike - {klienti}.docx",
     groups: [
       "Oferta",

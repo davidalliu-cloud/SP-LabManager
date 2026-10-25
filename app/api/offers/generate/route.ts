@@ -1,9 +1,11 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
+import { signedInEmail } from "@/lib/api-auth";
 import { inflateEntry, readZip, replaceEntry, writeZip } from "@/lib/docx-zip";
 import { OFFER_KINDS, OFFER_TEMPLATES, type OfferKind } from "@/lib/offer-fields";
 import { fillOfferDocument, offerFileName, remainingMarkers, type OfferValues } from "@/lib/offer-fill";
+import { canGenerateOffers } from "@/lib/permissions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,12 +13,16 @@ export const dynamic = "force-dynamic";
 /**
  * Generates one offer from its Word template.
  *
- * The template comes from `public/offer-templates`, read off disk and, failing
- * that, fetched over this app's own origin. Disk first on purpose: a preview
- * deployment sits behind Vercel deployment protection, where a function
- * fetching its own domain is answered with a sign-in page rather than the
- * file. next.config.ts traces the templates into the function bundle so the
- * disk read is the one that normally succeeds.
+ * Who may call this is settled here, against the caller's bearer token, before
+ * anything else happens. The page hides its own button from everyone else, but
+ * a route is reachable by anyone who knows its path, and what comes back is a
+ * document on SARP & LAB letterhead carrying the accreditation number — so
+ * hiding the button is not a control, it is only tidiness.
+ *
+ * The templates are read from `offer-templates/` at the project root, which
+ * nothing serves. They used to sit in `public/`, where the full price list was
+ * downloadable by anyone who guessed the file name. next.config.ts traces them
+ * into the function bundle so the read works once deployed.
  *
  * The response is the .docx itself, so the offer arrives in Word ready to be
  * read over, signed and sent. If any marker is still unfilled the route sends
@@ -24,15 +30,12 @@ export const dynamic = "force-dynamic";
  * reaching a client is worse than one that failed to generate.
  */
 
-/** The template bytes: from the bundle if they are there, otherwise over HTTP. */
-async function loadTemplate(file: string, requestUrl: string): Promise<Buffer> {
-  try {
-    return await readFile(path.join(process.cwd(), "public", file.replace(/^\//, "")));
-  } catch {
-    const response = await fetch(new URL(file, requestUrl), { cache: "no-store" });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return Buffer.from(await response.arrayBuffer());
-  }
+const TEMPLATE_DIRECTORY = "offer-templates";
+
+async function loadTemplate(fileName: string): Promise<Buffer> {
+  // Joined from the declaration, never from the request, so a crafted `kind`
+  // cannot walk out of the directory.
+  return readFile(path.join(process.cwd(), TEMPLATE_DIRECTORY, path.basename(fileName)));
 }
 
 type GenerateRequest = {
@@ -44,6 +47,14 @@ const isOfferKind = (value: unknown): value is OfferKind =>
   typeof value === "string" && (OFFER_KINDS as string[]).includes(value);
 
 export async function POST(request: Request) {
+  const caller = await signedInEmail(request);
+  if ("error" in caller) {
+    return NextResponse.json({ ok: false, error: caller.error }, { status: 401 });
+  }
+  if (!canGenerateOffers(caller.email)) {
+    return NextResponse.json({ ok: false, error: "Nuk jeni i autorizuar të përgatitni oferta." }, { status: 403 });
+  }
+
   let body: GenerateRequest;
   try {
     body = (await request.json()) as GenerateRequest;
@@ -65,11 +76,11 @@ export async function POST(request: Request) {
 
   let archive: Buffer;
   try {
-    archive = await loadTemplate(template.file, request.url);
+    archive = await loadTemplate(template.templateFile);
   } catch (error) {
     const reason = error instanceof Error ? error.message : "arsye e panjohur";
     return NextResponse.json(
-      { ok: false, error: `Shablloni ${template.file} nuk u lexua: ${reason}` },
+      { ok: false, error: `Shablloni ${template.templateFile} nuk u lexua: ${reason}` },
       { status: 500 }
     );
   }

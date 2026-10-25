@@ -67,7 +67,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isTechRoute = pathname === "/tech" || pathname.startsWith("/tech/");
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
   const showClientIdentityNav = canViewClientIdentity(currentUser?.role);
-  const showOffersNav = canGenerateOffers(currentUser?.role);
+  const showOffersNav = canGenerateOffers(currentUser?.email);
   const isTechnician = isTechnicianRole(currentUser?.role);
 
   // Technician-role employees are mobile-only: their entire job is completing the

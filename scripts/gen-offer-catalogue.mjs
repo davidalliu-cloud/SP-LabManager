@@ -98,7 +98,7 @@ const q = (value) => JSON.stringify(value);
 const out = `/**
  * Section 9 of the laboratory offer: every test the lab sells, with its price.
  *
- * Generated from public/offer-templates/oferta-laboratorike.docx by
+ * Generated from offer-templates/oferta-laboratorike.docx by
  * scripts/gen-offer-catalogue.mjs — the template is the price list, and this
  * is a copy of it the form can tick through. Do not hand-edit: change the
  * template and regenerate, or the offer and the picker will disagree about

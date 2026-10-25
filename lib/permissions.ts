@@ -153,9 +153,17 @@ export function canManageEmployees(role?: Role) {
  * the bill of quantities commit the company, so this stays with the Managing
  * Director and the Chief of Lab even though a Lab Engineer may do everything
  * else on a sample.
+ *
+ * Locked to these two people by name, not by role, for the same reason as
+ * sample editing and report sending below: an offer commits the company to a
+ * price and leaves in the lab's name, and a second Chief of Lab added later
+ * should not inherit that by accident. The route enforces the same list
+ * server-side — this check only decides what the screen shows.
  */
-export function canGenerateOffers(role?: Role) {
-  return isSuperAdmin(role) || role === "Chief of Lab";
+const OFFER_ALLOWED_EMAILS = ["d.alliu@sarpandlab.al", "a.duzha@sarpandlab.al"];
+
+export function canGenerateOffers(email?: string) {
+  return Boolean(email && OFFER_ALLOWED_EMAILS.includes(email.trim().toLowerCase()));
 }
 
 export function canDeleteSamples(role?: Role) {

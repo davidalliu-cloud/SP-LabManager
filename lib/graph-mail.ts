@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { signedInEmail } from "./api-auth";
 
 /**
  * Sending mail with files attached, and deciding who may do it.
@@ -32,20 +32,10 @@ export type SenderIdentity = { email: string };
 
 /** Confirms the caller is signed in and permitted to send. Never trusts the browser. */
 export async function authoriseSender(request: Request): Promise<SenderIdentity | { error: string }> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !anonKey) return { error: "Supabase is not configured." };
-
-  const authHeader = request.headers.get("authorization") ?? "";
-  const token = authHeader.replace(/^Bearer\s+/i, "");
-  if (!token) return { error: "Not signed in." };
-
-  const supabase = createClient(url, anonKey, { auth: { persistSession: false } });
-  const { data, error } = await supabase.auth.getUser(token);
-  const email = data?.user?.email?.trim().toLowerCase();
-  if (error || !email) return { error: "Not signed in." };
-  if (!ALLOWED_SENDERS.includes(email)) return { error: "You are not permitted to send to clients." };
-  return { email };
+  const caller = await signedInEmail(request);
+  if ("error" in caller) return caller;
+  if (!ALLOWED_SENDERS.includes(caller.email)) return { error: "You are not permitted to send to clients." };
+  return { email: caller.email };
 }
 
 export async function getGraphToken() {
