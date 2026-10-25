@@ -800,7 +800,14 @@ textarea {
   }
 
   .aggregate-gradation-report header img[alt^="DA"] {
-    width: 42px !important;
+    width: 72px !important;
+  }
+
+  /* Temperature, humidity, the notes line and the issue date sit on a rule
+     rather than in a table cell, and the capture was striking it through the
+     value. Same compensation as the table cells; see the capture block. */
+  .aggregate-gradation-report .official-underline {
+    padding-bottom: 3px !important;
   }
 
   /* Mortar report: clean single A4 page (no transform/oversized-width). The
@@ -1333,7 +1340,17 @@ textarea {
 }
 
 .aggregate-gradation-report.pdf-capture header img[alt^="DA"] {
-    width: 42px !important;
+    width: 72px !important;
+}
+
+/* The ruled fields that are not table cells — temperature, humidity, the notes
+   line and the issue date. html2canvas put the rule through the value, so "50"
+   came out struck out. A little padding underneath drops the rule clear.
+   Scoped to this report rather than every .pdf-capture: the other families
+   carry the same class and are already fitting their page, and four more
+   millimetres could push one of them over. */
+.aggregate-gradation-report.pdf-capture .official-underline {
+    padding-bottom: 4px !important;
 }
 
 

@@ -55,7 +55,7 @@ export function AggregateReportPreview({
             <div className="text-[13px] font-bold uppercase leading-tight"><BiText>RAPORT TESTIM / TEST REPORT</BiText></div>
             <div className="mt-5 text-[8.5px] font-bold">Nr. / No. <span className="text-red-600">{report.reportNumber}</span></div>
           </div>
-          <img src="/brand/da-accreditation.png" alt="DA accreditation Testim S SH ISO/IEC 17025 LT 069" className="ml-auto mt-0.5 h-auto w-[56px]" />
+          <img src="/brand/da-accreditation.png" alt="DA accreditation Testim S SH ISO/IEC 17025 LT 069" className="ml-auto mt-0.5 h-auto w-[76px]" />
         </div>
         <div className="mt-1 flex justify-between text-[6.4px] leading-tight">
           <div>
@@ -92,9 +92,9 @@ export function AggregateReportPreview({
           <div className="font-bold uppercase">KUSHTET AMBJENTALE / <span className="italic">ENVIRONMENTAL CONDITIONS</span>:</div>
           <div className="grid grid-cols-[170px_1fr] gap-x-3">
             <span>Temperaturë / <span className="italic">Temperature</span>:</span>
-            <span className="border-b border-black text-center">{aggregate.temperature || "-"}</span>
+            <span className="official-underline border-b border-black text-center">{aggregate.temperature || "-"}</span>
             <span>Lagështia relative / <span className="italic">Relative Humidity</span>:</span>
-            <span className="border-b border-black text-center">{aggregate.humidity || "-"}</span>
+            <span className="official-underline border-b border-black text-center">{aggregate.humidity || "-"}</span>
           </div>
         </div>
       </div>
@@ -196,7 +196,7 @@ export function AggregateReportPreview({
       <div className="mt-1 text-[7.2px] leading-tight">Yll (*) tregon që testi është i akredituar / <span className="italic">Asterisk (*) means that the laboratory is accredited for this test</span></div>
       <div className="mt-1 grid grid-cols-[76px_1fr] items-end gap-2 text-[7.5px] leading-tight">
         <div>Shënime / <span className="italic">Notes</span> :</div>
-        <div className="min-h-4 border-b border-black">{aggregate.notes}</div>
+        <div className="official-underline min-h-4 border-b border-black">{aggregate.notes}</div>
       </div>
       <div className="gradation-footer-cluster">
         <SignaturePair
@@ -216,7 +216,7 @@ export function AggregateReportPreview({
 
         <div className="mt-2 grid grid-cols-[250px_160px] items-end gap-4 text-[6.4px]">
           <div>Data e Lëshimit të Raportit të Testimit / <span className="italic">Test Report Issue Date:</span></div>
-          <div className="border-b border-black text-center">{formatEuropeanDate(issueDate)}</div>
+          <div className="official-underline border-b border-black text-center">{formatEuropeanDate(issueDate)}</div>
         </div>
 
         <footer className="mt-2 text-center text-[6.4px] leading-tight text-blue-700">
