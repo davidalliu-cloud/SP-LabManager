@@ -65,7 +65,7 @@ export function AggregateReportPreview({
         </div>
       </header>
 
-      <div className="mt-4 grid grid-cols-[210px_1fr] gap-x-10 text-[7.8px] leading-tight">
+      <div className="gradation-meta mt-4 grid grid-cols-[210px_1fr] gap-x-10 text-[7.8px] leading-tight">
         <AggregateMeta label="Nr. REGJISTRI / REGISTER No.:" value={sample?.sampleCode} />
         <AggregateMeta label="KLIENTI / PURCHASER:" value={client?.clientName} />
         <AggregateMeta label="ADRESA / ADDRESS:" value={client?.address} />
@@ -158,10 +158,14 @@ export function AggregateReportPreview({
           {Array.from({ length: 40 }, (_, index) => index).map((index) => {
             const decade = Math.floor(index / 10) - 2;
             const multiplier = (index % 10) + 1;
+            // x10 of one decade is x1 of the next, so it is the same line at the
+            // same x — drawn twice, and keyed the same both times, which is what
+            // React was complaining about.
+            if (multiplier === 10) return null;
             const value = multiplier * 10 ** decade;
             if (value <= chart.min || value >= chart.max) return null;
             const x = chartX(value);
-            return <line key={`minor-${value}`} x1={x} y1={chart.top} x2={x} y2={chart.bottom} stroke="#d5d5d5" strokeWidth="0.35" />;
+            return <line key={`minor-${index}`} x1={x} y1={chart.top} x2={x} y2={chart.bottom} stroke="#d5d5d5" strokeWidth="0.35" />;
           })}
           {retainedPoints ? <polyline points={retainedPoints} fill="none" stroke="#9aa0a6" strokeWidth="1.2" /> : null}
           {passingPoints ? <polyline points={passingPoints} fill="none" stroke="#ff2d20" strokeWidth="1.8" /> : null}

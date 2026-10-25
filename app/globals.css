@@ -758,14 +758,49 @@ textarea {
     font-size: 12pt !important;
   }
 
-  /* Pin the signature/legal/issue/address cluster to the foot of the sheet so
-     the tester + lab-responsible names (with signing space) sit just above the
-     address footer. Left/right match the section's horizontal padding. */
+  /* The cluster used to be pinned to the foot of the sheet. The content grew
+     past it: the grading curve ran to 274mm while the cluster began at 241mm,
+     so the signatures, the names and the stamp were drawn across the chart,
+     and the three legal lines landed on top of each other. It flows now, which
+     makes that impossible, and the rules below buy back the room it needs. */
   .aggregate-gradation-report .gradation-footer-cluster {
-    position: absolute !important;
-    left: 14mm !important;
-    right: 14mm !important;
-    bottom: 2mm !important;
+    position: static !important;
+    margin-top: 2mm !important;
+  }
+
+  /* The sieve ladder is 19 rows of short numbers. Fixed 0.52cm rows spent
+     110mm of the page on it — a third of the sheet — and that is what pushed
+     the chart down into the footer. Let the padding size the row instead. */
+  .aggregate-gradation-report table tbody tr,
+  .aggregate-gradation-report table thead tr {
+    height: auto !important;
+  }
+
+  .aggregate-gradation-report table th,
+  .aggregate-gradation-report table td {
+    padding: 1px 3px 2px !important;
+    line-height: 1.1 !important;
+  }
+
+  .aggregate-gradation-report .gradation-meta {
+    line-height: 1.1 !important;
+    row-gap: 0 !important;
+  }
+
+  .aggregate-gradation-report .border-dashed svg {
+    height: 48mm !important;
+  }
+
+  .aggregate-gradation-report .signature-block-img {
+    height: 16mm !important;
+  }
+
+  .aggregate-gradation-report header img[alt="SARP"] {
+    width: 96px !important;
+  }
+
+  .aggregate-gradation-report header img[alt^="DA"] {
+    width: 42px !important;
   }
 
   /* Mortar report: clean single A4 page (no transform/oversized-width). The
@@ -1259,10 +1294,46 @@ textarea {
 }
 
 .aggregate-gradation-report.pdf-capture .gradation-footer-cluster {
-    position: absolute !important;
-    left: 14mm !important;
-    right: 14mm !important;
-    bottom: 2mm !important;
+    position: static !important;
+    margin-top: 2mm !important;
+}
+
+.aggregate-gradation-report.pdf-capture table tbody tr,
+.aggregate-gradation-report.pdf-capture table thead tr {
+    height: auto !important;
+}
+
+/* The one difference from the print block. html2canvas sets a cell's baseline
+   low and ignores vertical-align, so balanced padding left the row's bottom
+   rule drawn through the digits — 1px of clearance at scale 2, which reads as
+   a line struck through every figure. Moving the padding to the bottom and
+   top-aligning the content opens that to 7px without making the row taller. */
+.aggregate-gradation-report.pdf-capture table th,
+.aggregate-gradation-report.pdf-capture table td {
+    padding: 0 3px 6px !important;
+    line-height: 1.1 !important;
+    vertical-align: top !important;
+}
+
+.aggregate-gradation-report.pdf-capture .gradation-meta {
+    line-height: 1.1 !important;
+    row-gap: 0 !important;
+}
+
+.aggregate-gradation-report.pdf-capture .border-dashed svg {
+    height: 48mm !important;
+}
+
+.aggregate-gradation-report.pdf-capture .signature-block-img {
+    height: 16mm !important;
+}
+
+.aggregate-gradation-report.pdf-capture header img[alt="SARP"] {
+    width: 96px !important;
+}
+
+.aggregate-gradation-report.pdf-capture header img[alt^="DA"] {
+    width: 42px !important;
 }
 
 
