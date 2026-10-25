@@ -2,15 +2,12 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { FilterChips, FilterField, useParamState } from "@/components/ui/filter-bar";
-import type { FilterChip } from "@/components/ui/filter-bar";
 import { PageHeader } from "@/components/ui/page-header";
 import { useLabStore } from "@/lib/lab-store";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { money } from "@/lib/offer-fields";
 import { offerFileName } from "@/lib/offer-fill";
 import { canGenerateOffers } from "@/lib/permissions";
-import { buildHaystack, matchesHaystack, tokeniseQuery } from "@/lib/search";
 import { OFFER_STATUSES, type OfferRecord, type OfferStatus } from "@/lib/types";
 
 /**
@@ -26,7 +23,7 @@ import { OFFER_STATUSES, type OfferRecord, type OfferStatus } from "@/lib/types"
  * re-generates the same document from the stored form.
  */
 
-const STICKY_HEAD = "sticky top-0 z-20 bg-lab-steelwash";
+const STICKY_HEAD = "sticky top-0 z-20 bg-lab-steel";
 
 /** Status colours: what needs attention should read as such at a glance. */
 const STATUS_STYLE: Record<OfferStatus, string> = {
@@ -48,45 +45,19 @@ export default function OffersRegisterPage() {
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
   const allowed = canGenerateOffers(currentUser?.email);
 
-  const [query, setQuery] = useParamState("q");
-  const [status, setStatus] = useParamState("status");
-  const [kind, setKind] = useParamState("kind");
   const [busy, setBusy] = useState("");
   const [problem, setProblem] = useState("");
 
-  const offers = useMemo(() => {
-    const tokens = tokeniseQuery(query);
-    return store.offers
-      .filter((offer) => (status ? offer.status === status : true))
-      .filter((offer) => (kind ? offer.kind === kind : true))
-      .filter((offer) =>
-        matchesHaystack(
-          buildHaystack([offer.offerNumber, offer.clientName, offer.projectName, offer.location, offer.status]),
-          tokens
-        )
-      )
-      .sort((left, right) => right.offerNumber.localeCompare(left.offerNumber, undefined, { numeric: true }));
-  }, [store.offers, query, status, kind]);
-
-  const chips: FilterChip[] = [
-    ...(query ? [{ key: "q", label: `Kërkim: ${query}`, onRemove: () => setQuery("") }] : []),
-    ...(status ? [{ key: "status", label: `Statusi: ${status}`, onRemove: () => setStatus("") }] : []),
-    ...(kind
-      ? [
-          {
-            key: "kind",
-            label: `Lloji: ${kind === "lab" ? "Laboratorike" : "Gjeoteknike"}`,
-            onRemove: () => setKind("")
-          }
-        ]
-      : [])
-  ];
-
-  function clearFilters() {
-    setQuery("");
-    setStatus("");
-    setKind("");
-  }
+  // Every offer, newest number first. No filters: the register is short, it
+  // is read rather than searched, and a filter left on from last time is a
+  // register that silently hides offers you are waiting on.
+  const offers = useMemo(
+    () =>
+      [...store.offers].sort((left, right) =>
+        right.offerNumber.localeCompare(left.offerNumber, undefined, { numeric: true })
+      ),
+    [store.offers]
+  );
 
   const pipeline = useMemo(() => {
     const open = store.offers.filter((offer) => offer.status === "Dërguar");
@@ -158,36 +129,6 @@ export default function OffersRegisterPage() {
         <Stat label="Të pranuara" value={String(pipeline.won)} note={`${money(pipeline.wonValue)} ALL`} />
         <Stat label="Gjithsej në regjistër" value={String(store.offers.length)} note="Numri vijon vetë" />
       </div>
-
-      <div className="no-print mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr]">
-        <FilterField label="Kërko ofertë">
-          <input
-            className="input"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="numër, klient, objekt"
-          />
-        </FilterField>
-        <FilterField label="Statusi">
-          <select className="input" value={status} onChange={(event) => setStatus(event.target.value)}>
-            <option value="">Të gjitha</option>
-            {OFFER_STATUSES.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </FilterField>
-        <FilterField label="Lloji">
-          <select className="input" value={kind} onChange={(event) => setKind(event.target.value)}>
-            <option value="">Të dyja</option>
-            <option value="lab">Laboratorike</option>
-            <option value="geotech">Gjeoteknike</option>
-          </select>
-        </FilterField>
-      </div>
-
-      <FilterChips chips={chips} resultCount={offers.length} onClearAll={clearFilters} countLabel="oferta" />
 
       {problem ? (
         <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{problem}</div>

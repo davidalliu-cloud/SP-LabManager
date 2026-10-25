@@ -36,8 +36,8 @@ const UNASSIGNED = "none";
 
 /** Frozen panes. The header row pins to the top of the scroll area, the sample
  *  code pins to the left, and the top-left cell has to beat both. */
-const STICKY_HEAD = "sticky top-0 z-20 bg-lab-steelwash";
-const STICKY_CORNER = "sticky left-0 top-0 z-30 border-r border-lab-steel bg-lab-steelwash";
+const STICKY_HEAD = "sticky top-0 z-20 bg-lab-steel";
+const STICKY_CORNER = "sticky left-0 top-0 z-30 border-r border-lab-slate bg-lab-steel";
 const STICKY_CELL = "sticky left-0 z-10 border-r border-lab-steel";
 
 /** Everything a single register row needs, resolved once. Building this up

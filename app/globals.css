@@ -24,10 +24,17 @@ body {
   margin: 0;
   color: var(--app-ink);
   font-family: -apple-system, "Helvetica Neue", "Avenir Next", "Segoe UI", Arial, sans-serif;
-  /* The HR app sits on #FAFAFA rather than pure white, which is what lets a
-     white card read as a card. Reports paint their own white ground, so the
-     printed documents are unaffected. */
-  background: #FAFAFA;
+  /* The ground the whole app sits on, and the reason a white card reads as a
+     card at all.
+
+     It was #FAFAFA — so close to white that nothing on top of it had an edge,
+     and a screen of white panels on a white page gave the eye nothing to hold
+     on to. This is the steel of the register bands, mixed down to a ground:
+     light enough that white still reads as white, strong enough that every
+     card, input and table now has a visible boundary without drawing one.
+     Reports paint their own white ground, so printed documents are
+     unaffected. */
+  background: #E6ECEF;
 }
 
 h1,
@@ -51,7 +58,7 @@ textarea {
     margin: 0;
   }
 
-  /* The screen sits on #FAFAFA; paper does not. */
+  /* The screen sits on the steel ground; paper does not. */
   html,
   body {
     background: #ffffff !important;
@@ -1092,8 +1099,12 @@ textarea {
     appearance: textfield;
   }
 
+  /* White, and now it means something: on the steel ground a card reads as a
+     raised surface rather than as more page. The border goes steel so the two
+     edges of the card — its fill against the ground, and its outline — say the
+     same thing. */
   .surface-card {
-    @apply rounded-[0.85rem] border border-line bg-white;
+    @apply rounded-[0.85rem] border border-lab-steel bg-white;
   }
 
   /* The tinted panel, now on the same steel as the register bands rather than
@@ -1106,14 +1117,17 @@ textarea {
    * The header row of a register.
    *
    * It used to be white on white, separated from the data only by small caps
-   * and a hairline — which is legible on a short table and not on a long one,
-   * where the header scrolls as a sticky band over rows it looks identical
-   * to. The steel wash gives it an edge to be read against, and the steel rule
-   * under it closes the band off. #666 on #EDF0F2 is 5.4:1, so the small caps
-   * are still comfortably readable.
+   * and a hairline — legible on a short table and not on a long one, where the
+   * header scrolls as a sticky band over rows it looks identical to.
+   *
+   * The band is the steel itself, not a wash of it: a tint light enough to be
+   * tasteful was light enough to be invisible, which is no use to someone
+   * reading down ninety samples. The caption colour moves from muted grey to
+   * ink to go with it — #666 on this band is 3.4:1 and would have been a
+   * legibility cost paid for the contrast gained, where ink is 6.3:1.
    */
   .table-head {
-    @apply border-b border-lab-steel bg-lab-steelwash text-[11px] uppercase tracking-[0.14em] text-muted;
+    @apply border-b border-lab-slate bg-lab-steel text-[11px] font-semibold uppercase tracking-[0.14em] text-ink;
   }
 
   .btn-primary {

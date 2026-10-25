@@ -159,7 +159,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </nav>
       </aside>
       <div className="lg:pl-72">
-        <header className="no-print sticky top-0 z-20 border-b border-line bg-white/95 backdrop-blur">
+        <header className="no-print sticky top-0 z-20 border-b border-lab-steel bg-white/95 backdrop-blur">
           <div className="flex min-h-16 items-center justify-between gap-2 px-4 sm:gap-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-3">
               <img src="/brand/sarp-logo.png" alt="SARP" className="h-8 w-auto lg:hidden" />

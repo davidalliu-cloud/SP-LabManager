@@ -32,18 +32,34 @@ const config: Config = {
           red: "#A23146",
           purple: "#7B1E7A",
           burgundy: "#5B193F",
-          mist: "#E6F8F6",
-          porcelain: "#F3F7F3",
-          steel: "#BDC8D0",
-          /**
-           * Steel laid over white at 28%, pre-resolved.
-           *
-           * The header band of every register, where it has to be opaque: a
-           * sticky header is scrolled under, and an alpha tint would let the
-           * rows show through it. Kept beside the colour it comes from so the
-           * two stay in step if either is ever changed.
+          /*
+           * The two secondary surfaces, retuned from cyan and green into the
+           * steel family. They are used 27 and 233 times as neutral fills —
+           * section bands, totals rows, info panels — and once the page itself
+           * went steel their old casts read as a faint colour error rather
+           * than as a choice. Same lightness, so nothing moved but the hue.
            */
+          mist: "#DCE6EB",
+          porcelain: "#F1F5F7",
+          /**
+           * The structural colour of the app, in four weights.
+           *
+           * Everything used to sit on #FAFAFA, which is near enough to white
+           * that nothing on it had an edge. These give the interface a spine:
+           * a ground to sit on, a band for the header of a register, a rule to
+           * close it, and a wash between the two for secondary surfaces.
+           *
+           * All are pre-resolved rather than alpha tints, because the register
+           * headers are sticky and are scrolled under — an alpha band would
+           * let the rows show through it.
+           */
+          steel: "#BDC8D0",
+          /** Steel at 42% over white: the page itself. */
+          ground: "#E6ECEF",
+          /** Steel at 28%: panels and totals rows, a step above the ground. */
           steelwash: "#EDF0F2",
+          /** A shade down from steel, for the rule that closes a band off. */
+          slate: "#A3B1BC",
           cream: "#F6EFE4",
           sand: "#E9D8BE",
           terracotta: "#C7744A",
