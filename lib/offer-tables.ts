@@ -209,6 +209,77 @@ export function writeCatalogueQuantities(xml: string, quantities: Map<string, st
   );
 }
 
+/**
+ * Write the two price columns of Section 9 for the rows that are left.
+ *
+ * Both columns, always together: an offer that quotes a discounted net price
+ * beside the template's VAT-inclusive figure contradicts itself, and the
+ * client reads the bigger number. A row priced "Falas" is left alone — it has
+ * no figure to discount, because it rides along with another test.
+ */
+export function writeCataloguePrices(xml: string, prices: Map<string, { net: string; gross: string }>) {
+  return eachCatalogueTable(xml, (table) =>
+    mapParts(table, ROW, (row) => {
+      const code = codeOf(row);
+      const price = code === null ? undefined : prices.get(code);
+      if (!price) return row;
+      return mapParts(row, CELL, (cell, index) => {
+        if (index === 4) return setCellText(cell, price.net, "right");
+        if (index === 5) return setCellText(cell, price.gross, "right");
+        return cell;
+      });
+    })
+  );
+}
+
+/** True for Section 10.1 of the geotechnical offer: the priced bill of quantities. */
+function isBillOfQuantities(table: string) {
+  const first = rowsOf(table)[0];
+  if (!first) return false;
+  const header = cellsOf(first).map(cellText);
+  return header.length === 6 && header[0] === "Nr." && header[5].startsWith("Vlera");
+}
+
+export interface BillLine {
+  code: string;
+  price: string;
+  /** Set for the lump-sum rows, whose value is printed rather than filled. */
+  value?: string;
+}
+
+/**
+ * Write the unit prices of Section 10.1, and the values of its lump-sum rows.
+ *
+ * The metered rows carry their value as a marker, so the substitution pass has
+ * already worked it out from the same price this writes. The lump-sum rows
+ * print both, so changing one of those prices has to rewrite the value beside
+ * it or the column stops adding up to the total underneath.
+ */
+export function writeBillOfQuantities(xml: string, lines: BillLine[]): OrderFormResult {
+  const byCode = new Map(lines.map((line) => [line.code, line]));
+  const warnings: string[] = [];
+  let found = false;
+
+  const next = mapParts(xml, TABLE, (table) => {
+    if (!isBillOfQuantities(table)) return table;
+    found = true;
+    return mapParts(table, ROW, (row) => {
+      const cells = cellsOf(row);
+      if (cells.length !== 6) return row; // a group heading spans the width
+      const line = byCode.get(cellText(cells[0]));
+      if (!line) return row;
+      return mapParts(row, CELL, (cell, index) => {
+        if (index === 4) return setCellText(cell, line.price, "right");
+        if (index === 5 && line.value !== undefined) return setCellText(cell, line.value, "right");
+        return cell;
+      });
+    });
+  });
+
+  if (!found) warnings.push("Preventivi (Tabela 10.1) nuk u gjet.");
+  return { xml: next, warnings };
+}
+
 export interface OrderLine {
   code: string;
   description: string;
@@ -329,3 +400,22 @@ export const ORDER_FORM_INTRO =
 /** The sentence in Section 9's preamble that asks the client to enter quantities. */
 export const CATALOGUE_INTRO_SENTENCE =
   "Klienti zgjedh testimet duke shënuar sasinë (numrin e raporteve) në kolonën e fundit ose duke përdorur Formularin e Porosisë në Seksionin 12.";
+
+/**
+ * The note under Section 10.1, which says two things that stop being true once
+ * the offer is generated: that the unit prices are the standard 2026 ones, and
+ * that the yellow fields are filled in per project — a note to whoever was
+ * holding the template, not something to send a client.
+ */
+export const BILL_NOTE_PRICES = "çmimet njësi janë çmimet e SARP & LAB për vitin 2026, pa TVSH.";
+export const BILL_NOTE_QUANTITIES =
+  "Sasitë (fushat e verdha) plotësohen për secilin projekt; vlera e çdo rreshti = sasia × çmimi njësi.";
+
+/**
+ * Where a stated discount is announced, so the client sees what they were given.
+ *
+ * The sentence that opens this paragraph would read better, but "raport
+ * testimi" inside it is bold and therefore a run of its own, so the paragraph
+ * cannot be matched as one string. This sentence closes it and is unbroken.
+ */
+export const CATALOGUE_CLOSING_SENTENCE = "Faturohen vetëm testimet e kryera realisht.";

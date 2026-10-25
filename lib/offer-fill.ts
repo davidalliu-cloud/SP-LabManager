@@ -27,7 +27,7 @@
 import {
   GEOTECH_BOQ,
   DEFAULT_TRANSPORT_ZONE,
-  GEOTECH_FIXED_TOTAL,
+  GEOTECH_FIXED_LINES,
   GEOTECH_LAB_PROGRAMME,
   OFFER_TEMPLATES,
   albanianDate,
@@ -37,12 +37,17 @@ import {
 } from "./offer-fields";
 import { OFFER_CATALOGUE, catalogueByCode } from "./offer-catalogue";
 import {
+  BILL_NOTE_PRICES,
+  BILL_NOTE_QUANTITIES,
   CATALOGUE_INTRO_SENTENCE,
+  CATALOGUE_CLOSING_SENTENCE,
   ORDER_FORM_INTRO,
   fillOrderForm,
   pruneCatalogue,
   replaceSentence,
-  writeCatalogueQuantities
+  writeBillOfQuantities,
+  writeCatalogueQuantities,
+  writeCataloguePrices
 } from "./offer-tables";
 
 export type OfferValues = Record<string, string>;
@@ -81,6 +86,9 @@ export interface LabLine {
   code: string;
   name: string;
   unit: string;
+  /** The catalogue price, before any discount or typed-in figure. */
+  listPrice: number;
+  /** What this offer quotes. */
   price: number;
   /** How the catalogue prints the price, which is "Falas" for the free tests. */
   priceLabel: string;
@@ -104,10 +112,11 @@ export function labLines(values: OfferValues): LabLine[] {
       code,
       name: rezone(test.name),
       unit: test.unit,
-      price: test.price,
+      listPrice: test.price,
+      price: unitPrice(values, code, test.price),
       priceLabel: test.priceLabel,
       quantity,
-      value: quantity * test.price
+      value: quantity * unitPrice(values, code, test.price)
     };
   });
 }
@@ -117,6 +126,42 @@ export function labTotals(values: OfferValues): OfferTotals {
   const vat = subtotal * VAT_RATE;
   return { subtotal, vat, total: subtotal + vat };
 }
+
+/* ------------------------------------------------------------------ prices */
+
+/**
+ * What a line actually costs on this offer.
+ *
+ * Three things can set it, in order. A price typed against the line wins
+ * outright — it is a decision, not a starting point, so the discount does not
+ * then take another slice off it. Failing that the list price carries the
+ * offer's discount. Failing that it is the list price as the template prints
+ * it.
+ *
+ * Rounded to whole lekë, because every printed figure in both templates is.
+ */
+export function unitPrice(values: OfferValues, code: string, listPrice: number): number {
+  const typed = values[`price.${code}`];
+  if (typed !== undefined && typed !== "") return Math.max(0, Math.round(numberOf(values, `price.${code}`)));
+
+  const discount = discountPercent(values);
+  return Math.max(0, Math.round(listPrice * (1 - discount / 100)));
+}
+
+/** The offer's discount, clamped to something a price can survive. */
+export function discountPercent(values: OfferValues): number {
+  const raw = numberOf(values, "discountPercent");
+  return Math.min(100, Math.max(0, raw));
+}
+
+/** True when the line carries a price typed against it rather than a derived one. */
+export function hasPriceOverride(values: OfferValues, code: string): boolean {
+  const typed = values[`price.${code}`];
+  return typed !== undefined && typed !== "";
+}
+
+/** VAT-inclusive, the way the catalogue's second price column is worked out. */
+export const withVat = (net: number) => Math.round(net * (1 + VAT_RATE));
 
 /** A number typed into the form, or 0 when it is blank or not a number. */
 export function numberOf(values: OfferValues, key: string): number {
@@ -128,6 +173,9 @@ export interface BoqRow {
   code: string;
   description: string;
   unit: string;
+  /** The template price, before any discount or typed-in figure. */
+  listPrice: number;
+  /** What this offer quotes. */
   price: number;
   quantity: number;
   value: number;
@@ -139,7 +187,16 @@ export function geotechBoq(values: OfferValues): BoqRow[] {
   return GEOTECH_BOQ.map((line) => {
     const typed = values[`qty.${line.code}`];
     const quantity = typed === undefined || typed === "" ? line.derive(get) : numberOf(values, `qty.${line.code}`);
-    return { ...line, quantity, value: quantity * line.price };
+    const price = unitPrice(values, line.code, line.price);
+    return { ...line, listPrice: line.price, price, quantity, value: quantity * price };
+  });
+}
+
+/** The lump-sum rows, with their prices as this offer quotes them. */
+export function geotechFixedLines(values: OfferValues): BoqRow[] {
+  return GEOTECH_FIXED_LINES.map((line) => {
+    const price = unitPrice(values, line.code, line.price);
+    return { ...line, listPrice: line.price, price, quantity: 1, value: price };
   });
 }
 
@@ -165,8 +222,8 @@ export interface OfferTotals {
 }
 
 export function geotechTotals(values: OfferValues): OfferTotals {
-  const variable = geotechBoq(values).reduce((sum, row) => sum + row.value, 0);
-  const subtotal = GEOTECH_FIXED_TOTAL + variable;
+  const lines = [...geotechFixedLines(values), ...geotechBoq(values)];
+  const subtotal = lines.reduce((sum, row) => sum + row.value, 0);
   const vat = subtotal * VAT_RATE;
   return { subtotal, vat, total: subtotal + vat };
 }
@@ -365,14 +422,79 @@ export function fillOfferDocument(xml: string, kind: OfferKind, values: OfferVal
     return stripped;
   });
 
-  // Section 9 and the order form come last, once every marker in them has been
-  // resolved: pruning first would lose rows the declared counts still expect.
+  const discount = discountPercent(values);
+
+  // The tables come last, once every marker in them has been resolved: pruning
+  // or repricing first would lose rows the declared counts still expect.
+  if (kind === "geotech") {
+    const lines = [
+      ...geotechFixedLines(values).map((row) => ({
+        code: row.code,
+        price: money(row.price),
+        // Printed rather than filled, so it has to be rewritten with the price.
+        value: money(row.value)
+      })),
+      ...geotechBoq(values).map((row) => ({ code: row.code, price: money(row.price) }))
+    ];
+    const repriced = [...geotechFixedLines(values), ...geotechBoq(values)].some(
+      (row) => row.price !== row.listPrice
+    );
+
+    if (repriced) {
+      const bill = writeBillOfQuantities(working, lines);
+      working = bill.xml;
+      warnings.push(...bill.warnings);
+    }
+
+    // The note claims the prices are the standard 2026 ones. Once they are
+    // discounted that is no longer true, and a client reading it would think
+    // they had been quoted list.
+    if (discount > 0) {
+      const note = replaceSentence(
+        working,
+        BILL_NOTE_PRICES,
+        `çmimet njësi përmbajnë një zbritje prej ${money(discount)}% ndaj çmimeve standarde të SARP & LAB për vitin 2026 dhe jepen pa TVSH.`
+      );
+      working = note.xml;
+      if (!note.replaced) warnings.push("Shënimi i çmimeve nën Tabelën 10.1 nuk u gjet për t'u përshtatur.");
+    }
+
+    // And it tells the reader the yellow fields get filled in per project,
+    // which was a note to whoever held the template.
+    const filled = replaceSentence(working, BILL_NOTE_QUANTITIES, "Vlera e çdo rreshti = sasia × çmimi njësi.");
+    working = filled.xml;
+    if (!filled.replaced) warnings.push("Shënimi i sasive nën Tabelën 10.1 nuk u gjet për t'u përshtatur.");
+  }
+
   if (kind === "lab") {
     const codes = selectedCodes(values);
     if (codes.length) {
       const pruned = pruneCatalogue(working, new Set(codes));
       working = pruned.xml;
       warnings.push(...pruned.warnings);
+
+      // Both price columns of the surviving rows, whether or not quantities
+      // are quoted: a discounted offer that still prints list prices gives the
+      // discount away for nothing.
+      const repriced = labLines(values).filter(
+        (line) => line.price !== line.listPrice && /\d/.test(line.priceLabel)
+      );
+      if (repriced.length) {
+        working = writeCataloguePrices(
+          working,
+          new Map(repriced.map((line) => [line.code, { net: money(line.price), gross: money(withVat(line.price)) }]))
+        );
+      }
+
+      if (discount > 0) {
+        const note = replaceSentence(
+          working,
+          CATALOGUE_CLOSING_SENTENCE,
+          `Çmimet e mëposhtme përmbajnë një zbritje prej ${money(discount)}% ndaj çmimeve standarde të vitit 2026. ${CATALOGUE_CLOSING_SENTENCE}`
+        );
+        working = note.xml;
+        if (!note.replaced) warnings.push("Teksti i çmimeve në Seksionin 9 nuk u gjet për t'u përshtatur.");
+      }
 
       if (quantityMode(values) === "quantity") {
         const lines = labLines(values).filter((line) => line.quantity > 0);
@@ -388,7 +510,7 @@ export function fillOfferDocument(xml: string, kind: OfferKind, values: OfferVal
             code: line.code,
             description: line.name,
             quantity: money(line.quantity),
-            unitPrice: line.priceLabel,
+            unitPrice: /\d/.test(line.priceLabel) ? money(line.price) : line.priceLabel,
             value: money(line.value)
           })),
           { subtotal: money(totals.subtotal), vat: money(totals.vat), total: money(totals.total) }

@@ -9,7 +9,6 @@ import { useLabStore } from "@/lib/lab-store";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { OFFER_CATALOGUE } from "@/lib/offer-catalogue";
 import {
-  GEOTECH_FIXED_TOTAL,
   OFFER_TEMPLATES,
   money,
   type OfferField,
@@ -17,8 +16,10 @@ import {
 } from "@/lib/offer-fields";
 import {
   geotechBoq,
+  geotechFixedLines,
   geotechLabProgramme,
   geotechTotals,
+  hasPriceOverride,
   offerTotals,
   quantityMode,
   selectedCodes,
@@ -177,6 +178,7 @@ export default function NewOfferPage() {
     setDone("");
   }
 
+  const fixedLines = kind === "geotech" ? geotechFixedLines(draft) : [];
   const boq = kind === "geotech" ? geotechBoq(draft) : [];
   const geoTotals = kind === "geotech" ? geotechTotals(draft) : null;
   const programme = kind === "geotech" ? geotechLabProgramme(draft) : [];
@@ -391,6 +393,7 @@ export default function NewOfferPage() {
 
       {kind === "lab" ? (
         <CataloguePicker
+          values={draft}
           selected={selected}
           quantities={quantities}
           mode={mode}
@@ -413,6 +416,7 @@ export default function NewOfferPage() {
             })
           }
           onQuantity={(code, value) => setQuantities((previous) => ({ ...previous, [code]: value }))}
+          onPrice={(code, value) => set(`price.${code}`, value)}
           onMode={setMode}
         />
       ) : null}
@@ -424,55 +428,82 @@ export default function NewOfferPage() {
               Preventivi (Tabela 10.1)
             </h2>
             <p className="mb-4 text-xs leading-5 text-muted">
-              Çmimet njësi janë çmimet 2026 të shabllonit dhe nuk ndryshohen këtu. Sasitë vijnë nga fusha e punës më
-              sipër; shkruaji ndryshe kur terreni e kërkon, ose fshij fushën për të kthyer sasinë e parazgjedhur.
-              Rreshtat A1, A2, E1, F1 dhe F2 janë fikse ({money(GEOTECH_FIXED_TOTAL)} ALL).
+              Sasitë vijnë nga fusha e punës më sipër; shkruaji ndryshe kur terreni e kërkon, ose fshij fushën për
+              të kthyer sasinë e parazgjedhur. Çmimet njësi nisin nga çmimet 2026, me zbritjen e vendosur te
+              «Çmimet»; shkruaj një çmim mbi rreshtin për ta caktuar vetë. A1, A2, E1, F1 dhe F2 janë shuma të
+              plota me sasi 1.
             </p>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[720px] text-left text-sm">
+              <table className="w-full min-w-[820px] text-left text-sm">
                 <thead className="table-head">
                   <tr>
                     <th className="px-3 py-2">Nr.</th>
                     <th className="px-3 py-2">Përshkrimi</th>
                     <th className="px-3 py-2">Njësia</th>
                     <th className="px-3 py-2 text-right">Sasia</th>
+                    <th className="px-3 py-2 text-right">Listë</th>
                     <th className="px-3 py-2 text-right">Çmimi njësi</th>
                     <th className="px-3 py-2 text-right">Vlera (ALL)</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {boq.map((row) => (
-                    <tr key={row.code} className="border-b border-line">
-                      <td className="px-3 py-2 font-semibold">{row.code}</td>
-                      <td className="px-3 py-2">{row.description}</td>
-                      <td className="px-3 py-2 text-muted">{row.unit}</td>
-                      <td className="px-3 py-2 text-right">
-                        <input
-                          className="input w-24 text-right"
-                          type="number"
-                          min={0}
-                          value={draft[`qty.${row.code}`] ?? String(row.quantity)}
-                          onChange={(event) => set(`qty.${row.code}`, event.target.value)}
-                        />
-                      </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-muted">{money(row.price)}</td>
-                      <td className="px-3 py-2 text-right font-semibold tabular-nums">{money(row.value)}</td>
-                    </tr>
-                  ))}
+                  {[...fixedLines, ...boq].map((row) => {
+                    const lump = fixedLines.some((line) => line.code === row.code);
+                    const typed = hasPriceOverride(draft, row.code);
+                    return (
+                      <tr key={row.code} className="border-b border-line">
+                        <td className="px-3 py-2 font-semibold">{row.code}</td>
+                        <td className="px-3 py-2">{row.description}</td>
+                        <td className="px-3 py-2 text-muted">{row.unit}</td>
+                        <td className="px-3 py-2 text-right">
+                          {lump ? (
+                            <span className="tabular-nums text-muted">1</span>
+                          ) : (
+                            <input
+                              className="input w-20 text-right"
+                              type="number"
+                              min={0}
+                              value={draft[`qty.${row.code}`] ?? String(row.quantity)}
+                              onChange={(event) => set(`qty.${row.code}`, event.target.value)}
+                            />
+                          )}
+                        </td>
+                        <td
+                          className={`px-3 py-2 text-right tabular-nums text-muted${
+                            row.price !== row.listPrice ? " line-through" : ""
+                          }`}
+                        >
+                          {money(row.listPrice)}
+                        </td>
+                        <td className="px-3 py-2 text-right">
+                          <input
+                            className={`input w-24 text-right${typed ? " font-semibold" : ""}`}
+                            type="number"
+                            min={0}
+                            value={draft[`price.${row.code}`] ?? String(row.price)}
+                            onChange={(event) => set(`price.${row.code}`, event.target.value)}
+                            title="Shkruaj çmimin për këtë rresht, ose fshije për t'u kthyer te çmimi i listës"
+                          />
+                          {typed ? <div className="mt-1 text-[11px] text-amber-700">çmim i caktuar</div> : null}
+                        </td>
+                        <td className="px-3 py-2 text-right font-semibold tabular-nums">{money(row.value)}</td>
+                      </tr>
+                    );
+                  })}
                   <tr className="border-b border-line bg-lab-porcelain">
-                    <td className="px-3 py-2 font-semibold" colSpan={5}>
+                    <td className="px-3 py-2 font-semibold" colSpan={6}>
                       Nëntotali (pa TVSH)
                     </td>
                     <td className="px-3 py-2 text-right font-semibold tabular-nums">{money(geoTotals.subtotal)}</td>
                   </tr>
                   <tr className="border-b border-line">
-                    <td className="px-3 py-2" colSpan={5}>
+                    <td className="px-3 py-2" colSpan={6}>
                       TVSH 20%
                     </td>
                     <td className="px-3 py-2 text-right tabular-nums">{money(geoTotals.vat)}</td>
                   </tr>
                   <tr className="bg-lab-porcelain">
-                    <td className="px-3 py-2 text-base font-bold" colSpan={5}>
+                    <td className="px-3 py-2 text-base font-bold" colSpan={6}>
                       TOTALI (me TVSH)
                     </td>
                     <td className="px-3 py-2 text-right text-base font-bold tabular-nums">{money(geoTotals.total)}</td>

@@ -153,6 +153,15 @@ const LAB_FIELDS: OfferField[] = [
   },
 
   {
+    key: "discountPercent",
+    label: "Zbritje mbi çmimet standarde",
+    kind: "number",
+    group: "Çmimet",
+    value: "0",
+    unit: "%",
+    help: "Zbatohet mbi çdo çmim njësi të listës. Çmimi i shkruar me dorë mbi një rresht nuk preket nga kjo zbritje."
+  },
+  {
     key: "certifications",
     label: "Sistemi i menaxhimit të kompanisë",
     kind: "text",
@@ -300,8 +309,20 @@ export const GEOTECH_BOQ: BoqLine[] = [
   { code: "E2", description: "Analiza kimike e dheut", unit: "kampion", price: 5000, derive: () => 2 }
 ];
 
-/** The rows whose quantity and value are printed in the template and never change. */
-export const GEOTECH_FIXED_TOTAL = 20000 + 50000 + 133333 + 83333 + 80000;
+/**
+ * The lump-sum rows of Section 10.1.
+ *
+ * The template prints a quantity of 1 and the value alongside the price, so
+ * unlike the metered rows there is no marker to fill — but the price is still
+ * a price, and changing one has to rewrite the printed value with it.
+ */
+export const GEOTECH_FIXED_LINES: { code: string; description: string; unit: string; price: number }[] = [
+  { code: "A1", description: "Studimi paraprak, programi i punës dhe RAMS", unit: "lot", price: 20000 },
+  { code: "A2", description: "Mobilizimi dhe demobilizimi i sondës dhe pajisjeve", unit: "lot", price: 50000 },
+  { code: "E1", description: "Paketa e testimeve laboratorike (Tabela 2.1)", unit: "set", price: 133333 },
+  { code: "F1", description: "Raporti gjeologo-inxhinierik", unit: "raport", price: 83333 },
+  { code: "F2", description: "Studimi inxhiniero-sizmologjik", unit: "raport", price: 80000 }
+];
 
 /** Section 2.1, the orientative laboratory programme. Quantities only. */
 export const GEOTECH_LAB_PROGRAMME: {
@@ -382,6 +403,15 @@ const GEOTECH_FIELDS: OfferField[] = [
     ]
   },
 
+  {
+    key: "discountPercent",
+    label: "Zbritje mbi çmimet standarde",
+    kind: "number",
+    group: "Çmimet",
+    value: "0",
+    unit: "%",
+    help: "Zbatohet mbi çdo çmim njësi të listës. Çmimi i shkruar me dorë mbi një rresht nuk preket nga kjo zbritje."
+  },
   {
     key: "certifications",
     label: "Sistemi i menaxhimit të kompanisë",
@@ -506,7 +536,7 @@ export const OFFER_TEMPLATES: Record<OfferKind, OfferTemplate> = {
     subtitle: "Katalogu i plotë i testimeve me çmimet njësi 2026; klienti zgjedh testimet më pas.",
     templateFile: "oferta-laboratorike.docx",
     download: "SL-OF-{nr}-2026 Oferta Laboratorike - {klienti}.docx",
-    groups: ["Oferta", "Klienti", "Objekti", "Ekipi", "Kredencialet", "Kushtet tregtare"],
+    groups: ["Oferta", "Klienti", "Objekti", "Ekipi", "Çmimet", "Kredencialet", "Kushtet tregtare"],
     fields: LAB_FIELDS,
     replacements: LAB_REPLACEMENTS
   },
@@ -522,6 +552,7 @@ export const OFFER_TEMPLATES: Record<OfferKind, OfferTemplate> = {
       "Objekti",
       "Fusha e punës",
       "Ekipi",
+      "Çmimet",
       "Kredencialet",
       "Kushtet tregtare"
     ],
