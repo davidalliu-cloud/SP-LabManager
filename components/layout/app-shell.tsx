@@ -34,8 +34,11 @@ const navItems: readonly NavNode[] = [
   // No top-level Procedurat entry: the SOP register lives under Quality
   // Management, and two sidebar entries leading to one page is how somebody
   // ends up asking which of them is the real register.
+  // No Projektet entry: a client code is a company on one site, so the project
+  // register was the same 154 rows with fewer columns and no way to edit them.
+  // Vendndodhja and Përshkrimi moved onto the client register, which is where
+  // they were always edited from.
   ["nav.clients", "/clients"],
-  ["nav.projects", "/projects"],
   ["nav.employees", "/employees"],
   ["nav.delayedItems", "/delayed"],
   ["nav.monthlySummary", "/monthly-summary"],
@@ -145,7 +148,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-5">
           {navItems
             .filter((node) => isGroup(node) || showOffersNav || node[1] !== "/offers")
-            .filter((node) => isGroup(node) || showClientIdentityNav || !["/clients", "/projects"].includes(node[1]))
+            .filter((node) => isGroup(node) || showClientIdentityNav || node[1] !== "/clients")
             .map((node) =>
               isGroup(node) ? (
                 <NavGroupSection key={node.prefix} group={node} pathname={pathname} t={t} />

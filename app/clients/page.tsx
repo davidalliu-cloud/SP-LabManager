@@ -115,6 +115,7 @@ export default function ClientsPage() {
             client.clientName,
             project?.projectName,
             project?.location,
+            project?.description,
             client.address,
             client.contactPerson,
             client.email,
@@ -402,6 +403,7 @@ export default function ClientsPage() {
               <th className={`${STICKY_CORNER} px-4 py-3`}>Kodi i klientit</th>
               <th className={`${STICKY_HEAD} px-4 py-3`}>Klienti</th>
               <th className={`${STICKY_HEAD} px-4 py-3`}>Projekti / objekti</th>
+              <th className={`${STICKY_HEAD} px-4 py-3`}>Vendndodhja</th>
               <th className={`${STICKY_HEAD} px-4 py-3`}>Adresa</th>
               <th className={`${STICKY_HEAD} px-4 py-3`}>Kontakti</th>
               <th className={`${STICKY_HEAD} px-4 py-3`}>Email</th>
@@ -422,8 +424,17 @@ export default function ClientsPage() {
                     <span className="text-lab-burgundy underline group-hover:text-white">{client.clientCode}</span>
                   </td>
                   <td className="px-4 py-3">{client.clientName}</td>
-                  <td className="px-4 py-3">{project?.projectName ?? "-"}</td>
-                  <td className="px-4 py-3">{client.address || project?.location || "-"}</td>
+                  <td className="px-4 py-3">
+                    {project?.projectName ?? "-"}
+                    {/* Filled on five records of 155, so it rides under the
+                        object rather than taking a column that is blank 150
+                        times over. */}
+                    {project?.description ? (
+                      <span className="block text-xs text-muted group-hover:text-white/80">{project.description}</span>
+                    ) : null}
+                  </td>
+                  <td className="px-4 py-3">{project?.location || "-"}</td>
+                  <td className="px-4 py-3">{client.address || "-"}</td>
                   <td className="px-4 py-3">{client.contactPerson || "-"}</td>
                   <td className="px-4 py-3">{client.email || "-"}</td>
                   <td className="px-4 py-3">{client.phone || "-"}</td>

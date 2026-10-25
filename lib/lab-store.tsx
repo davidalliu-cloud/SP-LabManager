@@ -1936,6 +1936,20 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       ];
     }
 
+    /**
+     * Tells somebody their work has come back to them.
+     *
+     * Only that. A notification for every step of the flow — sample accepted,
+     * test submitted, report approved — is a list nobody reads, and a list
+     * nobody reads is one that hides the single message that actually needs
+     * acting on: your test or your report was rejected and has to be redone.
+     * Everything else is already visible on the register it belongs to.
+     *
+     * So this is called from four places and should stay that way: a rejected
+     * test, a rejected report, a rejected SOP revision, and a re-written
+     * sample, which reopens tests that were finished and is the same event by
+     * another name. Anything that is merely progress belongs in the audit log.
+     */
     function addNotification(
       draft: LabState,
       userId: string,
@@ -1955,20 +1969,6 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
         createdAt: new Date().toISOString()
       };
       draft.notifications = [notification, ...draft.notifications];
-    }
-
-    function addRoleNotification(
-      draft: LabState,
-      users: LabUser[],
-      roles: Role[],
-      title: string,
-      message: string,
-      relatedTestId?: string,
-      relatedReportId?: string
-    ) {
-      users
-        .filter((user) => roles.includes(user.role) && user.isActive !== false)
-        .forEach((user) => addNotification(draft, user.id, title, message, relatedTestId, relatedReportId));
     }
 
     // Next sequential code for a prefix, based on the HIGHEST existing number + 1
@@ -2827,15 +2827,6 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             auditLog: [...previous.auditLog],
             notifications: [...previous.notifications]
           };
-          tests.forEach((test) => {
-            addNotification(
-              draft,
-              test.assignedTechnician,
-              "Test gati për nisje",
-              `${test.testCode}: kampioni ${sample.sampleCode} është pranuar dhe testi mund të niset.`,
-              test.id
-            );
-          });
           addAudit(draft, "sample_accepted", "sample", sampleId, `Sample ${sample.sampleCode} accepted and ${tests.length} test batch${tests.length === 1 ? "" : "es"} created.`);
           return withDerivedSampleStatuses(draft);
         });
@@ -2891,13 +2882,6 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             auditLog: [...previous.auditLog],
             notifications: [...previous.notifications]
           };
-          addRoleNotification(
-            draft,
-            previous.users,
-            ["Admin / Managing Director", "Chief of Lab"],
-            "Kërkohet pranimi i kampionit",
-            `${sampleCode} është regjistruar dhe pret caktimin e kodit të klientit/projektit nga Kryelaboranti.`
-          );
           addAudit(draft, "sample_created", "sample", sampleId, `Sample ${sampleCode} registered and waiting for Chief of Lab acceptance.`);
           return draft;
         });
@@ -2967,15 +2951,6 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           });
           draft.samples = [...newSamples, ...previous.samples];
           const codeList = newSamples.map((sample) => `${sample.sampleCode} (${sample.sampleType})`).join(", ");
-          addRoleNotification(
-            draft,
-            previous.users,
-            ["Admin / Managing Director", "Chief of Lab"],
-            newSamples.length > 1 ? "Kërkohet pranimi i kampionëve" : "Kërkohet pranimi i kampionit",
-            newSamples.length > 1
-              ? `${codeList} janë regjistruar nga i njëjti dorëzim dhe presin caktimin e kodit të klientit/projektit nga Kryelaboranti.`
-              : `${codeList} është regjistruar dhe pret caktimin e kodit të klientit/projektit nga Kryelaboranti.`
-          );
           return draft;
         });
         return createdIds;
@@ -4537,13 +4512,6 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             notifications: [...previous.notifications],
             auditLog: [...previous.auditLog]
           };
-          addRoleNotification(
-            draft,
-            previous.users,
-            ["Admin / Managing Director", "Chief of Lab"],
-            "Test në pritje të verifikimit",
-            `${test.testCode} është përfunduar nga tekniku dhe pret miratimin teknik.`
-          );
           addAudit(draft, "test_submitted_for_review", "test", testId, `${test.testCode} submitted for Chief of Lab technical review.`);
           return withDerivedSampleStatuses(draft);
         });
@@ -4560,14 +4528,6 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             notifications: [...previous.notifications],
             auditLog: [...previous.auditLog]
           };
-          addRoleNotification(
-            draft,
-            previous.users,
-            ["Admin / Managing Director", "Document Controller", "Lab Engineer"],
-            "Test i miratuar për raport",
-            `${test.testCode} është miratuar teknikisht dhe mund të përgatitet raporti.`,
-            testId
-          );
           addAudit(draft, "test_result_approved", "test", testId, `${test.testCode} approved after technical review.`);
           return withDerivedSampleStatuses(draft);
         });
@@ -4730,15 +4690,6 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             notifications: [...previous.notifications],
             auditLog: [...previous.auditLog]
           };
-          addRoleNotification(
-            draft,
-            previous.users,
-            ["Admin / Managing Director", "Chief of Lab"],
-            "Report pending approval",
-            `${report.reportNumber} is ready for review.`,
-            report.testId,
-            reportId
-          );
           addAudit(draft, "report_submitted", "report", reportId, `${report.reportNumber} submitted for approval.`);
           return draft;
         });
@@ -4759,15 +4710,6 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             notifications: [...previous.notifications],
             auditLog: [...previous.auditLog]
           };
-          addRoleNotification(
-            draft,
-            previous.users,
-            ["Admin / Managing Director", "Document Controller", "Lab Engineer"],
-            "Report approved",
-            `${report.reportNumber} is ready to issue.`,
-            report.testId,
-            reportId
-          );
           addAudit(draft, "report_approved", "report", reportId, `${report.reportNumber} approved.`);
           return withDerivedSampleStatuses(draft);
         });
@@ -5003,7 +4945,6 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             notifications: [...previous.notifications],
             auditLog: [...previous.auditLog]
           };
-          addNotification(draft, input.assignedTo, "SOP revision assigned", `${procedure.code} ${procedure.title} has been assigned for revision.`, undefined);
           addAudit(draft, "procedure_revision_created", "procedure", procedure.id, `Revision ${revision.revision} created for ${procedure.code}.`);
           return draft;
         });
@@ -5022,13 +4963,6 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             notifications: [...previous.notifications],
             auditLog: [...previous.auditLog]
           };
-          addRoleNotification(
-            draft,
-            previous.users,
-            ["Admin / Managing Director", "Chief of Lab"],
-            "SOP pending review",
-            `${procedure.code} revision ${revision.revision} is ready for review.`
-          );
           addAudit(draft, "procedure_revision_submitted", "procedure_revision", revisionId, `${procedure.code} revision ${revision.revision} submitted for review.`);
           return draft;
         });
@@ -5053,7 +4987,6 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             notifications: [...previous.notifications],
             auditLog: [...previous.auditLog]
           };
-          if (revision.assignedTo) addNotification(draft, revision.assignedTo, "SOP revision approved", `${procedure.code} revision ${revision.revision} is now current.`, undefined);
           addAudit(draft, "procedure_revision_approved", "procedure_revision", revisionId, `${procedure.code} revision ${revision.revision} approved and made current.`);
           return draft;
         });
