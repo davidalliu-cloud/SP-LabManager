@@ -159,7 +159,7 @@ const LAB_FIELDS: OfferField[] = [
     group: "Çmimet",
     value: "0",
     unit: "%",
-    help: "Zbatohet mbi çdo çmim njësi të listës. Çmimi i shkruar me dorë mbi një rresht nuk preket nga kjo zbritje."
+    help: "Zbatohet mbi çdo çmim njësi të listës, të cilat jepen pa TVSH. Çmimi i shkruar me dorë mbi një rresht nuk preket nga kjo zbritje."
   },
   {
     key: "certifications",
@@ -410,7 +410,7 @@ const GEOTECH_FIELDS: OfferField[] = [
     group: "Çmimet",
     value: "0",
     unit: "%",
-    help: "Zbatohet mbi çdo çmim njësi të listës. Çmimi i shkruar me dorë mbi një rresht nuk preket nga kjo zbritje."
+    help: "Zbatohet mbi çdo çmim njësi të listës, të cilat jepen pa TVSH. Çmimi i shkruar me dorë mbi një rresht nuk preket nga kjo zbritje."
   },
   {
     key: "certifications",
@@ -444,6 +444,15 @@ const GEOTECH_FIELDS: OfferField[] = [
   { key: "interimPercent", label: "Pas përfundimit të terrenit", kind: "number", group: "Kushtet tregtare", value: "40", unit: "%" },
   { key: "finalPercent", label: "Me dorëzimin e raporteve", kind: "number", group: "Kushtet tregtare", value: "30", unit: "%" },
   { key: "paymentDays", label: "Afati i pagesës së faturës", kind: "number", group: "Kushtet tregtare", value: "15", unit: "ditë" },
+  {
+    key: "variationThreshold",
+    label: "Punime shtesë që kërkojnë miratim me shkrim",
+    kind: "number",
+    group: "Kushtet tregtare",
+    value: "10",
+    unit: "%",
+    help: "Mbi këtë përqindje të vlerës së ofertës, punimet shtesë kryhen vetëm pas miratimit me shkrim të klientit."
+  },
   { key: "sampleRetentionDays", label: "Ruajtja e kampioneve", kind: "number", group: "Kushtet tregtare", value: "30", unit: "ditë" }
 ];
 
@@ -523,6 +532,7 @@ const GEOTECH_REPLACEMENTS: OfferReplacement[] = [
   { find: "[40]", field: "interimPercent" },
   { find: "[30]", fields: ["monitoringLastDay", "sampleRetentionDays", "advancePercent", "finalPercent"] },
   { find: "[15]", field: "paymentDays" },
+  { find: "[10]", field: "variationThreshold" },
 
   { find: "[..]", fields: GEOTECH_DOTS }
 ];

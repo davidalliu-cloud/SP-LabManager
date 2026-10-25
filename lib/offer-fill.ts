@@ -82,6 +82,19 @@ export function selectedCodes(values: OfferValues): string[] {
   return OFFER_CATALOGUE.filter((test) => chosen.has(test.code)).map((test) => test.code);
 }
 
+/**
+ * How many of a test the offer covers.
+ *
+ * A ticked test with the quantity box left alone is one of that test — which
+ * is what it usually is, and what the box shows as its placeholder. Nobody
+ * ticks a test meaning none of it.
+ */
+export function labQuantity(values: OfferValues, code: string): number {
+  const typed = values[`qty.${code}`];
+  if (typed === undefined || typed === "") return 1;
+  return Math.max(0, numberOf(values, `qty.${code}`));
+}
+
 export interface LabLine {
   code: string;
   name: string;
@@ -107,7 +120,7 @@ export function labLines(values: OfferValues): LabLine[] {
 
   return selectedCodes(values).map((code) => {
     const test = catalogueByCode.get(code)!;
-    const quantity = Math.max(0, numberOf(values, `qty.${code}`));
+    const quantity = labQuantity(values, code);
     return {
       code,
       name: rezone(test.name),
@@ -240,7 +253,18 @@ export function resolveOfferValue(template: OfferTemplate, values: OfferValues, 
     const row = geotechLabProgramme(values).find((item) => item.key === key);
     return row ? money(row.quantity) : "";
   }
-  if (!key.startsWith("@")) return String(values[key] ?? "").trim();
+
+  if (!key.startsWith("@")) {
+    const typed = String(values[key] ?? "").trim();
+    if (typed) return typed;
+
+    // A field that is empty has its run deleted, which is right for an
+    // optional note at the end of a sentence and wrong for a number in the
+    // middle of one: clearing the variation threshold would otherwise leave
+    // "Punimet shtesë mbi% të vlerës". A field that declares a starting value
+    // falls back to it, because that value is what the template itself said.
+    return template.fields.find((field) => field.key === key)?.value ?? "";
+  }
 
   if (key === "@offerRef") return `SL-OF-${String(values.offerNumber ?? "").trim()}/2026`;
   if (key === "@offerDate") return albanianDate(String(values.offerDate ?? ""));

@@ -431,7 +431,8 @@ export default function NewOfferPage() {
               Sasitë vijnë nga fusha e punës më sipër; shkruaji ndryshe kur terreni e kërkon, ose fshij fushën për
               të kthyer sasinë e parazgjedhur. Çmimet njësi nisin nga çmimet 2026, me zbritjen e vendosur te
               «Çmimet»; shkruaj një çmim mbi rreshtin për ta caktuar vetë. A1, A2, E1, F1 dhe F2 janë shuma të
-              plota me sasi 1.
+              plota me sasi 1. Të gjitha çmimet dhe vlerat e kësaj tabele jepen pa TVSH; TVSH 20% shtohet në
+              fund.
             </p>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[820px] text-left text-sm">
@@ -441,9 +442,9 @@ export default function NewOfferPage() {
                     <th className="px-3 py-2">Përshkrimi</th>
                     <th className="px-3 py-2">Njësia</th>
                     <th className="px-3 py-2 text-right">Sasia</th>
-                    <th className="px-3 py-2 text-right">Listë</th>
-                    <th className="px-3 py-2 text-right">Çmimi njësi</th>
-                    <th className="px-3 py-2 text-right">Vlera (ALL)</th>
+                    <th className="px-3 py-2 text-right">Listë pa TVSH</th>
+                    <th className="px-3 py-2 text-right">Çmimi njësi pa TVSH</th>
+                    <th className="px-3 py-2 text-right">Vlera pa TVSH</th>
                   </tr>
                 </thead>
                 <tbody>

@@ -59,7 +59,13 @@ export function CataloguePicker({
   /** "Falas" rows have no figure to discount: they ride along with another test. */
   const isFree = (test: CatalogueTest) => !/\d/.test(test.priceLabel);
   const quoted = (test: CatalogueTest) => (isFree(test) ? 0 : unitPrice(values, test.code, test.price));
-  const quantityOf = (code: string) => Math.max(0, Number(quantities[code] ?? 0) || 0);
+  // Blank is one, as labQuantity() reads it, so the figures on screen are the
+  // figures the document will carry.
+  const quantityOf = (code: string) => {
+    const typed = quantities[code];
+    if (typed === undefined || typed === "") return 1;
+    return Math.max(0, Number(typed) || 0);
+  };
 
   const groups = useMemo(() => {
     const needle = search.trim().toLocaleLowerCase("sq-AL");
@@ -93,7 +99,9 @@ export function CataloguePicker({
           </h2>
           <p className="mt-1 text-xs leading-5 text-muted">
             Zgjidh testimet që do të përfshihen. Të pazgjedhurat hiqen nga oferta; grupi pa asnjë testim të
-            zgjedhur hiqet i gjithi. Pa zgjedhur asgjë, dërgohet katalogu i plotë.
+            zgjedhur hiqet i gjithi. Pa zgjedhur asgjë, dërgohet katalogu i plotë. Çdo çmim shkruhet dhe
+            lexohet pa TVSH; vlera me TVSH 20% shfaqet nën kutinë e çmimit dhe shkruhet vetë në ofertë.
+            Sasia bosh do të thotë 1.
             {discount > 0
               ? ` Zbritja prej ${money(discount)}% është zbatuar mbi çdo çmim; shkruaj një çmim mbi rreshtin për ta caktuar vetë.`
               : " Shkruaj një çmim mbi rreshtin për ta caktuar vetë, ose vendos një zbritje te «Çmimet»."}
@@ -106,7 +114,7 @@ export function CataloguePicker({
           {priced ? (
             <>
               <div className="text-muted">
-                Nëntotali: <span className="font-semibold tabular-nums text-ink">{money(subtotal)} ALL</span>
+                Nëntotali (pa TVSH): <span className="font-semibold tabular-nums text-ink">{money(subtotal)} ALL</span>
               </div>
               {atList > subtotal ? (
                 <div className="text-xs text-emerald-700">
@@ -181,10 +189,10 @@ export function CataloguePicker({
                     <th className="px-2 py-1">Testi</th>
                     <th className="w-16 px-2 py-1 text-center">Akr.</th>
                     <th className="w-24 px-2 py-1">Njësia</th>
-                    <th className="w-24 px-2 py-1 text-right">Listë</th>
-                    <th className="w-28 px-2 py-1 text-right">Çmimi /njësi</th>
+                    <th className="w-24 px-2 py-1 text-right">Listë pa TVSH</th>
+                    <th className="w-28 px-2 py-1 text-right">Çmimi /njësi pa TVSH</th>
                     <th className="w-20 px-2 py-1 text-right">Sasia</th>
-                    <th className="w-28 px-2 py-1 text-right">Vlera</th>
+                    <th className="w-28 px-2 py-1 text-right">Vlera pa TVSH</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -244,7 +252,9 @@ export function CataloguePicker({
                               type="number"
                               min={0}
                               value={quantities[test.code] ?? ""}
+                              placeholder="1"
                               onChange={(event) => onQuantity(test.code, event.target.value)}
+                              title="Bosh = 1"
                             />
                           ) : null}
                         </td>
