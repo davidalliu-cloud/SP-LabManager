@@ -71,11 +71,14 @@ export const OFFER_FIELD_INFO: Record<string, string> = {
     "Kush sigurohet uji i shpimit, në kushtet e pikës 7. «Përfshihet në çmim» e shton në fjali; përndryshe mbetet detyrim i klientit.",
 
   /* ------------------------------------------------------------ the team */
-  qualityManager: "Emri në rreshtin «Menaxheri i cilësisë» të tabelës së ekipit, pika 1.2.",
-  clientCoordinator: "Emri në rreshtin «Koordinatori i klientit» të tabelës së ekipit, pika 1.2.",
-  technicianCount:
-    "Sa inxhinierë dhe teknikë laboratori ka ekipi. Shkruhet si numër në rreshtin e fundit të tabelës së ekipit, pika 1.2.",
-  projectCoordinator: "Emri në rreshtin «Koordinator i projektit» të tabelës së ekipit, pika 4.",
+  qualityManager:
+    "Emri në rreshtin «Menaxheri i cilësisë» të tabelës së ekipit, pika 1.2. Mbushet vetë me atë që mban rolin «Quality Manager» te Punonjësit; ndryshoje nga lista kur e kryen dikush tjetër.",
+  clientCoordinator:
+    "Emri në rreshtin «Koordinatori i klientit» të tabelës së ekipit, pika 1.2 — pika e vetme e kontaktit për klientin. Mbushet vetë me Shefen e Laboratorit; ndryshoje nga lista kur e mban dikush tjetër.",
+  technicians:
+    "Kush do të punojë në këtë objekt. Shëno një ose të gjithë; emrat e tyre shkruhen në rreshtin «Inxhinierë dhe teknikë laboratori» të tabelës së ekipit, pika 1.2, në kolonën «Emri». Lista vjen nga Punonjësit dhe përmban inxhinierët e laboratorit dhe teknikët. Pa asnjë të shënuar, rreshti del bosh.",
+  projectCoordinator:
+    "Emri në rreshtin «Koordinator i projektit» të tabelës së ekipit, pika 4. Mbushet vetë me Shefen e Laboratorit; ndryshoje nga lista kur e mban dikush tjetër.",
   geologist: "Emri në rreshtin «Inxhinier gjeolog» të tabelës së ekipit, pika 4.",
   surveyor: "Emri në rreshtin «Topograf / hartograf» të tabelës së ekipit, pika 4.",
 

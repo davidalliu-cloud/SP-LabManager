@@ -19,7 +19,7 @@
 
 export type OfferKind = "lab" | "geotech";
 
-export type OfferFieldKind = "text" | "longtext" | "date" | "number" | "choice";
+export type OfferFieldKind = "text" | "longtext" | "date" | "number" | "choice" | "people";
 
 export interface OfferField {
   key: string;
@@ -145,11 +145,12 @@ const LAB_FIELDS: OfferField[] = [
   { key: "qualityManager", label: "Menaxheri i cilësisë", kind: "text", group: "Ekipi" },
   { key: "clientCoordinator", label: "Koordinatori i klientit", kind: "text", group: "Ekipi" },
   {
-    key: "technicianCount",
+    key: "technicians",
+    // The column this lands in is "Emri", so it takes the names of the people
+    // who will do the work, not a headcount.
     label: "Inxhinierë dhe teknikë laboratori",
-    kind: "number",
-    group: "Ekipi",
-    value: "4"
+    kind: "people",
+    group: "Ekipi"
   },
 
   {
@@ -225,7 +226,7 @@ const LAB_REPLACEMENTS: OfferReplacement[] = [
   },
   // Three bare markers, and the middle one is not an offer number: the team
   // table counts technicians with the same `[nr]`.
-  { find: "[nr]", fields: ["offerNumber", "technicianCount", "offerNumber"] },
+  { find: "[nr]", fields: ["offerNumber", "technicians", "offerNumber"] },
   { find: "[emri i klientit]", field: "clientName" },
   { find: "[përshtat]", text: "" },
 

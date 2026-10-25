@@ -16,6 +16,7 @@ import {
   type OfferKind
 } from "@/lib/offer-fields";
 import {
+  encodeDirectory,
   geotechBoq,
   geotechFixedLines,
   geotechLabProgramme,
@@ -134,6 +135,11 @@ export default function NewOfferPage() {
     setDone("");
   }, [kind, reopening]);
 
+  // The lab already knows who holds these roles, and asking again every time
+  // is how a field ends up blank on a document that goes to a client. Only
+  // blanks are filled, so a name chosen from the dropdown stands. This waits
+  // on the employee register rather than on the form, because the register
+  // arrives after the first render.
   const set = (key: string, value: string) => {
     setDraft((previous) => ({ ...previous, [key]: value }));
     setDone("");
@@ -147,10 +153,45 @@ export default function NewOfferPage() {
     () => store.projects.filter((project) => project.clientId === clientId),
     [store.projects, clientId]
   );
-  const staff = useMemo(
-    () => store.users.filter((user) => user.isActive !== false).map((user) => user.fullName),
-    [store.users]
+  const active = useMemo(() => store.users.filter((user) => user.isActive !== false), [store.users]);
+  const staff = useMemo(() => active.map((user) => user.fullName), [active]);
+
+  /**
+   * The people who can be put on a job: the engineers and technicians, which
+   * is exactly what the row in the team table is called.
+   */
+  const operatives = useMemo(
+    () =>
+      active
+        .filter((user) => ["Lab Engineer", "Technician", "Chief Technician"].includes(user.role))
+        .map((user) => user.fullName),
+    [active]
   );
+
+  /** The holder of a role, by name, or an empty string when nobody holds it. */
+  const holderOf = (role: string) => active.find((user) => user.role === role)?.fullName ?? "";
+
+  // The lab already knows who holds these roles, and asking again every time
+  // is how a field ends up blank on a document that goes to a client. Only
+  // blanks are filled, so a name chosen from the dropdown stands. It waits on
+  // the employee register rather than on the form, because the register
+  // arrives after the first render.
+  useEffect(() => {
+    if (reopening || !active.length) return;
+    setDraft((previous) => {
+      const next = { ...previous };
+      if (next.qualityManager !== undefined && !next.qualityManager) {
+        next.qualityManager = holderOf("Quality Manager");
+      }
+      // The coordinator is the Chief of Lab unless she names someone else.
+      for (const key of ["clientCoordinator", "projectCoordinator"]) {
+        if (next[key] !== undefined && !next[key]) next[key] = holderOf("Chief of Lab");
+      }
+      return next;
+    });
+    // holderOf is derived from `active`, which is the real dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, kind, reopening]);
 
   function pickClient(id: string) {
     setClientId(id);
@@ -187,7 +228,7 @@ export default function NewOfferPage() {
 
   /** The draft plus everything held outside it, as the route wants it. */
   function assembleValues(): OfferValues {
-    const values: OfferValues = { ...draft };
+    const values: OfferValues = { ...draft, directory: encodeDirectory(active) };
     if (kind === "geotech") {
       for (const row of boq) values[`qty.${row.code}`] = String(row.quantity);
       for (const row of programme) values[row.key] = String(row.quantity);
@@ -390,6 +431,7 @@ export default function NewOfferPage() {
                   field={field}
                   value={draft[field.key] ?? ""}
                   staff={staffKeys.has(field.key) ? staff : undefined}
+                  people={field.kind === "people" ? operatives : undefined}
                   onChange={(value) => set(field.key, value)}
                 />
               ))}
@@ -577,6 +619,60 @@ export default function NewOfferPage() {
   );
 }
 
+/**
+ * Several people on one line.
+ *
+ * The team table has a single row for the engineers and technicians, so
+ * whoever is on this job is ticked here and their names go into that row.
+ * Kept as one comma-separated string, because that is both what the document
+ * prints and what the register stores.
+ */
+function PeoplePicker({
+  names,
+  value,
+  onChange
+}: {
+  names: string[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const chosen = value
+    .split(",")
+    .map((name) => name.trim())
+    .filter(Boolean);
+
+  function toggle(name: string) {
+    const next = chosen.includes(name) ? chosen.filter((item) => item !== name) : [...chosen, name];
+    // Written back in register order, so two offers never list the same team
+    // in a different order depending on what was ticked first.
+    onChange(names.filter((item) => next.includes(item)).join(", "));
+  }
+
+  if (!names.length) {
+    return (
+      <p className="text-xs font-normal leading-5 text-muted">
+        Asnjë inxhinier ose teknik laboratori në regjistrin e punonjësve.
+      </p>
+    );
+  }
+
+  return (
+    <div className="rounded-md border border-lab-mist p-2">
+      <div className="max-h-40 space-y-1 overflow-y-auto">
+        {names.map((name) => (
+          <label key={name} className="flex items-center gap-2 text-sm font-normal text-ink">
+            <input type="checkbox" checked={chosen.includes(name)} onChange={() => toggle(name)} />
+            {name}
+          </label>
+        ))}
+      </div>
+      <div className="mt-2 border-t border-line pt-2 text-xs font-normal text-muted">
+        {chosen.length > 0 ? `${chosen.length} të zgjedhur` : "Asnjë i zgjedhur — rreshti del bosh"}
+      </div>
+    </div>
+  );
+}
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block text-sm font-medium text-ink">
@@ -590,12 +686,15 @@ function FieldInput({
   field,
   value,
   staff,
+  people,
   onChange
 }: {
   field: OfferField;
   value: string;
   /** Employee names, when the field names a role, so it is picked not typed. */
   staff?: string[];
+  /** Those who can be put on a job, when the field takes several of them. */
+  people?: string[];
   onChange: (value: string) => void;
 }) {
   const label = field.unit ? `${field.label} (${field.unit})` : field.label;
@@ -608,6 +707,8 @@ function FieldInput({
       <div className="mt-1">
         {field.readOnly ? (
           <input className="input bg-lab-porcelain font-semibold" value={value} readOnly />
+        ) : field.kind === "people" ? (
+          <PeoplePicker names={people ?? []} value={value} onChange={onChange} />
         ) : field.kind === "choice" && field.options ? (
           <select className="input" value={value} onChange={(event) => onChange(event.target.value)}>
             {field.options.map((option) => (

@@ -46,6 +46,7 @@ import {
   pruneCatalogue,
   replaceSentence,
   writeBillOfQuantities,
+  writeContacts,
   writeCatalogueQuantities,
   writeCataloguePrices
 } from "./offer-tables";
@@ -53,6 +54,32 @@ import {
 export type OfferValues = Record<string, string>;
 
 const VAT_RATE = 0.2;
+
+/**
+ * The employee directory, as the form carries it.
+ *
+ * The route has no access to the register — it is handed everything it needs —
+ * so the names and addresses travel with the offer, as "Name=address" pairs.
+ * They are stored with it too, which is right: the contacts printed on an
+ * offer are the contacts that offer went out with, whoever has left since.
+ */
+export function encodeDirectory(people: { fullName: string; email: string }[]): string {
+  return people
+    .filter((person) => person.fullName.trim() && person.email.trim())
+    .map((person) => `${person.fullName.trim()}=${person.email.trim()}`)
+    .join(";");
+}
+
+/** Lower-cased name to address, for matching the names printed in the table. */
+export function decodeDirectory(values: OfferValues): Map<string, string> {
+  const byName = new Map<string, string>();
+  for (const entry of String(values.directory ?? "").split(";")) {
+    const at = entry.indexOf("=");
+    if (at <= 0) continue;
+    byName.set(entry.slice(0, at).trim().toLocaleLowerCase("sq-AL"), entry.slice(at + 1).trim());
+  }
+  return byName;
+}
 
 /* ------------------------------------------- the laboratory test selection */
 
@@ -447,6 +474,16 @@ export function fillOfferDocument(xml: string, kind: OfferKind, values: OfferVal
   });
 
   const discount = discountPercent(values);
+
+  // Both templates print the lab's general inbox against every name in the
+  // contacts table, so a client replying to the offer reaches nobody in
+  // particular.
+  const directory = decodeDirectory(values);
+  if (directory.size) {
+    const contacts = writeContacts(working, directory);
+    working = contacts.xml;
+    warnings.push(...contacts.warnings);
+  }
 
   // The tables come last, once every marker in them has been resolved: pruning
   // or repricing first would lose rows the declared counts still expect.

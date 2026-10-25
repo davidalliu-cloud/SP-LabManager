@@ -280,6 +280,49 @@ export function writeBillOfQuantities(xml: string, lines: BillLine[]): OrderForm
   return { xml: next, warnings };
 }
 
+/** True for the "Kontaktet për këtë ofertë" table of either template. */
+function isContactTable(table: string) {
+  const first = rowsOf(table)[0];
+  if (!first) return false;
+  const header = cellsOf(first).map(cellText);
+  return header.length === 4 && header[0] === "Inicialet" && header[3] === "Kontakti";
+}
+
+/**
+ * Put each person's own address in the contacts table.
+ *
+ * Both templates print `info@sarpandlab.al` against every name, which is the
+ * lab's general inbox: a client replying to an offer reaches nobody in
+ * particular, and the two people named are exactly the two who should hear
+ * back. Rows are matched on the name already printed, so a person the register
+ * has no address for keeps the inbox rather than losing a contact entirely.
+ *
+ * The same address in the order-form instruction is left alone — an order
+ * genuinely should go to the shared inbox, not to one person's mail.
+ */
+export function writeContacts(xml: string, byName: Map<string, string>): OrderFormResult {
+  const warnings: string[] = [];
+  let found = false;
+  let matched = 0;
+
+  const next = mapParts(xml, TABLE, (table) => {
+    if (!isContactTable(table)) return table;
+    found = true;
+    return mapParts(table, ROW, (row) => {
+      const cells = cellsOf(row);
+      if (cells.length !== 4) return row;
+      const email = byName.get(cellText(cells[1]).toLocaleLowerCase("sq-AL"));
+      if (!email) return row;
+      matched += 1;
+      return mapParts(row, CELL, (cell, index) => (index === 3 ? setCellText(cell, email) : cell));
+    });
+  });
+
+  if (!found) warnings.push("Tabela e kontakteve nuk u gjet.");
+  else if (!matched) warnings.push("Asnjë nga emrat e tabelës së kontakteve nuk u njoh nga regjistri i punonjësve.");
+  return { xml: next, warnings };
+}
+
 export interface OrderLine {
   code: string;
   description: string;
