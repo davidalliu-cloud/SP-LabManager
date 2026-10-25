@@ -146,6 +146,18 @@ export function canManageEmployees(role?: Role) {
   return isSuperAdmin(role) || role === "Chief of Lab";
 }
 
+/**
+ * Who may price work and send an offer out.
+ *
+ * Commercial terms, not lab work: the discounts, the payment milestones and
+ * the bill of quantities commit the company, so this stays with the Managing
+ * Director and the Chief of Lab even though a Lab Engineer may do everything
+ * else on a sample.
+ */
+export function canGenerateOffers(role?: Role) {
+  return isSuperAdmin(role) || role === "Chief of Lab";
+}
+
 export function canDeleteSamples(role?: Role) {
   return isSuperAdmin(role) || role === "Chief of Lab";
 }

@@ -10,7 +10,7 @@ import { SaveStatus } from "@/components/layout/save-status";
 import { useAuth } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { useLabStore } from "@/lib/lab-store";
-import { canViewClientIdentity, isTechnicianRole } from "@/lib/permissions";
+import { canGenerateOffers, canViewClientIdentity, isTechnicianRole } from "@/lib/permissions";
 
 /**
  * The sidebar. A plain entry is [label, href]; a group carries its own entries
@@ -39,6 +39,7 @@ const navItems: readonly NavNode[] = [
   ["nav.employees", "/employees"],
   ["nav.delayedItems", "/delayed"],
   ["nav.monthlySummary", "/monthly-summary"],
+  ["nav.offers", "/offers"],
   {
     label: "nav.quality",
     prefix: "/quality",
@@ -66,6 +67,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isTechRoute = pathname === "/tech" || pathname.startsWith("/tech/");
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
   const showClientIdentityNav = canViewClientIdentity(currentUser?.role);
+  const showOffersNav = canGenerateOffers(currentUser?.role);
   const isTechnician = isTechnicianRole(currentUser?.role);
 
   // Technician-role employees are mobile-only: their entire job is completing the
@@ -142,6 +144,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
         <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-5">
           {navItems
+            .filter((node) => isGroup(node) || showOffersNav || node[1] !== "/offers")
             .filter((node) => isGroup(node) || showClientIdentityNav || !["/clients", "/projects"].includes(node[1]))
             .map((node) =>
               isGroup(node) ? (

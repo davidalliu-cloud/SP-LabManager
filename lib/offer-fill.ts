@@ -1,0 +1,309 @@
+/**
+ * Filling an offer template.
+ *
+ * The output is the template itself with the markers replaced — same branding,
+ * same tables, same table of contents — so what the client receives is the
+ * Word file David already approved, and he can still edit it before sending.
+ * That rules out redrawing the offer as HTML, and it means everything here is
+ * string work on `word/document.xml`.
+ *
+ * Two details decide whether the result looks professional or looks filled in:
+ *
+ *   - Every marker sits in its own run carrying `<w:highlight w:val="yellow"/>`
+ *     with bold and burgundy. Left alone, a finished offer would be a page of
+ *     yellow boxes, so a filled run loses exactly those four properties and
+ *     ends up matching the plain runs beside it.
+ *   - A marker that resolves to nothing has its whole run deleted, and the
+ *     space that preceded it goes with it — otherwise deleting a note leaves
+ *     "kombëtare ." behind. When the marker opened the paragraph there is no
+ *     preceding space to take, and the full stop that followed it is dropped
+ *     instead.
+ *
+ * Nothing here trusts the declaration blindly: `fillOfferDocument` reports
+ * every marker it could not account for, and the route refuses to return a
+ * document when anything bracketed survives.
+ */
+
+import {
+  GEOTECH_BOQ,
+  GEOTECH_FIXED_TOTAL,
+  GEOTECH_LAB_PROGRAMME,
+  OFFER_TEMPLATES,
+  albanianDate,
+  money,
+  type OfferKind,
+  type OfferTemplate
+} from "./offer-fields";
+
+export type OfferValues = Record<string, string>;
+
+const VAT_RATE = 0.2;
+
+/** A number typed into the form, or 0 when it is blank or not a number. */
+export function numberOf(values: OfferValues, key: string): number {
+  const parsed = Number(String(values[key] ?? "").replace(/[^\d.-]/g, ""));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+export interface BoqRow {
+  code: string;
+  description: string;
+  unit: string;
+  price: number;
+  quantity: number;
+  value: number;
+}
+
+/** Section 10.1 with the quantities the form holds, or the derived defaults. */
+export function geotechBoq(values: OfferValues): BoqRow[] {
+  const get = (key: string) => numberOf(values, key);
+  return GEOTECH_BOQ.map((line) => {
+    const typed = values[`qty.${line.code}`];
+    const quantity = typed === undefined || typed === "" ? line.derive(get) : numberOf(values, `qty.${line.code}`);
+    return { ...line, quantity, value: quantity * line.price };
+  });
+}
+
+/** Section 2.1, the orientative laboratory programme, with its quantities. */
+export function geotechLabProgramme(values: OfferValues): { key: string; label: string; quantity: number }[] {
+  const get = (key: string) => numberOf(values, key);
+  return GEOTECH_LAB_PROGRAMME.map((row) => {
+    const typed = values[row.key];
+    return {
+      key: row.key,
+      label: row.label,
+      quantity: typed === undefined || typed === "" ? row.derive(get) : numberOf(values, row.key)
+    };
+  });
+}
+
+const LAB_PROGRAMME_KEYS = new Set(GEOTECH_LAB_PROGRAMME.map((row) => row.key));
+
+export interface OfferTotals {
+  subtotal: number;
+  vat: number;
+  total: number;
+}
+
+export function geotechTotals(values: OfferValues): OfferTotals {
+  const variable = geotechBoq(values).reduce((sum, row) => sum + row.value, 0);
+  const subtotal = GEOTECH_FIXED_TOTAL + variable;
+  const vat = subtotal * VAT_RATE;
+  return { subtotal, vat, total: subtotal + vat };
+}
+
+/**
+ * What a replacement key is worth.
+ *
+ * Keys beginning `@` are computed; the rest come straight from the form. A
+ * missing key resolves to the empty string, which deletes its run — a field
+ * left blank should leave no trace, not an empty yellow box.
+ */
+export function resolveOfferValue(template: OfferTemplate, values: OfferValues, key: string): string {
+  if (LAB_PROGRAMME_KEYS.has(key)) {
+    const row = geotechLabProgramme(values).find((item) => item.key === key);
+    return row ? money(row.quantity) : "";
+  }
+  if (!key.startsWith("@")) return String(values[key] ?? "").trim();
+
+  if (key === "@offerRef") return `SL-OF-${String(values.offerNumber ?? "").trim()}/2026`;
+  if (key === "@offerDate") return albanianDate(String(values.offerDate ?? ""));
+  if (key === "@priceValidity") return albanianDate(String(values.priceValidity ?? ""));
+  if (key === "@frameworkThreshold") return money(numberOf(values, "frameworkThreshold"));
+  if (key === "@zoneOutside") return `jashtë zonës ${String(values.transportZone ?? "").trim()}`;
+
+  if (template.kind === "geotech") {
+    if (key === "@totalMetres") return money(numberOf(values, "boreholeCount") * numberOf(values, "boreholeDepth"));
+
+    const totals = geotechTotals(values);
+    if (key === "@subtotal") return money(totals.subtotal);
+    if (key === "@vat") return money(totals.vat);
+    if (key === "@totalWithVat") return money(totals.total);
+
+    const quantity = /^@qty\.(.+)$/.exec(key);
+    const lineValue = /^@value\.(.+)$/.exec(key);
+    if (quantity || lineValue) {
+      const code = (quantity ?? lineValue)![1];
+      const row = geotechBoq(values).find((item) => item.code === code);
+      if (!row) return "";
+      return money(quantity ? row.quantity : row.value);
+    }
+  }
+
+  return "";
+}
+
+/* ---------------------------------------------------------------- xml bits */
+
+const escapeXml = (text: string) =>
+  text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+const FIELD_RUN = '<w:highlight w:val="yellow"/>';
+
+/** The four properties that mark a run as "fill me in". */
+function clearFieldStyling(run: string) {
+  return run
+    .replace(/<w:highlight w:val="yellow"\/>/g, "")
+    .replace(/<w:b\/>/g, "")
+    .replace(/<w:bCs\/>/g, "")
+    .replace(/<w:color w:val="7A0000"\/>/g, "")
+    .replace(/<w:rPr><\/w:rPr>/g, "");
+}
+
+/** The `<w:r>` opening tag at or before `at`, skipping `<w:rPr>` and friends. */
+function runStartBefore(xml: string, at: number) {
+  let index = at + 4;
+  for (;;) {
+    index = xml.lastIndexOf("<w:r", index - 1);
+    if (index < 0) return -1;
+    const next = xml.charAt(index + 4);
+    if (next === ">" || next === " ") return index;
+  }
+}
+
+/**
+ * Replace each occurrence of `find`, in document order, with whatever
+ * `valueAt` returns for that occurrence. Returning `null` leaves the
+ * occurrence alone, which is how a declaration that names fewer fields than
+ * there are occurrences gets reported rather than silently filling the rest.
+ */
+function replaceMarker(xml: string, find: string, valueAt: (index: number) => string | null) {
+  let out = "";
+  let cursor = 0;
+  let index = 0;
+
+  for (;;) {
+    const at = xml.indexOf(find, cursor);
+    if (at < 0) break;
+
+    const value = valueAt(index);
+    index += 1;
+
+    if (value === null) {
+      out += xml.slice(cursor, at + find.length);
+      cursor = at + find.length;
+      continue;
+    }
+
+    const runStart = runStartBefore(xml, at);
+    const runEnd = xml.indexOf("</w:r>", at);
+
+    // A marker outside a run, or sharing a run with an earlier replacement, is
+    // substituted as plain text: no styling to clear and no run to delete.
+    if (runStart < cursor || runEnd < 0) {
+      out += xml.slice(cursor, at) + escapeXml(value);
+      cursor = at + find.length;
+      continue;
+    }
+
+    const runAfter = runEnd + "</w:r>".length;
+    const run = xml.slice(runStart, runAfter);
+    const isFieldRun = run.includes(FIELD_RUN);
+    out += xml.slice(cursor, runStart);
+    cursor = runAfter;
+
+    if (value !== "") {
+      const filled = run.replace(find, escapeXml(value));
+      out += isFieldRun ? clearFieldStyling(filled) : filled;
+      continue;
+    }
+
+    // Nothing to say: drop the run, and take the space in front of it with it.
+    const trimmed = out.replace(/ (<\/w:t><\/w:r>)$/, "$1");
+    if (trimmed !== out) {
+      out = trimmed;
+      continue;
+    }
+
+    // There was no space, so the marker opened its paragraph and the
+    // punctuation that followed it would now open the sentence. Step over
+    // that punctuation by copying the next run's opening tags without it.
+    const opening = /^(<w:r(?:\s[^>]*)?>(?:<w:rPr>[\s\S]*?<\/w:rPr>)?<w:t(?:\s[^>]*)?>)[.,;:]\s+/.exec(
+      xml.slice(cursor)
+    );
+    if (opening) {
+      out += opening[1];
+      cursor += opening[0].length;
+    }
+  }
+
+  return { xml: out + xml.slice(cursor), count: index };
+}
+
+export interface FillResult {
+  xml: string;
+  /** Markers the declaration did not account for, and counts that did not match. */
+  warnings: string[];
+}
+
+/**
+ * Fill `word/document.xml` for one offer.
+ *
+ * Declared replacements run first, longest-wrapped markers before the bare
+ * ones. Whatever field run survives that is a price in the catalogue: the
+ * brackets come off and the yellow goes, which is the whole of what the price
+ * list needs. Anything left bracketed after that is reported.
+ */
+export function fillOfferDocument(xml: string, kind: OfferKind, values: OfferValues): FillResult {
+  const template = OFFER_TEMPLATES[kind];
+  const warnings: string[] = [];
+  let working = xml;
+
+  for (const replacement of template.replacements) {
+    const expected = "fields" in replacement ? replacement.fields.length : null;
+
+    const valueAt = (index: number): string | null => {
+      if ("text" in replacement) return replacement.text;
+      if ("field" in replacement) return resolveOfferValue(template, values, replacement.field);
+      const key = replacement.fields[index];
+      return key === undefined ? null : resolveOfferValue(template, values, key);
+    };
+
+    const result = replaceMarker(working, replacement.find, valueAt);
+    working = result.xml;
+
+    if (result.count === 0) {
+      warnings.push(`Shënuesi "${replacement.find}" nuk u gjet në shabllon.`);
+    } else if (expected !== null && result.count !== expected) {
+      warnings.push(
+        `Shënuesi "${replacement.find}" shfaqet ${result.count} herë, ndërsa pritej ${expected} herë.`
+      );
+    }
+  }
+
+  // The price catalogue, and the safety net: no yellow bracket reaches a client.
+  working = working.replace(/<w:r(?:\s[^>]*)?>[\s\S]*?<\/w:r>/g, (run) => {
+    if (!run.includes(FIELD_RUN)) return run;
+    const stripped = clearFieldStyling(run).replace(
+      /(<w:t(?:\s[^>]*)?>)\[([^[\]]*)\](<\/w:t>)/,
+      "$1$2$3"
+    );
+    const inner = /<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/.exec(run);
+    const text = inner ? inner[1] : "";
+    if (!/^\[[\d,.\s]*\]$/.test(text)) {
+      warnings.push(`Shënuesi "${text}" nuk kishte vlerë të caktuar dhe u lanë vetëm kllapat jashtë.`);
+    }
+    return stripped;
+  });
+
+  return { xml: working, warnings };
+}
+
+/** Any bracketed marker still in the document text, for the final check. */
+export function remainingMarkers(xml: string): string[] {
+  const found = new Set<string>();
+  for (const match of xml.matchAll(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g)) {
+    for (const marker of match[1].matchAll(/\[[^[\]]{1,120}\]/g)) found.add(marker[0]);
+  }
+  return [...found];
+}
+
+/** The download name, with the offer number and client in it. */
+export function offerFileName(kind: OfferKind, values: OfferValues): string {
+  const client = String(values.clientName ?? "").trim() || "Klient";
+  const number = String(values.offerNumber ?? "").trim() || "XXX";
+  return OFFER_TEMPLATES[kind].download
+    .replace("{nr}", number)
+    .replace("{klienti}", client)
+    .replace(/[\\/:*?"<>|]/g, "-");
+}
