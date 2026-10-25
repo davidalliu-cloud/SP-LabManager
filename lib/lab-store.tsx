@@ -76,7 +76,7 @@ import {
 } from "./calculations";
 import { useAuth } from "./auth";
 import { officialClientCodes2026 } from "./client-directory";
-import { canAssignSampleClient, canDeleteSamples, canEditSampleAfterRegistration, canEditTestData, canReviewTests, canGenerateReportForTest, canAmendEnvironment, canCloseNonconformity, canManageClients, canManageEmployees, canManageEquipment, canRaiseNonconformity, canRecordEnvironment, canRewriteSample, isSampleLocked } from "./permissions";
+import { canAssignSampleClient, canDeleteSamples, canGenerateOffers, canEditSampleAfterRegistration, canEditTestData, canReviewTests, canGenerateReportForTest, canAmendEnvironment, canCloseNonconformity, canManageClients, canManageEmployees, canManageEquipment, canRaiseNonconformity, canRecordEnvironment, canRewriteSample, isSampleLocked } from "./permissions";
 import { isFieldSampleType } from "./field-register";
 import { properName } from "./proper-case";
 import { worksheetPerformerId } from "./worksheets";
@@ -107,7 +107,7 @@ import { mergeProceduresWithSeed, proceduresForPersistence } from "./procedures"
 import { procedureSeed } from "./procedure-seed";
 import { createSupabaseBrowserClient } from "./supabase/client";
 import { pushAuditEntries, pushNotifications } from "./activity-log";
-import type { AdmixtureTest, AdmixtureDensityRun, AdmixtureDryMassRun, AdmixtureWaterMixRun, AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltMixtureKind, AsphaltReportKind, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ClientAnalysisRecord, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabState, LabTest, LabUser, MasonryUnitTest, MortarTest, PavingElementKind, PavingElementTest, WaterAnalysisTest, SclerometerTest, MortarTestKind, Notification, Project, Report, Role, Sample, SampleStatus, SteelTensileTest, ThermalInsulationTest } from "./types";
+import type { AdmixtureTest, AdmixtureDensityRun, AdmixtureDryMassRun, AdmixtureWaterMixRun, AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltMixtureKind, AsphaltReportKind, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ClientAnalysisRecord, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabState, LabTest, LabUser, MasonryUnitTest, MortarTest, PavingElementKind, PavingElementTest, WaterAnalysisTest, SclerometerTest, MortarTestKind, Notification, OfferRecord, OfferStatus, Project, Report, Role, Sample, SampleStatus, SteelTensileTest, ThermalInsulationTest } from "./types";
 
 export interface NewSampleInput {
   clientId: string;
@@ -1153,6 +1153,29 @@ interface LabStoreValue extends LabState {
   submitProcedureRevision: (revisionId: string) => void;
   approveProcedureRevision: (revisionId: string) => void;
   rejectProcedureRevision: (revisionId: string, comments: string) => void;
+  /** The next free number in SL-OF-<nr>/2026, for the year given. */
+  nextOfferNumber: (year?: number) => string;
+  /** Files a generated offer in the register, or updates one already there. */
+  saveOffer: (input: OfferInput) => string | undefined;
+  setOfferStatus: (id: string, status: OfferStatus, notes?: string) => void;
+  removeOffer: (id: string) => void;
+  /** Adds a project to a client already in the register, returning its id. */
+  createProjectForClient: (clientId: string, projectName: string, location: string) => string | undefined;
+}
+
+export interface OfferInput {
+  /** Set to overwrite an offer already in the register. */
+  id?: string;
+  offerNumber: string;
+  kind: "lab" | "geotech";
+  clientId?: string;
+  clientName: string;
+  projectName: string;
+  location?: string;
+  offerDate: string;
+  totalExVat?: number;
+  totalIncVat?: number;
+  values: Record<string, string>;
 }
 
 const LabStoreContext = createContext<LabStoreValue | null>(null);
@@ -1485,6 +1508,7 @@ function mergeWithInitialState(saved: Partial<LabState>): LabState {
     proficiencyTests: saved.proficiencyTests ?? initialState.proficiencyTests,
     auditEntries: saved.auditEntries ?? initialState.auditEntries,
     clientAnalyses: saved.clientAnalyses ?? initialState.clientAnalyses,
+    offers: saved.offers ?? initialState.offers,
     equipment: isSupersededEquipmentShape(saved.equipment)
       ? initialState.equipment
       : mergeEquipmentWithSeed(saved.equipment, initialState.equipment),
@@ -5048,6 +5072,125 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           addAudit(draft, "procedure_revision_rejected", "procedure_revision", revisionId, `${procedure.code} revision ${revision.revision} rejected.`);
           return draft;
         });
+      },
+
+      /**
+       * The next offer number, counted within its year.
+       *
+       * Offers are numbered SL-OF-0142/2026 and the year is part of the
+       * reference, so the count restarts rather than running on from the last
+       * year's total. Gaps are left alone: the highest number issued decides
+       * the next one, because reusing a number would put two different offers
+       * under one reference.
+       */
+      nextOfferNumber(year = new Date().getFullYear()) {
+        const highest = state.offers
+          .filter((offer) => offer.offerDate.startsWith(String(year)))
+          .map((offer) => Number(offer.offerNumber.replace(/\D/g, "")))
+          .filter((value) => Number.isFinite(value))
+          .reduce((top, value) => Math.max(top, value), 0);
+        return String(highest + 1).padStart(4, "0");
+      },
+
+      saveOffer(input) {
+        if (!canGenerateOffers(currentRole)) return undefined;
+        const id = input.id ?? crypto.randomUUID();
+        setState((previous) => {
+          const existing = previous.offers.find((offer) => offer.id === id);
+          const record: OfferRecord = {
+            ...input,
+            id,
+            status: existing?.status ?? "Draft",
+            createdBy: existing?.createdBy ?? currentUserId,
+            createdAt: existing?.createdAt ?? new Date().toISOString(),
+            statusChangedAt: existing?.statusChangedAt,
+            notes: existing?.notes
+          };
+          const draft: LabState = {
+            ...previous,
+            offers: existing
+              ? previous.offers.map((offer) => (offer.id === id ? record : offer))
+              : [record, ...previous.offers],
+            auditLog: [...previous.auditLog]
+          };
+          addAudit(
+            draft,
+            existing ? "offer_regenerated" : "offer_created",
+            "offer",
+            id,
+            `Offer SL-OF-${record.offerNumber}/${record.offerDate.slice(0, 4)} for ${record.clientName} (${record.projectName}).`
+          );
+          return draft;
+        });
+        return id;
+      },
+
+      setOfferStatus(id, status, notes) {
+        if (!canGenerateOffers(currentRole)) return;
+        setState((previous) => {
+          const offer = previous.offers.find((row) => row.id === id);
+          if (!offer || (offer.status === status && notes === undefined)) return previous;
+          const draft: LabState = {
+            ...previous,
+            offers: previous.offers.map((row) =>
+              row.id === id
+                ? { ...row, status, statusChangedAt: new Date().toISOString(), notes: notes ?? row.notes }
+                : row
+            ),
+            auditLog: [...previous.auditLog]
+          };
+          addAudit(draft, "offer_status_changed", "offer", id, `Offer SL-OF-${offer.offerNumber} moved to ${status}.`);
+          return draft;
+        });
+      },
+
+      removeOffer(id) {
+        if (!canGenerateOffers(currentRole)) return;
+        setState((previous) => {
+          const offer = previous.offers.find((row) => row.id === id);
+          if (!offer) return previous;
+          const draft: LabState = {
+            ...previous,
+            offers: previous.offers.filter((row) => row.id !== id),
+            auditLog: [...previous.auditLog]
+          };
+          addAudit(draft, "offer_removed", "offer", id, `Offer SL-OF-${offer.offerNumber} removed from the register.`);
+          return draft;
+        });
+      },
+
+      /**
+       * A project under a client who is already on file.
+       *
+       * `createClient` makes a client and their first project together, which
+       * is no use when the client exists and it is only the object that is
+       * new — the common case for a second offer to the same contractor.
+       */
+      createProjectForClient(clientId, projectName, location) {
+        if (!canManageClients(currentRole)) return undefined;
+        const name = projectName.trim();
+        if (!name) return undefined;
+
+        const already = state.projects.find(
+          (project) =>
+            project.clientId === clientId &&
+            project.projectName.trim().toLocaleLowerCase("sq-AL") === name.toLocaleLowerCase("sq-AL")
+        );
+        if (already) return already.id;
+
+        const projectId = crypto.randomUUID();
+        setState((previous) => {
+          if (!previous.clients.some((client) => client.id === clientId)) return previous;
+          const project: Project = { id: projectId, clientId, projectName: name, location: location.trim() };
+          const draft: LabState = {
+            ...previous,
+            projects: [project, ...previous.projects],
+            auditLog: [...previous.auditLog]
+          };
+          addAudit(draft, "project_created", "project", projectId, `Project ${name} added for an existing client.`);
+          return draft;
+        });
+        return projectId;
       }
     };
   }, [state, currentUserId, currentRole, saveState]);

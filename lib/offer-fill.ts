@@ -26,6 +26,7 @@
 
 import {
   GEOTECH_BOQ,
+  DEFAULT_TRANSPORT_ZONE,
   GEOTECH_FIXED_TOTAL,
   GEOTECH_LAB_PROGRAMME,
   OFFER_TEMPLATES,
@@ -34,10 +35,88 @@ import {
   type OfferKind,
   type OfferTemplate
 } from "./offer-fields";
+import { OFFER_CATALOGUE, catalogueByCode } from "./offer-catalogue";
+import {
+  CATALOGUE_INTRO_SENTENCE,
+  ORDER_FORM_INTRO,
+  fillOrderForm,
+  pruneCatalogue,
+  replaceSentence,
+  writeCatalogueQuantities
+} from "./offer-tables";
 
 export type OfferValues = Record<string, string>;
 
 const VAT_RATE = 0.2;
+
+/* ------------------------------------------- the laboratory test selection */
+
+/**
+ * How the laboratory offer quotes its tests.
+ *
+ * "unit" leaves Section 9 as a price list and Section 12's order form blank
+ * for the client to fill — the right shape when the scope is not yet known and
+ * the client will order test by test. "quantity" quotes a specific job: the
+ * quantities go into Section 9 and the order form comes out priced and
+ * totalled.
+ */
+export type QuantityMode = "unit" | "quantity";
+
+export function quantityMode(values: OfferValues): QuantityMode {
+  return values.quantityMode === "quantity" ? "quantity" : "unit";
+}
+
+/** The ticked catalogue codes, in catalogue order. */
+export function selectedCodes(values: OfferValues): string[] {
+  const chosen = new Set(
+    String(values.codes ?? "")
+      .split(",")
+      .map((code) => code.trim())
+      .filter(Boolean)
+  );
+  return OFFER_CATALOGUE.filter((test) => chosen.has(test.code)).map((test) => test.code);
+}
+
+export interface LabLine {
+  code: string;
+  name: string;
+  unit: string;
+  price: number;
+  /** How the catalogue prints the price, which is "Falas" for the free tests. */
+  priceLabel: string;
+  quantity: number;
+  value: number;
+}
+
+/** The ticked tests with their quantities and line values. */
+export function labLines(values: OfferValues): LabLine[] {
+  // Three catalogue rows name the transport zone in their text, so when the
+  // offer quotes a different zone the order form has to say the same thing the
+  // price list does.
+  const zone = String(values.transportZone ?? "").trim();
+  const rezone = (text: string) =>
+    zone && zone !== DEFAULT_TRANSPORT_ZONE ? text.split(DEFAULT_TRANSPORT_ZONE).join(zone) : text;
+
+  return selectedCodes(values).map((code) => {
+    const test = catalogueByCode.get(code)!;
+    const quantity = Math.max(0, numberOf(values, `qty.${code}`));
+    return {
+      code,
+      name: rezone(test.name),
+      unit: test.unit,
+      price: test.price,
+      priceLabel: test.priceLabel,
+      quantity,
+      value: quantity * test.price
+    };
+  });
+}
+
+export function labTotals(values: OfferValues): OfferTotals {
+  const subtotal = labLines(values).reduce((sum, line) => sum + line.value, 0);
+  const vat = subtotal * VAT_RATE;
+  return { subtotal, vat, total: subtotal + vat };
+}
 
 /** A number typed into the form, or 0 when it is blank or not a number. */
 export function numberOf(values: OfferValues, key: string): number {
@@ -286,7 +365,72 @@ export function fillOfferDocument(xml: string, kind: OfferKind, values: OfferVal
     return stripped;
   });
 
+  // Section 9 and the order form come last, once every marker in them has been
+  // resolved: pruning first would lose rows the declared counts still expect.
+  if (kind === "lab") {
+    const codes = selectedCodes(values);
+    if (codes.length) {
+      const pruned = pruneCatalogue(working, new Set(codes));
+      working = pruned.xml;
+      warnings.push(...pruned.warnings);
+
+      if (quantityMode(values) === "quantity") {
+        const lines = labLines(values).filter((line) => line.quantity > 0);
+        working = writeCatalogueQuantities(
+          working,
+          new Map(lines.map((line) => [line.code, money(line.quantity)]))
+        );
+
+        const totals = labTotals(values);
+        const form = fillOrderForm(
+          working,
+          lines.map((line) => ({
+            code: line.code,
+            description: line.name,
+            quantity: money(line.quantity),
+            unitPrice: line.priceLabel,
+            value: money(line.value)
+          })),
+          { subtotal: money(totals.subtotal), vat: money(totals.vat), total: money(totals.total) }
+        );
+        working = form.xml;
+        warnings.push(...form.warnings);
+
+        // The two sentences that ask the client to pick the tests and write in
+        // the quantities, which this offer has already done for them.
+        const intro = replaceSentence(
+          working,
+          ORDER_FORM_INTRO,
+          "Tabela 12.1 përmban testimet e porositura, sasitë dhe vlerën e tyre. " +
+            "Konfirmojeni porosinë me nënshkrim dhe dërgojeni formularin me e-mail në info@sarpandlab.al."
+        );
+        working = intro.xml;
+        if (!intro.replaced) warnings.push("Teksti hyrës i Formularit të Porosisë nuk u gjet për t'u përshtatur.");
+
+        const preamble = replaceSentence(
+          working,
+          CATALOGUE_INTRO_SENTENCE,
+          "Sasitë e parashikuara janë shënuar në kolonën e fundit dhe përmblidhen në Formularin e Porosisë në Seksionin 12."
+        );
+        working = preamble.xml;
+        if (!preamble.replaced) warnings.push("Teksti hyrës i Seksionit 9 nuk u gjet për t'u përshtatur.");
+      }
+    }
+  }
+
   return { xml: working, warnings };
+}
+
+/**
+ * What the offer is worth, or null when it does not name a figure.
+ *
+ * A laboratory offer quoting unit prices only has no total — the client has
+ * not said how many of anything they want yet — and the register shows that
+ * as a dash rather than as zero.
+ */
+export function offerTotals(kind: OfferKind, values: OfferValues): OfferTotals | null {
+  if (kind === "geotech") return geotechTotals(values);
+  return quantityMode(values) === "quantity" ? labTotals(values) : null;
 }
 
 /** Any bracketed marker still in the document text, for the final check. */

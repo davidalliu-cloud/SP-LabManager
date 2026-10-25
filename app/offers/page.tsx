@@ -1,170 +1,134 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useMemo, useState } from "react";
+import { FilterChips, FilterField, useParamState } from "@/components/ui/filter-bar";
+import type { FilterChip } from "@/components/ui/filter-bar";
 import { PageHeader } from "@/components/ui/page-header";
 import { useLabStore } from "@/lib/lab-store";
+import { money } from "@/lib/offer-fields";
+import { offerFileName } from "@/lib/offer-fill";
 import { canGenerateOffers } from "@/lib/permissions";
-import {
-  GEOTECH_FIXED_TOTAL,
-  OFFER_TEMPLATES,
-  money,
-  type OfferField,
-  type OfferKind
-} from "@/lib/offer-fields";
-import { geotechBoq, geotechLabProgramme, geotechTotals, type OfferValues } from "@/lib/offer-fill";
+import { buildHaystack, matchesHaystack, tokeniseQuery } from "@/lib/search";
+import { OFFER_STATUSES, type OfferRecord, type OfferStatus } from "@/lib/types";
 
 /**
- * Offer generator.
+ * The offer register.
  *
- * The two Word templates stay the source of the document: this page only
- * collects what is variable in them and posts it to `/api/offers/generate`,
- * which hands back the filled .docx. Nothing about the layout, the branding or
- * the price catalogue is rebuilt here, so an offer cannot drift from the
- * template that was approved.
+ * Every offer generated is filed here, with what it was worth and where it has
+ * got to, because an offer that nobody chases is a job the lab has already
+ * done the pricing work for and lost. The status is the point of the page: the
+ * ones sitting at "Dërguar" are the ones to ring about.
  *
- * The client and project dropdowns read the register rather than asking for
- * the same names a third time — picking a client fills its address and
- * contact, and picking one of its projects fills the object and location.
+ * Reopening an offer loads the form exactly as it was, so a revision means
+ * changing one figure rather than retyping the whole thing, and downloading
+ * re-generates the same document from the stored form.
  */
 
-type Draft = OfferValues;
+const STICKY_HEAD = "sticky top-0 z-20 bg-white";
 
-function initialDraft(kind: OfferKind): Draft {
-  const draft: Draft = {};
-  for (const field of OFFER_TEMPLATES[kind].fields) draft[field.key] = field.value ?? "";
-  return draft;
-}
+/** Status colours: what needs attention should read as such at a glance. */
+const STATUS_STYLE: Record<OfferStatus, string> = {
+  Draft: "border-slate-200 bg-slate-50 text-slate-700",
+  Dërguar: "border-amber-200 bg-amber-50 text-amber-800",
+  Pranuar: "border-emerald-200 bg-emerald-50 text-emerald-800",
+  Refuzuar: "border-red-200 bg-red-50 text-red-800",
+  Skaduar: "border-slate-200 bg-slate-100 text-slate-500"
+};
 
-export default function OffersPage() {
+const albanian = (iso?: string) => {
+  if (!iso) return "—";
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  return match ? `${match[3]}.${match[2]}.${match[1]}` : iso;
+};
+
+export default function OffersRegisterPage() {
   const store = useLabStore();
-  const [kind, setKind] = useState<OfferKind>("lab");
-  const [draft, setDraft] = useState<Draft>(() => initialDraft("lab"));
-  const [clientId, setClientId] = useState("");
-  const [projectId, setProjectId] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [problem, setProblem] = useState<string[]>([]);
-  const [done, setDone] = useState("");
-
-  const template = OFFER_TEMPLATES[kind];
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
   const allowed = canGenerateOffers(currentUser?.role);
 
-  // Switching the offer type starts a clean draft, but the client and project
-  // already picked are carried over: they are the same client either way.
-  useEffect(() => {
-    setDraft((previous) => {
-      const next = initialDraft(kind);
-      for (const key of ["clientName", "clientAddress", "contactPerson", "clientContact", "projectName", "offerNumber"]) {
-        if (previous[key]) next[key] = previous[key];
-      }
-      if (previous.location && next.location !== undefined) next.location = previous.location;
-      return next;
-    });
-    setProblem([]);
-    setDone("");
-  }, [kind]);
+  const [query, setQuery] = useParamState("q");
+  const [status, setStatus] = useParamState("status");
+  const [kind, setKind] = useParamState("kind");
+  const [busy, setBusy] = useState("");
+  const [problem, setProblem] = useState("");
 
-  const set = (key: string, value: string) => {
-    setDraft((previous) => ({ ...previous, [key]: value }));
-    setDone("");
-  };
+  const offers = useMemo(() => {
+    const tokens = tokeniseQuery(query);
+    return store.offers
+      .filter((offer) => (status ? offer.status === status : true))
+      .filter((offer) => (kind ? offer.kind === kind : true))
+      .filter((offer) =>
+        matchesHaystack(
+          buildHaystack([offer.offerNumber, offer.clientName, offer.projectName, offer.location, offer.status]),
+          tokens
+        )
+      )
+      .sort((left, right) => right.offerNumber.localeCompare(left.offerNumber, undefined, { numeric: true }));
+  }, [store.offers, query, status, kind]);
 
-  const clients = useMemo(
-    () => [...store.clients].sort((left, right) => left.clientName.localeCompare(right.clientName, "sq-AL")),
-    [store.clients]
-  );
-  const clientProjects = useMemo(
-    () => store.projects.filter((project) => project.clientId === clientId),
-    [store.projects, clientId]
-  );
-  const staff = useMemo(
-    () => store.users.filter((user) => user.isActive !== false).map((user) => user.fullName),
-    [store.users]
-  );
+  const chips: FilterChip[] = [
+    ...(query ? [{ key: "q", label: `Kërkim: ${query}`, onRemove: () => setQuery("") }] : []),
+    ...(status ? [{ key: "status", label: `Statusi: ${status}`, onRemove: () => setStatus("") }] : []),
+    ...(kind
+      ? [
+          {
+            key: "kind",
+            label: `Lloji: ${kind === "lab" ? "Laboratorike" : "Gjeoteknike"}`,
+            onRemove: () => setKind("")
+          }
+        ]
+      : [])
+  ];
 
-  function pickClient(id: string) {
-    setClientId(id);
-    setProjectId("");
-    const client = store.clients.find((row) => row.id === id);
-    if (!client) return;
-    const contact = [client.contactPerson, client.phone, client.email].map((part) => part?.trim()).filter(Boolean);
-    setDraft((previous) => ({
-      ...previous,
-      clientName: client.clientName,
-      clientAddress: client.address ?? "",
-      contactPerson: client.contactPerson ?? "",
-      clientContact: contact.join(", ")
-    }));
-    setDone("");
+  function clearFilters() {
+    setQuery("");
+    setStatus("");
+    setKind("");
   }
 
-  function pickProject(id: string) {
-    setProjectId(id);
-    const project = store.projects.find((row) => row.id === id);
-    if (!project) return;
-    setDraft((previous) => ({
-      ...previous,
-      projectName: project.projectName,
-      ...(kind === "geotech" ? { location: project.location ?? "" } : {})
-    }));
-    setDone("");
-  }
+  const pipeline = useMemo(() => {
+    const open = store.offers.filter((offer) => offer.status === "Dërguar");
+    const won = store.offers.filter((offer) => offer.status === "Pranuar");
+    const sum = (rows: OfferRecord[]) => rows.reduce((total, offer) => total + (offer.totalIncVat ?? 0), 0);
+    return { open: open.length, openValue: sum(open), won: won.length, wonValue: sum(won) };
+  }, [store.offers]);
 
-  const boq = kind === "geotech" ? geotechBoq(draft) : [];
-  const totals = kind === "geotech" ? geotechTotals(draft) : null;
-  const programme = kind === "geotech" ? geotechLabProgramme(draft) : [];
-
-  async function generate() {
-    setBusy(true);
-    setProblem([]);
-    setDone("");
+  /** Regenerate the .docx from the stored form, unchanged. */
+  async function download(offer: OfferRecord) {
+    setBusy(offer.id);
+    setProblem("");
     try {
-      // The bill of quantities and the laboratory programme are sent as the
-      // numbers on screen, so what is downloaded is what was reviewed here.
-      const values: OfferValues = { ...draft };
-      for (const row of boq) values[`qty.${row.code}`] = String(row.quantity);
-      for (const row of programme) values[row.key] = String(row.quantity);
-
       const response = await fetch("/api/offers/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kind, values })
+        body: JSON.stringify({ kind: offer.kind, values: offer.values })
       });
-
       if (!response.ok) {
         const payload = await response.json().catch(() => null);
-        setProblem([payload?.error ?? `Gjenerimi dështoi (HTTP ${response.status}).`, ...(payload?.markers ?? [])]);
+        setProblem(payload?.error ?? `Shkarkimi dështoi (HTTP ${response.status}).`);
         return;
       }
-
       const blob = await response.blob();
-      const header = response.headers.get("Content-Disposition") ?? "";
-      const encoded = /filename\*=UTF-8''([^;]+)/.exec(header);
-      const name = encoded ? decodeURIComponent(encoded[1]) : "oferta.docx";
-
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = name;
+      link.download = offerFileName(offer.kind, offer.values);
       link.click();
       URL.revokeObjectURL(url);
-      setDone(name);
     } catch (error) {
-      setProblem([error instanceof Error ? error.message : "Gjenerimi dështoi."]);
+      setProblem(error instanceof Error ? error.message : "Shkarkimi dështoi.");
     } finally {
-      setBusy(false);
+      setBusy("");
     }
   }
-
-  const staffKeys = new Set(["qualityManager", "clientCoordinator", "projectCoordinator", "geologist", "surveyor"]);
 
   if (!allowed) {
     return (
       <>
-        <PageHeader title="Gjenerimi i ofertave" />
+        <PageHeader title="Ofertat" />
         <div className="rounded-md border border-lab-mist bg-lab-porcelain px-4 py-3 text-sm text-ink">
-          Ofertat përgatiten nga Drejtori i Përgjithshëm ose Shefi i Laboratorit. Kërkoji një prej tyre ofertën për
-          klientin.
+          Regjistri i ofertave është i hapur për Drejtorin e Përgjithshëm dhe Shefin e Laboratorit.
         </div>
       </>
     );
@@ -173,256 +137,149 @@ export default function OffersPage() {
   return (
     <>
       <PageHeader
-        title="Gjenerimi i ofertave"
-        description="Plotëso formularin dhe oferta shkarkohet si dokument Word, në të njëjtin format si shabllonet e miratuara. Çmimet, tabelat dhe teksti standard vijnë nga shablloni; vetëm fushat e mëposhtme ndryshojnë."
+        title="Ofertat"
+        description="Regjistri i ofertave të lëshuara, me vlerën dhe statusin e secilës. Hap një ofertë për ta rishikuar me të njëjtat të dhëna, ose shkarkoje përsëri si dokument Word."
         action={
-          <button className="btn-success" onClick={generate} disabled={busy}>
-            {busy ? "Po gjenerohet…" : "Gjenero ofertën (.docx)"}
-          </button>
+          <Link href="/offers/new" className="btn-success">
+            Ofertë e re
+          </Link>
         }
       />
 
-      <div className="surface-card mb-5 grid gap-4 p-5 lg:grid-cols-3">
-        <Field label="Lloji i ofertës">
-          <select className="input font-semibold" value={kind} onChange={(event) => setKind(event.target.value as OfferKind)}>
-            <option value="lab">Ofertë laboratorike – testimi i materialeve</option>
-            <option value="geotech">Ofertë investigim gjeoteknik dhe sizmik</option>
-          </select>
-        </Field>
-        <Field label="Klienti nga regjistri">
-          <select className="input" value={clientId} onChange={(event) => pickClient(event.target.value)}>
-            <option value="">Zgjidh nga {clients.length} klientët e regjistruar</option>
-            {clients.map((client) => (
-              <option key={client.id} value={client.id}>
-                {client.clientCode} – {client.clientName}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Projekti i klientit">
-          <select
+      <div className="no-print mb-5 grid gap-4 sm:grid-cols-3">
+        <Stat label="Në pritje të përgjigjes" value={String(pipeline.open)} note={`${money(pipeline.openValue)} ALL`} />
+        <Stat label="Të pranuara" value={String(pipeline.won)} note={`${money(pipeline.wonValue)} ALL`} />
+        <Stat label="Gjithsej në regjistër" value={String(store.offers.length)} note="Numri vijon vetë" />
+      </div>
+
+      <div className="no-print mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr]">
+        <FilterField label="Kërko ofertë">
+          <input
             className="input"
-            value={projectId}
-            onChange={(event) => pickProject(event.target.value)}
-            disabled={!clientId}
-          >
-            <option value="">{clientId ? `Zgjidh nga ${clientProjects.length} projekte` : "Zgjidh klientin më parë"}</option>
-            {clientProjects.map((project) => (
-              <option key={project.id} value={project.id}>
-                {project.projectName}
-                {project.location ? ` – ${project.location}` : ""}
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="numër, klient, objekt"
+          />
+        </FilterField>
+        <FilterField label="Statusi">
+          <select className="input" value={status} onChange={(event) => setStatus(event.target.value)}>
+            <option value="">Të gjitha</option>
+            {OFFER_STATUSES.map((option) => (
+              <option key={option} value={option}>
+                {option}
               </option>
             ))}
           </select>
-        </Field>
-        <p className="text-xs leading-5 text-muted lg:col-span-3">{template.subtitle}</p>
+        </FilterField>
+        <FilterField label="Lloji">
+          <select className="input" value={kind} onChange={(event) => setKind(event.target.value)}>
+            <option value="">Të dyja</option>
+            <option value="lab">Laboratorike</option>
+            <option value="geotech">Gjeoteknike</option>
+          </select>
+        </FilterField>
       </div>
 
-      {template.groups.map((group) => {
-        const fields = template.fields.filter((field) => field.group === group);
-        if (!fields.length) return null;
-        return (
-          <section key={group} className="surface-card mb-5 p-5">
-            <h2 className="mb-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-lab-burgundy">{group}</h2>
-            <div className="grid gap-4 lg:grid-cols-3">
-              {fields.map((field) => (
-                <FieldInput
-                  key={field.key}
-                  field={field}
-                  value={draft[field.key] ?? ""}
-                  staff={staffKeys.has(field.key) ? staff : undefined}
-                  onChange={(value) => set(field.key, value)}
-                />
-              ))}
-            </div>
-          </section>
-        );
-      })}
+      <FilterChips chips={chips} resultCount={offers.length} onClearAll={clearFilters} countLabel="oferta" />
 
-      {kind === "geotech" && totals ? (
-        <>
-          <section className="surface-card mb-5 p-5">
-            <h2 className="mb-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-lab-burgundy">
-              Preventivi (Tabela 10.1)
-            </h2>
-            <p className="mb-4 text-xs leading-5 text-muted">
-              Çmimet njësi janë çmimet 2026 të shabllonit dhe nuk ndryshohen këtu. Sasitë vijnë nga fusha e punës më
-              sipër; shkruaji ndryshe kur terreni e kërkon, ose fshij fushën për të kthyer sasinë e parazgjedhur.
-              Rreshtat A1, A2, E1, F1 dhe F2 janë fikse ({money(GEOTECH_FIXED_TOTAL)} ALL).
-            </p>
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[720px] text-left text-sm">
-                <thead className="table-head">
-                  <tr>
-                    <th className="px-3 py-2">Nr.</th>
-                    <th className="px-3 py-2">Përshkrimi</th>
-                    <th className="px-3 py-2">Njësia</th>
-                    <th className="px-3 py-2 text-right">Sasia</th>
-                    <th className="px-3 py-2 text-right">Çmimi njësi</th>
-                    <th className="px-3 py-2 text-right">Vlera (ALL)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {boq.map((row) => (
-                    <tr key={row.code} className="border-b border-line">
-                      <td className="px-3 py-2 font-semibold">{row.code}</td>
-                      <td className="px-3 py-2">{row.description}</td>
-                      <td className="px-3 py-2 text-muted">{row.unit}</td>
-                      <td className="px-3 py-2 text-right">
-                        <input
-                          className="input w-24 text-right"
-                          type="number"
-                          min={0}
-                          value={draft[`qty.${row.code}`] ?? String(row.quantity)}
-                          onChange={(event) => set(`qty.${row.code}`, event.target.value)}
-                        />
-                      </td>
-                      <td className="px-3 py-2 text-right tabular-nums text-muted">{money(row.price)}</td>
-                      <td className="px-3 py-2 text-right font-semibold tabular-nums">{money(row.value)}</td>
-                    </tr>
-                  ))}
-                  <tr className="border-b border-line bg-lab-porcelain">
-                    <td className="px-3 py-2 font-semibold" colSpan={5}>
-                      Nëntotali (pa TVSH)
-                    </td>
-                    <td className="px-3 py-2 text-right font-semibold tabular-nums">{money(totals.subtotal)}</td>
-                  </tr>
-                  <tr className="border-b border-line">
-                    <td className="px-3 py-2" colSpan={5}>
-                      TVSH 20%
-                    </td>
-                    <td className="px-3 py-2 text-right tabular-nums">{money(totals.vat)}</td>
-                  </tr>
-                  <tr className="bg-lab-porcelain">
-                    <td className="px-3 py-2 text-base font-bold" colSpan={5}>
-                      TOTALI (me TVSH)
-                    </td>
-                    <td className="px-3 py-2 text-right text-base font-bold tabular-nums">{money(totals.total)}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <section className="surface-card mb-5 p-5">
-            <h2 className="mb-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-lab-burgundy">
-              Programi i testimeve laboratorike (Tabela 2.1)
-            </h2>
-            <p className="mb-4 text-xs leading-5 text-muted">
-              Sasi orientuese, të nxjerra nga numri i kampioneve. Çmimi i tyre është i përfshirë në rreshtin E1 të
-              preventivit.
-            </p>
-            <div className="grid gap-4 lg:grid-cols-4">
-              {programme.map((row) => (
-                <label key={row.key} className="block text-sm font-medium text-ink">
-                  {row.label}
-                  <input
-                    className="input mt-1"
-                    type="number"
-                    min={0}
-                    value={draft[row.key] ?? String(row.quantity)}
-                    onChange={(event) => set(row.key, event.target.value)}
-                  />
-                </label>
-              ))}
-            </div>
-          </section>
-        </>
+      {problem ? (
+        <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{problem}</div>
       ) : null}
 
-      {problem.length ? (
-        <div className="mb-5 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          <div className="font-semibold">{problem[0]}</div>
-          {problem.length > 1 ? (
-            <ul className="mt-2 list-inside list-disc space-y-1 text-xs">
-              {problem.slice(1).map((line) => (
-                <li key={line}>{line}</li>
-              ))}
-            </ul>
-          ) : null}
+      {store.offers.length === 0 ? (
+        <div className="rounded-md border border-lab-mist bg-lab-porcelain px-4 py-6 text-sm text-ink">
+          Regjistri është bosh. Shtyp <span className="font-semibold">Ofertë e re</span> për të përgatitur ofertën e
+          parë — numri caktohet vetë dhe oferta ruhet këtu pasi gjenerohet.
         </div>
-      ) : null}
-
-      {done ? (
-        <div className="mb-5 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          U shkarkua <span className="font-semibold">{done}</span>. Hapi me Word, kontrollo tekstin dhe nënshkruaje
-          përpara dërgimit.
+      ) : (
+        <div className="register-scroll max-h-[70vh] overflow-auto rounded-md border border-line">
+          <table className="w-full min-w-[1080px] text-left text-sm">
+            <thead className="table-head">
+              <tr>
+                <th className={`${STICKY_HEAD} px-3 py-2`}>Nr.</th>
+                <th className={`${STICKY_HEAD} px-3 py-2`}>Data</th>
+                <th className={`${STICKY_HEAD} px-3 py-2`}>Klienti</th>
+                <th className={`${STICKY_HEAD} px-3 py-2`}>Objekti</th>
+                <th className={`${STICKY_HEAD} px-3 py-2`}>Lloji</th>
+                <th className={`${STICKY_HEAD} px-3 py-2 text-right`}>Vlera me TVSH</th>
+                <th className={`${STICKY_HEAD} px-3 py-2`}>Statusi</th>
+                <th className={`${STICKY_HEAD} px-3 py-2`}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {offers.map((offer) => (
+                <tr key={offer.id} className="border-b border-line">
+                  <td className="px-3 py-2 font-semibold tabular-nums">SL-OF-{offer.offerNumber}</td>
+                  <td className="px-3 py-2 tabular-nums text-muted">{albanian(offer.offerDate)}</td>
+                  <td className="px-3 py-2">{offer.clientName}</td>
+                  <td className="px-3 py-2">
+                    {offer.projectName}
+                    {offer.location ? <span className="block text-xs text-muted">{offer.location}</span> : null}
+                  </td>
+                  <td className="px-3 py-2 text-muted">{offer.kind === "lab" ? "Laboratorike" : "Gjeoteknike"}</td>
+                  <td className="px-3 py-2 text-right font-semibold tabular-nums">
+                    {offer.totalIncVat === undefined ? (
+                      <span className="font-normal text-muted" title="Ofertë me çmime njësi, pa sasi">
+                        çmime njësi
+                      </span>
+                    ) : (
+                      money(offer.totalIncVat)
+                    )}
+                  </td>
+                  <td className="px-3 py-2">
+                    <select
+                      className={`rounded-md border px-2 py-1 text-xs font-semibold ${STATUS_STYLE[offer.status]}`}
+                      value={offer.status}
+                      onChange={(event) => store.setOfferStatus(offer.id, event.target.value as OfferStatus)}
+                    >
+                      {OFFER_STATUSES.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/offers/new?id=${offer.id}`}
+                        className="rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700 transition hover:border-blue-400 hover:bg-blue-100"
+                      >
+                        Hap
+                      </Link>
+                      <button
+                        type="button"
+                        className="rounded-md border border-lab-mist bg-lab-porcelain px-2 py-1 text-xs font-semibold text-ink transition hover:border-lab-burgundy"
+                        onClick={() => download(offer)}
+                        disabled={busy === offer.id}
+                      >
+                        {busy === offer.id ? "…" : "Shkarko"}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {offers.length === 0 ? (
+                <tr>
+                  <td className="px-3 py-6 text-sm text-muted" colSpan={8}>
+                    Asnjë ofertë nuk i përgjigjet filtrave.
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
         </div>
-      ) : null}
-
-      <div className="mb-10 flex items-center gap-4">
-        <button className="btn-success" onClick={generate} disabled={busy}>
-          {busy ? "Po gjenerohet…" : "Gjenero ofertën (.docx)"}
-        </button>
-        {kind === "geotech" && totals ? (
-          <span className="text-sm text-muted">
-            Totali me TVSH: <span className="font-semibold tabular-nums text-ink">{money(totals.total)} ALL</span>
-          </span>
-        ) : null}
-      </div>
+      )}
     </>
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Stat({ label, value, note }: { label: string; value: string; note: string }) {
   return (
-    <label className="block text-sm font-medium text-ink">
-      {label}
-      <div className="mt-1">{children}</div>
-    </label>
-  );
-}
-
-function FieldInput({
-  field,
-  value,
-  staff,
-  onChange
-}: {
-  field: OfferField;
-  value: string;
-  /** Employee names, when the field names a role, so it is picked not typed. */
-  staff?: string[];
-  onChange: (value: string) => void;
-}) {
-  const label = field.unit ? `${field.label} (${field.unit})` : field.label;
-
-  return (
-    <label className={`block text-sm font-medium text-ink${field.kind === "longtext" ? " lg:col-span-3" : ""}`}>
-      {label}
-      <div className="mt-1">
-        {field.kind === "choice" && field.options ? (
-          <select className="input" value={value} onChange={(event) => onChange(event.target.value)}>
-            {field.options.map((option) => (
-              <option key={option.label} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        ) : staff ? (
-          <>
-            <select className="input" value={staff.includes(value) ? value : ""} onChange={(event) => onChange(event.target.value)}>
-              <option value="">Shkruaj ose zgjidh</option>
-              {staff.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
-            <input className="input mt-2" value={value} onChange={(event) => onChange(event.target.value)} />
-          </>
-        ) : field.kind === "longtext" ? (
-          <textarea className="input" rows={2} value={value} onChange={(event) => onChange(event.target.value)} />
-        ) : (
-          <input
-            className="input"
-            type={field.kind === "date" ? "date" : field.kind === "number" ? "number" : "text"}
-            value={value}
-            onChange={(event) => onChange(event.target.value)}
-          />
-        )}
-      </div>
-      {field.help ? <span className="mt-1 block text-xs font-normal leading-5 text-muted">{field.help}</span> : null}
-    </label>
+    <div className="surface-card p-4">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">{label}</div>
+      <div className="mt-2 text-3xl font-bold tabular-nums text-ink">{value}</div>
+      <div className="mt-1 text-xs text-muted">{note}</div>
+    </div>
   );
 }

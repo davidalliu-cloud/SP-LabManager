@@ -33,6 +33,8 @@ export interface OfferField {
   help?: string;
   /** Shown after the input, e.g. "m", "%", "ditë". */
   unit?: string;
+  /** Filled by the app, shown but not typed into — the offer number. */
+  readOnly?: boolean;
 }
 
 /**
@@ -108,16 +110,17 @@ function clientFields(projectLabel: string): OfferField[] {
       group: "Klienti",
       help: "Data dhe mënyra e kërkesës, p.sh. «e-mail i datës 12.03.2026»."
     },
-    { key: "projectName", label: projectLabel, kind: "text", group: "Objekti" },
-    {
-      key: "salutation",
-      label: "Hyrje e përshtatur (opsionale)",
-      kind: "text",
-      group: "Letra shoqëruese",
-      help: "Shtohet pas «I nderuar Zotëri / E nderuar Zonjë,». Lëre bosh dhe nuk shkruhet gjë."
-    }
+    { key: "projectName", label: projectLabel, kind: "text", group: "Objekti" }
   ];
 }
+
+/**
+ * The transport zone the catalogue is written for.
+ *
+ * Rows P1, R3 and R4 name it, and the field can change it, so the catalogue
+ * text has to follow — see labLines() in lib/offer-fill.ts.
+ */
+export const DEFAULT_TRANSPORT_ZONE = "Durrës – Tiranë";
 
 /* --------------------------------------------------------------- lab offer */
 
@@ -127,7 +130,8 @@ const LAB_FIELDS: OfferField[] = [
     label: "Numri i ofertës",
     kind: "text",
     group: "Oferta",
-    help: "Vetëm numri: shkruhet si SL-OF-<nr>/2026."
+    readOnly: true,
+    help: "Caktohet vetë, vazhdim i numrit të fundit në regjistrin e ofertave."
   },
   { key: "offerDate", label: "Data e ofertës", kind: "date", group: "Oferta", value: todayIso() },
   { key: "priceValidity", label: "Çmimet të vlefshme deri", kind: "date", group: "Oferta", value: "2026-12-31" },
@@ -209,7 +213,7 @@ const LAB_REPLACEMENTS: OfferReplacement[] = [
   // table counts technicians with the same `[nr]`.
   { find: "[nr]", fields: ["offerNumber", "technicianCount", "offerNumber"] },
   { find: "[emri i klientit]", field: "clientName" },
-  { find: "[përshtat]", field: "salutation" },
+  { find: "[përshtat]", text: "" },
 
   // Notes the template author left for themselves. They go with the space in
   // front of them, so the sentence closes cleanly on its full stop.
@@ -319,7 +323,8 @@ const GEOTECH_FIELDS: OfferField[] = [
     label: "Numri i ofertës",
     kind: "text",
     group: "Oferta",
-    help: "Vetëm numri: shkruhet si SL-OF-<nr>/2026."
+    readOnly: true,
+    help: "Caktohet vetë, vazhdim i numrit të fundit në regjistrin e ofertave."
   },
   { key: "offerDate", label: "Data e ofertës", kind: "date", group: "Oferta", value: todayIso() },
   ...clientFields("Emërtimi i objektit"),
@@ -458,7 +463,7 @@ const GEOTECH_REPLACEMENTS: OfferReplacement[] = [
   { find: "[emri i klientit]", field: "clientName" },
   { find: "[emërtimi i objektit]", field: "projectName" },
   { find: "[vendndodhja]", fields: ["location", "location", "location"] },
-  { find: "[përshtat]", field: "salutation" },
+  { find: "[përshtat]", text: "" },
 
   // These two carry content: the bracket text is the template author's own
   // suggestion, so it becomes the field's starting value rather than a note
@@ -496,7 +501,7 @@ export const OFFER_TEMPLATES: Record<OfferKind, OfferTemplate> = {
     subtitle: "Katalogu i plotë i testimeve me çmimet njësi 2026; klienti zgjedh testimet më pas.",
     file: "/offer-templates/oferta-laboratorike.docx",
     download: "SL-OF-{nr}-2026 Oferta Laboratorike - {klienti}.docx",
-    groups: ["Oferta", "Klienti", "Objekti", "Letra shoqëruese", "Ekipi", "Kredencialet", "Kushtet tregtare"],
+    groups: ["Oferta", "Klienti", "Objekti", "Ekipi", "Kredencialet", "Kushtet tregtare"],
     fields: LAB_FIELDS,
     replacements: LAB_REPLACEMENTS
   },
@@ -510,7 +515,6 @@ export const OFFER_TEMPLATES: Record<OfferKind, OfferTemplate> = {
       "Oferta",
       "Klienti",
       "Objekti",
-      "Letra shoqëruese",
       "Fusha e punës",
       "Ekipi",
       "Kredencialet",

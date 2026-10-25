@@ -119,5 +119,6 @@ export const initialState: LabState = {
   complaints: [],
   proficiencyTests: proficiencySeed,
   auditEntries: [],
-  clientAnalyses: []
+  clientAnalyses: [],
+  offers: []
 };

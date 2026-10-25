@@ -1431,6 +1431,45 @@ export interface LabState {
   auditEntries: AuditEntry[];
   /** Përmbledhjet e dërguara klientëve — one per client per period. */
   clientAnalyses: ClientAnalysisRecord[];
+  /** Regjistri i ofertave — see lib/offer-fields.ts. */
+  offers: OfferRecord[];
+}
+
+/** Where an offer has got to. The register is ordered on it. */
+export type OfferStatus = "Draft" | "Dërguar" | "Pranuar" | "Refuzuar" | "Skaduar";
+
+export const OFFER_STATUSES: OfferStatus[] = ["Draft", "Dërguar", "Pranuar", "Refuzuar", "Skaduar"];
+
+/**
+ * One offer, as the register holds it.
+ *
+ * `values` is the whole form, kept so the same .docx can be produced again
+ * without retyping it — a client who asks for a revision gets the offer back
+ * as it was, with one figure changed. The summary fields beside it are what
+ * the register lists and sorts on, so reading the list never means unpacking
+ * every form.
+ */
+export interface OfferRecord {
+  id: string;
+  /** The number inside SL-OF-<nr>/2026, assigned in sequence. */
+  offerNumber: string;
+  kind: "lab" | "geotech";
+  /** Absent for a client typed in rather than picked from the register. */
+  clientId?: string;
+  clientName: string;
+  projectName: string;
+  location?: string;
+  /** YYYY-MM-DD. */
+  offerDate: string;
+  status: OfferStatus;
+  /** Absent on a catalogue offer, which quotes unit prices and no total. */
+  totalExVat?: number;
+  totalIncVat?: number;
+  values: Record<string, string>;
+  createdBy: string;
+  createdAt: string;
+  statusChangedAt?: string;
+  notes?: string;
 }
 
 /**
