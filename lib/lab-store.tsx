@@ -1159,8 +1159,6 @@ interface LabStoreValue extends LabState {
   saveOffer: (input: OfferInput) => string | undefined;
   setOfferStatus: (id: string, status: OfferStatus, notes?: string) => void;
   removeOffer: (id: string) => void;
-  /** Adds a project to a client already in the register, returning its id. */
-  createProjectForClient: (clientId: string, projectName: string, location: string) => string | undefined;
 }
 
 export interface OfferInput {
@@ -5155,11 +5153,22 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
 
           if (status === "Pranuar" && canManageClients(currentRole)) {
             const name = offer.clientName.trim();
-            const sameName = (left: string, right: string) =>
+            const objectName = offer.projectName.trim();
+            const same = (left: string, right: string) =>
               left.trim().toLocaleLowerCase("sq-AL") === right.trim().toLocaleLowerCase("sq-AL");
 
-            let client = clients.find((row) => row.id === clientId);
-            if (!client && name) client = clients.find((row) => sameName(row.clientName, name));
+            // A client code is a company and an object together, not a company:
+            // DESLA holds five codes and KOTARJA four, one per site. So an
+            // existing code is reused only when it is already against this
+            // object; a new object for the same company gets a code of its own,
+            // which is what keeps a monthly summary specific to one job.
+            const existing = clients.find((row) => {
+              if (!same(row.clientName, name)) return false;
+              if (row.id === clientId && !objectName) return true;
+              return projects.some((project) => project.clientId === row.id && same(project.projectName, objectName));
+            });
+
+            let client = existing;
             if (!client && name) {
               client = {
                 id: crypto.randomUUID(),
@@ -5171,14 +5180,13 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
                 address: offer.values.clientAddress ?? ""
               };
               clients = sortClientsByCode([client, ...clients]);
-              filed.push(`client ${client.clientCode}`);
+              filed.push(`code ${client.clientCode} for ${objectName || name}`);
             }
             clientId = client?.id ?? clientId;
 
-            const objectName = offer.projectName.trim();
             if (client && objectName) {
               let project = projects.find(
-                (row) => row.clientId === client!.id && sameName(row.projectName, objectName)
+                (row) => row.clientId === client!.id && same(row.projectName, objectName)
               );
               if (!project) {
                 project = {
@@ -5188,7 +5196,6 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
                   location: offer.location ?? ""
                 };
                 projects = [project, ...projects];
-                filed.push(`project ${project.projectName}`);
               }
               projectId = project.id;
             }
@@ -5238,39 +5245,6 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
         });
       },
 
-      /**
-       * A project under a client who is already on file.
-       *
-       * `createClient` makes a client and their first project together, which
-       * is no use when the client exists and it is only the object that is
-       * new — the common case for a second offer to the same contractor.
-       */
-      createProjectForClient(clientId, projectName, location) {
-        if (!canManageClients(currentRole)) return undefined;
-        const name = projectName.trim();
-        if (!name) return undefined;
-
-        const already = state.projects.find(
-          (project) =>
-            project.clientId === clientId &&
-            project.projectName.trim().toLocaleLowerCase("sq-AL") === name.toLocaleLowerCase("sq-AL")
-        );
-        if (already) return already.id;
-
-        const projectId = crypto.randomUUID();
-        setState((previous) => {
-          if (!previous.clients.some((client) => client.id === clientId)) return previous;
-          const project: Project = { id: projectId, clientId, projectName: name, location: location.trim() };
-          const draft: LabState = {
-            ...previous,
-            projects: [project, ...previous.projects],
-            auditLog: [...previous.auditLog]
-          };
-          addAudit(draft, "project_created", "project", projectId, `Project ${name} added for an existing client.`);
-          return draft;
-        });
-        return projectId;
-      }
     };
   }, [state, currentUserId, currentRole, currentEmail, saveState]);
 

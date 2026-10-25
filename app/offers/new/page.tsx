@@ -242,19 +242,16 @@ export default function NewOfferPage() {
   }
 
   /**
-   * The client this offer is for, when one is already on the books.
+   * The client code this offer is against, when one was actually picked.
    *
-   * A client typed in by hand is not filed here. An offer is a quotation, and
-   * one that is never accepted should leave nothing behind: the register fills
-   * when the offer is marked Pranuar.
+   * Only the picked one, never a guess from the typed name: a code is a
+   * company and an object together, so DESLA alone matches five of them and
+   * matching on the name would file a new site's work against an old site's
+   * code. A client typed by hand gets a code when the offer is accepted, not
+   * before — a quotation that comes to nothing should leave nothing behind.
    */
   function pickedClientId(): string | undefined {
-    if (clientId) return clientId;
-    const name = draft.clientName?.trim();
-    if (!name) return undefined;
-    return store.rawClients.find(
-      (row) => row.clientName.trim().toLocaleLowerCase("sq-AL") === name.toLocaleLowerCase("sq-AL")
-    )?.id;
+    return clientId || undefined;
   }
 
   async function generate() {
