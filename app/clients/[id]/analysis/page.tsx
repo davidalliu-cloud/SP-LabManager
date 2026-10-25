@@ -641,14 +641,43 @@ export default function ClientAnalysisPage() {
                     </td>
                     <td className="px-4 py-2.5 text-right tabular-nums">{money(analysis.pricing.vat)}</td>
                   </tr>
-                  <tr className="bg-lab-porcelain">
-                    <td className="px-4 py-2.5 text-base font-bold" colSpan={5}>
-                      TOTALI (me TVSH)
+                  <tr className={analysis.pricing.framework ? "border-b border-line" : "bg-lab-porcelain"}>
+                    <td className={`px-4 py-2.5${analysis.pricing.framework ? "" : " text-base font-bold"}`} colSpan={5}>
+                      {analysis.pricing.framework ? "Vlera e punës së kryer (me TVSH)" : "TOTALI (me TVSH)"}
                     </td>
-                    <td className="px-4 py-2.5 text-right text-base font-bold tabular-nums">
+                    <td
+                      className={`px-4 py-2.5 text-right tabular-nums${
+                        analysis.pricing.framework ? "" : " text-base font-bold"
+                      }`}
+                    >
                       {money(analysis.pricing.total)} ALL
                     </td>
                   </tr>
+                  {/* On a framework contract the lines above are evidence, not
+                      the bill: the client pays the agreed rate whether the
+                      month was busy or quiet. */}
+                  {analysis.pricing.framework ? (
+                    <>
+                      <tr className="border-b border-line">
+                        <td className="px-4 py-2.5" colSpan={5}>
+                          Tarifa mujore e kontratës{" "}
+                          {analysis.pricing.framework.offerNumbers.map((nr) => `SL-OF-${nr}/2026`).join(", ")} ×{" "}
+                          {analysis.pricing.framework.months} muaj
+                        </td>
+                        <td className="px-4 py-2.5 text-right tabular-nums">
+                          {money(analysis.pricing.framework.rate)} / muaj
+                        </td>
+                      </tr>
+                      <tr className="bg-lab-porcelain">
+                        <td className="px-4 py-2.5 text-base font-bold" colSpan={5}>
+                          PËR FATURIM (me TVSH)
+                        </td>
+                        <td className="px-4 py-2.5 text-right text-base font-bold tabular-nums">
+                          {money(analysis.pricing.framework.contracted * (1 + analysis.pricing.vatRate))} ALL
+                        </td>
+                      </tr>
+                    </>
+                  ) : null}
                 </tbody>
               </table>
             </div>

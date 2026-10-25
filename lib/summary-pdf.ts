@@ -327,11 +327,25 @@ export async function buildSummaryPdf(input: SummaryPdfInput): Promise<Blob> {
 
     // The totals, right-aligned under the value column.
     reserve(20);
-    const totals: Array<[string, string, boolean]> = [
-      ["Nëntotali (pa TVSH)", money(pricing.subtotal), false],
-      [`TVSH ${Math.round(pricing.vatRate * 100)}%`, money(pricing.vat), false],
-      ["TOTALI (me TVSH)", money(pricing.total), true]
-    ];
+    // On a framework contract the lines above are what the work was worth; the
+    // bill is the agreed rate. Both are printed, because the client is
+    // entitled to see the one and is invoiced the other.
+    const totals: Array<[string, string, boolean]> = pricing.framework
+      ? [
+          ["Nëntotali (pa TVSH)", money(pricing.subtotal), false],
+          ["Vlera e punës së kryer (me TVSH)", money(pricing.total), false],
+          [
+            `Tarifa mujore ${money(pricing.framework.rate)} × ${pricing.framework.months} muaj (pa TVSH)`,
+            money(pricing.framework.contracted),
+            false
+          ],
+          ["PËR FATURIM (me TVSH)", money(pricing.framework.contracted * (1 + pricing.vatRate)), true]
+        ]
+      : [
+          ["Nëntotali (pa TVSH)", money(pricing.subtotal), false],
+          [`TVSH ${Math.round(pricing.vatRate * 100)}%`, money(pricing.vat), false],
+          ["TOTALI (me TVSH)", money(pricing.total), true]
+        ];
     for (const [label, value, strong] of totals) {
       pdf.setFont("helvetica", strong ? "bold" : "normal");
       pdf.setFontSize(strong ? 9.5 : 8.5);

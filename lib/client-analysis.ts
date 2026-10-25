@@ -1,3 +1,4 @@
+import { labMonthly, quantityMode, type OfferValues } from "./offer-fill";
 import { priceReport, type PriceSource } from "./offer-pricing";
 import type {
   Client,
@@ -88,7 +89,30 @@ export type AnalysisPricing = {
   unpriced: number;
   /** The offers the prices came from, by number, for the sheet to name. */
   offerNumbers: string[];
+  /**
+   * Set when the work is covered by a framework contract at a monthly rate.
+   *
+   * Then the lines above stop being the bill and become the evidence: they
+   * show what the month's testing was worth, while what the client owes is the
+   * agreed rate for however many months the period covers. Billing such a
+   * client per report would be charging them twice for work the rate already
+   * bought.
+   */
+  framework?: {
+    rate: number;
+    months: number;
+    contracted: number;
+    offerNumbers: string[];
+  };
 };
+
+/** Calendar months a period touches, counting both ends. */
+function monthsInPeriod(period: AnalysisPeriod): number {
+  const [fromYear, fromMonth] = period.from.split("-").map(Number);
+  const [toYear, toMonth] = period.to.split("-").map(Number);
+  if (!fromYear || !toYear) return 1;
+  return Math.max(1, (toYear - fromYear) * 12 + (toMonth - fromMonth) + 1);
+}
 
 /**
  * One line per pour and age — the table this summary exists for.
@@ -366,7 +390,8 @@ export function buildClientAnalysis(
 
   const pricing = summarisePricing(
     reportRows,
-    periodReports.map((report) => acceptedFor(report.projectId))
+    periodReports.map((report) => acceptedFor(report.projectId)),
+    period
   );
 
   return {
@@ -399,7 +424,8 @@ const VAT_RATE = 0.2;
  */
 function summarisePricing(
   rows: ClientAnalysis["reportRows"],
-  offers: Array<OfferRecord | undefined>
+  offers: Array<OfferRecord | undefined>,
+  period: AnalysisPeriod
 ): AnalysisPricing {
   const byCode = new Map<string, AnalysisPricing["lines"][number]>();
   let unpriced = 0;
@@ -429,7 +455,29 @@ function summarisePricing(
 
   const lines = [...byCode.values()].sort((a, b) => b.value - a.value || a.code.localeCompare(b.code));
   const subtotal = lines.reduce((sum, line) => sum + line.value, 0);
-  const offerNumbers = [...new Set(offers.filter(Boolean).map((offer) => offer!.offerNumber))].sort();
+  const inPlay = offers.filter((offer): offer is OfferRecord => Boolean(offer));
+  const offerNumbers = [...new Set(inPlay.map((offer) => offer.offerNumber))].sort();
+
+  // A framework offer is a monthly rate, so the bill is the rate and not the
+  // sum of the work. Several such offers in one period would need a rate per
+  // project rather than one for the client, which the register has never had:
+  // every code carries one object. Summed, so two sites on two contracts read
+  // as what the client owes in total.
+  const frameworks = inPlay.filter((offer) => quantityMode(offer.values as OfferValues) === "monthly");
+  const framework = frameworks.length
+    ? (() => {
+        const months = monthsInPeriod(period);
+        const rate = [...new Set(frameworks.map((offer) => offer.id))]
+          .map((id) => frameworks.find((offer) => offer.id === id)!)
+          .reduce((sum, offer) => sum + labMonthly(offer.values as OfferValues).quotedMonthly, 0);
+        return {
+          rate,
+          months,
+          contracted: rate * months,
+          offerNumbers: [...new Set(frameworks.map((offer) => offer.offerNumber))].sort()
+        };
+      })()
+    : undefined;
 
   return {
     subtotal,
@@ -438,7 +486,8 @@ function summarisePricing(
     vatRate: VAT_RATE,
     lines,
     unpriced,
-    offerNumbers
+    offerNumbers,
+    framework
   };
 }
 

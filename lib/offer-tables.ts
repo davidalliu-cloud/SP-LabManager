@@ -483,6 +483,17 @@ export function replaceSentence(xml: string, original: string, replacement: stri
 export const ORDER_FORM_INTRO =
   "Plotësoni kodet e testimeve të zgjedhura nga Seksioni 9 dhe dërgojeni formularin me e-mail në info@sarpandlab.al. Për testime të përsëritura gjatë gjithë objektit (p.sh. kubikët e betonit), mjafton të shënoni kodin dhe sasinë e parashikuar.";
 
+/**
+ * The order-type row of Section 12, and the two ways of ticking it.
+ *
+ * The template offers both boxes empty for the client to mark. An offer that
+ * has already been priced one way or the other knows which it is, and leaving
+ * the client to guess invites the wrong box on a signed form.
+ */
+export const ORDER_TYPE_ROW = "☐ Porosi e veçantë        ☐ Kontratë kuadër për objektin";
+export const ORDER_TYPE_ONE_OFF = "☒ Porosi e veçantë        ☐ Kontratë kuadër për objektin";
+export const ORDER_TYPE_FRAMEWORK = "☐ Porosi e veçantë        ☒ Kontratë kuadër për objektin";
+
 /** The sentence in Section 9's preamble that asks the client to enter quantities. */
 export const CATALOGUE_INTRO_SENTENCE =
   "Klienti zgjedh testimet duke shënuar sasinë (numrin e raporteve) në kolonën e fundit ose duke përdorur Formularin e Porosisë në Seksionin 12.";

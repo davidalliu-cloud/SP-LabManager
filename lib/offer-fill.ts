@@ -42,6 +42,9 @@ import {
   CATALOGUE_INTRO_SENTENCE,
   CATALOGUE_CLOSING_SENTENCE,
   ORDER_FORM_INTRO,
+  ORDER_TYPE_FRAMEWORK,
+  ORDER_TYPE_ONE_OFF,
+  ORDER_TYPE_ROW,
   fillOrderForm,
   pruneCatalogue,
   replaceSentence,
@@ -93,10 +96,57 @@ export function decodeDirectory(values: OfferValues): Person[] {
  * quantities go into Section 9 and the order form comes out priced and
  * totalled.
  */
-export type QuantityMode = "unit" | "quantity";
+export type QuantityMode = "unit" | "quantity" | "monthly";
 
 export function quantityMode(values: OfferValues): QuantityMode {
-  return values.quantityMode === "quantity" ? "quantity" : "unit";
+  if (values.quantityMode === "quantity") return "quantity";
+  if (values.quantityMode === "monthly") return "monthly";
+  return "unit";
+}
+
+/**
+ * A monthly-rate offer: a framework contract rather than an order.
+ *
+ * The lab commits to a month's testing for a fixed fee, so the figure has to
+ * be built before it can be quoted — pick the tests, say how many of each a
+ * month will take, say how long the job runs, and the basket gives you what
+ * that work is worth. The rate then goes in by hand, because what the lab
+ * charges for a year of guaranteed work is a commercial decision and not the
+ * arithmetic: the computed figure is what you are deciding against.
+ *
+ * Quantities are per month throughout. The whole point is the monthly basket,
+ * and a quantity that silently meant "over the whole contract" would be out by
+ * however many months the job runs.
+ */
+export interface MonthlyOffer {
+  months: number;
+  /** What one month of the chosen basket is worth at the quoted unit prices. */
+  computedMonthly: number;
+  /** What the offer actually charges per month. */
+  quotedMonthly: number;
+  /** Set by hand rather than taken from the basket. */
+  rateIsSet: boolean;
+  contractTotal: number;
+  /** Negative when the rate is below what the work is worth. */
+  differencePerMonth: number;
+}
+
+export function labMonthly(values: OfferValues): MonthlyOffer {
+  const months = Math.max(1, Math.round(numberOf(values, "contractMonths") || 12));
+  const computedMonthly = labLines(values).reduce((sum, line) => sum + line.value, 0);
+
+  const typed = values.monthlyRate;
+  const rateIsSet = typed !== undefined && typed !== "";
+  const quotedMonthly = rateIsSet ? Math.max(0, Math.round(numberOf(values, "monthlyRate"))) : computedMonthly;
+
+  return {
+    months,
+    computedMonthly,
+    quotedMonthly,
+    rateIsSet,
+    contractTotal: quotedMonthly * months,
+    differencePerMonth: quotedMonthly - computedMonthly
+  };
 }
 
 /** The ticked catalogue codes, in catalogue order. */
@@ -610,6 +660,80 @@ export function fillOfferDocument(xml: string, kind: OfferKind, values: OfferVal
         );
         working = preamble.xml;
         if (!preamble.replaced) warnings.push("Teksti hyrës i Seksionit 9 nuk u gjet për t'u përshtatur.");
+
+        const kindBox = replaceSentence(working, ORDER_TYPE_ROW, ORDER_TYPE_ONE_OFF);
+        working = kindBox.xml;
+      }
+
+      // A monthly-rate offer. Section 9 carries the monthly basket, and the
+      // order form totals one month of it, because a month is what the client
+      // is agreeing to pay for; the term and the contract value are stated in
+      // the sentence above it rather than left to be multiplied out.
+      if (quantityMode(values) === "monthly") {
+        const monthly = labMonthly(values);
+        const lines = labLines(values).filter((line) => line.quantity > 0);
+
+        working = writeCatalogueQuantities(
+          working,
+          new Map(lines.map((line) => [line.code, money(line.quantity)]))
+        );
+
+        // The basket is what the work is worth; the rate is what is charged.
+        // When they differ, the difference goes in as its own line — otherwise
+        // the value column adds up to one figure and the total underneath
+        // says another, and the first client to check the arithmetic finds it.
+        const orderLines = lines.map((line) => ({
+          code: line.code,
+          description: line.name,
+          quantity: money(line.quantity),
+          unitPrice: /\d/.test(line.priceLabel) ? money(line.price) : line.priceLabel,
+          value: money(line.value)
+        }));
+
+        if (monthly.differencePerMonth !== 0) {
+          orderLines.push({
+            code: "—",
+            description:
+              monthly.differencePerMonth < 0
+                ? "Rregullim për tarifën mujore të rënë dakord (zbritje mbi shportën)"
+                : "Rregullim për tarifën mujore të rënë dakord",
+            quantity: "1",
+            unitPrice: money(monthly.differencePerMonth),
+            value: money(monthly.differencePerMonth)
+          });
+        }
+
+        const form = fillOrderForm(working, orderLines, {
+          subtotal: money(monthly.quotedMonthly),
+          vat: money(monthly.quotedMonthly * VAT_RATE),
+          total: money(monthly.quotedMonthly * (1 + VAT_RATE))
+        });
+        working = form.xml;
+        warnings.push(...form.warnings);
+
+        const intro = replaceSentence(
+          working,
+          ORDER_FORM_INTRO,
+          `Kjo ofertë është për kontratë kuadër me tarifë mujore. Tabela 12.1 jep shportën mujore të testimeve ` +
+            `dhe tarifën përkatëse: ${money(monthly.quotedMonthly)} ALL pa TVSH në muaj ` +
+            `(${money(monthly.quotedMonthly * (1 + VAT_RATE))} ALL me TVSH), për një afat prej ${monthly.months} muajsh, ` +
+            `me vlerë totale ${money(monthly.contractTotal)} ALL pa TVSH. ` +
+            `Tarifa faturohet çdo muaj pavarësisht luhatjeve të sasive; testimet mbi shportën faturohen me çmimet njësi të Seksionit 9. ` +
+            `Konfirmojeni me nënshkrim dhe dërgojeni formularin me e-mail në info@sarpandlab.al.`
+        );
+        working = intro.xml;
+        if (!intro.replaced) warnings.push("Teksti hyrës i Formularit të Porosisë nuk u gjet për t'u përshtatur.");
+
+        const preamble = replaceSentence(
+          working,
+          CATALOGUE_INTRO_SENTENCE,
+          "Sasitë e shënuara në kolonën e fundit janë sasi mujore të parashikuara, mbi të cilat është ndërtuar tarifa mujore e Seksionit 12."
+        );
+        working = preamble.xml;
+        if (!preamble.replaced) warnings.push("Teksti hyrës i Seksionit 9 nuk u gjet për t'u përshtatur.");
+
+        const kindBox = replaceSentence(working, ORDER_TYPE_ROW, ORDER_TYPE_FRAMEWORK);
+        working = kindBox.xml;
       }
     }
   }
@@ -626,7 +750,22 @@ export function fillOfferDocument(xml: string, kind: OfferKind, values: OfferVal
  */
 export function offerTotals(kind: OfferKind, values: OfferValues): OfferTotals | null {
   if (kind === "geotech") return geotechTotals(values);
-  return quantityMode(values) === "quantity" ? labTotals(values) : null;
+
+  const mode = quantityMode(values);
+  if (mode === "quantity") return labTotals(values);
+
+  // A monthly offer is worth the whole contract, not one month of it: the
+  // register lists what was committed to, which is the rate times the term.
+  if (mode === "monthly") {
+    const monthly = labMonthly(values);
+    return {
+      subtotal: monthly.contractTotal,
+      vat: monthly.contractTotal * VAT_RATE,
+      total: monthly.contractTotal * (1 + VAT_RATE)
+    };
+  }
+
+  return null;
 }
 
 /** Any bracketed marker still in the document text, for the final check. */

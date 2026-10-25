@@ -5,7 +5,15 @@ import { OFFER_CATALOGUE, type CatalogueTest } from "@/lib/offer-catalogue";
 import { money } from "@/lib/offer-fields";
 import { OFFER_TABLE_INFO } from "@/lib/offer-help";
 import { InfoHint } from "@/components/ui/info-hint";
-import { discountPercent, hasPriceOverride, unitPrice, withVat, type OfferValues, type QuantityMode } from "@/lib/offer-fill";
+import {
+  discountPercent,
+  hasPriceOverride,
+  labMonthly,
+  unitPrice,
+  withVat,
+  type OfferValues,
+  type QuantityMode
+} from "@/lib/offer-fill";
 
 /**
  * Picking and pricing the tests a laboratory offer covers.
@@ -38,6 +46,7 @@ export function CataloguePicker({
   onToggleGroup,
   onQuantity,
   onPrice,
+  onValue,
   onMode
 }: {
   /** The whole draft, for the discount and any typed-in prices. */
@@ -49,6 +58,8 @@ export function CataloguePicker({
   onToggleGroup: (codes: string[], on: boolean) => void;
   onQuantity: (code: string, value: string) => void;
   onPrice: (code: string, value: string) => void;
+  /** Writes any other value on the draft — the term and the quoted rate. */
+  onValue: (key: string, value: string) => void;
   onMode: (mode: QuantityMode) => void;
 }) {
   const [search, setSearch] = useState("");
@@ -56,7 +67,9 @@ export function CataloguePicker({
   const [onlySelected, setOnlySelected] = useState(false);
 
   const discount = discountPercent(values);
-  const priced = mode === "quantity";
+  const monthlyMode = mode === "monthly";
+  const priced = mode === "quantity" || monthlyMode;
+  const monthly = monthlyMode ? labMonthly(values) : null;
 
   /** "Falas" rows have no figure to discount: they ride along with another test. */
   const isFree = (test: CatalogueTest) => !/\d/.test(test.priceLabel);
@@ -140,6 +153,7 @@ export function CataloguePicker({
           >
             <option value="unit">Vetëm çmimet njësi – klienti shënon sasinë më pas</option>
             <option value="quantity">Me sasi – oferta jep sasitë, vlerat dhe totalin</option>
+            <option value="monthly">Tarifë mujore – kontratë kuadër me shportë mujore</option>
           </select>
         </label>
         <label className="block text-sm font-medium text-ink">
@@ -152,6 +166,73 @@ export function CataloguePicker({
           />
         </label>
       </div>
+
+      {monthly ? (
+        <div className="mb-4 rounded-md border border-lab-steel bg-lab-steelwash p-4">
+          <h3 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-lab-burgundy">
+            Ndërtimi i tarifës mujore
+          </h3>
+          <p className="mt-1 text-xs leading-5 text-muted">
+            Shëno sasitë mujore të pritshme në tabelën më poshtë dhe afatin e punës. Shporta jep sa vlen një muaj
+            punë; tarifa e ofertës shkruhet më pas me dorë — çfarë faturohet për punë të garantuar është vendim
+            tregtar, jo rezultat i shumës.
+          </p>
+          <div className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <label className="block text-sm font-medium text-ink">
+              Afati i kontratës (muaj)
+              <input
+                className="input mt-1"
+                type="number"
+                min={1}
+                value={values.contractMonths ?? ""}
+                placeholder="12"
+                onChange={(event) => onValue("contractMonths", event.target.value)}
+              />
+            </label>
+            <div className="text-sm">
+              <span className="block font-medium text-ink">Shporta mujore</span>
+              <span className="mt-1 block text-lg font-bold tabular-nums text-ink">
+                {money(monthly.computedMonthly)}
+              </span>
+              <span className="text-xs text-muted">ALL pa TVSH / muaj</span>
+            </div>
+            <label className="block text-sm font-medium text-ink">
+              Tarifa mujore e ofertës
+              <input
+                className={`input mt-1${monthly.rateIsSet ? " font-semibold" : ""}`}
+                type="number"
+                min={0}
+                value={values.monthlyRate ?? ""}
+                placeholder={String(Math.round(monthly.computedMonthly))}
+                onChange={(event) => onValue("monthlyRate", event.target.value)}
+              />
+              <span className="mt-1 block text-xs font-normal text-muted">
+                Bosh = sa vlen shporta. {money(withVat(monthly.quotedMonthly))} me TVSH.
+              </span>
+            </label>
+            <div className="text-sm">
+              <span className="block font-medium text-ink">Vlera e kontratës</span>
+              <span className="mt-1 block text-lg font-bold tabular-nums text-ink">
+                {money(monthly.contractTotal)}
+              </span>
+              <span className="text-xs text-muted">
+                ALL pa TVSH për {monthly.months} muaj
+              </span>
+            </div>
+          </div>
+          {monthly.rateIsSet && monthly.differencePerMonth !== 0 ? (
+            <p
+              className={`mt-3 text-xs font-medium ${
+                monthly.differencePerMonth < 0 ? "text-amber-700" : "text-emerald-700"
+              }`}
+            >
+              {monthly.differencePerMonth < 0
+                ? `Tarifa është ${money(Math.abs(monthly.differencePerMonth))} ALL në muaj nën vlerën e shportës — ${money(Math.abs(monthly.differencePerMonth) * monthly.months)} ALL gjatë kontratës.`
+                : `Tarifa është ${money(monthly.differencePerMonth)} ALL në muaj mbi vlerën e shportës — ${money(monthly.differencePerMonth * monthly.months)} ALL gjatë kontratës.`}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="mb-4 flex flex-wrap gap-4 text-sm">
         <label className="flex items-center gap-2 text-ink">
@@ -195,8 +276,8 @@ export function CataloguePicker({
                     <th className="w-24 px-2 py-1">Njësia</th>
                     <th className="w-24 px-2 py-1 text-right">Listë pa TVSH</th>
                     <th className="w-28 px-2 py-1 text-right">Çmimi /njësi pa TVSH</th>
-                    <th className="w-20 px-2 py-1 text-right">Sasia</th>
-                    <th className="w-28 px-2 py-1 text-right">Vlera pa TVSH</th>
+                    <th className="w-20 px-2 py-1 text-right">{monthlyMode ? "Sasia /muaj" : "Sasia"}</th>
+                    <th className="w-28 px-2 py-1 text-right">{monthlyMode ? "Vlera /muaj" : "Vlera pa TVSH"}</th>
                   </tr>
                 </thead>
                 <tbody>
