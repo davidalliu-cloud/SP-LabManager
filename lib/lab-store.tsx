@@ -1169,6 +1169,7 @@ export interface OfferInput {
   offerNumber: string;
   kind: "lab" | "geotech";
   clientId?: string;
+  projectId?: string;
   clientName: string;
   projectName: string;
   location?: string;
@@ -5129,21 +5130,95 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
         return id;
       },
 
+      /**
+       * Moves an offer along, and on acceptance puts its client and object on
+       * the books.
+       *
+       * Accepting is the moment a quotation becomes work, so it is the moment
+       * the client and the project are worth having: filing them when the
+       * offer was merely written would fill the register with prospects who
+       * never said yes. From here the offer carries its project id, which is
+       * what lets a month of finished work be valued at the prices this client
+       * agreed to rather than at list.
+       */
       setOfferStatus(id, status, notes) {
         if (!canGenerateOffers(currentEmail)) return;
         setState((previous) => {
           const offer = previous.offers.find((row) => row.id === id);
           if (!offer || (offer.status === status && notes === undefined)) return previous;
+
+          let clients = previous.clients;
+          let projects = previous.projects;
+          let clientId = offer.clientId;
+          let projectId = offer.projectId;
+          const filed: string[] = [];
+
+          if (status === "Pranuar" && canManageClients(currentRole)) {
+            const name = offer.clientName.trim();
+            const sameName = (left: string, right: string) =>
+              left.trim().toLocaleLowerCase("sq-AL") === right.trim().toLocaleLowerCase("sq-AL");
+
+            let client = clients.find((row) => row.id === clientId);
+            if (!client && name) client = clients.find((row) => sameName(row.clientName, name));
+            if (!client && name) {
+              client = {
+                id: crypto.randomUUID(),
+                clientCode: nextClientCode(clients),
+                clientName: name,
+                contactPerson: offer.values.contactPerson ?? "",
+                email: /[\w.+-]+@[\w-]+\.[\w.]+/.exec(offer.values.clientContact ?? "")?.[0] ?? "",
+                phone: /(\+?\d[\d\s]{6,})/.exec(offer.values.clientContact ?? "")?.[1]?.trim() ?? "",
+                address: offer.values.clientAddress ?? ""
+              };
+              clients = sortClientsByCode([client, ...clients]);
+              filed.push(`client ${client.clientCode}`);
+            }
+            clientId = client?.id ?? clientId;
+
+            const objectName = offer.projectName.trim();
+            if (client && objectName) {
+              let project = projects.find(
+                (row) => row.clientId === client!.id && sameName(row.projectName, objectName)
+              );
+              if (!project) {
+                project = {
+                  id: crypto.randomUUID(),
+                  clientId: client.id,
+                  projectName: objectName,
+                  location: offer.location ?? ""
+                };
+                projects = [project, ...projects];
+                filed.push(`project ${project.projectName}`);
+              }
+              projectId = project.id;
+            }
+          }
+
           const draft: LabState = {
             ...previous,
+            clients,
+            projects,
             offers: previous.offers.map((row) =>
               row.id === id
-                ? { ...row, status, statusChangedAt: new Date().toISOString(), notes: notes ?? row.notes }
+                ? {
+                    ...row,
+                    status,
+                    clientId,
+                    projectId,
+                    statusChangedAt: new Date().toISOString(),
+                    notes: notes ?? row.notes
+                  }
                 : row
             ),
             auditLog: [...previous.auditLog]
           };
-          addAudit(draft, "offer_status_changed", "offer", id, `Offer SL-OF-${offer.offerNumber} moved to ${status}.`);
+          addAudit(
+            draft,
+            "offer_status_changed",
+            "offer",
+            id,
+            `Offer SL-OF-${offer.offerNumber} moved to ${status}${filed.length ? `; filed ${filed.join(" and ")}` : ""}.`
+          );
           return draft;
         });
       },

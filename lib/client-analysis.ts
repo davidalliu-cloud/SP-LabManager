@@ -1,4 +1,13 @@
-import type { Client, ConcreteCompressiveTest, LabTest, Project, Report, Sample } from "./types";
+import { priceReport, type PriceSource } from "./offer-pricing";
+import type {
+  Client,
+  ConcreteCompressiveTest,
+  LabTest,
+  OfferRecord,
+  Project,
+  Report,
+  Sample
+} from "./types";
 
 /**
  * Përmbledhje e punës për një klient — the monthly analysis a client is sent,
@@ -38,7 +47,47 @@ export type ClientAnalysis = {
     testType: string;
     issuedAt: string | undefined;
     status: string;
+    /** The catalogue line this work was billed on, when one matched. */
+    code?: string;
+    unitPrice?: number;
+    value?: number;
+    priceSource: PriceSource;
+    /** Why the figure should be looked at before it reaches an invoice. */
+    caution?: string;
   }>;
+  pricing: AnalysisPricing;
+};
+
+/**
+ * What the period is worth.
+ *
+ * The sheet already listed the work; this puts a figure beside it, so the page
+ * a client checks off against their own records is the page that goes in front
+ * of the invoice. Prices come from the client's accepted offer where the
+ * project has one, and from the 2026 catalogue where it does not.
+ *
+ * `unpriced` is the honest part: work that matched no catalogue line is
+ * counted and named rather than quietly left out of the total.
+ */
+export type AnalysisPricing = {
+  subtotal: number;
+  vat: number;
+  total: number;
+  vatRate: number;
+  /** One line per catalogue code, which is how an invoice reads. */
+  lines: Array<{
+    code: string;
+    name: string;
+    unit: string;
+    reports: number;
+    unitPrice: number;
+    value: number;
+    source: PriceSource;
+    caution?: string;
+  }>;
+  unpriced: number;
+  /** The offers the prices came from, by number, for the sheet to name. */
+  offerNumbers: string[];
 };
 
 /**
@@ -120,6 +169,8 @@ export function buildClientAnalysis(
     tests: LabTest[];
     reports: Report[];
     concreteTests: ConcreteCompressiveTest[];
+    /** The offer register, for pricing at what the client actually agreed. */
+    offers?: OfferRecord[];
   },
   clientId: string,
   period: AnalysisPeriod
@@ -283,19 +334,40 @@ export function buildClientAnalysis(
   );
 
   // --- the invoice line ---------------------------------------------------
+  //
+  // Each report is priced on the catalogue line its sample and test belong to,
+  // at the price the client's own accepted offer put on that line where their
+  // project has one. A report whose sample has gone from the register prices
+  // as unmatched rather than as nothing: it is still work that was done, and
+  // it should be visible on the sheet as a question.
+  const acceptedFor = (projectId: string) =>
+    source.offers?.find((offer) => offer.status === "Pranuar" && offer.projectId === projectId);
+
   const reportRows = periodReports
     .map((report) => {
       const test = testById.get(report.testId);
+      const sample = sampleById.get(report.sampleId);
+      const priced = priceReport(sample?.sampleType ?? "", test?.testType ?? "", acceptedFor(report.projectId));
       return {
         reportNumber: report.reportNumber,
-        sampleCode: sampleById.get(report.sampleId)?.sampleCode ?? "—",
+        sampleCode: sample?.sampleCode ?? "—",
         projectName: projectName(report.projectId),
         testType: test?.testType ?? "—",
         issuedAt: reportIssuedOn(report),
-        status: report.reportStatus
+        status: report.reportStatus,
+        code: priced.code,
+        unitPrice: priced.unitPrice,
+        value: priced.unitPrice,
+        priceSource: priced.source,
+        caution: priced.caution
       };
     })
     .sort((a, b) => (a.issuedAt ?? "").localeCompare(b.issuedAt ?? "") || a.reportNumber.localeCompare(b.reportNumber));
+
+  const pricing = summarisePricing(
+    reportRows,
+    periodReports.map((report) => acceptedFor(report.projectId))
+  );
 
   return {
     client,
@@ -309,7 +381,64 @@ export function buildClientAnalysis(
     byMonth,
     concrete,
     concreteRows,
-    reportRows
+    reportRows,
+    pricing
+  };
+}
+
+const VAT_RATE = 0.2;
+
+/**
+ * The priced lines, grouped the way an invoice reads: one line per catalogue
+ * code with a count beside it, rather than four hundred identical rows.
+ *
+ * Reports that matched no code are counted separately. They are left out of
+ * the total because there is no honest figure to add — but they are named, so
+ * the sheet says how much work it could not value instead of silently
+ * understating the month.
+ */
+function summarisePricing(
+  rows: ClientAnalysis["reportRows"],
+  offers: Array<OfferRecord | undefined>
+): AnalysisPricing {
+  const byCode = new Map<string, AnalysisPricing["lines"][number]>();
+  let unpriced = 0;
+
+  for (const row of rows) {
+    if (!row.code || row.unitPrice === undefined) {
+      unpriced += 1;
+      continue;
+    }
+    // Keyed on code and price together: the same test billed at an offer price
+    // on one project and at list on another is two lines, not an average.
+    const key = `${row.code}@${row.unitPrice}`;
+    const line = byCode.get(key) ?? {
+      code: row.code,
+      name: row.testType,
+      unit: "raport",
+      reports: 0,
+      unitPrice: row.unitPrice,
+      value: 0,
+      source: row.priceSource,
+      caution: row.caution
+    };
+    line.reports += 1;
+    line.value += row.unitPrice;
+    byCode.set(key, line);
+  }
+
+  const lines = [...byCode.values()].sort((a, b) => b.value - a.value || a.code.localeCompare(b.code));
+  const subtotal = lines.reduce((sum, line) => sum + line.value, 0);
+  const offerNumbers = [...new Set(offers.filter(Boolean).map((offer) => offer!.offerNumber))].sort();
+
+  return {
+    subtotal,
+    vat: subtotal * VAT_RATE,
+    total: subtotal * (1 + VAT_RATE),
+    vatRate: VAT_RATE,
+    lines,
+    unpriced,
+    offerNumbers
   };
 }
 

@@ -1,6 +1,7 @@
 import type { ClientAnalysis } from "./client-analysis";
 import { formatPeriod } from "./client-analysis";
 import { formatEuropeanDate } from "./date-format";
+import { money } from "./offer-fields";
 
 /**
  * The client summary, built as a PDF rather than photographed from the page.
@@ -290,14 +291,70 @@ export async function buildSummaryPdf(input: SummaryPdfInput): Promise<Blob> {
   table<ClientAnalysis["reportRows"][number]>(
     "Raportet e lëshuara",
     [
-      { header: "Nr. raporti", width: 28, value: (row) => row.reportNumber },
-      { header: "Nr. regjistri", width: 34, value: (row) => row.sampleCode },
-      { header: "Objekti", width: 88, value: (row) => row.projectName },
-      { header: "Testi", width: 87, value: (row) => row.testType },
-      { header: "Data", width: 40, value: (row) => formatEuropeanDate(row.issuedAt) }
+      { header: "Nr. raporti", width: 26, value: (row) => row.reportNumber },
+      { header: "Nr. regjistri", width: 30, value: (row) => row.sampleCode },
+      { header: "Objekti", width: 66, value: (row) => row.projectName },
+      { header: "Testi", width: 74, value: (row) => row.testType },
+      { header: "Data", width: 25, value: (row) => formatEuropeanDate(row.issuedAt) },
+      { header: "Kodi", width: 14, value: (row) => row.code ?? "—" },
+      { header: "Çmimi", width: 21, align: "right", value: (row) => (row.unitPrice === undefined ? "—" : money(row.unitPrice)) },
+      { header: "Vlera", width: 21, align: "right", value: (row) => (row.value === undefined ? "—" : money(row.value)) }
     ],
     analysis.reportRows
   );
+
+  // --- what the period is worth --------------------------------------------
+  //
+  // Grouped by catalogue code, which is how an invoice reads: four hundred
+  // identical cube reports are one line with a count, not four hundred lines.
+  const pricing = analysis.pricing;
+  if (pricing.lines.length) {
+    table<ClientAnalysis["pricing"]["lines"][number]>(
+      "Vlera e punimeve për periudhën",
+      [
+        { header: "Kodi", width: 16, value: (row) => row.code },
+        { header: "Testimi", width: 132, value: (row) => row.name },
+        { header: "Njësia", width: 30, value: (row) => row.unit },
+        { header: "Sasia", width: 20, align: "right", value: (row) => String(row.reports) },
+        { header: "Çmimi njësi", width: 37, align: "right", value: (row) => money(row.unitPrice) },
+        { header: "Vlera (pa TVSH)", width: 42, align: "right", value: (row) => money(row.value) }
+      ],
+      pricing.lines,
+      pricing.offerNumbers.length
+        ? `Çmimet sipas ofertës ${pricing.offerNumbers.map((nr) => `SL-OF-${nr}/2026`).join(", ")}; testimet jashtë ofertës çmimohen me listën 2026.`
+        : "Çmimet sipas listës 2026 të SARP & LAB. Nuk ka ofertë të pranuar të lidhur me këto objekte."
+    );
+
+    // The totals, right-aligned under the value column.
+    reserve(20);
+    const totals: Array<[string, string, boolean]> = [
+      ["Nëntotali (pa TVSH)", money(pricing.subtotal), false],
+      [`TVSH ${Math.round(pricing.vatRate * 100)}%`, money(pricing.vat), false],
+      ["TOTALI (me TVSH)", money(pricing.total), true]
+    ];
+    for (const [label, value, strong] of totals) {
+      pdf.setFont("helvetica", strong ? "bold" : "normal");
+      pdf.setFontSize(strong ? 9.5 : 8.5);
+      pdf.text(label, PAGE_WIDTH_MM - MARGIN_MM - 42, y + 3.8, { align: "right" });
+      pdf.text(`${value} ALL`, PAGE_WIDTH_MM - MARGIN_MM - 1, y + 3.8, { align: "right" });
+      y += strong ? 7 : 5.6;
+    }
+
+    if (pricing.unpriced) {
+      y += 2;
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(7.5);
+      pdf.setTextColor(150, 60, 60);
+      pdf.text(
+        `${pricing.unpriced} raport${pricing.unpriced === 1 ? "" : "e"} nuk u çmimuan sepse nuk lidhen me asnjë kod të katalogut dhe nuk janë përfshirë në total.`,
+        MARGIN_MM,
+        y + 3.8
+      );
+      pdf.setTextColor(INK.r, INK.g, INK.b);
+      y += 7;
+    }
+    y += 4;
+  }
 
   footer();
   return pdf.output("blob");

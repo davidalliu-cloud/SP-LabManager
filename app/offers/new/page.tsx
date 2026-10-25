@@ -242,35 +242,19 @@ export default function NewOfferPage() {
   }
 
   /**
-   * File the client and the object in the register when they were typed in
-   * rather than picked. Returns the client id to store with the offer.
+   * The client this offer is for, when one is already on the books.
+   *
+   * A client typed in by hand is not filed here. An offer is a quotation, and
+   * one that is never accepted should leave nothing behind: the register fills
+   * when the offer is marked Pranuar.
    */
-  function fileClientAndProject(): string | undefined {
-    const clientName = draft.clientName?.trim();
-    const projectName = draft.projectName?.trim();
-    if (!clientName) return clientId || undefined;
-
-    const existing =
-      store.clients.find((row) => row.id === clientId) ??
-      store.rawClients.find(
-        (row) => row.clientName.trim().toLocaleLowerCase("sq-AL") === clientName.toLocaleLowerCase("sq-AL")
-      );
-
-    if (existing) {
-      if (projectName) store.createProjectForClient(existing.id, projectName, draft.location ?? "");
-      return existing.id;
-    }
-
-    const contact = draft.clientContact ?? "";
-    return store.createClient({
-      clientName,
-      contactPerson: draft.contactPerson ?? "",
-      email: /[\w.+-]+@[\w-]+\.[\w.]+/.exec(contact)?.[0] ?? "",
-      phone: /(\+?\d[\d\s]{6,})/.exec(contact)?.[1]?.trim() ?? "",
-      address: draft.clientAddress ?? "",
-      projectName: projectName || "Pa projekt",
-      projectLocation: draft.location ?? ""
-    });
+  function pickedClientId(): string | undefined {
+    if (clientId) return clientId;
+    const name = draft.clientName?.trim();
+    if (!name) return undefined;
+    return store.rawClients.find(
+      (row) => row.clientName.trim().toLocaleLowerCase("sq-AL") === name.toLocaleLowerCase("sq-AL")
+    )?.id;
   }
 
   async function generate() {
@@ -309,16 +293,13 @@ export default function NewOfferPage() {
       link.click();
       URL.revokeObjectURL(url);
 
-      // The document is in hand, so the register can be written: filing a
-      // client for an offer that failed to generate would leave a record of
-      // something that was never sent.
-      const filedClientId = fileClientAndProject();
       const totals = offerTotals(kind, values);
       store.saveOffer({
         id: reopening || undefined,
         offerNumber: draft.offerNumber ?? "",
         kind,
-        clientId: filedClientId,
+        clientId: pickedClientId(),
+        projectId: projectId || undefined,
         clientName: draft.clientName ?? "",
         projectName: draft.projectName ?? "",
         location: draft.location,

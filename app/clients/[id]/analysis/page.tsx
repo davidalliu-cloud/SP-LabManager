@@ -11,6 +11,7 @@ import { storePdfBlob } from "@/lib/pdf";
 import { buildSummaryPdf, imageAsDataUrl, type SummaryChart } from "@/lib/summary-pdf";
 import { formatInternational, toWhatsAppNumber, whatsAppLink } from "@/lib/phone";
 import { formatEuropeanDate } from "@/lib/date-format";
+import { money } from "@/lib/offer-fields";
 import { useLabStore } from "@/lib/lab-store";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -41,7 +42,17 @@ export default function ClientAnalysisPage() {
 
   const analysis = useMemo(
     () => buildClientAnalysis(store, params.id, period),
-    [store.clients, store.projects, store.samples, store.tests, store.reports, store.concreteTests, params.id, period]
+    [
+      store.clients,
+      store.projects,
+      store.samples,
+      store.tests,
+      store.reports,
+      store.concreteTests,
+      store.offers,
+      params.id,
+      period
+    ]
   );
 
   const record = store.clientAnalyses.find(
@@ -546,6 +557,9 @@ export default function ClientAnalysisPage() {
                     <th className="px-4 py-2">Objekti</th>
                     <th className="px-4 py-2">Testi</th>
                     <th className="px-4 py-2">Data</th>
+                    <th className="px-4 py-2">Kodi</th>
+                    <th className="px-4 py-2 text-right">Çmimi</th>
+                    <th className="px-4 py-2 text-right">Vlera</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -556,11 +570,95 @@ export default function ClientAnalysisPage() {
                       <td className="px-4 py-2.5">{row.projectName}</td>
                       <td className="px-4 py-2.5">{row.testType}</td>
                       <td className="whitespace-nowrap px-4 py-2.5 tabular-nums">{formatEuropeanDate(row.issuedAt)}</td>
+                      <td className="whitespace-nowrap px-4 py-2.5 tabular-nums" title={row.caution}>
+                        {row.code ?? <span className="text-red-700">pa kod</span>}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums">
+                        {row.unitPrice === undefined ? "—" : money(row.unitPrice)}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-2.5 text-right font-semibold tabular-nums">
+                        {row.value === undefined ? "—" : money(row.value)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+          </section>
+        ) : null}
+
+        {analysis.pricing.lines.length ? (
+          <section className="surface-card overflow-hidden">
+            <header className="flex items-baseline justify-between gap-3 border-b border-line bg-lab-porcelain px-4 py-2.5">
+              <h2 className="text-sm font-semibold text-ink">Vlera e punimeve për periudhën</h2>
+              <span className="text-xs text-muted">
+                {analysis.pricing.offerNumbers.length
+                  ? `Sipas ofertës ${analysis.pricing.offerNumbers.map((nr) => `SL-OF-${nr}/2026`).join(", ")}`
+                  : "Sipas listës 2026"}
+              </span>
+            </header>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[46rem] text-sm">
+                <thead className="border-b border-line text-left text-xs uppercase tracking-wide text-muted">
+                  <tr>
+                    <th className="px-4 py-2">Kodi</th>
+                    <th className="px-4 py-2">Testimi</th>
+                    <th className="px-4 py-2">Njësia</th>
+                    <th className="px-4 py-2 text-right">Sasia</th>
+                    <th className="px-4 py-2 text-right">Çmimi njësi</th>
+                    <th className="px-4 py-2 text-right">Vlera (pa TVSH)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {analysis.pricing.lines.map((line) => (
+                    <tr key={`${line.code}-${line.unitPrice}`} className="border-b border-line/70">
+                      <td className="whitespace-nowrap px-4 py-2.5 font-semibold tabular-nums text-ink">{line.code}</td>
+                      <td className="px-4 py-2.5">
+                        {line.name}
+                        {line.source === "catalogue" || line.caution ? (
+                          <span className="mt-0.5 block text-xs text-amber-700">
+                            {line.caution ?? "Jashtë ofertës së pranuar; çmimuar me listën 2026."}
+                          </span>
+                        ) : null}
+                      </td>
+                      <td className="px-4 py-2.5 text-muted">{line.unit}</td>
+                      <td className="px-4 py-2.5 text-right tabular-nums">{line.reports}</td>
+                      <td className="px-4 py-2.5 text-right tabular-nums">{money(line.unitPrice)}</td>
+                      <td className="px-4 py-2.5 text-right font-semibold tabular-nums">{money(line.value)}</td>
+                    </tr>
+                  ))}
+                  <tr className="border-b border-line bg-lab-porcelain">
+                    <td className="px-4 py-2.5 font-semibold" colSpan={5}>
+                      Nëntotali (pa TVSH)
+                    </td>
+                    <td className="px-4 py-2.5 text-right font-semibold tabular-nums">
+                      {money(analysis.pricing.subtotal)}
+                    </td>
+                  </tr>
+                  <tr className="border-b border-line">
+                    <td className="px-4 py-2.5" colSpan={5}>
+                      TVSH {Math.round(analysis.pricing.vatRate * 100)}%
+                    </td>
+                    <td className="px-4 py-2.5 text-right tabular-nums">{money(analysis.pricing.vat)}</td>
+                  </tr>
+                  <tr className="bg-lab-porcelain">
+                    <td className="px-4 py-2.5 text-base font-bold" colSpan={5}>
+                      TOTALI (me TVSH)
+                    </td>
+                    <td className="px-4 py-2.5 text-right text-base font-bold tabular-nums">
+                      {money(analysis.pricing.total)} ALL
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            {analysis.pricing.unpriced ? (
+              <p className="border-t border-line bg-red-50 px-4 py-2.5 text-xs leading-5 text-red-800">
+                {analysis.pricing.unpriced} raport
+                {analysis.pricing.unpriced === 1 ? "" : "e"} nuk u çmimuan sepse nuk lidhen me asnjë kod të katalogut
+                dhe nuk janë përfshirë në total.
+              </p>
+            ) : null}
           </section>
         ) : null}
 

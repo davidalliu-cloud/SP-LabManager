@@ -1456,6 +1456,15 @@ export interface OfferRecord {
   kind: "lab" | "geotech";
   /** Absent for a client typed in rather than picked from the register. */
   clientId?: string;
+  /**
+   * The object this offer was accepted for.
+   *
+   * Set when the offer is accepted, not when it is written: a quotation that
+   * never comes off should not leave a project behind in the register. Once
+   * set, it is what lets a month of finished work be valued at the prices this
+   * client actually agreed to.
+   */
+  projectId?: string;
   clientName: string;
   projectName: string;
   location?: string;
