@@ -250,6 +250,18 @@ textarea {
   color: #000 !important;
 }
 
+/* The steel header band belongs to the registers, not to the reports.
+   `.table-head` is shared with the aggregate report layouts, and those sheets
+   are accredited documents whose appearance was measured and signed off as it
+   is — a tint arriving there would be a change nobody asked for, on paper that
+   goes to a client. So the band stops at the edge of a printed surface, in the
+   preview, in print and in the html2canvas capture alike. */
+.print-surface .table-head,
+.pdf-capture .table-head {
+  background-color: #fff;
+  border-bottom-color: #e3e3e3;
+}
+
 /* Concrete cube tables: centre cell text vertically and give every row type a
    fixed height. html2canvas otherwise computes row boxes slightly too short and
    draws the grid lines through the text; a fixed row height gives it a correct
@@ -1039,8 +1051,15 @@ textarea {
 }
 
 @layer components {
+  /*
+   * The field edge is steel rather than #E3E3E3: at 1.7:1 against white it is
+   * still quiet, but it is half again the contrast of the old hairline, which
+   * is the difference between seeing where a field starts and hunting for it
+   * on a form of twenty. Focus still moves the border to burgundy, so the
+   * active field remains the loudest thing on the card.
+   */
   .input {
-    @apply w-full rounded-[0.7rem] border border-line bg-white px-3 py-2 text-sm text-ink outline-none transition placeholder:text-slate-400 focus:border-lab-burgundy focus:ring-2 focus:ring-lab-burgundy/15;
+    @apply w-full rounded-[0.7rem] border border-lab-steel bg-white px-3 py-2 text-sm text-ink outline-none transition placeholder:text-slate-400 focus:border-lab-burgundy focus:ring-2 focus:ring-lab-burgundy/15;
   }
 
   /*
@@ -1077,12 +1096,24 @@ textarea {
     @apply rounded-[0.85rem] border border-line bg-white;
   }
 
+  /* The tinted panel, now on the same steel as the register bands rather than
+     a neutral grey of its own — one secondary surface across the app. */
   .soft-panel {
-    @apply rounded-[0.85rem] border border-line bg-[#F4F4F5];
+    @apply rounded-[0.85rem] border border-lab-steel bg-lab-steelwash;
   }
 
+  /*
+   * The header row of a register.
+   *
+   * It used to be white on white, separated from the data only by small caps
+   * and a hairline — which is legible on a short table and not on a long one,
+   * where the header scrolls as a sticky band over rows it looks identical
+   * to. The steel wash gives it an edge to be read against, and the steel rule
+   * under it closes the band off. #666 on #EDF0F2 is 5.4:1, so the small caps
+   * are still comfortably readable.
+   */
   .table-head {
-    @apply border-b border-line bg-white text-[11px] uppercase tracking-[0.14em] text-muted;
+    @apply border-b border-lab-steel bg-lab-steelwash text-[11px] uppercase tracking-[0.14em] text-muted;
   }
 
   .btn-primary {
@@ -1094,7 +1125,7 @@ textarea {
   }
 
   .btn-secondary {
-    @apply rounded-[0.7rem] border border-line bg-white px-5 py-2.5 text-sm font-semibold text-ink transition hover:border-lab-burgundy hover:bg-lab-burgundy hover:text-white;
+    @apply rounded-[0.7rem] border border-lab-steel bg-white px-5 py-2.5 text-sm font-semibold text-ink transition hover:border-lab-burgundy hover:bg-lab-burgundy hover:text-white;
   }
 }
 

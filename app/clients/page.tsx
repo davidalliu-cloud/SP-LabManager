@@ -33,9 +33,10 @@ type ClientDraft = typeof emptyClientDraft;
  *  carries its own background, or the columns it overlaps show through it as
  *  they scroll past — and it follows the row's hover colour for the same
  *  reason. */
-const STICKY_HEAD = "sticky top-0 z-20 bg-white";
-const STICKY_CORNER = "sticky left-0 top-0 z-30 bg-white";
-const STICKY_CELL = "sticky left-0 z-10 bg-white transition-colors group-hover:bg-lab-burgundy";
+const STICKY_HEAD = "sticky top-0 z-20 bg-lab-steelwash";
+const STICKY_CORNER = "sticky left-0 top-0 z-30 border-r border-lab-steel bg-lab-steelwash";
+const STICKY_CELL =
+  "sticky left-0 z-10 border-r border-lab-steel bg-white transition-colors group-hover:bg-lab-burgundy";
 
 function clientCodeNumber(code: string) {
   const match = /^K(\d+)$/i.exec(code.trim());

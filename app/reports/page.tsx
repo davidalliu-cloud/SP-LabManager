@@ -31,7 +31,7 @@ const reportStatusLabels: Record<Exclude<ReportStatus, "Draft">, string> = {
  * which means the first needs a fixed width to offset against. w-12 (48px)
  * matches its natural width: px-4 either side plus the checkbox.
  */
-const STICKY_HEAD = "sticky top-0 z-20 bg-white";
+const STICKY_HEAD = "sticky top-0 z-20 bg-lab-steelwash";
 const STICKY_CHECKBOX_HEAD = "sticky left-0 top-0 z-30 w-12 min-w-[48px] bg-white";
 const STICKY_NUMBER_HEAD = "sticky left-12 top-0 z-30 bg-white";
 const STICKY_CHECKBOX_CELL = "sticky left-0 z-10 w-12 min-w-[48px] bg-white";

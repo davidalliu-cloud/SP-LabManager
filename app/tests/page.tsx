@@ -47,9 +47,9 @@ const RECENT_WINDOW_DAYS = 90;
 const UNASSIGNED = "none";
 
 /** Frozen panes - see the Sample Register for the reasoning. */
-const STICKY_HEAD = "sticky top-0 z-20 bg-white";
-const STICKY_CORNER = "sticky left-0 top-0 z-30 bg-white";
-const STICKY_CELL = "sticky left-0 z-10";
+const STICKY_HEAD = "sticky top-0 z-20 bg-lab-steelwash";
+const STICKY_CORNER = "sticky left-0 top-0 z-30 border-r border-lab-steel bg-lab-steelwash";
+const STICKY_CELL = "sticky left-0 z-10 border-r border-lab-steel";
 
 type TestRow = {
   test: LabTest;

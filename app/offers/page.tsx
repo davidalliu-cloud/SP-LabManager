@@ -26,7 +26,7 @@ import { OFFER_STATUSES, type OfferRecord, type OfferStatus } from "@/lib/types"
  * re-generates the same document from the stored form.
  */
 
-const STICKY_HEAD = "sticky top-0 z-20 bg-white";
+const STICKY_HEAD = "sticky top-0 z-20 bg-lab-steelwash";
 
 /** Status colours: what needs attention should read as such at a glance. */
 const STATUS_STYLE: Record<OfferStatus, string> = {

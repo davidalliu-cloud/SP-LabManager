@@ -35,6 +35,15 @@ const config: Config = {
           mist: "#E6F8F6",
           porcelain: "#F3F7F3",
           steel: "#BDC8D0",
+          /**
+           * Steel laid over white at 28%, pre-resolved.
+           *
+           * The header band of every register, where it has to be opaque: a
+           * sticky header is scrolled under, and an alpha tint would let the
+           * rows show through it. Kept beside the colour it comes from so the
+           * two stay in step if either is ever changed.
+           */
+          steelwash: "#EDF0F2",
           cream: "#F6EFE4",
           sand: "#E9D8BE",
           terracotta: "#C7744A",
