@@ -46,9 +46,10 @@ import {
   pruneCatalogue,
   replaceSentence,
   writeBillOfQuantities,
-  writeContacts,
+  writePeople,
   writeCatalogueQuantities,
-  writeCataloguePrices
+  writeCataloguePrices,
+  type Person
 } from "./offer-tables";
 
 export type OfferValues = Record<string, string>;
@@ -70,15 +71,15 @@ export function encodeDirectory(people: { fullName: string; email: string }[]): 
     .join(";");
 }
 
-/** Lower-cased name to address, for matching the names printed in the table. */
-export function decodeDirectory(values: OfferValues): Map<string, string> {
-  const byName = new Map<string, string>();
+/** The people the offer travelled with, in the order the register listed them. */
+export function decodeDirectory(values: OfferValues): Person[] {
+  const people: Person[] = [];
   for (const entry of String(values.directory ?? "").split(";")) {
     const at = entry.indexOf("=");
     if (at <= 0) continue;
-    byName.set(entry.slice(0, at).trim().toLocaleLowerCase("sq-AL"), entry.slice(at + 1).trim());
+    people.push({ fullName: entry.slice(0, at).trim(), email: entry.slice(at + 1).trim() });
   }
-  return byName;
+  return people;
 }
 
 /* ------------------------------------------- the laboratory test selection */
@@ -395,7 +396,19 @@ function replaceMarker(xml: string, find: string, valueAt: (index: number) => st
       continue;
     }
 
-    // Nothing to say: drop the run, and take the space in front of it with it.
+    // Nothing to say, and the marker shares its run with other words: take out
+    // the marker alone. Dropping the whole run would take the sentence with
+    // it — the cover letter's subject line holds the object and the location
+    // inside one run of ordinary text, and a blank object would delete the
+    // "Lënda:" line entirely.
+    const runText = [...run.matchAll(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g)].map((match) => match[1]).join("");
+    if (runText.trim() !== find.trim()) {
+      out += run.replace(find, "").replace(/ {2,}/g, " ");
+      continue;
+    }
+
+    // The run is nothing but the marker: drop it, and take the space in front
+    // of it with it.
     const trimmed = out.replace(/ (<\/w:t><\/w:r>)$/, "$1");
     if (trimmed !== out) {
       out = trimmed;
@@ -479,10 +492,10 @@ export function fillOfferDocument(xml: string, kind: OfferKind, values: OfferVal
   // contacts table, so a client replying to the offer reaches nobody in
   // particular.
   const directory = decodeDirectory(values);
-  if (directory.size) {
-    const contacts = writeContacts(working, directory);
-    working = contacts.xml;
-    warnings.push(...contacts.warnings);
+  if (directory.length) {
+    const people = writePeople(working, directory);
+    working = people.xml;
+    warnings.push(...people.warnings);
   }
 
   // The tables come last, once every marker in them has been resolved: pruning

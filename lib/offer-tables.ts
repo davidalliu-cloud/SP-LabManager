@@ -288,38 +288,81 @@ function isContactTable(table: string) {
   return header.length === 4 && header[0] === "Inicialet" && header[3] === "Kontakti";
 }
 
+/** True for a team table: "Roli | Emri | Përgjegjësia". */
+function isTeamTable(table: string) {
+  const first = rowsOf(table)[0];
+  if (!first) return false;
+  const header = cellsOf(first).map(cellText);
+  return header.length === 3 && header[0] === "Roli" && header[1] === "Emri";
+}
+
 /**
- * Put each person's own address in the contacts table.
+ * Titles people put in front of their own names, which the templates do not.
+ * The register has "Eng. Adelajda Duzha" where the document says "Adelajda
+ * Duzha"; without this the two never meet and her address is never written.
+ */
+const HONORIFICS = new Set(["eng", "ing", "inxh", "dr", "prof", "msc", "ark", "arch", "mr", "mrs", "ms", "znj", "z"]);
+
+/** A name reduced to the part that identifies the person. */
+export function nameKey(name: string): string {
+  return name
+    .toLocaleLowerCase("sq-AL")
+    .split(/\s+/)
+    .filter((token) => token && !HONORIFICS.has(token.replace(/\.$/, "")))
+    .join(" ")
+    .trim();
+}
+
+export interface Person {
+  fullName: string;
+  email: string;
+}
+
+/**
+ * Put the register's people into the tables that name them.
  *
- * Both templates print `info@sarpandlab.al` against every name, which is the
- * lab's general inbox: a client replying to an offer reaches nobody in
- * particular, and the two people named are exactly the two who should hear
- * back. Rows are matched on the name already printed, so a person the register
- * has no address for keeps the inbox rather than losing a contact entirely.
+ * Two things at once, because they are the same lookup. Both templates print
+ * `info@sarpandlab.al` against every name in the contacts table — the lab's
+ * general inbox, so a client replying to an offer reaches nobody in
+ * particular — and each row gets that person's own address instead. And the
+ * name itself is rewritten to the register's form, so one table cannot say
+ * "Adelajda Duzha" in the row the template wrote and "Eng. Adelajda Duzha" in
+ * the row the generator filled.
+ *
+ * A name the register does not know is left exactly as the template has it:
+ * the seismologist is not an employee, and an offer should still name him.
  *
  * The same address in the order-form instruction is left alone — an order
  * genuinely should go to the shared inbox, not to one person's mail.
  */
-export function writeContacts(xml: string, byName: Map<string, string>): OrderFormResult {
+export function writePeople(xml: string, people: Person[]): OrderFormResult {
   const warnings: string[] = [];
-  let found = false;
+  const byKey = new Map(people.map((person) => [nameKey(person.fullName), person]));
+  let contactTable = false;
   let matched = 0;
 
   const next = mapParts(xml, TABLE, (table) => {
-    if (!isContactTable(table)) return table;
-    found = true;
+    const contacts = isContactTable(table);
+    const team = isTeamTable(table);
+    if (!contacts && !team) return table;
+    if (contacts) contactTable = true;
+
     return mapParts(table, ROW, (row) => {
       const cells = cellsOf(row);
-      if (cells.length !== 4) return row;
-      const email = byName.get(cellText(cells[1]).toLocaleLowerCase("sq-AL"));
-      if (!email) return row;
+      if (cells.length !== (contacts ? 4 : 3)) return row;
+      const person = byKey.get(nameKey(cellText(cells[1])));
+      if (!person) return row;
       matched += 1;
-      return mapParts(row, CELL, (cell, index) => (index === 3 ? setCellText(cell, email) : cell));
+      return mapParts(row, CELL, (cell, index) => {
+        if (index === 1) return setCellText(cell, person.fullName);
+        if (contacts && index === 3 && person.email) return setCellText(cell, person.email);
+        return cell;
+      });
     });
   });
 
-  if (!found) warnings.push("Tabela e kontakteve nuk u gjet.");
-  else if (!matched) warnings.push("Asnjë nga emrat e tabelës së kontakteve nuk u njoh nga regjistri i punonjësve.");
+  if (!contactTable) warnings.push("Tabela e kontakteve nuk u gjet.");
+  else if (!matched) warnings.push("Asnjë nga emrat e tabelave nuk u njoh nga regjistri i punonjësve.");
   return { xml: next, warnings };
 }
 
