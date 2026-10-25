@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { OFFER_CATALOGUE, type CatalogueTest } from "@/lib/offer-catalogue";
 import { money } from "@/lib/offer-fields";
+import { OFFER_TABLE_INFO } from "@/lib/offer-help";
+import { InfoHint } from "@/components/ui/info-hint";
 import { discountPercent, hasPriceOverride, unitPrice, withVat, type OfferValues, type QuantityMode } from "@/lib/offer-fill";
 
 /**
@@ -96,6 +98,7 @@ export function CataloguePicker({
         <div>
           <h2 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-lab-burgundy">
             Testimet në ofertë (Seksioni 9)
+            <InfoHint label="Testimet në ofertë">{OFFER_TABLE_INFO.catalogue}</InfoHint>
           </h2>
           <p className="mt-1 text-xs leading-5 text-muted">
             Zgjidh testimet që do të përfshihen. Të pazgjedhurat hiqen nga oferta; grupi pa asnjë testim të
@@ -129,6 +132,7 @@ export function CataloguePicker({
       <div className="mb-4 grid gap-4 lg:grid-cols-[2fr_1fr]">
         <label className="block text-sm font-medium text-ink">
           Mënyra e çmimit
+          <InfoHint label="Mënyra e çmimit">{OFFER_TABLE_INFO.quantityMode}</InfoHint>
           <select
             className="input mt-1"
             value={mode}

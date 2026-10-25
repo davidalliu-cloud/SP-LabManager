@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CataloguePicker } from "@/components/offers/catalogue-picker";
+import { InfoHint } from "@/components/ui/info-hint";
 import { PageHeader } from "@/components/ui/page-header";
 import { useLabStore } from "@/lib/lab-store";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -26,6 +27,7 @@ import {
   type OfferValues,
   type QuantityMode
 } from "@/lib/offer-fill";
+import { OFFER_FIELD_INFO, OFFER_GROUP_INFO, OFFER_TABLE_INFO } from "@/lib/offer-help";
 import { canGenerateOffers } from "@/lib/permissions";
 
 /**
@@ -375,7 +377,12 @@ export default function NewOfferPage() {
         if (!fields.length) return null;
         return (
           <section key={group} className="surface-card mb-5 p-5">
-            <h2 className="mb-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-lab-burgundy">{group}</h2>
+            <h2 className="mb-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-lab-burgundy">
+              {group}
+              {OFFER_GROUP_INFO[group] ? (
+                <InfoHint label={group}>{OFFER_GROUP_INFO[group]}</InfoHint>
+              ) : null}
+            </h2>
             <div className="grid gap-4 lg:grid-cols-3">
               {fields.map((field) => (
                 <FieldInput
@@ -426,6 +433,7 @@ export default function NewOfferPage() {
           <section className="surface-card mb-5 p-5">
             <h2 className="mb-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-lab-burgundy">
               Preventivi (Tabela 10.1)
+              <InfoHint label="Preventivi">{OFFER_TABLE_INFO.bill}</InfoHint>
             </h2>
             <p className="mb-4 text-xs leading-5 text-muted">
               Sasitë vijnë nga fusha e punës më sipër; shkruaji ndryshe kur terreni e kërkon, ose fshij fushën për
@@ -517,6 +525,7 @@ export default function NewOfferPage() {
           <section className="surface-card mb-5 p-5">
             <h2 className="mb-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-lab-burgundy">
               Programi i testimeve laboratorike (Tabela 2.1)
+              <InfoHint label="Programi i testimeve">{OFFER_TABLE_INFO.programme}</InfoHint>
             </h2>
             <p className="mb-4 text-xs leading-5 text-muted">
               Sasi orientuese, të nxjerra nga numri i kampioneve. Çmimi i tyre është i përfshirë në rreshtin E1 të
@@ -590,10 +599,12 @@ function FieldInput({
   onChange: (value: string) => void;
 }) {
   const label = field.unit ? `${field.label} (${field.unit})` : field.label;
+  const info = OFFER_FIELD_INFO[field.key] ?? field.help;
 
   return (
     <label className={`block text-sm font-medium text-ink${field.kind === "longtext" ? " lg:col-span-3" : ""}`}>
       {label}
+      {info ? <InfoHint label={field.label}>{info}</InfoHint> : null}
       <div className="mt-1">
         {field.readOnly ? (
           <input className="input bg-lab-porcelain font-semibold" value={value} readOnly />
@@ -632,7 +643,6 @@ function FieldInput({
           />
         )}
       </div>
-      {field.help ? <span className="mt-1 block text-xs font-normal leading-5 text-muted">{field.help}</span> : null}
     </label>
   );
 }
