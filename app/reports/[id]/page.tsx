@@ -19,6 +19,17 @@ export default function ReportDetailPage() {
   const [pdfStatus, setPdfStatus] = useState<"idle" | "generating" | "error">("idle");
   const [pdfError, setPdfError] = useState("");
   const reportSurfaceRef = useRef<HTMLDivElement>(null);
+  // Minted before the report is looked up rather than after, and that order is
+  // load-bearing. This page is usually opened at its own address, where the
+  // first render runs before the shared state has arrived and the lookup below
+  // finds nothing. A hook sitting past that early return therefore runs on the
+  // second render and not the first, which React treats as a broken component:
+  // it threw "Rendered more hooks than during the previous render" and the page
+  // showed a client-side exception instead of the report.
+  //
+  // The token itself is only committed when a message actually goes out, and
+  // never replaces one the report already carries.
+  const mintedShareToken = useRef(newShareToken());
   const report = store.reports.find((item) => item.id === params.id);
   if (!report) return <PageHeader title="Raporti nuk u gjet" />;
   const activeReport = report;
@@ -80,9 +91,6 @@ export default function ReportDetailPage() {
   // Sending again is allowed; the confirmation in sendReportToWhatsApp is what
   // makes it deliberate.
   const canSendToClient = activeReport.reportStatus === "Approved" || alreadySent;
-  // A token is minted here but only committed when a message actually goes out,
-  // and never replaces one the report already carries.
-  const mintedShareToken = useRef(newShareToken());
   const shareToken = activeReport.shareToken ?? mintedShareToken.current;
 
   function downloadApprovedPdf() {
