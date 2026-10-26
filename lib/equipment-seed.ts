@@ -5031,7 +5031,7 @@ const INVENTORY: InventoryRow[] = [
     name: "Sklerometer betoni",
     description: "N - Type",
     manufacturer: "RANTEK",
-    model: "REC2470",
+    model: "ROC2470",
     serialNumber: "RC 78679",
     location: "01/A",
     notes: "Blerë me datë 03.10.2022",
