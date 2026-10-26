@@ -4950,6 +4950,14 @@ const INVENTORY: InventoryRow[] = [
     name: "Etaloni per verifikimin e brendshem",
     manufacturer: "SINT03",
     model: "SIM0107C06",
+    // The reference the hammers are verified against, so it is the one item
+    // here that must go out: verifying against an uncalibrated anvil proves
+    // nothing. Its certificate also states the reference rebound value, which
+    // is what the hammers are then judged on.
+    calibrationType: "I jashtëm",
+    calibrationInterval: "1 herë në vit",
+    nextCalibrationDate: "03.10.2026",
+    notes: "Nuk ka certifikatë kalibrimi në dosje. Kalibrim i jashtëm i detyrueshëm — certifikata përcakton edhe vlerën referencë të kërcimit për sklerometrat RT2, RT4 dhe RT5.",
     quantity: 1,
     seedIndex: 457
   },
@@ -5034,7 +5042,11 @@ const INVENTORY: InventoryRow[] = [
     model: "ROC2470",
     serialNumber: "RC 78679",
     location: "01/A",
-    notes: "Blerë me datë 03.10.2022",
+    calibrationType: "I brendshëm",
+    calibrationInterval: "1 herë në vit",
+    calibrationBody: "Sarp&Lab Shpk",
+    nextCalibrationDate: "03.10.2026",
+    notes: "Blerë me datë 03.10.2022. Verifikohet në etalonin FM42/1 para çdo serie provash dhe një herë në vit si regjistrim formal. Pa kalibrim deri më sot; brezi i pranimit caktohet nga certifikata e FM42/1 ose nga vlera e deklaruar e RANTEK.",
     quantity: 1,
     seedIndex: 467
   },
@@ -5062,7 +5074,11 @@ const INVENTORY: InventoryRow[] = [
     model: "ROC2470",
     serialNumber: "RC 78680",
     location: "01/A",
-    notes: "Blerë me datë 03.10.2022",
+    calibrationType: "I brendshëm",
+    calibrationInterval: "1 herë në vit",
+    calibrationBody: "Sarp&Lab Shpk",
+    nextCalibrationDate: "03.10.2026",
+    notes: "Blerë me datë 03.10.2022. Verifikohet në etalonin FM42/1 para çdo serie provash dhe një herë në vit si regjistrim formal. Pa kalibrim deri më sot; brezi i pranimit caktohet nga certifikata e FM42/1 ose nga vlera e deklaruar e RANTEK.",
     quantity: 1,
     seedIndex: 471
   },
@@ -5090,7 +5106,11 @@ const INVENTORY: InventoryRow[] = [
     model: "ROC2470",
     serialNumber: "RC 78678",
     location: "01/A",
-    notes: "Blerë me datë 03.10.2022",
+    calibrationType: "I brendshëm",
+    calibrationInterval: "1 herë në vit",
+    calibrationBody: "Sarp&Lab Shpk",
+    nextCalibrationDate: "03.10.2026",
+    notes: "Blerë me datë 03.10.2022. Verifikohet në etalonin FM42/1 para çdo serie provash dhe një herë në vit si regjistrim formal. Pa kalibrim deri më sot; brezi i pranimit caktohet nga certifikata e FM42/1 ose nga vlera e deklaruar e RANTEK.",
     quantity: 1,
     seedIndex: 475
   },
