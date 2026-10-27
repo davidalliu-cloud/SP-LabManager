@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabTest, MortarTest, Project, Report, Sample, SteelTensileTest, ThermalInsulationTest } from "@/lib/types";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
+import { assessGradation, defaultGradationTarget, formatLimit } from "@/lib/asphalt-gradation-limits";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
 import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, samplingOperator } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
@@ -115,11 +116,28 @@ export function AsphaltReportBody({ kind, asphalt }: { kind: string; asphalt: As
     return <OfficialSimpleResultTable rows={rows} />;
   }
   if (kind === "granulometry") {
+    // The band is what makes a gradation mean anything on a certificate: the
+    // curve alone says what the mixture is, not whether it was acceptable.
+    const target = asphalt.gradationTarget ?? defaultGradationTarget(asphalt.mixtureKind);
+    const assessment = assessGradation(asphalt.granulometry, target, asphalt.projectGradationLimits);
+    const hasProjectBand = Boolean(asphalt.projectGradationLimits?.length);
     return (
-      <table className="official-table mt-4 w-full table-fixed border-collapse text-center text-[9pt]">
-        <thead><tr><th>Sitat<br /><span>Sieves [mm]</span></th><th>Mbetja progresive<br /><span>Progressive retaining [g]</span></th><th>Mbetja progresive<br /><span>Progressive retaining [%]</span></th><th>Kalimi progresiv<br /><span>Progressive passing [%]</span></th></tr></thead>
-        <tbody>{asphalt.granulometry.map((row) => <tr key={row.sieveSizeMm}><td className="font-bold">{row.sieveSizeMm}</td><td>{row.cumulativeRetainedMassG}</td><td>{row.cumulativeRetainedPercent}</td><td className="font-bold">{row.cumulativePassingPercent}</td></tr>)}</tbody>
-      </table>
+      <>
+        <table className="official-table mt-4 w-full table-fixed border-collapse text-center text-[9pt]">
+          <thead><tr><th>Sitat<br /><span>Sieves [mm]</span></th><th>Mbetja progresive<br /><span>Progressive retaining [g]</span></th><th>Mbetja progresive<br /><span>Progressive retaining [%]</span></th><th>Kalimi progresiv<br /><span>Progressive passing [%]</span></th><th>Limitet<br /><span>Limits [%]</span></th></tr></thead>
+          <tbody>{assessment.rows.map(({ row, limit, verdict }) => <tr key={row.sieveSizeMm}><td className="font-bold">{row.sieveSizeMm}</td><td>{row.cumulativeRetainedMassG}</td><td>{row.cumulativeRetainedPercent}</td><td className={verdict === "outside" ? "font-bold underline" : "font-bold"}>{row.cumulativePassingPercent}</td><td>{formatLimit(limit)}</td></tr>)}</tbody>
+        </table>
+        <p className="mt-2 text-[8pt]">
+          {hasProjectBand
+            ? "Limitet sipas projektit / Project limits"
+            : `Limitet sipas BS EN 13108-1, ${target} / Limits per BS EN 13108-1, ${target}`}
+          {assessment.judged ? (
+            assessment.conforms
+              ? ` — brenda brezit në të ${assessment.judged} sitat e vlerësuara / within limits on all ${assessment.judged} assessed sieves`
+              : ` — jashtë brezit në ${assessment.outside} nga ${assessment.judged} sita / outside limits on ${assessment.outside} of ${assessment.judged} sieves`
+          ) : " — sitat e matura nuk mbulohen nga brezi / assessed sieves not covered by the envelope"}
+        </p>
+      </>
     );
   }
   if (kind === "marshall-density") {

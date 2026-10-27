@@ -1,6 +1,6 @@
 "use client";
 
-import type { AdmixtureTest, AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabTest, MasonryUnitTest, MortarTest, PavingElementTest, WaterAnalysisTest, SclerometerTest, Project, Report, Sample, SteelTensileTest, ThermalInsulationTest } from "@/lib/types";
+import type { AdmixtureTest, AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltJobMixTest, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabTest, MasonryUnitTest, MortarTest, PavingElementTest, WaterAnalysisTest, SclerometerTest, Project, Report, Sample, SteelTensileTest, ThermalInsulationTest } from "@/lib/types";
 import { CementConsistencyReportPreview, CementStrengthReportPreview, CementBlaineReportPreview } from "./cement-reports";
 import { AdmixtureReportPreview } from "./admixture-reports";
 import { MasonryUnitReportPreview } from "./masonry-reports";
@@ -17,6 +17,7 @@ import {
   ConcreteCoreReportPreview
 } from "./concrete-reports";
 import { AsphaltReportPreview } from "./asphalt-reports";
+import { AsphaltJobMixReportPreview } from "./asphalt-job-mix-report";
 import { ThermalInsulationReportPreview, SteelReportPreview } from "./thermal-steel-reports";
 import {
   AggregateReportPreview,
@@ -49,6 +50,7 @@ export function ReportPreview({
   concreteIndirectTensile,
   concreteCore,
   asphalt,
+  asphaltJobMix,
   thermalInsulation,
   cementConsistency,
   cementStrength,
@@ -86,6 +88,7 @@ export function ReportPreview({
   concreteIndirectTensile?: ConcreteIndirectTensileTest;
   concreteCore?: ConcreteCoreTest;
   asphalt?: AsphaltTest;
+  asphaltJobMix?: AsphaltJobMixTest;
   thermalInsulation?: ThermalInsulationTest;
   cementConsistency?: CementConsistencyTest;
   cementStrength?: CementStrengthTest;
@@ -157,6 +160,10 @@ export function ReportPreview({
 
   if (concreteCore) {
     return <ConcreteCoreReportPreview report={report} test={test} sample={sample} client={client} project={project} concreteCore={concreteCore} />;
+  }
+
+  if (asphaltJobMix) {
+    return <AsphaltJobMixReportPreview report={report} test={test} sample={sample} client={client} project={project} jobMix={asphaltJobMix} />;
   }
 
   if (asphalt) {

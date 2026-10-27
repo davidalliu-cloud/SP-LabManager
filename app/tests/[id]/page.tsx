@@ -6,12 +6,25 @@ import { Dispatch, FormEvent, SetStateAction, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { StageCell } from "@/components/ui/stage-cell";
 import { testLifecycle } from "@/lib/sample-stage";
-import { getMortarTestKind, isAggregateAcvAccreditedTest, isAggregateBulkDensityAccreditedTest, isAggregateChemicalAccreditedTest, isAggregateDensityAbsorptionAccreditedTest, isAggregateElongationIndexAccreditedTest, isAggregateFillerDensityAccreditedTest, isAggregateFlakinessIndexAccreditedTest, isAggregateFreezeThawAccreditedTest, isAggregateGranulometrySampleType, isAggregateLosAngelesAccreditedTest, isAggregateSandEquivalentAccreditedTest, isAggregateShapeIndexAccreditedTest, isAggregateSoundnessAccreditedTest, isAsphaltAccreditedTest, isAdmixtureAccreditedTest, isMasonryUnitAccreditedTest, isWaterAnalysisAccreditedTest, isSclerometerAccreditedTest, isCementBlaineAstmAccreditedTest, isCementBlaineBsEnAccreditedTest, isCementConsistencyAccreditedTest, isCementStrengthAccreditedTest, isConcreteCoreAccreditedTest, isConcreteDensityAccreditedTest, isConcreteFlexuralAccreditedTest, isConcreteIndirectTensileAccreditedTest, isConcreteWaterPenetrationAccreditedTest, isMortarAccreditedTest, isSteelSampleType, isThermalInsulationAccreditedTest, isMasonryUnitSampleType, isPavingElementAccreditedTest, isPavingElementSampleType, pavingElementKind } from "@/lib/accredited-tests";
+import { getMortarTestKind, isAggregateAcvAccreditedTest, isAggregateBulkDensityAccreditedTest, isAggregateChemicalAccreditedTest, isAggregateDensityAbsorptionAccreditedTest, isAggregateElongationIndexAccreditedTest, isAggregateFillerDensityAccreditedTest, isAggregateFlakinessIndexAccreditedTest, isAggregateFreezeThawAccreditedTest, isAggregateGranulometrySampleType, isAggregateLosAngelesAccreditedTest, isAggregateSandEquivalentAccreditedTest, isAggregateShapeIndexAccreditedTest, isAggregateSoundnessAccreditedTest, isAsphaltAccreditedTest, isAsphaltJobMixAccreditedTest, isAdmixtureAccreditedTest, isMasonryUnitAccreditedTest, isWaterAnalysisAccreditedTest, isSclerometerAccreditedTest, isCementBlaineAstmAccreditedTest, isCementBlaineBsEnAccreditedTest, isCementConsistencyAccreditedTest, isCementStrengthAccreditedTest, isConcreteCoreAccreditedTest, isConcreteDensityAccreditedTest, isConcreteFlexuralAccreditedTest, isConcreteIndirectTensileAccreditedTest, isConcreteWaterPenetrationAccreditedTest, isMortarAccreditedTest, isSteelSampleType, isThermalInsulationAccreditedTest, isMasonryUnitSampleType, isPavingElementAccreditedTest, isPavingElementSampleType, pavingElementKind } from "@/lib/accredited-tests";
 import { admixtureDeterminationsDisagree } from "@/lib/calculations";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { useLabStore } from "@/lib/lab-store";
 import { canEditTestData, canGenerateReportForTest, canReviewTests, canViewClientIdentity } from "@/lib/permissions";
-import type { AsphaltReportKind, LabTest, LabUser, MasonryUnitCategory, MortarTest, MortarTestKind, Sample } from "@/lib/types";
+import type { AsphaltGradationTarget, AsphaltReportKind, LabTest, LabUser, MasonryUnitCategory, MortarTest, MortarTestKind, Sample } from "@/lib/types";
+import { ASPHALT_GRADATION_TARGETS, assessGradation, defaultGradationTarget, formatLimit, gradationVerdict, limitAtSieve } from "@/lib/asphalt-gradation-limits";
+import { DEFAULT_BITUMEN_DENSITY_GCM3, calculateJobMixDosageMasses, calculateJobMixFractionMasses, isMarshallHeightInRange, jobMixOptimumCandidates, round } from "@/lib/calculations";
+
+/** The fractions and dosages the lab's own Job Mix master starts from. */
+const JOB_MIX_DEFAULT_FRACTIONS = [
+  { name: "Agregat i imët 1 — Rërë mali 00/04 mm", proportionPercent: 25 },
+  { name: "Agregat i imët 2 — Rërë lumi 00/04 mm", proportionPercent: 30 },
+  { name: "Agregat i trashë 1 — Granil 10/25 mm", proportionPercent: 0 },
+  { name: "Agregat i trashë 2 — Granil 08/16 mm", proportionPercent: 0 },
+  { name: "Agregat i trashë 3 — Granil 04/08 mm", proportionPercent: 45 },
+  { name: "Filer", proportionPercent: 0 }
+];
+const JOB_MIX_DEFAULT_DOSAGES = [4.6, 4.9, 5.2, 5.5, 5.8];
 
 const aggregateSieveSizes = [125, 80, 63, 37.5, 31.5, 25, 20, 16, 12.5, 8, 4, 2, 1, 0.5, 0.25, 0.125, 0.063, 0];
 const mortarSieveSizes = [8, 4, 2, 1, 0.5, 0.25, 0.125, 0.063, 0.0001];
@@ -39,10 +52,26 @@ const MASONRY_UNIT_CATEGORIES: MasonryUnitCategory[] = ["Tullë Qeramike", "Tull
 
 export default function TestDetailPage() {
   const params = useParams<{ id: string }>();
-  const router = useRouter();
   const store = useLabStore();
   const test = store.tests.find((item) => item.id === params.id);
+  // Opened at its own address, the first render runs before the register has
+  // arrived from Supabase and this lookup finds nothing. Everything below needs
+  // a test to exist, and some forty hooks hang off what it points at, so the
+  // page is in two parts: the lookup here, and the work in a component that
+  // only mounts once there is something to show.
+  //
+  // Keeping them in one function put those hooks after this return, so they ran
+  // on the second render and not the first. React refuses a component whose
+  // hook count changes — "Rendered more hooks than during the previous render"
+  // — which is the same fault that took out the report page, and it was waiting
+  // here on every /tests/<id> loaded or refreshed directly.
   if (!test) return <PageHeader title="Test not found" />;
+  return <TestDetailView test={test} />;
+}
+
+function TestDetailView({ test }: { test: LabTest }) {
+  const router = useRouter();
+  const store = useLabStore();
   const activeTest = test;
   const sample = store.samples.find((item) => item.id === activeTest.sampleId);
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
@@ -59,6 +88,7 @@ export default function TestDetailPage() {
   const concreteIndirectTensile = store.concreteIndirectTensileTests.find((item) => item.testId === activeTest.id);
   const concreteCore = store.concreteCoreTests.find((item) => item.testId === activeTest.id);
   const asphalt = store.asphaltTests.find((item) => item.testId === activeTest.id);
+  const jobMix = store.asphaltJobMixTests.find((item) => item.testId === activeTest.id);
   const thermalInsulation = store.thermalInsulationTests.find((item) => item.testId === activeTest.id);
   const cementConsistency = store.cementConsistencyTests.find((item) => item.testId === activeTest.id);
   const admixture = store.admixtureTests.find((item) => item.testId === activeTest.id);
@@ -132,6 +162,28 @@ export default function TestDetailPage() {
   const [asphaltDensityRows, setAsphaltDensityRows] = useState(Math.max(asphalt?.marshallDensity.length ?? 3, 3));
   const [asphaltMaxDensityRows, setAsphaltMaxDensityRows] = useState(Math.max(asphalt?.maximumDensity.length ?? 2, 2));
   const [asphaltStabilityRows, setAsphaltStabilityRows] = useState(Math.max(asphalt?.marshallStability.length ?? 3, 3));
+  // Held in state rather than read off the form on submit, because the band
+  // shown beside each sieve has to change the moment the target does.
+  const [gradationTarget, setGradationTarget] = useState<AsphaltGradationTarget>(
+    asphalt?.gradationTarget ?? defaultGradationTarget(asphalt?.mixtureKind ?? sample?.sampleType)
+  );
+  const [jobMixDosageCount, setJobMixDosageCount] = useState(Math.max(jobMix?.dosages.length ?? 5, 1));
+  const [jobMixFractionCount, setJobMixFractionCount] = useState(Math.max(jobMix?.fractions.length ?? JOB_MIX_DEFAULT_FRACTIONS.length, 1));
+  const [jobMixSpecimenMassG, setJobMixSpecimenMassG] = useState(jobMix?.specimenMassG ?? 1200);
+  // The percentages are live so the control row can be checked while typing —
+  // the master leaves that to a cell nobody looks at until the batch is wrong.
+  const [jobMixProportions, setJobMixProportions] = useState<number[]>(() =>
+    Array.from({ length: Math.max(jobMix?.fractions.length ?? JOB_MIX_DEFAULT_FRACTIONS.length, 1) }, (_, index) =>
+      jobMix?.fractions[index]?.proportionPercent ?? JOB_MIX_DEFAULT_FRACTIONS[index]?.proportionPercent ?? 0
+    )
+  );
+  const jobMixProportionTotal = round(jobMixProportions.slice(0, jobMixFractionCount).reduce((sum, value) => sum + (value || 0), 0), 2);
+  const [jobMixTarget, setJobMixTarget] = useState<AsphaltGradationTarget>(
+    jobMix?.gradationTarget ?? defaultGradationTarget(sample?.sampleType)
+  );
+  const gradationAssessment = asphalt
+    ? assessGradation(asphalt.granulometry, gradationTarget, asphalt.projectGradationLimits)
+    : undefined;
   // Three boxes to start with, as asked; more are added one at a time.
   const [truckPlates, setTruckPlates] = useState<string[]>(() => {
     const saved = concrete?.truckPlates ?? [];
@@ -1158,11 +1210,84 @@ export default function TestDetailPage() {
     });
   }
 
+  function submitJobMix(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const number = (key: string, fallback = 0) => {
+      const raw = form.get(key);
+      if (raw === null || String(raw).trim() === "") return fallback;
+      return Number(raw);
+    };
+    store.saveAsphaltJobMixTest(activeTest.id, {
+      gradationTarget: String(form.get("jobMixTarget") || jobMixTarget) as AsphaltGradationTarget,
+      sampleName: String(form.get("jobMixSampleName") ?? ""),
+      samplingDate: String(form.get("jobMixSamplingDate") ?? ""),
+      receiptDate: String(form.get("jobMixReceiptDate") ?? ""),
+      formulationDate: String(form.get("jobMixFormulationDate") ?? ""),
+      temperature: String(form.get("jobMixTemperature") ?? ""),
+      humidity: String(form.get("jobMixHumidity") ?? ""),
+      testingLocation: String(form.get("jobMixTestingLocation") ?? ""),
+      technicianName: String(form.get("jobMixTechnician") ?? ""),
+      checkedBy: String(form.get("jobMixCheckedBy") ?? ""),
+      notes: String(form.get("jobMixNotes") ?? ""),
+      specimenMassG: number("jobMixSpecimenMass", 1200),
+      bitumenDensityGcm3: number("jobMixBitumenDensity", DEFAULT_BITUMEN_DENSITY_GCM3),
+      targetAirVoidsPercent: number("jobMixTargetVoids", 4),
+      optimumBitumenPercent: form.get("jobMixOptimum") && String(form.get("jobMixOptimum")).trim() !== ""
+        ? number("jobMixOptimum")
+        : undefined,
+      optimumBasis: String(form.get("jobMixOptimumBasis") ?? ""),
+      fractions: Array.from({ length: jobMixFractionCount }, (_, index) => ({
+        name: String(form.get(`jobMixFractionName-${index}`) ?? ""),
+        proportionPercent: number(`jobMixFractionPercent-${index}`)
+      })),
+      dosages: Array.from({ length: jobMixDosageCount }, (_, dosage) => ({
+        bitumenPercent: number(`jobMixBitumen-${dosage}`),
+        marshallDensity: Array.from({ length: 3 }, (_, specimen) => ({
+          specimenNo: `${specimen + 1}`,
+          airMassG: number(`jmDensityAir-${dosage}-${specimen}`),
+          waterMassG: number(`jmDensityWater-${dosage}-${specimen}`),
+          ssdMassG: number(`jmDensitySsd-${dosage}-${specimen}`),
+          waterTemperatureC: number(`jmDensityTemp-${dosage}-${specimen}`, 20)
+        })),
+        maximumDensity: Array.from({ length: 3 }, (_, specimen) => ({
+          specimenNo: `${specimen + 1}`,
+          conglomerateMassG: number(`jmMaxConglomerate-${dosage}-${specimen}`),
+          pycnometerMassG: number(`jmMaxPyc-${dosage}-${specimen}`),
+          pycnometerWaterMassG: number(`jmMaxPycWater-${dosage}-${specimen}`),
+          pycnometerSampleWaterMassG: number(`jmMaxPycSampleWater-${dosage}-${specimen}`),
+          waterTemperatureC: number(`jmMaxTemp-${dosage}-${specimen}`, 20)
+        })),
+        marshallStability: Array.from({ length: 3 }, (_, specimen) => ({
+          specimenNo: `${specimen + 1}`,
+          heightMm: number(`jmStabilityHeight-${dosage}-${specimen}`),
+          measuredStabilityKn: number(`jmStabilityMeasured-${dosage}-${specimen}`),
+          flowMm: number(`jmStabilityFlow-${dosage}-${specimen}`)
+        }))
+      }))
+    });
+  }
+
   function submitAsphalt(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
+    // A project band counts only when both ends are given. Half a band cannot
+    // be judged against, and quietly filling the other end from the standard
+    // envelope would mix two acceptance criteria in one row — which is the
+    // trap the master's half-wired CHOOSE() switch set.
+    const projectGradationLimits = asphaltSieveSizes
+      .map((sieve, index) => {
+        const minPercent = form.get(`gradationLimitMin-${index}`);
+        const maxPercent = form.get(`gradationLimitMax-${index}`);
+        if (minPercent === null || maxPercent === null) return null;
+        if (String(minPercent).trim() === "" || String(maxPercent).trim() === "") return null;
+        return { sieveSizeMm: sieve, minPercent: Number(minPercent), maxPercent: Number(maxPercent) };
+      })
+      .filter((limit): limit is { sieveSizeMm: number; minPercent: number; maxPercent: number } => limit !== null);
     store.saveAsphaltTest(activeTest.id, {
       mixtureKind: String(form.get("mixtureKind") || "Tapet") as "Tapet" | "Binder" | "Tapet + Binder",
+      gradationTarget: String(form.get("gradationTarget") || gradationTarget) as AsphaltGradationTarget,
+      projectGradationLimits,
       asphaltDate: String(form.get("asphaltDate") ?? ""),
       samplingLocation: String(form.get("samplingLocation") ?? ""),
       testStartDate: String(form.get("testStartDate") ?? ""),
@@ -1244,6 +1369,7 @@ export default function TestDetailPage() {
   const isIndirectTensileTest = isConcreteIndirectTensileAccreditedTest(activeTest.testType);
   const isConcreteCoreTest = isConcreteCoreAccreditedTest(activeTest.testType);
   const isAsphaltTest = isAsphaltAccreditedTest(activeTest.testType);
+  const isJobMixTest = isAsphaltJobMixAccreditedTest(activeTest.testType);
   const isThermalInsulationTest = isThermalInsulationAccreditedTest(activeTest.testType);
   const isCementConsistencyTest = isCementConsistencyAccreditedTest(activeTest.testType);
   const isAdmixtureTest = isAdmixtureAccreditedTest(activeTest.testType);
@@ -2699,6 +2825,197 @@ export default function TestDetailPage() {
     );
   }
 
+  if (isJobMixTest) {
+    const jobMixReport = store.reports.find((item) => item.testId === activeTest.id && item.reportKind === "job-mix");
+    const candidates = jobMix ? jobMixOptimumCandidates(jobMix.dosages, jobMix.targetAirVoidsPercent) : [];
+    return (
+      <>
+        <PageHeader title={`Receta e përzierjes — ${sample?.sampleCode ?? ""}`} description="Formulimi i recetës sipas BS EN 13108-1/-4/-20: përbërja, dozimet e bitumit dhe përcaktimet për secilin dozim." />
+        <div className="grid gap-5 xl:grid-cols-[1fr_320px]">
+          <form onSubmit={submitJobMix} className="surface-card"><fieldset disabled={!canEditWorksheet} className="m-0 min-w-0 border-0 p-0 disabled:opacity-70">
+            <div className="grid gap-4 border-b border-line p-5 md:grid-cols-3">
+              <Field label="Kodi i kampionit"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
+              <Field label="Emërtimi i kampionit"><input name="jobMixSampleName" defaultValue={jobMix?.sampleName ?? sample?.sampleType ?? ""} className="input" /></Field>
+              <Field label="Brezi granulometrik i synuar">
+                <select name="jobMixTarget" value={jobMixTarget} onChange={(event) => setJobMixTarget(event.target.value as AsphaltGradationTarget)} className="input">
+                  {ASPHALT_GRADATION_TARGETS.map((target) => <option key={target} value={target}>{target}</option>)}
+                </select>
+              </Field>
+              <Field label="Data e marrjes"><input name="jobMixSamplingDate" type="date" defaultValue={jobMix?.samplingDate ?? ""} className="input" /></Field>
+              <Field label="Data e pranimit në lab."><input name="jobMixReceiptDate" type="date" defaultValue={jobMix?.receiptDate ?? sample?.dateReceived ?? ""} className="input" /></Field>
+              <Field label="Data e hartimit të recetës"><input name="jobMixFormulationDate" type="date" defaultValue={jobMix?.formulationDate ?? activeTest.requiredTestDate} className="input" /></Field>
+              <Field label="Tekniku"><EmployeeSelect name="jobMixTechnician" employees={activeEmployees} required value={jobMix?.technicianName ?? "Ing./Eng."} /></Field>
+              <Field label="Kontrolluar nga"><EmployeeSelect name="jobMixCheckedBy" employees={activeEmployees} value={jobMix?.checkedBy ?? "Ing./Eng. Besiana ALLIU"} /></Field>
+              <Field label="Vendi i testimit"><input name="jobMixTestingLocation" defaultValue={jobMix?.testingLocation ?? "05/A Lab. i testimit të asfaltobetoneve / Asphalt testing laboratory"} className="input" /></Field>
+              <Field label="Temperatura"><input name="jobMixTemperature" defaultValue={jobMix?.temperature ?? ""} className="input" /></Field>
+              <Field label="Lagështia"><input name="jobMixHumidity" defaultValue={jobMix?.humidity ?? ""} className="input" /></Field>
+            </div>
+
+            <div className="space-y-5 p-5">
+              <section className="rounded-md border border-line p-4">
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">1. Përbërja e përzierjes</h3>
+                <div className="mt-3 grid gap-4 md:grid-cols-3">
+                  <Field label="Pesha e kampionit provë [g]">
+                    <input name="jobMixSpecimenMass" type="number" step="1" value={jobMixSpecimenMassG} onChange={(event) => setJobMixSpecimenMassG(Number(event.target.value) || 0)} className="input" />
+                  </Field>
+                  <Field label="Densiteti i bitumit [g/cm³]"><input name="jobMixBitumenDensity" type="number" step="0.001" defaultValue={jobMix?.bitumenDensityGcm3 ?? DEFAULT_BITUMEN_DENSITY_GCM3} className="input" /></Field>
+                  <Field label="Boshllëqet e synuara [%]"><input name="jobMixTargetVoids" type="number" step="0.1" defaultValue={jobMix?.targetAirVoidsPercent ?? 4} className="input" /></Field>
+                </div>
+                <div className="mt-4 flex items-center justify-between">
+                  <span className="text-sm font-medium text-ink">Fraksionet e agregatit</span>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => { setJobMixFractionCount((count) => Math.max(1, count - 1)); }} className="btn-secondary px-3 py-1 text-xs">−</button>
+                    <button type="button" onClick={() => { setJobMixFractionCount((count) => count + 1); setJobMixProportions((values) => [...values, 0]); }} className="btn-secondary px-3 py-1 text-xs">+ fraksion</button>
+                  </div>
+                </div>
+                <div className="mt-2 overflow-x-auto">
+                  <table className="w-full min-w-[640px] text-left text-sm">
+                    <thead className="table-head"><tr><th className="px-3 py-2">Fraksioni</th><th className="px-3 py-2">Pjesa [%]</th></tr></thead>
+                    <tbody className="divide-y divide-line">{Array.from({ length: jobMixFractionCount }, (_, index) => (
+                      <tr key={index}>
+                        <td className="px-3 py-2"><input name={`jobMixFractionName-${index}`} defaultValue={jobMix?.fractions[index]?.name ?? JOB_MIX_DEFAULT_FRACTIONS[index]?.name ?? ""} className="input min-w-72" /></td>
+                        <td className="px-3 py-2"><input name={`jobMixFractionPercent-${index}`} type="number" step="0.1" value={jobMixProportions[index] ?? 0} onChange={(event) => setJobMixProportions((values) => values.map((value, position) => (position === index ? Number(event.target.value) || 0 : value)))} className="input min-w-24" /></td>
+                      </tr>
+                    ))}</tbody>
+                  </table>
+                </div>
+                <p className={`mt-3 text-sm font-semibold ${jobMixProportionTotal === 100 ? "text-lab-green" : "text-lab-red"}`}>
+                  Kontrolli: {jobMixProportionTotal}% {jobMixProportionTotal === 100 ? "— në rregull" : "— fraksionet duhet të shumojnë 100%"}
+                </p>
+              </section>
+
+              <section className="rounded-md border border-line p-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">2. Dozimet e bitumit</h3>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => setJobMixDosageCount((count) => Math.max(1, count - 1))} className="btn-secondary px-3 py-1 text-xs">−</button>
+                    <button type="button" onClick={() => setJobMixDosageCount((count) => count + 1)} className="btn-secondary px-3 py-1 text-xs">+ dozim</button>
+                  </div>
+                </div>
+                <p className="mt-1 text-xs text-muted">Pesha e bitumit dhe e agregatit llogaritet nga pesha e kampionit provë; peshat e fraksioneve janë individuale, jo kumulative.</p>
+                <div className="mt-3 space-y-5">{Array.from({ length: jobMixDosageCount }, (_, dosage) => {
+                  const saved = jobMix?.dosages[dosage];
+                  const bitumenPercent = saved?.bitumenPercent ?? JOB_MIX_DEFAULT_DOSAGES[dosage] ?? 0;
+                  const preview = calculateJobMixDosageMasses(jobMixSpecimenMassG, bitumenPercent);
+                  const previewFractions = calculateJobMixFractionMasses(preview.aggregateMassG, jobMixProportions.slice(0, jobMixFractionCount).map((proportionPercent) => ({ proportionPercent })));
+                  return (
+                    <div key={dosage} className="rounded-md border border-line bg-lab-steelwash p-3">
+                      <div className="grid gap-3 md:grid-cols-4">
+                        <Field label={`Dozimi ${dosage + 1} — bitumi [%]`}><input name={`jobMixBitumen-${dosage}`} type="number" step="0.1" defaultValue={bitumenPercent || ""} className="input" /></Field>
+                        <Info label="Bitumi" value={`${preview.bitumenMassG} g`} />
+                        <Info label="Agregati" value={`${preview.aggregateMassG} g`} />
+                        <Info label="Kontrolli" value={`${round(preview.bitumenMassG + previewFractions.reduce((sum, value) => sum + value, 0), 1)} g`} />
+                      </div>
+                      {previewFractions.length ? (
+                        <p className="mt-2 text-xs text-muted">Peshat e fraksioneve: {previewFractions.map((mass, index) => `${jobMix?.fractions[index]?.name ?? JOB_MIX_DEFAULT_FRACTIONS[index]?.name ?? `F${index + 1}`} ${mass} g`).join(" · ")}</p>
+                      ) : null}
+
+                      <div className="mt-3 overflow-x-auto">
+                        <table className="w-full min-w-[760px] text-left text-xs">
+                          <thead className="table-head"><tr><th className="px-2 py-1">Densiteti Marshall — mostra</th><th className="px-2 py-1">Ajër [g]</th><th className="px-2 py-1">Ujë [g]</th><th className="px-2 py-1">SSD [g]</th><th className="px-2 py-1">T [°C]</th><th className="px-2 py-1">Gmb [g/cm³]</th></tr></thead>
+                          <tbody className="divide-y divide-line">{Array.from({ length: 3 }, (_, specimen) => { const row = saved?.marshallDensity[specimen]; return (
+                            <tr key={specimen}>
+                              <td className="px-2 py-1 font-semibold">{specimen + 1}</td>
+                              <td className="px-2 py-1"><input name={`jmDensityAir-${dosage}-${specimen}`} type="number" step="0.1" defaultValue={row?.airMassG ?? ""} className="input min-w-24" /></td>
+                              <td className="px-2 py-1"><input name={`jmDensityWater-${dosage}-${specimen}`} type="number" step="0.1" defaultValue={row?.waterMassG ?? ""} className="input min-w-24" /></td>
+                              <td className="px-2 py-1"><input name={`jmDensitySsd-${dosage}-${specimen}`} type="number" step="0.1" defaultValue={row?.ssdMassG ?? ""} className="input min-w-24" /></td>
+                              <td className="px-2 py-1"><input name={`jmDensityTemp-${dosage}-${specimen}`} type="number" step="0.1" defaultValue={row?.waterTemperatureC ?? 20} className="input min-w-20" /></td>
+                              <td className="px-2 py-1 font-semibold">{row?.bulkDensityGcm3 ?? "Ruaj"}</td>
+                            </tr>
+                          ); })}</tbody>
+                        </table>
+                      </div>
+
+                      <div className="mt-3 overflow-x-auto">
+                        <table className="w-full min-w-[760px] text-left text-xs">
+                          <thead className="table-head"><tr><th className="px-2 py-1">Densiteti maksimal — mostra</th><th className="px-2 py-1">Konglomerati [g]</th><th className="px-2 py-1">Piknometri [g]</th><th className="px-2 py-1">Pik. + ujë [g]</th><th className="px-2 py-1">Pik. + mostër + ujë [g]</th><th className="px-2 py-1">Dmax [g/cm³]</th></tr></thead>
+                          <tbody className="divide-y divide-line">{Array.from({ length: 3 }, (_, specimen) => { const row = saved?.maximumDensity[specimen]; return (
+                            <tr key={specimen}>
+                              <td className="px-2 py-1 font-semibold">{specimen + 1}</td>
+                              <td className="px-2 py-1"><input name={`jmMaxConglomerate-${dosage}-${specimen}`} type="number" step="0.1" defaultValue={row?.conglomerateMassG ?? ""} className="input min-w-24" /></td>
+                              <td className="px-2 py-1"><input name={`jmMaxPyc-${dosage}-${specimen}`} type="number" step="0.1" defaultValue={row?.pycnometerMassG ?? ""} className="input min-w-24" /></td>
+                              <td className="px-2 py-1"><input name={`jmMaxPycWater-${dosage}-${specimen}`} type="number" step="0.1" defaultValue={row?.pycnometerWaterMassG ?? ""} className="input min-w-24" /></td>
+                              <td className="px-2 py-1"><input name={`jmMaxPycSampleWater-${dosage}-${specimen}`} type="number" step="0.1" defaultValue={row?.pycnometerSampleWaterMassG ?? ""} className="input min-w-24" /></td>
+                              <td className="px-2 py-1 font-semibold">{row?.maximumDensityGcm3 ?? "Ruaj"}<input type="hidden" name={`jmMaxTemp-${dosage}-${specimen}`} value={row?.waterTemperatureC ?? 20} /></td>
+                            </tr>
+                          ); })}</tbody>
+                        </table>
+                      </div>
+
+                      <div className="mt-3 overflow-x-auto">
+                        <table className="w-full min-w-[760px] text-left text-xs">
+                          <thead className="table-head"><tr><th className="px-2 py-1">Stabiliteti — mostra</th><th className="px-2 py-1">Lartësia [mm]</th><th className="px-2 py-1">Stab. i matur [kN]</th><th className="px-2 py-1">Rrjedhshmëria [mm]</th><th className="px-2 py-1">Koef.</th><th className="px-2 py-1">Stab. korr. [kN]</th></tr></thead>
+                          <tbody className="divide-y divide-line">{Array.from({ length: 3 }, (_, specimen) => { const row = saved?.marshallStability[specimen]; const outOfRange = row && row.heightMm > 0 && !isMarshallHeightInRange(row.heightMm); return (
+                            <tr key={specimen}>
+                              <td className="px-2 py-1 font-semibold">{specimen + 1}</td>
+                              <td className="px-2 py-1"><input name={`jmStabilityHeight-${dosage}-${specimen}`} type="number" step="0.1" defaultValue={row?.heightMm ?? ""} className="input min-w-24" /></td>
+                              <td className="px-2 py-1"><input name={`jmStabilityMeasured-${dosage}-${specimen}`} type="number" step="0.01" defaultValue={row?.measuredStabilityKn ?? ""} className="input min-w-24" /></td>
+                              <td className="px-2 py-1"><input name={`jmStabilityFlow-${dosage}-${specimen}`} type="number" step="0.01" defaultValue={row?.flowMm ?? ""} className="input min-w-24" /></td>
+                              <td className={`px-2 py-1 ${outOfRange ? "text-lab-red" : ""}`}>{row?.correctionCoefficient ?? "Ruaj"}{outOfRange ? " ⚠" : ""}</td>
+                              <td className="px-2 py-1 font-semibold">{row?.correctedStabilityKn ?? "Ruaj"}</td>
+                            </tr>
+                          ); })}</tbody>
+                        </table>
+                      </div>
+
+                      {saved ? (
+                        <div className="mt-3 grid gap-2 text-xs md:grid-cols-5">
+                          <InfoInline label="Gmb mes." value={`${saved.averageBulkDensityGcm3} g/cm³`} />
+                          <InfoInline label="Dmax mes." value={`${saved.averageMaximumDensityGcm3} g/cm³`} />
+                          <InfoInline label="Boshllëqe" value={`${saved.airVoidsPercent}%`} />
+                          <InfoInline label="Stab. korr." value={`${saved.averageCorrectedStabilityKn} kN`} />
+                          <InfoInline label="VMA" value={`${saved.vmaPercent}%`} />
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}</div>
+              </section>
+
+              <section className="rounded-md border border-line p-4">
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">3. Dozimi i adoptuar</h3>
+                {candidates.length ? (
+                  <ul className="mt-2 space-y-1 text-sm text-ink">
+                    {candidates.map((candidate) => (
+                      <li key={candidate.basis}>
+                        {candidate.basis === "max-stability" ? "Stabiliteti maksimal" : candidate.basis === "max-density" ? "Densiteti maksimal" : `Boshllëqet pranë ${jobMix?.targetAirVoidsPercent ?? 4}%`}
+                        : <strong>{candidate.bitumenPercent}%</strong> <span className="text-muted">({candidate.value})</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-2 text-sm text-muted">Ruani përcaktimet për të parë dozimet kandidate.</p>
+                )}
+                <p className="mt-2 text-xs leading-snug text-muted">
+                  Kandidatët rrallë përputhen dhe zgjedhja është gjykim inxhinierik, jo rezultat i llogaritjes — shënojeni dozimin e adoptuar dhe bazën e tij.
+                </p>
+                <div className="mt-3 grid gap-4 md:grid-cols-2">
+                  <Field label="Dozimi i adoptuar [%]"><input name="jobMixOptimum" type="number" step="0.1" defaultValue={jobMix?.optimumBitumenPercent ?? ""} className="input" /></Field>
+                  <Field label="Baza e zgjedhjes"><input name="jobMixOptimumBasis" defaultValue={jobMix?.optimumBasis ?? ""} placeholder="p.sh. boshllëqet 4% dhe stabiliteti" className="input" /></Field>
+                </div>
+              </section>
+
+              <div>
+                <label className="text-sm font-medium text-ink">Shënime</label>
+                <textarea name="jobMixNotes" rows={4} defaultValue={jobMix?.notes} className="input mt-1" />
+                <div className="mt-5 flex justify-end"><button className="btn-secondary">Ruaj recetën</button></div>
+              </div>
+            </div>
+          </fieldset></form>
+          <aside className="space-y-4">
+            <TestActionsSidebar ready={Boolean(jobMix)} activeTest={activeTest} reportId={undefined} complete={complete} generateReport={() => generateAsphaltReport("job-mix")} message={jobMix ? `${jobMix.dosages.length} dozime të regjistruara${jobMix.optimumBitumenPercent ? `, adoptuar ${jobMix.optimumBitumenPercent}%` : ""}.` : "Ruani fillimisht përbërjen dhe dozimet."} canEdit={canEditWorksheet} canGenerateReport={canGenerateAsphaltReport("job-mix")} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+            <div className="surface-card p-4">
+              <h2 className="text-base font-semibold text-ink">Raporti</h2>
+              <div className="mt-4 grid gap-2">
+                <AsphaltReportButton label="Receta e përzierjes" report={jobMixReport} canGenerate={canGenerateAsphaltReport("job-mix")} onClick={() => generateAsphaltReport("job-mix")} />
+              </div>
+            </div>
+          </aside>
+        </div>
+      </>
+    );
+  }
+
   if (isAsphaltTest) {
     const asphaltReports = {
       "bitumen-content": store.reports.find((item) => item.testId === activeTest.id && item.reportKind === "bitumen-content"),
@@ -2725,6 +3042,16 @@ export default function TestDetailPage() {
                   <option value="Tapet">Tapet</option>
                   <option value="Binder">Binder</option>
                   <option value="Tapet + Binder">Tapet + Binder</option>
+                </select>
+              </Field>
+              <Field label="Brezi granulometrik (EN 13108-1)">
+                <select
+                  name="gradationTarget"
+                  value={gradationTarget}
+                  onChange={(event) => setGradationTarget(event.target.value as AsphaltGradationTarget)}
+                  className="input"
+                >
+                  {ASPHALT_GRADATION_TARGETS.map((target) => <option key={target} value={target}>{target}</option>)}
                 </select>
               </Field>
               <Field label="Vendi i marrjes"><input name="samplingLocation" defaultValue={asphalt?.samplingLocation ?? project?.location ?? ""} className="input" /></Field>
@@ -2758,12 +3085,32 @@ export default function TestDetailPage() {
 
               <section className="rounded-md border border-line p-4">
                 <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">2. Granulometria pas ekstraktimit</h3>
+                <p className="mt-1 text-xs leading-snug text-muted">
+                  Brezi i pranimit zgjidhet i plotë nga kurba e caktuar — jo sitë pas site. Kolona &ldquo;Limiti i projektit&rdquo; e zëvendëson brezin standard
+                  vetëm atje ku plotësohet; sitat pa brez shënohen &ldquo;—&rdquo; dhe nuk vlerësohen.
+                </p>
                 <div className="mt-3 overflow-x-auto">
-                  <table className="w-full min-w-[780px] text-left text-sm">
-                    <thead className="table-head"><tr><th className="px-3 py-2">Sita [mm]</th><th className="px-3 py-2">Mbetja [g]</th><th className="px-3 py-2">Mbetja progresive [g]</th><th className="px-3 py-2">Mbetja progresive [%]</th><th className="px-3 py-2">Kalimi [%]</th></tr></thead>
-                    <tbody className="divide-y divide-line">{asphaltSieveSizes.map((sieve, index) => { const row = asphalt?.granulometry[index]; return <tr key={sieve}><td className="px-3 py-2 font-semibold">{sieve}</td><td className="px-3 py-2"><input name={`asphaltRetained-${index}`} type="number" step="0.1" defaultValue={row?.retainedMassG ?? ""} className="input min-w-28" /></td><td className="px-3 py-2">{row?.cumulativeRetainedMassG ?? "Ruaj"}</td><td className="px-3 py-2">{row?.cumulativeRetainedPercent ?? "Ruaj"}</td><td className="px-3 py-2 font-semibold">{row?.cumulativePassingPercent ?? "Ruaj"}</td></tr>; })}</tbody>
+                  <table className="w-full min-w-[1100px] text-left text-sm">
+                    <thead className="table-head"><tr><th className="px-3 py-2">Sita [mm]</th><th className="px-3 py-2">Mbetja [g]</th><th className="px-3 py-2">Mbetja progresive [g]</th><th className="px-3 py-2">Mbetja progresive [%]</th><th className="px-3 py-2">Kalimi [%]</th><th className="px-3 py-2">Brezi {gradationTarget}</th><th className="px-3 py-2">Limiti i projektit min</th><th className="px-3 py-2">maks</th><th className="px-3 py-2">Vlerësimi</th></tr></thead>
+                    <tbody className="divide-y divide-line">{asphaltSieveSizes.map((sieve, index) => {
+                      const row = asphalt?.granulometry[index];
+                      const standardLimit = limitAtSieve(sieve, gradationTarget);
+                      const savedProjectLimit = asphalt?.projectGradationLimits?.find((limit) => limit.sieveSizeMm === sieve);
+                      const effectiveLimit = savedProjectLimit ?? standardLimit;
+                      const verdict = gradationVerdict(row?.cumulativePassingPercent, effectiveLimit);
+                      return <tr key={sieve}><td className="px-3 py-2 font-semibold">{sieve}</td><td className="px-3 py-2"><input name={`asphaltRetained-${index}`} type="number" step="0.1" defaultValue={row?.retainedMassG ?? ""} className="input min-w-28" /></td><td className="px-3 py-2">{row?.cumulativeRetainedMassG ?? "Ruaj"}</td><td className="px-3 py-2">{row?.cumulativeRetainedPercent ?? "Ruaj"}</td><td className="px-3 py-2 font-semibold">{row?.cumulativePassingPercent ?? "Ruaj"}</td><td className="px-3 py-2 text-muted">{formatLimit(standardLimit)}</td><td className="px-3 py-2"><input name={`gradationLimitMin-${index}`} type="number" step="0.1" defaultValue={savedProjectLimit?.minPercent ?? ""} placeholder={standardLimit ? String(standardLimit.minPercent) : "—"} className="input min-w-20" /></td><td className="px-3 py-2"><input name={`gradationLimitMax-${index}`} type="number" step="0.1" defaultValue={savedProjectLimit?.maxPercent ?? ""} placeholder={standardLimit ? String(standardLimit.maxPercent) : "—"} className="input min-w-20" /></td><td className={`px-3 py-2 font-semibold ${verdict === "outside" ? "text-lab-red" : verdict === "within" ? "text-lab-green" : "text-muted"}`}>{verdict === "outside" ? "Jashtë brezit" : verdict === "within" ? "Brenda" : "—"}</td></tr>;
+                    })}</tbody>
                   </table>
                 </div>
+                {gradationAssessment ? (
+                  <p className={`mt-3 text-sm font-semibold ${gradationAssessment.conforms === false ? "text-lab-red" : gradationAssessment.conforms ? "text-lab-green" : "text-muted"}`}>
+                    {gradationAssessment.conforms === false
+                      ? `Jashtë brezit në ${gradationAssessment.outside} nga ${gradationAssessment.judged} sita të vlerësuara.`
+                      : gradationAssessment.conforms
+                        ? `Brenda brezit në të ${gradationAssessment.judged} sitat e vlerësuara.`
+                        : "Asnjë sitë e vlerësuar — brezi nuk mbulon sitat e matura."}
+                  </p>
+                ) : null}
               </section>
 
               <section className="rounded-md border border-line p-4">
@@ -2781,7 +3128,7 @@ export default function TestDetailPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[980px] text-left text-sm">
                     <thead className="table-head"><tr><th className="px-3 py-2">Mostra</th><th className="px-3 py-2">Konglomerati [g]</th><th className="px-3 py-2">Piknometri [g]</th><th className="px-3 py-2">Piknometri + ujë [g]</th><th className="px-3 py-2">Piknometri + kongl. + ujë [g]</th><th className="px-3 py-2">Dmax [g/cm3]</th></tr></thead>
-                    <tbody className="divide-y divide-line">{Array.from({ length: asphaltMaxDensityRows }, (_, index) => { const row = asphalt?.maximumDensity[index]; return <tr key={index}><td className="px-3 py-2"><input name={`maxNo-${index}`} defaultValue={row?.specimenNo ?? `${index + 1}`} className="input min-w-20" /></td><td className="px-3 py-2"><input name={`maxConglomerate-${index}`} type="number" step="0.1" defaultValue={row?.conglomerateMassG ?? ""} className="input min-w-28" /></td><td className="px-3 py-2"><input name={`maxPyc-${index}`} type="number" step="0.1" defaultValue={row?.pycnometerMassG ?? ""} className="input min-w-28" /></td><td className="px-3 py-2"><input name={`maxPycWater-${index}`} type="number" step="0.1" defaultValue={row?.pycnometerWaterMassG ?? ""} className="input min-w-28" /></td><td className="px-3 py-2"><input name={`maxPycSampleWater-${index}`} type="number" step="0.1" defaultValue={row?.pycnometerSampleWaterMassG ?? ""} className="input min-w-28" /></td><td className="px-3 py-2 font-semibold">{row?.maximumDensityGcm3 ?? "Ruaj"}</td><input type="hidden" name={`maxTemp-${index}`} value={row?.waterTemperatureC ?? 20} /></tr>; })}</tbody>
+                    <tbody className="divide-y divide-line">{Array.from({ length: asphaltMaxDensityRows }, (_, index) => { const row = asphalt?.maximumDensity[index]; return <tr key={index}><td className="px-3 py-2"><input name={`maxNo-${index}`} defaultValue={row?.specimenNo ?? `${index + 1}`} className="input min-w-20" /></td><td className="px-3 py-2"><input name={`maxConglomerate-${index}`} type="number" step="0.1" defaultValue={row?.conglomerateMassG ?? ""} className="input min-w-28" /></td><td className="px-3 py-2"><input name={`maxPyc-${index}`} type="number" step="0.1" defaultValue={row?.pycnometerMassG ?? ""} className="input min-w-28" /></td><td className="px-3 py-2"><input name={`maxPycWater-${index}`} type="number" step="0.1" defaultValue={row?.pycnometerWaterMassG ?? ""} className="input min-w-28" /></td><td className="px-3 py-2"><input name={`maxPycSampleWater-${index}`} type="number" step="0.1" defaultValue={row?.pycnometerSampleWaterMassG ?? ""} className="input min-w-28" /></td><td className="px-3 py-2 font-semibold">{row?.maximumDensityGcm3 ?? "Ruaj"}<input type="hidden" name={`maxTemp-${index}`} value={row?.waterTemperatureC ?? 20} /></td></tr>; })}</tbody>
                   </table>
                 </div>
                 <div className="mt-3 text-sm font-semibold text-ink">Boshllëqet në ajër: {asphalt ? `${asphalt.summaries.airVoidsPercent}%` : "Ruaj"}</div>

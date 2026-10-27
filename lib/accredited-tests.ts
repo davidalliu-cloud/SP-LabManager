@@ -26,6 +26,7 @@ const sampleTypeDisplayNames: Record<string, string> = {
   "Tapet": "Tapet / Wearing Course",
   "Binder": "Binder / Binder Course",
   "Tapet + Binder": "Tapet + Binder / Asphalt Mixture",
+  "Konglomerat": "Konglomerat Asfaltik / Asphalt Conglomerate",
   // Admixtures were in the accredited list but never in these maps, so the
   // sample type showed as raw Albanian with no English half.
   "SHTESA PËR BETON (ADITIVË)": "Shtesa për Beton (Aditivë) / Concrete Admixtures",
@@ -73,9 +74,11 @@ const sampleTypeAliases: Record<string, string> = {
   "Tapet": "Tapet / Wearing Course",
   "Binder": "Binder / Binder Course",
   "Tapet + Binder": "Tapet + Binder / Asphalt Mixture",
+  "Konglomerat": "Konglomerat Asfaltik / Asphalt Conglomerate",
   "Tapet / Wearing Course": "Tapet / Wearing Course",
   "Binder / Binder Course": "Binder / Binder Course",
   "Tapet + Binder / Asphalt Mixture": "Tapet + Binder / Asphalt Mixture",
+  "Konglomerat Asfaltik / Asphalt Conglomerate": "Konglomerat Asfaltik / Asphalt Conglomerate",
   "SHTESA PËR BETON (ADITIVË)": "Shtesa për Beton (Aditivë) / Concrete Admixtures",
   "Aditiv": "Shtesa për Beton (Aditivë) / Concrete Admixtures",
   "Aditivë": "Shtesa për Beton (Aditivë) / Concrete Admixtures",
@@ -203,6 +206,20 @@ const accreditedTestRows: Array<[string, string, string, string, string?, string
   ["AT-ASPHALT-COMBINED-TAPET", "Tapet", "Përcaktimi i vetive fiziko-mekanike të asfaltobetonit", "BS EN 12697-1:2020; BS EN 12697-2:2015+A1:2019; BS EN 12697-6:2020; BS EN 12697-5:2018; BS EN 12697-34:2020", "Bitum 3.0÷6.0%; granulometri; densitet; stabilitet Marshall", "BS EN 12697-27:2017"],
   ["AT-ASPHALT-COMBINED-BINDER", "Binder", "Përcaktimi i vetive fiziko-mekanike të asfaltobetonit", "BS EN 12697-1:2020; BS EN 12697-2:2015+A1:2019; BS EN 12697-6:2020; BS EN 12697-5:2018; BS EN 12697-34:2020", "Bitum 3.0÷6.0%; granulometri; densitet; stabilitet Marshall", "BS EN 12697-27:2017"],
   ["AT-ASPHALT-COMBINED-BOTH", "Tapet + Binder", "Përcaktimi i vetive fiziko-mekanike të asfaltobetonit", "BS EN 12697-1:2020; BS EN 12697-2:2015+A1:2019; BS EN 12697-6:2020; BS EN 12697-5:2018; BS EN 12697-34:2020", "Bitum 3.0÷6.0%; granulometri; densitet; stabilitet Marshall", "BS EN 12697-27:2017"],
+  // AT-017 by another name. The scope lists the recipe formulation under the
+  // uppercase category PËRZIERJE BITUMINOZE, which never reaches a sample type,
+  // so the test was accredited and priced (offer item N5) with no way to order
+  // or record it. These are the orderable forms of it, one per thing a recipe
+  // can be designed for.
+  ["AT-ASPHALT-JOBMIX-TAPET", "Tapet", "Formulimi i recetës së prodhimit të përzierjes së asfalto betoneve", "BS EN 13108-1:2016; BS EN 13108-4:2016; BS EN 13108-20:2016", "Bitum 3.0÷6.0%", "BS EN 12697-27:2017"],
+  ["AT-ASPHALT-JOBMIX-BINDER", "Binder", "Formulimi i recetës së prodhimit të përzierjes së asfalto betoneve", "BS EN 13108-1:2016; BS EN 13108-4:2016; BS EN 13108-20:2016", "Bitum 3.0÷6.0%", "BS EN 12697-27:2017"],
+  ["AT-ASPHALT-JOBMIX-BOTH", "Tapet + Binder", "Formulimi i recetës së prodhimit të përzierjes së asfalto betoneve", "BS EN 13108-1:2016; BS EN 13108-4:2016; BS EN 13108-20:2016", "Bitum 3.0÷6.0%", "BS EN 12697-27:2017"],
+  // A recipe is usually designed before anything is laid, from the constituent
+  // aggregates and bitumen rather than from a core, so it needs a sample type
+  // that is not a layer. "Konglomerat" is the lab's own word for it, used on
+  // the granulometry master.
+  ["AT-ASPHALT-JOBMIX-KONGLOMERAT", "Konglomerat", "Formulimi i recetës së prodhimit të përzierjes së asfalto betoneve", "BS EN 13108-1:2016; BS EN 13108-4:2016; BS EN 13108-20:2016", "Bitum 3.0÷6.0%", "BS EN 12697-27:2017"],
+  ["AT-ASPHALT-COMBINED-KONGLOMERAT", "Konglomerat", "Përcaktimi i vetive fiziko-mekanike të asfaltobetonit", "BS EN 12697-1:2020; BS EN 12697-2:2015+A1:2019; BS EN 12697-6:2020; BS EN 12697-5:2018; BS EN 12697-34:2020", "Bitum 3.0÷6.0%; granulometri; densitet; stabilitet Marshall", "BS EN 12697-27:2017"],
   ["AT-ELONG-SAND", "Sand", "Përcaktimi i indeksit të zgjatimit", "BS 812-105.2:1980", "0÷100 %"],
   ["AT-ELONG-GRAVEL-1", "Gravel 1", "Përcaktimi i indeksit të zgjatimit", "BS 812-105.2:1980", "0÷100 %"],
   ["AT-ELONG-GRAVEL-2", "Gravel 2", "Përcaktimi i indeksit të zgjatimit", "BS 812-105.2:1980", "0÷100 %"],
@@ -541,10 +558,32 @@ export function isMortarAccreditedTest(testIdOrType?: string) {
 }
 
 export function isAsphaltSampleType(sampleType: string) {
-  return ["Tapet / Wearing Course", "Binder / Binder Course", "Tapet + Binder / Asphalt Mixture"].includes(normalizeSampleType(sampleType));
+  return [
+    "Tapet / Wearing Course",
+    "Binder / Binder Course",
+    "Tapet + Binder / Asphalt Mixture",
+    "Konglomerat Asfaltik / Asphalt Conglomerate"
+  ].includes(normalizeSampleType(sampleType));
 }
 
+export const ASPHALT_JOB_MIX_TEST_TYPE = "Formulimi i recetës së prodhimit të përzierjes së asfalto betoneve";
+
+export function isAsphaltJobMixAccreditedTest(testIdOrType?: string) {
+  return Boolean(
+    testIdOrType?.startsWith("AT-ASPHALT-JOBMIX") ||
+      testIdOrType === "AT-017" ||
+      testIdOrType === ASPHALT_JOB_MIX_TEST_TYPE
+  );
+}
+
+/**
+ * The combined physico-mechanical worksheet, which the job mix is not.
+ *
+ * Both sit under AT-ASPHALT-, so the prefix alone would route a recipe
+ * formulation into the wrong form. The job mix is excluded explicitly.
+ */
 export function isAsphaltAccreditedTest(testIdOrType?: string) {
+  if (isAsphaltJobMixAccreditedTest(testIdOrType)) return false;
   return Boolean(testIdOrType?.startsWith("AT-ASPHALT-") || testIdOrType === "Përcaktimi i vetive fiziko-mekanike të asfaltobetonit");
 }
 

@@ -334,12 +334,35 @@ export interface ConcreteCoreSpecimen {
 }
 
 export type AsphaltMixtureKind = "Tapet" | "Binder" | "Tapet + Binder";
-export type AsphaltReportKind = "bitumen-content" | "granulometry" | "marshall-density" | "marshall-stability" | "compaction";
+export type AsphaltReportKind = "bitumen-content" | "granulometry" | "marshall-density" | "marshall-stability" | "compaction" | "job-mix";
+
+/**
+ * Which grading envelope a mixture is judged against.
+ *
+ * Deliberately separate from AsphaltMixtureKind. The layer a sample was cut
+ * from and the band its grading is compared to are different questions: a
+ * worksheet covering "Tapet + Binder" is still judged against one envelope at
+ * a time, and a recipe is designed against a band before any layer exists.
+ */
+export type AsphaltGradationTarget = "Konglomerat" | "Binder" | "Tapet";
+
+export interface AsphaltGradationLimit {
+  sieveSizeMm: number;
+  minPercent: number;
+  maxPercent: number;
+}
 
 export interface AsphaltTest {
   id: string;
   testId: string;
   mixtureKind: AsphaltMixtureKind;
+  /**
+   * Optional because worksheets saved before the envelope existed have no
+   * target; the report falls back on the layer when it is absent.
+   */
+  gradationTarget?: AsphaltGradationTarget;
+  /** A client's own envelope, which replaces the standard band where given. */
+  projectGradationLimits?: AsphaltGradationLimit[];
   asphaltDate?: string;
   samplingLocation?: string;
   testStartDate?: string;
@@ -431,6 +454,67 @@ export interface AsphaltSummaries {
   averageCorrectedStabilityKn: number;
   averageFlowMm: number;
   averageMarshallQuotientKnMm: number;
+}
+
+/** One aggregate fraction of a recipe, as a share of the aggregate. */
+export interface AsphaltJobMixFraction {
+  name: string;
+  proportionPercent: number;
+}
+
+/**
+ * One bitumen dosage of a mix design, with the three determinations run on it.
+ *
+ * A recipe is designed by making the same mixture at several dosages and
+ * measuring each, so every dosage carries its own specimens rather than the
+ * design carrying one set — which is what the six-page master is: the same
+ * page of determinations repeated once per dosage.
+ */
+export interface AsphaltJobMixDosage {
+  bitumenPercent: number;
+  bitumenMassG: number;
+  aggregateMassG: number;
+  fractionMassesG: number[];
+  marshallDensity: AsphaltMarshallDensitySpecimen[];
+  maximumDensity: AsphaltMaximumDensitySpecimen[];
+  marshallStability: AsphaltMarshallStabilitySpecimen[];
+  averageBulkDensityGcm3: number;
+  averageMaximumDensityGcm3: number;
+  airVoidsPercent: number;
+  averageCorrectedStabilityKn: number;
+  averageFlowMm: number;
+  averageMarshallQuotientKnMm: number;
+  vmaPercent: number;
+}
+
+export interface AsphaltJobMixTest {
+  id: string;
+  testId: string;
+  gradationTarget: AsphaltGradationTarget;
+  sampleName?: string;
+  samplingDate?: string;
+  receiptDate?: string;
+  formulationDate?: string;
+  temperature?: string;
+  humidity?: string;
+  testingLocation?: string;
+  technicianName: string;
+  checkedBy?: string;
+  notes?: string;
+  /** Batch mass per trial specimen; the master works to 1200 g. */
+  specimenMassG: number;
+  bitumenDensityGcm3: number;
+  targetAirVoidsPercent: number;
+  fractions: AsphaltJobMixFraction[];
+  dosages: AsphaltJobMixDosage[];
+  /**
+   * The dosage actually adopted. Left unset until someone chooses it: maximum
+   * stability, maximum density and the void target seldom agree, and which one
+   * governs is a judgement rather than a calculation.
+   */
+  optimumBitumenPercent?: number;
+  optimumBasis?: string;
+  createdAt: string;
 }
 
 export interface IndirectTensileSpecimen {
@@ -1387,6 +1471,7 @@ export interface LabState {
   concreteIndirectTensileTests: ConcreteIndirectTensileTest[];
   concreteCoreTests: ConcreteCoreTest[];
   asphaltTests: AsphaltTest[];
+  asphaltJobMixTests: AsphaltJobMixTest[];
   thermalInsulationTests: ThermalInsulationTest[];
   cementConsistencyTests: CementConsistencyTest[];
   cementStrengthTests: CementStrengthTest[];

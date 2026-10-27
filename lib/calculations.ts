@@ -135,9 +135,74 @@ export function calculateAsphaltAirVoids(maximumDensityGcm3: number, bulkDensity
   return round(((maximumDensityGcm3 - bulkDensityGcm3) / maximumDensityGcm3) * 100, 1);
 }
 
+/**
+ * Marshall height correction, as the lab's own SL-RA-AS-7.8/1.4 master tabulates
+ * it: the ratio that brings a specimen of some other height onto the 63.5 mm
+ * reference, where the factor is exactly 1.
+ */
+export const MARSHALL_HEIGHT_CORRECTION: Array<[heightMm: number, coefficient: number]> = [
+  [60.5, 1.084],
+  [61, 1.068],
+  [61.5, 1.053],
+  [62, 1.038],
+  [62.5, 1.025],
+  [63, 1.013],
+  [63.5, 1.0],
+  [64, 0.988],
+  [64.5, 0.975],
+  [65, 0.963],
+  [65.5, 0.953],
+  [66, 0.943],
+  [66.5, 0.934]
+];
+
+export const MARSHALL_HEIGHT_MIN_MM = MARSHALL_HEIGHT_CORRECTION[0][0];
+export const MARSHALL_HEIGHT_MAX_MM = MARSHALL_HEIGHT_CORRECTION[MARSHALL_HEIGHT_CORRECTION.length - 1][0];
+
+/** Whether a measured height is one the table above actually covers. */
+export function isMarshallHeightInRange(heightMm: number) {
+  return heightMm >= MARSHALL_HEIGHT_MIN_MM && heightMm <= MARSHALL_HEIGHT_MAX_MM;
+}
+
+/**
+ * The factor a measured stability is multiplied by.
+ *
+ * This used to be the curve the spreadsheet fits in place of the table —
+ * `5.2 * e^(-3.2e-6 * V)` on the specimen volume. Inside the tabulated range it
+ * tracks the table to within about a percent, so it looked harmless. Two things
+ * were wrong with it.
+ *
+ * The table is the lab's stated method and the fit is not, so every corrected
+ * stability on an accredited report was computed by an undocumented curve that
+ * disagrees with the document it was printed under.
+ *
+ * Worse, the curve has no idea where it stops being meaningful. A specimen
+ * height left blank makes the volume zero, and the factor is then `5.2 * e^0`,
+ * i.e. 5.2 — a sixteen kilonewton stability printed as eighty-three. That is
+ * not a hypothetical: the one asphalt test in the register carries
+ * `correctionCoefficient: 5.2` on all three specimens, which is this function
+ * being asked for the correction at height zero.
+ *
+ * So: interpolate the table, and where there is no height to go on, correct by
+ * nothing at all. A missing height now leaves the measured value alone instead
+ * of multiplying it by five.
+ */
 export function calculateMarshallCorrectionCoefficient(heightMm: number) {
-  const volumeMm3 = Math.PI * 50.8 ** 2 * heightMm;
-  return round(5.2 * Math.exp(-3.2e-6 * volumeMm3), 3);
+  if (!heightMm || heightMm <= 0) return 1;
+  const table = MARSHALL_HEIGHT_CORRECTION;
+  if (heightMm <= table[0][0]) return table[0][1];
+  const last = table[table.length - 1];
+  if (heightMm >= last[0]) return last[1];
+  for (let index = 1; index < table.length; index += 1) {
+    const [upperHeight, upperCoefficient] = table[index];
+    if (heightMm <= upperHeight) {
+      const [lowerHeight, lowerCoefficient] = table[index - 1];
+      const span = upperHeight - lowerHeight;
+      const ratio = span ? (heightMm - lowerHeight) / span : 0;
+      return round(lowerCoefficient + ratio * (upperCoefficient - lowerCoefficient), 3);
+    }
+  }
+  return 1;
 }
 
 export function calculateAsphaltCompaction(input: {
@@ -156,6 +221,93 @@ export function calculateAsphaltCompaction(input: {
     bulkSpecificGravityGcm3,
     compactionPercent: input.maximumDensityGcm3 ? round((bulkSpecificGravityGcm3 / input.maximumDensityGcm3) * 100, 1) : 0
   };
+}
+
+/** Density of the bitumen the recipe is dosed with, where none is measured. */
+export const DEFAULT_BITUMEN_DENSITY_GCM3 = 1.025;
+
+/**
+ * How one trial batch of a recipe divides up.
+ *
+ * The dosage is a percentage of the whole batch, not of the aggregate, so the
+ * aggregate is what is left after the bitumen is taken out. The master does the
+ * same thing but spreads it over a row of columns whose references drift —
+ * three of the five dosage columns reach for the fraction percentage with a
+ * relative reference, one with an absolute, and adding a sixth dosage would
+ * silently read the wrong row. One dosage, one function.
+ */
+export function calculateJobMixDosageMasses(specimenMassG: number, bitumenPercent: number) {
+  const bitumenMassG = round((specimenMassG * bitumenPercent) / 100, 1);
+  return { bitumenMassG, aggregateMassG: round(specimenMassG - bitumenMassG, 1) };
+}
+
+/** The weigh-out for each aggregate fraction of one trial batch. */
+export function calculateJobMixFractionMasses(
+  aggregateMassG: number,
+  fractions: Array<{ proportionPercent: number }>
+) {
+  return fractions.map((fraction) => round((aggregateMassG * fraction.proportionPercent) / 100, 2));
+}
+
+/**
+ * Voids in the mineral aggregate, as the lab's density master computes it:
+ * the air voids plus the volume the binder occupies.
+ */
+export function calculateJobMixVma(
+  airVoidsPercent: number,
+  bitumenPercent: number,
+  bulkDensityGcm3: number,
+  bitumenDensityGcm3 = DEFAULT_BITUMEN_DENSITY_GCM3
+) {
+  if (!bitumenDensityGcm3) return 0;
+  return round(airVoidsPercent + (bitumenPercent * bulkDensityGcm3) / bitumenDensityGcm3, 1);
+}
+
+export interface JobMixOptimumCandidate {
+  basis: "max-stability" | "max-density" | "target-air-voids";
+  bitumenPercent: number;
+  value: number;
+}
+
+/**
+ * The dosages a Marshall mix design points at, and deliberately not a verdict.
+ *
+ * Maximum stability, maximum density and the target air-void content rarely
+ * land on the same dosage, and which one governs is a judgement about the job —
+ * traffic, layer, the client's specification. So this reports the three
+ * candidates and leaves the choice to be recorded by the person making it,
+ * rather than averaging them into a number that looks derived.
+ */
+export function jobMixOptimumCandidates(
+  dosages: Array<{
+    bitumenPercent: number;
+    averageCorrectedStabilityKn: number;
+    averageBulkDensityGcm3: number;
+    airVoidsPercent: number;
+  }>,
+  targetAirVoidsPercent = 4
+): JobMixOptimumCandidate[] {
+  const usable = dosages.filter((dosage) => dosage.bitumenPercent > 0);
+  if (!usable.length) return [];
+  const candidates: JobMixOptimumCandidate[] = [];
+  const byStability = usable.filter((dosage) => dosage.averageCorrectedStabilityKn > 0);
+  if (byStability.length) {
+    const best = byStability.reduce((a, b) => (b.averageCorrectedStabilityKn > a.averageCorrectedStabilityKn ? b : a));
+    candidates.push({ basis: "max-stability", bitumenPercent: best.bitumenPercent, value: best.averageCorrectedStabilityKn });
+  }
+  const byDensity = usable.filter((dosage) => dosage.averageBulkDensityGcm3 > 0);
+  if (byDensity.length) {
+    const best = byDensity.reduce((a, b) => (b.averageBulkDensityGcm3 > a.averageBulkDensityGcm3 ? b : a));
+    candidates.push({ basis: "max-density", bitumenPercent: best.bitumenPercent, value: best.averageBulkDensityGcm3 });
+  }
+  const byVoids = usable.filter((dosage) => dosage.airVoidsPercent > 0);
+  if (byVoids.length) {
+    const best = byVoids.reduce((a, b) =>
+      Math.abs(b.airVoidsPercent - targetAirVoidsPercent) < Math.abs(a.airVoidsPercent - targetAirVoidsPercent) ? b : a
+    );
+    candidates.push({ basis: "target-air-voids", bitumenPercent: best.bitumenPercent, value: best.airVoidsPercent });
+  }
+  return candidates;
 }
 
 export function calculateLosAngelesResults(rows: Array<{ fractionMassG: number }>, retainedOnOnePointSixMmG: number) {

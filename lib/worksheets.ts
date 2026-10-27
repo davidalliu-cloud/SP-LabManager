@@ -9,7 +9,7 @@ import type { LabState, LabUser } from "./types";
  */
 export const WORKSHEET_COLLECTIONS = [
   "concreteTests", "concreteWaterPenetrationTests", "concreteFlexuralTests", "concreteDensityTests",
-  "concreteIndirectTensileTests", "concreteCoreTests", "asphaltTests", "thermalInsulationTests",
+  "concreteIndirectTensileTests", "concreteCoreTests", "asphaltTests", "asphaltJobMixTests", "thermalInsulationTests",
   "cementConsistencyTests", "cementStrengthTests", "cementBlaineTests", "admixtureTests",
   "masonryUnitTests", "pavingElementTests", "waterAnalysisTests", "sclerometerTests", "mortarTests",
   "steelTests", "aggregateTests", "aggregateChemicalTests", "aggregateLosAngelesTests",

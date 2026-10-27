@@ -72,7 +72,10 @@ import {
   deriveWaterChlorideRun,
   deriveWaterSulfateRun,
   averageWaterRuns,
-  deriveSclerometerResults
+  deriveSclerometerResults,
+  calculateJobMixDosageMasses,
+  calculateJobMixFractionMasses,
+  calculateJobMixVma
 } from "./calculations";
 import { useAuth } from "./auth";
 import { officialClientCodes2026 } from "./client-directory";
@@ -107,7 +110,7 @@ import { mergeProceduresWithSeed, proceduresForPersistence } from "./procedures"
 import { procedureSeed } from "./procedure-seed";
 import { createSupabaseBrowserClient } from "./supabase/client";
 import { pushAuditEntries, pushNotifications } from "./activity-log";
-import type { AdmixtureTest, AdmixtureDensityRun, AdmixtureDryMassRun, AdmixtureWaterMixRun, AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltMixtureKind, AsphaltReportKind, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ClientAnalysisRecord, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabState, LabTest, LabUser, MasonryUnitTest, MortarTest, PavingElementKind, PavingElementTest, WaterAnalysisTest, SclerometerTest, MortarTestKind, Notification, OfferRecord, OfferStatus, Project, Report, Role, Sample, SampleStatus, SteelTensileTest, ThermalInsulationTest } from "./types";
+import type { AdmixtureTest, AdmixtureDensityRun, AdmixtureDryMassRun, AdmixtureWaterMixRun, AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltGradationLimit, AsphaltGradationTarget, AsphaltJobMixTest, AsphaltMixtureKind, AsphaltReportKind, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ClientAnalysisRecord, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabState, LabTest, LabUser, MasonryUnitTest, MortarTest, PavingElementKind, PavingElementTest, WaterAnalysisTest, SclerometerTest, MortarTestKind, Notification, OfferRecord, OfferStatus, Project, Report, Role, Sample, SampleStatus, SteelTensileTest, ThermalInsulationTest } from "./types";
 
 export interface NewSampleInput {
   clientId: string;
@@ -307,8 +310,54 @@ interface ConcreteCoreInput {
   }>;
 }
 
+interface AsphaltJobMixInput {
+  gradationTarget: AsphaltGradationTarget;
+  sampleName?: string;
+  samplingDate?: string;
+  receiptDate?: string;
+  formulationDate?: string;
+  temperature?: string;
+  humidity?: string;
+  testingLocation?: string;
+  technicianName: string;
+  checkedBy?: string;
+  notes?: string;
+  specimenMassG: number;
+  bitumenDensityGcm3: number;
+  targetAirVoidsPercent: number;
+  optimumBitumenPercent?: number;
+  optimumBasis?: string;
+  fractions: Array<{ name: string; proportionPercent: number }>;
+  dosages: Array<{
+    bitumenPercent: number;
+    marshallDensity: Array<{
+      specimenNo: string;
+      airMassG: number;
+      waterMassG: number;
+      ssdMassG: number;
+      waterTemperatureC: number;
+    }>;
+    maximumDensity: Array<{
+      specimenNo: string;
+      conglomerateMassG: number;
+      pycnometerMassG: number;
+      pycnometerWaterMassG: number;
+      pycnometerSampleWaterMassG: number;
+      waterTemperatureC: number;
+    }>;
+    marshallStability: Array<{
+      specimenNo: string;
+      heightMm: number;
+      measuredStabilityKn: number;
+      flowMm: number;
+    }>;
+  }>;
+}
+
 interface AsphaltInput {
   mixtureKind: AsphaltMixtureKind;
+  gradationTarget?: AsphaltGradationTarget;
+  projectGradationLimits?: AsphaltGradationLimit[];
   asphaltDate?: string;
   samplingLocation?: string;
   testStartDate?: string;
@@ -1112,6 +1161,7 @@ interface LabStoreValue extends LabState {
   saveConcreteIndirectTensileTest: (testId: string, input: ConcreteIndirectTensileInput) => void;
   saveConcreteCoreTest: (testId: string, input: ConcreteCoreInput) => void;
   saveAsphaltTest: (testId: string, input: AsphaltInput) => void;
+  saveAsphaltJobMixTest: (testId: string, input: AsphaltJobMixInput) => void;
   saveThermalInsulationTest: (testId: string, input: ThermalInsulationInput) => void;
   saveCementConsistencyTest: (testId: string, input: CementConsistencyInput) => void;
   saveCementStrengthTest: (testId: string, input: CementStrengthInput) => void;
@@ -1472,6 +1522,7 @@ function mergeWithInitialState(saved: Partial<LabState>): LabState {
     concreteIndirectTensileTests: saved.concreteIndirectTensileTests ?? initialState.concreteIndirectTensileTests,
     concreteCoreTests: saved.concreteCoreTests ?? initialState.concreteCoreTests,
     asphaltTests: saved.asphaltTests ?? initialState.asphaltTests,
+    asphaltJobMixTests: saved.asphaltJobMixTests ?? initialState.asphaltJobMixTests,
     thermalInsulationTests: saved.thermalInsulationTests ?? initialState.thermalInsulationTests,
     cementConsistencyTests: saved.cementConsistencyTests ?? initialState.cementConsistencyTests,
     cementStrengthTests: saved.cementStrengthTests ?? initialState.cementStrengthTests,
@@ -2547,6 +2598,13 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             concreteDensityTests: previous.concreteDensityTests.filter((row) => !linkedTestIds.has(row.testId)),
             concreteIndirectTensileTests: previous.concreteIndirectTensileTests.filter((row) => !linkedTestIds.has(row.testId)),
             concreteCoreTests: previous.concreteCoreTests.filter((row) => !linkedTestIds.has(row.testId)),
+            // Asphalt was missing from this cascade, so deleting an asphalt
+            // sample left its worksheet in the state for good — unreachable,
+            // since the test it hangs off is gone, but still counted against
+            // the technician on the performance page and still saved on every
+            // write.
+            asphaltTests: previous.asphaltTests.filter((row) => !linkedTestIds.has(row.testId)),
+            asphaltJobMixTests: previous.asphaltJobMixTests.filter((row) => !linkedTestIds.has(row.testId)),
             thermalInsulationTests: previous.thermalInsulationTests.filter((row) => !linkedTestIds.has(row.testId)),
             cementConsistencyTests: previous.cementConsistencyTests.filter((row) => !linkedTestIds.has(row.testId)),
             cementStrengthTests: previous.cementStrengthTests.filter((row) => !linkedTestIds.has(row.testId)),
@@ -3230,6 +3288,73 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             auditLog: [...previous.auditLog]
           };
           addAudit(draft, "test_data_saved", "test", testId, "Asphalt physical-mechanical worksheet data saved.");
+          return draft;
+        });
+      },
+      saveAsphaltJobMixTest(testId, input) {
+        setState((previous) => {
+          if (!canCurrentUserEditTest(previous, testId)) return previous;
+          const fractions = input.fractions.filter((row) => row.name.trim() || row.proportionPercent);
+          const dosages = input.dosages
+            .filter((dosage) => dosage.bitumenPercent > 0)
+            .map((dosage) => {
+              const { bitumenMassG, aggregateMassG } = calculateJobMixDosageMasses(input.specimenMassG, dosage.bitumenPercent);
+              const marshallDensity = dosage.marshallDensity
+                .filter((row) => row.airMassG || row.waterMassG || row.ssdMassG)
+                .map((row) => ({ ...row, ...calculateAsphaltMarshallDensity(row) }));
+              const maximumDensity = dosage.maximumDensity
+                .filter((row) => row.conglomerateMassG || row.pycnometerMassG || row.pycnometerWaterMassG || row.pycnometerSampleWaterMassG)
+                .map((row) => ({ ...row, maximumDensityGcm3: calculateAsphaltMaximumDensity(row) }));
+              const marshallStability = dosage.marshallStability
+                .filter((row) => row.heightMm || row.measuredStabilityKn || row.flowMm)
+                .map((row) => {
+                  const correctionCoefficient = calculateMarshallCorrectionCoefficient(row.heightMm);
+                  const correctedStabilityKn = round(row.measuredStabilityKn * correctionCoefficient, 2);
+                  return {
+                    ...row,
+                    correctionCoefficient,
+                    correctedStabilityKn,
+                    marshallQuotientKnMm: row.flowMm ? round(correctedStabilityKn / row.flowMm, 2) : 0
+                  };
+                });
+              const averageBulkDensityGcm3 = averageNumbers(marshallDensity.map((row) => row.bulkDensityGcm3), 3);
+              const averageMaximumDensityGcm3 = averageNumbers(maximumDensity.map((row) => row.maximumDensityGcm3), 3);
+              const airVoidsPercent = calculateAsphaltAirVoids(averageMaximumDensityGcm3, averageBulkDensityGcm3);
+              return {
+                bitumenPercent: dosage.bitumenPercent,
+                bitumenMassG,
+                aggregateMassG,
+                fractionMassesG: calculateJobMixFractionMasses(aggregateMassG, fractions),
+                marshallDensity,
+                maximumDensity,
+                marshallStability,
+                averageBulkDensityGcm3,
+                averageMaximumDensityGcm3,
+                airVoidsPercent,
+                averageCorrectedStabilityKn: averageNumbers(marshallStability.map((row) => row.correctedStabilityKn), 2),
+                averageFlowMm: averageNumbers(marshallStability.map((row) => row.flowMm), 2),
+                averageMarshallQuotientKnMm: averageNumbers(marshallStability.map((row) => row.marshallQuotientKnMm), 2),
+                vmaPercent: calculateJobMixVma(airVoidsPercent, dosage.bitumenPercent, averageBulkDensityGcm3, input.bitumenDensityGcm3)
+              };
+            });
+          const jobMix: AsphaltJobMixTest = {
+            id: previous.asphaltJobMixTests.find((row) => row.testId === testId)?.id ?? crypto.randomUUID(),
+            testId,
+            ...input,
+            fractions,
+            dosages,
+            createdAt: new Date().toISOString()
+          };
+          const existing = previous.asphaltJobMixTests.some((row) => row.testId === testId);
+          const draft: LabState = {
+            ...previous,
+            asphaltJobMixTests: existing
+              ? previous.asphaltJobMixTests.map((row) => (row.testId === testId ? jobMix : row))
+              : [jobMix, ...previous.asphaltJobMixTests],
+            tests: previous.tests.map((test) => (test.id === testId ? { ...test, status: "In Progress" } : test)),
+            auditLog: [...previous.auditLog]
+          };
+          addAudit(draft, "test_data_saved", "test", testId, "Asphalt job mix formulation data saved.");
           return draft;
         });
       },
