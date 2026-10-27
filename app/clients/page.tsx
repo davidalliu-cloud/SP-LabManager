@@ -83,7 +83,8 @@ export default function ClientsPage() {
   const [editingClientId, setEditingClientId] = useState("");
   const [selectedErpId, setSelectedErpId] = useState("");
   const [clientDraft, setClientDraft] = useState<ClientDraft>(emptyClientDraft);
-  const [deleteMessage, setDeleteMessage] = useState("");
+  // Covers both outcomes - a delete, and a save that otherwise said nothing.
+  const [notice, setNotice] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -238,11 +239,11 @@ export default function ClientsPage() {
 
     const result = store.removeClient(clientId);
     if (!result.ok) {
-      setDeleteMessage(result.message ?? "Ky klient nuk mund të fshihet.");
+      setNotice(result.message ?? "Ky klient nuk mund të fshihet.");
       return;
     }
 
-    setDeleteMessage(`Klienti ${client.clientCode} u fshi.`);
+    setNotice(`Klienti ${client.clientCode} u fshi.`);
     if (editingClientId === clientId) closeForm();
   }
 
@@ -266,11 +267,24 @@ export default function ClientsPage() {
 
     if (editingClientId) {
       store.updateClient(editingClientId, input);
-    } else {
-      store.createClient(input);
+      closeForm();
+      setNotice(`Klienti ${input.clientName} u përditësua.`);
+      return;
     }
 
+    const createdId = store.createClient(input);
+    if (!createdId) {
+      setNotice("Nuk keni të drejtë të krijoni klientë. Kontaktoni administratorin.");
+      return;
+    }
+
+    // The register is 155 rows long and the search survives in the address,
+    // so a client saved while a filter is on lands somewhere the person who
+    // just typed it cannot see. Saving and then showing nothing is what makes
+    // a save that worked look like one that did not.
     closeForm();
+    clearFilters();
+    setNotice(`Klienti ${input.clientName} u ruajt.`);
   }
 
   function updateDraft(field: keyof ClientDraft, value: string) {
@@ -320,8 +334,17 @@ export default function ClientsPage() {
           <Field label="Emri i klientit">
             <input value={clientDraft.clientName} onChange={(event) => updateDraft("clientName", event.target.value)} required className="input" />
           </Field>
+          {/*
+            Not required, because the submit below already names an unnamed
+            project "Te pergjithshme / Pa percaktuar". With the attribute on,
+            that fallback could never run: a client registered before there is
+            a project to name simply would not submit, and the browser's own
+            validation bubble is anchored to this input - which on a form this
+            long sits below the fold. Nothing appeared to happen, and nothing
+            did.
+          */}
           <Field label="Projekti / objekti">
-            <input value={clientDraft.projectName} onChange={(event) => updateDraft("projectName", event.target.value)} required className="input" />
+            <input value={clientDraft.projectName} onChange={(event) => updateDraft("projectName", event.target.value)} placeholder="Të përgjithshme / Pa përcaktuar" className="input" />
           </Field>
           <Field label="Vendndodhja e projektit">
             <input value={clientDraft.projectLocation} onChange={(event) => updateDraft("projectLocation", event.target.value)} className="input" />
@@ -355,9 +378,9 @@ export default function ClientsPage() {
         </form>
       ) : null}
 
-      {deleteMessage ? (
+      {notice ? (
         <div className="mb-4 rounded-md border border-lab-mist bg-lab-porcelain px-4 py-3 text-sm text-ink">
-          {deleteMessage}
+          {notice}
         </div>
       ) : null}
 

@@ -1130,7 +1130,8 @@ interface LabStoreValue extends LabState {
   createEmployee: (input: EmployeeInput) => string;
   updateEmployee: (id: string, input: EmployeeInput) => void;
   removeEmployee: (id: string) => void;
-  createClient: (input: NewClientInput) => string;
+  /** The new client's id, or undefined when the role may not create one. */
+  createClient: (input: NewClientInput) => string | undefined;
   updateClient: (id: string, input: ClientInput) => void;
   saveEquipment: (id: string, input: EquipmentInput) => void;
   recordEnvironmentReading: (input: EnvironmentReadingInput) => void;
@@ -2186,6 +2187,11 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
         });
       },
       createClient(input) {
+        // Checked out here as well as inside the update, so a refusal can be
+        // reported. This handed back an id whether or not anything was
+        // written, which left the page unable to tell a save from a silent
+        // refusal - and it showed neither.
+        if (!canManageClients(currentRole)) return undefined;
         const clientId = crypto.randomUUID();
         const projectId = crypto.randomUUID();
         setState((previous) => {
