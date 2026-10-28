@@ -24,6 +24,7 @@ import {
 import { formatEuropeanDate } from "@/lib/date-format";
 import { isFieldSampleType } from "@/lib/field-register";
 import { useLabStore, type NewSampleInput } from "@/lib/lab-store";
+import { MIN_MATURITY_DAYS, addDaysIso, maturityFromTestDate } from "@/lib/maturity";
 
 function formatDateInput(date: Date) {
   const year = date.getFullYear();
@@ -132,6 +133,19 @@ export default function NewSamplePage() {
       next[index] = ageDays;
       return next;
     });
+  }
+
+  /**
+   * The other direction: name the day the cube is tested, and the age follows.
+   *
+   * The age stays the single stored value - this writes through to it rather
+   * than keeping a second copy of the same fact, so the two can never drift.
+   */
+  function updateScheduleTestDate(index: number, value: string) {
+    const castingDate = scheduleConcretingDates[index] ?? concretingDate;
+    const ageDays = maturityFromTestDate(castingDate, value);
+    if (ageDays === undefined) return;
+    updateScheduleAge(index, ageDays);
   }
 
   function updateScheduleConcretingDate(index: number, value: string) {
@@ -437,6 +451,10 @@ export default function NewSamplePage() {
               Shto rresht plani
             </button>
           </div>
+          <p className="mb-2 text-xs leading-snug text-muted">
+            Mosha dhe data e testimit janë e njëjta gjë e shkruar në dy mënyra: ndryshoni njërën dhe tjetra llogaritet vetë.
+            Për kampionët që mbërrijnë vonë, caktoni datën kur doni ta testoni dhe mosha reale del automatikisht.
+          </p>
           <div className="overflow-x-auto rounded-md border border-line">
             <table className="w-full min-w-[760px] text-left text-sm">
               <thead className="table-head">
@@ -480,7 +498,18 @@ export default function NewSamplePage() {
                           className="input"
                         />
                       </td>
-                      <td className="px-3 py-2"><input readOnly value={formatEuropeanDate(calculatedTestDate(selectedConcretingDate, selectedAge))} className="input bg-lab-porcelain" /></td>
+                      <td className="px-3 py-2">
+                        <input
+                          type="date"
+                          min={addDaysIso(selectedConcretingDate, MIN_MATURITY_DAYS)}
+                          value={calculatedTestDate(selectedConcretingDate, selectedAge)}
+                          onChange={(event) => updateScheduleTestDate(index, event.target.value)}
+                          className="input"
+                        />
+                        {selectedAge !== maturityAgeForRow(index) ? (
+                          <p className="mt-1 text-xs text-muted">Mosha {selectedAge} ditë</p>
+                        ) : null}
+                      </td>
                       <td className="px-3 py-2"><input readOnly value={formatEuropeanDate(calculatedReportDate(selectedConcretingDate, selectedAge))} className="input bg-lab-porcelain" /></td>
                       <td className="px-3 py-2">
                         <button

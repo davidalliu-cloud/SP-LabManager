@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { maturityDays, reportDueFor } from "@/lib/maturity";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
@@ -22,6 +23,14 @@ export default function SampleDetailPage() {
   const [assignmentProjectId, setAssignmentProjectId] = useState("");
   const [editSampleType, setEditSampleType] = useState("");
   const [editAccreditedTestId, setEditAccreditedTestId] = useState("");
+  // The casting date, the test date and the age are one fact in three forms,
+  // so they are held together: change the test date and the age shown beside
+  // it follows, and the report stays a day behind the test rather than being
+  // left on whatever date the old age pointed at.
+  const [editCastingDate, setEditCastingDate] = useState("");
+  const [editTestDate, setEditTestDate] = useState("");
+  const [editReportDue, setEditReportDue] = useState("");
+  const editedMaturity = maturityDays(editCastingDate, editTestDate);
   const sample = store.samples.find((item) => item.id === params.id);
 
   if (!sample) {
@@ -84,6 +93,9 @@ export default function SampleDetailPage() {
     setEditSampleType(sample.sampleType);
     const matchingTest = getAccreditedTestsForSampleType(sample.sampleType).find((test) => test.testName === sample.requestedTestType);
     setEditAccreditedTestId(matchingTest?.id ?? getAccreditedTestsForSampleType(sample.sampleType)[0]?.id ?? "");
+    setEditCastingDate(sample.concretingDate ?? "");
+    setEditTestDate(sample.requiredTestDate ?? "");
+    setEditReportDue(sample.reportDueDate ?? "");
     setIsEditingDetails(true);
   }
 
@@ -259,7 +271,7 @@ export default function SampleDetailPage() {
                 </Field>
                 <Field label="Dorëzuar nga"><input name="deliveredBy" defaultValue={sample.deliveredBy ?? ""} className="input" /></Field>
                 <Field label="Marrë nga"><input name="collectedBy" defaultValue={sample.collectedBy ?? ""} className="input" /></Field>
-                <Field label="Data e betonimit"><input name="concretingDate" type="date" defaultValue={sample.concretingDate ?? ""} className="input" /></Field>
+                <Field label="Data e betonimit"><input name="concretingDate" type="date" value={editCastingDate} onChange={(event) => setEditCastingDate(event.target.value)} className="input" /></Field>
                 <Field label="Personi që do të kryejë testin">
                   <select name="assignedTechnician" defaultValue={sample.assignedTechnician ?? ""} className="input">
                     <option value="">Zgjidh teknikun ose inxhinierin</option>
@@ -280,8 +292,34 @@ export default function SampleDetailPage() {
                 <Field label="Standardi përkatës"><input value={editSelectedTest?.standard || "Standardi nuk është përcaktuar në listën e akreditimit"} readOnly className="input bg-lab-porcelain" /></Field>
                 <Field label="Intervali i akredituar i matjes"><input value={editSelectedTest?.measurementRange || "-"} readOnly className="input bg-lab-porcelain" /></Field>
                 <Field label="Standardi i kampionimit"><input value={editSelectedTest?.samplingStandard || "-"} readOnly className="input bg-lab-porcelain" /></Field>
-                {!hasMultipleSchedules ? <Field label="Data e kërkuar për testim"><input name="requiredTestDate" type="date" defaultValue={sample.requiredTestDate} className="input" /></Field> : null}
-                {!hasMultipleSchedules ? <Field label="Afati i raportit"><input name="reportDueDate" type="date" defaultValue={sample.reportDueDate} className="input" /></Field> : null}
+                {!hasMultipleSchedules ? (
+                  <Field label="Data e kërkuar për testim">
+                    <input
+                      name="requiredTestDate"
+                      type="date"
+                      value={editTestDate}
+                      onChange={(event) => {
+                        setEditTestDate(event.target.value);
+                        setEditReportDue(reportDueFor(event.target.value) || "");
+                      }}
+                      className="input"
+                    />
+                    {editedMaturity !== undefined ? (
+                      <p className="mt-1 text-xs text-muted">Mosha në testim: {editedMaturity} ditë</p>
+                    ) : null}
+                  </Field>
+                ) : null}
+                {!hasMultipleSchedules ? (
+                  <Field label="Afati i raportit">
+                    <input
+                      name="reportDueDate"
+                      type="date"
+                      value={editReportDue}
+                      onChange={(event) => setEditReportDue(event.target.value)}
+                      className="input"
+                    />
+                  </Field>
+                ) : null}
                 <div className="md:col-span-3">
                   <Field label="Përshkrimi"><textarea name="sampleDescription" rows={3} defaultValue={sample.sampleDescription} className="input" /></Field>
                 </div>

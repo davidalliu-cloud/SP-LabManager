@@ -78,6 +78,7 @@ import {
   calculateJobMixVma
 } from "./calculations";
 import { useAuth } from "./auth";
+import { maturityDays, reportDueFor } from "./maturity";
 import { officialClientCodes2026 } from "./client-directory";
 import { canAssignSampleClient, canDeleteSamples, canGenerateOffers, canEditSampleAfterRegistration, canEditTestData, canReviewTests, canGenerateReportForTest, canAmendEnvironment, canCloseNonconformity, canManageClients, canManageEmployees, canManageEquipment, canRaiseNonconformity, canRecordEnvironment, canRewriteSample, isSampleLocked } from "./permissions";
 import { isFieldSampleType } from "./field-register";
@@ -2729,6 +2730,38 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           const normalizedAssignedTechnician = input.assignedTechnician?.trim() || undefined;
           const normalizedNotes = input.notes?.trim() || undefined;
           const linkedTests = previous.tests.filter((row) => row.sampleId === sampleId);
+
+          // Moving the test date used to move only the sample's own copy of it.
+          // The schedule kept the age and the date it was booked for, the
+          // linked tests kept theirs, and the report stayed due a day after a
+          // test that no longer happened then — which is how a cube cast on 12
+          // September and received on 27 October ended up tested on the 28th
+          // with its report due on the 11th, seventeen days before the test.
+          //
+          // The age is whatever the dates make it. A cube that waits six weeks
+          // is tested at 46 days and the certificate should say 46, not 28.
+          const existingSchedules = sample.testSchedules ?? [];
+          // Only one schedule can be edited from the sample page; with several,
+          // each test keeps the date of the group it belongs to.
+          const syncsDates = existingSchedules.length <= 1 && Boolean(input.requiredTestDate);
+          const nextMaturity = maturityDays(normalizedConcretingDate, input.requiredTestDate);
+          const safeReportDueDate =
+            input.reportDueDate && input.requiredTestDate && input.reportDueDate < input.requiredTestDate
+              ? reportDueFor(input.requiredTestDate) || input.reportDueDate
+              : input.reportDueDate;
+          const nextSchedules =
+            syncsDates && existingSchedules.length === 1
+              ? [
+                  {
+                    ...existingSchedules[0],
+                    concretingDate: normalizedConcretingDate ?? existingSchedules[0].concretingDate,
+                    ageDays: nextMaturity ?? existingSchedules[0].ageDays,
+                    requiredTestDate: input.requiredTestDate,
+                    reportDueDate: safeReportDueDate
+                  }
+                ]
+              : existingSchedules;
+
           const draft: LabState = {
             ...previous,
             samples: previous.samples.map((row) =>
@@ -2749,7 +2782,8 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
                     requestedTestType: input.requestedTestType,
                     standard: input.standard,
                     requiredTestDate: input.requiredTestDate,
-                    reportDueDate: input.reportDueDate,
+                    reportDueDate: safeReportDueDate,
+                    testSchedules: nextSchedules,
                     assignedTechnician: normalizedAssignedTechnician,
                     notes: normalizedNotes
                   }
@@ -2767,6 +2801,12 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
                     projectId: input.projectId,
                     standard: input.standard,
                     testType: ["Pending", "Scheduled"].includes(row.status) ? input.requestedTestType : row.testType,
+                    // The date is a booking, not a result: a test already under
+                    // way still needs to be done on the day the sample now says.
+                    requiredTestDate: syncsDates ? input.requiredTestDate : row.requiredTestDate,
+                    dueDate: syncsDates && safeReportDueDate ? safeReportDueDate : row.dueDate,
+                    scheduledAgeDays: syncsDates && nextMaturity !== undefined ? nextMaturity : row.scheduledAgeDays,
+                    concretingDate: syncsDates ? normalizedConcretingDate ?? row.concretingDate : row.concretingDate,
                     assignedTechnician: normalizedAssignedTechnician || row.assignedTechnician
                   }
                 : row
