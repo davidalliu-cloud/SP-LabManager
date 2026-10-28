@@ -299,8 +299,18 @@ export default function SampleDetailPage() {
                       type="date"
                       value={editTestDate}
                       onChange={(event) => {
-                        setEditTestDate(event.target.value);
-                        setEditReportDue(reportDueFor(event.target.value) || "");
+                        const nextTestDate = event.target.value;
+                        setEditTestDate(nextTestDate);
+                        // Only steps in when the deadline would otherwise fall
+                        // before the test it reports on. A report deliberately
+                        // due later than the day after is left alone - moving
+                        // somebody's chosen deadline because they corrected a
+                        // test date would be its own surprise.
+                        setEditReportDue((current) =>
+                          current && nextTestDate && current < nextTestDate
+                            ? reportDueFor(nextTestDate) || current
+                            : current
+                        );
                       }}
                       className="input"
                     />
