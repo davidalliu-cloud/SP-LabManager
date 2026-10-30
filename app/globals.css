@@ -1500,8 +1500,14 @@ textarea {
     margin-top: 4px !important;
 }
 
+/* `height`, not `min-height`. The markup asks for a 38mm signature; print
+   cuts it to 12mm, which is what lets this report end inside its own page.
+   The mirror was written with `min-height`, which an inline 38mm clears
+   without being touched - so the capture kept the full 38mm, the sheet came
+   out 317mm instead of 296, and every exported core report was shrunk to
+   94% to get it onto the paper. One word, a whole page off. */
 .concrete-core-report.pdf-capture .signature-block-img {
-    min-height: 12mm !important;
+    height: 12mm !important;
 }
 
 
