@@ -65,6 +65,19 @@ export default function ClientAnalysisPage() {
   const [pdfError, setPdfError] = useState("");
   const [sending, setSending] = useState(false);
   const [sendMessage, setSendMessage] = useState("");
+  /**
+   * Whether this summary carries what the period is worth.
+   *
+   * On by default, because the sheet exists mostly to go in front of an
+   * invoice. Off when it is going to a site engineer, or to a client who is
+   * being shown what was tested and not what it cost — the same reports, the
+   * same dates, without the two price columns and the valuation under them.
+   *
+   * The choice is part of generating the PDF rather than a view setting: the
+   * link a client opens resolves to the stored file, so whatever was turned
+   * off when it was made is off for whoever opens it.
+   */
+  const [includePricing, setIncludePricing] = useState(true);
 
   const whatsApp = toWhatsAppNumber(analysis.client?.phone);
 
@@ -101,7 +114,8 @@ export default function ClientAnalysisPage() {
         issuedBy: store.users.find((user) => user.id === store.currentUserId)?.fullName ?? "—",
         logoDataUrl,
         accreditationDataUrl,
-        charts
+        charts,
+        includePricing
       });
       const pdfUrl = await storePdfBlob(blob, name, record?.pdfUrl);
       store.saveClientAnalysis({ clientId: params.id, from: period.from, to: period.to, pdfUrl, shareToken: token });
@@ -219,6 +233,24 @@ export default function ClientAnalysisPage() {
       </div>
 
       <section className="no-print mb-6 rounded-lg border border-line bg-lab-porcelain p-4">
+        {/* Set before generating, not after: the stored PDF is what the client
+            link opens, so this decides what leaves the laboratory. */}
+        <label className="mb-3 flex w-fit items-start gap-2.5 rounded-md border border-line bg-white px-3 py-2.5">
+          <input
+            type="checkbox"
+            checked={includePricing}
+            onChange={(event) => setIncludePricing(event.target.checked)}
+            className="mt-0.5 h-4 w-4 accent-lab-burgundy"
+          />
+          <span className="text-sm">
+            <span className="font-semibold text-ink">Përfshi çmimet dhe vlerën</span>
+            <span className="mt-0.5 block text-xs leading-5 text-muted">
+              {includePricing
+                ? "Përmbledhja do të dalë me kolonat e çmimit dhe vlerën e punimeve për periudhën."
+                : "Përmbledhja do të dalë vetëm me punën e kryer — pa çmime, pa nëntotal dhe pa total."}
+            </span>
+          </span>
+        </label>
         <div className="flex flex-wrap items-center gap-2">
           <button onClick={storePdf} disabled={pdfState === "working"} className="btn-primary disabled:bg-slate-300">
             {pdfState === "working" ? "Duke gjeneruar…" : record?.pdfUrl ? "Rigjenero PDF-në" : "Gjenero dhe ruaj PDF-në"}
@@ -558,8 +590,8 @@ export default function ClientAnalysisPage() {
                     <th className="px-4 py-2">Testi</th>
                     <th className="px-4 py-2">Data</th>
                     <th className="px-4 py-2">Kodi</th>
-                    <th className="px-4 py-2 text-right">Çmimi</th>
-                    <th className="px-4 py-2 text-right">Vlera</th>
+                    {includePricing ? <th className="px-4 py-2 text-right">Çmimi</th> : null}
+                    {includePricing ? <th className="px-4 py-2 text-right">Vlera</th> : null}
                   </tr>
                 </thead>
                 <tbody>
@@ -573,12 +605,16 @@ export default function ClientAnalysisPage() {
                       <td className="whitespace-nowrap px-4 py-2.5 tabular-nums" title={row.caution}>
                         {row.code ?? <span className="text-red-700">pa kod</span>}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums">
-                        {row.unitPrice === undefined ? "—" : money(row.unitPrice)}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-2.5 text-right font-semibold tabular-nums">
-                        {row.value === undefined ? "—" : money(row.value)}
-                      </td>
+                      {includePricing ? (
+                        <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums">
+                          {row.unitPrice === undefined ? "—" : money(row.unitPrice)}
+                        </td>
+                      ) : null}
+                      {includePricing ? (
+                        <td className="whitespace-nowrap px-4 py-2.5 text-right font-semibold tabular-nums">
+                          {row.value === undefined ? "—" : money(row.value)}
+                        </td>
+                      ) : null}
                     </tr>
                   ))}
                 </tbody>
@@ -587,7 +623,7 @@ export default function ClientAnalysisPage() {
           </section>
         ) : null}
 
-        {analysis.pricing.lines.length ? (
+        {includePricing && analysis.pricing.lines.length ? (
           <section className="surface-card overflow-hidden">
             <header className="flex items-baseline justify-between gap-3 border-b border-line bg-lab-porcelain px-4 py-2.5">
               <h2 className="text-sm font-semibold text-ink">Vlera e punimeve për periudhën</h2>

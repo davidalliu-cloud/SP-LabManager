@@ -42,6 +42,19 @@ export type SummaryPdfInput = {
   logoDataUrl?: string;
   accreditationDataUrl?: string;
   charts: SummaryChart[];
+  /**
+   * Whether the sheet carries what the period is worth.
+   *
+   * A summary is sent for two different reasons. In front of an invoice it has
+   * to price every report and total them; sent to a site engineer, or to a
+   * client who is only being shown what was tested, the money is nobody's
+   * business and asking for the sheet should not mean handing it over.
+   *
+   * Off drops both places a price appears — the two columns on the report list
+   * and the valuation that follows it — and nothing else: the same reports,
+   * the same dates, the same codes.
+   */
+  includePricing?: boolean;
 };
 
 type Column<Row> = {
@@ -288,17 +301,26 @@ export async function buildSummaryPdf(input: SummaryPdfInput): Promise<Blob> {
   );
 
   // --- the invoice line ----------------------------------------------------
+  //
+  // Without the two money columns their 42mm goes back to the object and the
+  // test, which are the columns that get cut short; the table still spans the
+  // sheet rather than stopping two thirds of the way across it.
+  const withPricing = input.includePricing !== false;
   table<ClientAnalysis["reportRows"][number]>(
     "Raportet e lëshuara",
     [
       { header: "Nr. raporti", width: 26, value: (row) => row.reportNumber },
       { header: "Nr. regjistri", width: 30, value: (row) => row.sampleCode },
-      { header: "Objekti", width: 66, value: (row) => row.projectName },
-      { header: "Testi", width: 74, value: (row) => row.testType },
+      { header: "Objekti", width: withPricing ? 66 : 86, value: (row) => row.projectName },
+      { header: "Testi", width: withPricing ? 74 : 96, value: (row) => row.testType },
       { header: "Data", width: 25, value: (row) => formatEuropeanDate(row.issuedAt) },
       { header: "Kodi", width: 14, value: (row) => row.code ?? "—" },
-      { header: "Çmimi", width: 21, align: "right", value: (row) => (row.unitPrice === undefined ? "—" : money(row.unitPrice)) },
-      { header: "Vlera", width: 21, align: "right", value: (row) => (row.value === undefined ? "—" : money(row.value)) }
+      ...(withPricing
+        ? [
+            { header: "Çmimi", width: 21, align: "right" as const, value: (row: ClientAnalysis["reportRows"][number]) => (row.unitPrice === undefined ? "—" : money(row.unitPrice)) },
+            { header: "Vlera", width: 21, align: "right" as const, value: (row: ClientAnalysis["reportRows"][number]) => (row.value === undefined ? "—" : money(row.value)) }
+          ]
+        : [])
     ],
     analysis.reportRows
   );
@@ -308,7 +330,7 @@ export async function buildSummaryPdf(input: SummaryPdfInput): Promise<Blob> {
   // Grouped by catalogue code, which is how an invoice reads: four hundred
   // identical cube reports are one line with a count, not four hundred lines.
   const pricing = analysis.pricing;
-  if (pricing.lines.length) {
+  if (withPricing && pricing.lines.length) {
     table<ClientAnalysis["pricing"]["lines"][number]>(
       "Vlera e punimeve për periudhën",
       [
