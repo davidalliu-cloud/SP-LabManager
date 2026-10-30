@@ -42,7 +42,8 @@ const SIGNATURE_IMAGES: { match: string; src: string }[] = [
   { match: "astrit", src: "/signatures/astrit-alliu.png" },
   { match: "adela", src: "/signatures/adela-duzha.png" },
   { match: "fatma", src: "/signatures/fatma-laci.png" },
-  { match: "kejsi", src: "/signatures/kejsi-ismaili.png" }
+  { match: "kejsi", src: "/signatures/kejsi-ismaili.png" },
+  { match: "ylli", src: "/signatures/ylli-koka.png" }
 ];
 
 function signatureImageFor(name?: string) {
