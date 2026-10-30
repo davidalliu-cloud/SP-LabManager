@@ -3,6 +3,51 @@ import { createSupabaseBrowserClient } from "./supabase/client";
 const A4_WIDTH_MM = 210;
 const A4_HEIGHT_MM = 297;
 
+/**
+ * Runs the capture with html2canvas measuring the font instead of the page.
+ *
+ * html2canvas does not lay the text out; it asks the DOM where each run of text
+ * sits and then draws the glyphs on a baseline it works out separately. That
+ * baseline comes from a probe element it appends to `document.body` — a span
+ * and a 1px image, whose offsets it subtracts to find how far below the top of
+ * the line the baseline falls. The probe sets the font family and size it is
+ * asking about, but not a line-height, so it inherits the page's: this app
+ * states `line-height: 24px` on the body, a fixed length, and the probe is
+ * therefore measured in a 24px line whatever size it was asked about.
+ *
+ * Reports are set much tighter than that — 7 to 13px type on lines of 1.05 to
+ * 1.2 — so the baseline comes back far too deep and every line of text in the
+ * PDF is drawn that much lower than the browser draws it. The measurement, in
+ * px below the top of the line, against the font's real ascent:
+ *
+ *     font      7     8    9.5   11.1  11.9  13.3    20
+ *     true      6     7     8     10    11    12      18
+ *     body=24  18    19    19     20    21    22      25
+ *     body=0.4  7     8     9     10    11    12      17
+ *
+ * At report sizes it is out by ten px and more — most of a line — which is why
+ * a rule drawn directly under a value came out through the middle of it, and
+ * why on the masonry report, whose table rows are 12px tall, every row's text
+ * sat on the row's own bottom border.
+ *
+ * Making the body line-height proportional for the duration of the capture
+ * puts the probe back in a line the size of its own type, and the measurement
+ * lands on the real ascent across the whole range of sizes the reports use. A
+ * number rather than a length is the point; 0.4 is where the probe stops being
+ * dominated by its line box and starts reporting the font (below about 0.3 it
+ * undershoots instead). The report itself never sees this: every template sets
+ * its own line-height at its root, so nothing inside inherits the body's.
+ */
+async function withFontMetricsFixed<T>(run: () => Promise<T>): Promise<T> {
+  const previous = document.body.style.lineHeight;
+  document.body.style.lineHeight = "0.4";
+  try {
+    return await run();
+  } finally {
+    document.body.style.lineHeight = previous;
+  }
+}
+
 async function renderElementToPdfBlob(element: HTMLElement, options: PdfOptions = {}): Promise<Blob> {
   const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
 
@@ -13,7 +58,7 @@ async function renderElementToPdfBlob(element: HTMLElement, options: PdfOptions 
   // families that define a `.pdf-capture` mirror (concrete cube, official family)
   // render as a clean single-page A4; any others simply fall back to the normal
   // capture, which is still fitted onto one page below.
-  const canvas = await html2canvas(element, {
+  const canvas = await withFontMetricsFixed(() => html2canvas(element, {
     scale: 2,
     useCORS: true,
     backgroundColor: "#ffffff",
@@ -40,7 +85,7 @@ async function renderElementToPdfBlob(element: HTMLElement, options: PdfOptions 
         .querySelectorAll(".print-surface")
         .forEach((node) => node.classList.add("pdf-capture"));
     }
-  });
+  }));
 
   const landscape = options.orientation === "landscape";
   const pageWidthMm = landscape ? A4_HEIGHT_MM : A4_WIDTH_MM;
