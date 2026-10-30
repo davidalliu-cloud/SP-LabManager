@@ -66,7 +66,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
   const store = useLabStore();
   const { t } = useI18n();
-  const isLoginPage = pathname === "/login";
+  // The client portal is not the laboratory's app with the menus taken off: it
+  // is a separate, server-rendered reading room with its own sign-in, and it
+  // must not be wrapped in the staff navigation, the staff session or the
+  // store that loads the whole register. Treated like the login page, which is
+  // the other route that renders outside the shell.
+  const isPortal = pathname === "/portal" || pathname.startsWith("/portal/");
+  const isLoginPage = pathname === "/login" || isPortal;
   const isTechRoute = pathname === "/tech" || pathname.startsWith("/tech/");
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
   const showClientIdentityNav = canViewClientIdentity(currentUser?.role);
