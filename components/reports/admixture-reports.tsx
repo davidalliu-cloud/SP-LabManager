@@ -37,7 +37,7 @@ export function AdmixtureReportPreview({
   const issueDate = report.issuedAt || report.approvedAt || admixture.testEndDate || sample?.reportDueDate;
 
   return (
-    <OfficialReportShell report={report} code="SL-RA-AD-7.8/1.1" className="compact-official-report">
+    <OfficialReportShell report={report} code="SL-RA-AD-7.8/1.1" className="compact-official-report admixture-report">
       <OfficialMetaGrid entries={[
         { sq: "Nr. REGJISTRI", en: "REGISTER No.", value: sample?.sampleCode },
         { sq: "KLIENTI", en: "PURCHASER", value: client?.clientName },

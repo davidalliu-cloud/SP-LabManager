@@ -535,6 +535,42 @@ textarea {
   margin-top: 0 !important;
 }
 
+/* ==================================================================== *
+ * Admixtures — SL-RA-AD-7.8/1.1.
+ *
+ * Capture only, and it takes something away rather than adding it. The
+ * family shrinks every results table for the capture — 7.1pt from the
+ * official rules, 7.8pt from the compact ones — because most of these
+ * reports carry a table that would not otherwise fit. This one carries
+ * four rows. Its table was being set three sizes smaller than the 10pt
+ * its own markup asks for, under a client and sample block at 10pt, with
+ * a hand's width of empty paper underneath it.
+ *
+ * So the shrinking is simply lifted here: the table is set at the 10pt
+ * the template declares, with the leading and the cell padding the
+ * preview and the browser's own print already give it. The exported
+ * sheet and the one on screen now agree.
+ *
+ * The ceiling is where a phrase starts breaking over two lines, which
+ * for this table is a fraction under 10.9pt — "Reduktimi i ujit / Water
+ * reduction*" and the standards beside it go first. 10pt keeps about
+ * 9% in hand, and the only cells that vary are the four readings, which
+ * are never more than five characters.
+ *
+ * Named with `.compact-official-report` as well so it outranks both of
+ * the rules it is lifting; they are declared later in this file and
+ * would otherwise win on source order.
+ * ==================================================================== */
+.compact-official-report.admixture-report.pdf-capture .official-table {
+  font-size: 10pt !important;
+  line-height: 1.12 !important;
+}
+
+.compact-official-report.admixture-report.pdf-capture .official-table th,
+.compact-official-report.admixture-report.pdf-capture .official-table td {
+  padding: 4px 5px !important;
+}
+
 .compact-official-report header {
   padding-bottom: 10px;
 }
