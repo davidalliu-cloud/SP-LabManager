@@ -517,6 +517,26 @@ textarea {
  * These generic rules come FIRST on purpose. They share specificity with the
  * per-layout mirrors below, so source order lets each layout refine them.
  * ==================================================================== */
+/* The capture is laid out at twice size and rasterised 1:1, rather than laid
+ * out at size and rasterised at 2x. The page comes out the same: the same
+ * 1588 x 2238 canvas for the same sheet, the same type, the same margins,
+ * because doubling every length and halving the rasteriser's scale cancel.
+ *
+ * What it buys is a finer pixel. A browser will not draw a border narrower
+ * than one device pixel, so at size the thinnest rule a table could have was
+ * 1px of a 794px-wide sheet - 0.26mm, heavier than the grid wants to be. At
+ * twice size the sheet is 1588px, a declared 0.5px resolves to a whole pixel
+ * rather than being rounded up, and the same rule lands at 0.13mm. It also
+ * puts text and rules on a grid twice as fine, so fewer of them come out
+ * smeared across two pixels by rounding.
+ *
+ * Paired with `scale: 1` in renderElementToPdfBlob. The two belong together:
+ * raising one without lowering the other doubles the canvas and the file.
+ */
+.print-surface.pdf-capture {
+  zoom: 2;
+}
+
 .report-a4.pdf-capture {
   width: 210mm !important;
   max-width: 210mm !important;
@@ -664,6 +684,17 @@ textarea {
  * Cells with no border of their own are unaffected: a width on a border that
  * has no style still draws nothing.
  */
+/* A hairline grid. The cells are drawn at a whole 1px on screen and in the
+ * browser's own print, which is as thin as a border there can be; the capture
+ * is laid out at twice size (see the zoom at the head of this section), so
+ * half a pixel is a real pixel there and the rule reaches the sheet at 0.13mm
+ * instead of 0.26. Stated before the two rules below so that the edges they
+ * drop stay dropped. */
+.pdf-capture table th,
+.pdf-capture table td {
+  border-width: 0.5px !important;
+}
+
 .pdf-capture table tr:not(:first-child) > th,
 .pdf-capture table tr:not(:first-child) > td,
 .pdf-capture table thead + tbody > tr:first-child > th,
