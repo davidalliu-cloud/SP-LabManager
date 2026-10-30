@@ -454,6 +454,56 @@ textarea {
   width: 6%;
 }
 
+/* ==================================================================== *
+ * Thermal insulation — SL-RA-PT-7.8/1.
+ *
+ * The signature block of this family is welded to the foot of the sheet,
+ * so everything above it has 852px of a 1119px page to live in. This
+ * report was using 971 of them: the last three rows of the results table
+ * and the whole "Shënime / Notes" line were printed underneath the
+ * signatures, the names and the company stamp. Nothing in the page said
+ * so — the sheet is still one A4, still full size — and 5967/26 went out
+ * of the laboratory that way.
+ *
+ * It overruns because it identifies the sample more thoroughly than any
+ * other report in the family: twelve entries, four of them with labels
+ * two and three lines long, all set at 10pt. That block alone was 328px,
+ * and the one under it another 212 - 540px, half the sheet, to say who
+ * the client is and what arrived.
+ *
+ * At 8pt it is 202px and the sheet ends at 745, clear of the signatures
+ * by 107px. That is about eight lines of headroom, which is what a long
+ * client name or a second line of address needs, and it stays the
+ * largest identification block in the family (steel sets 7.4pt, masonry
+ * 7.6pt). The results table, the part of the sheet the report exists
+ * for, is untouched at 9pt.
+ *
+ * Declared once for the preview, and mirrored below into print and the
+ * html2canvas capture, so the three cannot drift apart.
+ * ==================================================================== */
+.thermal-insulation-report .official-meta,
+.thermal-insulation-report .thermal-meta {
+  font-size: 8pt;
+  line-height: 1.12;
+  row-gap: 1px;
+}
+
+@media print {
+  .thermal-insulation-report .official-meta,
+  .thermal-insulation-report .thermal-meta {
+    font-size: 8pt !important;
+    line-height: 1.12 !important;
+    row-gap: 1px !important;
+  }
+}
+
+.thermal-insulation-report.pdf-capture .official-meta,
+.thermal-insulation-report.pdf-capture .thermal-meta {
+  font-size: 8pt !important;
+  line-height: 1.12 !important;
+  row-gap: 1px !important;
+}
+
 .compact-official-report header {
   padding-bottom: 10px;
 }

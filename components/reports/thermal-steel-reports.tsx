@@ -26,7 +26,7 @@ export function ThermalInsulationReportPreview({
   const sampleValues = (selector: (index: number) => number) => [0, 1, 2, 3, 4].map(selector);
   const issueDate = report.issuedAt || report.approvedAt || thermalInsulation.testEndDate || sample?.reportDueDate;
   return (
-    <OfficialReportShell report={report} code="SL-RA-PT-7.8/1" title="RAPORT TESTIMI / TEST REPORT" className="compact-official-report">
+    <OfficialReportShell report={report} code="SL-RA-PT-7.8/1" title="RAPORT TESTIMI / TEST REPORT" className="compact-official-report thermal-insulation-report">
       <OfficialMetaGrid entries={[
         { sq: "Nr. REGJISTRI", en: "REGISTER No.", value: sample?.sampleCode },
         { sq: "KLIENTI", en: "PURCHASER", value: client?.clientName },
@@ -41,7 +41,7 @@ export function ThermalInsulationReportPreview({
         { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: sample?.dateReceived },
         { sq: "OPERATORI I MARRJES SË KAMPIONIT", en: "SAMPLING OPERATOR", value: samplingOperator(sample) }
       ]} />
-      <div className="mt-1 grid grid-cols-[315px_1fr] gap-x-8 gap-y-1 text-[10pt] leading-[1.15]">
+      <div className="thermal-meta mt-1 grid grid-cols-[315px_1fr] gap-x-8 gap-y-1 text-[10pt] leading-[1.15]">
         <OfficialTestingDates start={thermalInsulation.testStartDate} end={thermalInsulation.testEndDate} />
         <OfficialMetaGrid className="contents" entries={[
           { sq: "TESTI", en: "TEST", value: "PËRCAKTIMI I KARAKTERISTIKAVE FIZIKO-MEKANIKE TË PRODUKTEVE TERMOIZOLUESE / DETERMINATION OF PHYSICAL - MECHANICAL CHARACTERISTICS FOR THERMAL INSULATING PRODUCTS" },
