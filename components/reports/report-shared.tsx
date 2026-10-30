@@ -61,7 +61,16 @@ function SignatureImg({
   align: "center" | "start";
 }) {
   const src = signatureImageFor(name);
-  if (!src) return null;
+  // Nothing on file for this person, but the cell still has to exist. These
+  // two images are the children of a two-column grid: return null and the
+  // row is left holding one child, which grid auto-places in the FIRST
+  // column — so the laboratory responsible's signature and company stamp
+  // slid under the technician's name and signed the wrong half of the
+  // report. Only visible when the technician has no signature and the
+  // responsible does, which is why it survived 1,298 reports signed by
+  // someone who has one. Zero height, so a row is still only as tall as
+  // the image beside it and no report grows a second page.
+  if (!src) return <div aria-hidden className="h-0" />;
   return (
     <img
       src={src}
