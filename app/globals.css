@@ -643,6 +643,39 @@ textarea {
   vertical-align: middle !important;
 }
 
+/* Every rule in a report table was drawn twice, and came out twice as thick.
+ *
+ * The tables are `border-collapse`, so the browser draws one 1px line where two
+ * cells meet. html2canvas has no notion of collapsing: it walks the cells and
+ * paints each one's own four borders, so the line between two rows is the upper
+ * cell's bottom border and the lower cell's top border, side by side - 1px
+ * became 2, about half a millimetre on the sheet, against 1px on screen and in
+ * the browser's own print. On a sheet like the masonry report, where the rules
+ * are a grid over eleven parameters and six specimens, the page came back
+ * heavier than the report it was drawn from.
+ *
+ * So, for the capture only, each shared edge is given to one cell: a cell keeps
+ * its top border only where there is no row above it to draw one, and its left
+ * border only where there is no cell to its left. The outer edge of the table is
+ * untouched, and nothing moves - a collapsed border is as wide as the widest of
+ * the two it merges, so dropping the duplicate leaves the layout alone (the
+ * masonry capture stays 1588x2238 to the pixel).
+ *
+ * Cells with no border of their own are unaffected: a width on a border that
+ * has no style still draws nothing.
+ */
+.pdf-capture table tr:not(:first-child) > th,
+.pdf-capture table tr:not(:first-child) > td,
+.pdf-capture table thead + tbody > tr:first-child > th,
+.pdf-capture table thead + tbody > tr:first-child > td {
+  border-top-width: 0 !important;
+}
+
+.pdf-capture table > * > tr > th:not(:first-child),
+.pdf-capture table > * > tr > td:not(:first-child) {
+  border-left-width: 0 !important;
+}
+
 /* html2canvas ignores `vertical-align: middle` when a table row has an explicit
    `height`: it top-aligns the text, so in the exported PDF the text sits on the
    upper grid line instead of centred in the cell. In the capture only, drop the
