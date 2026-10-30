@@ -8,7 +8,7 @@ import { reportLifecycle } from "@/lib/sample-stage";
 import { round } from "@/lib/calculations";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
 
-const HEAD_OF_LAB_NAME = "Eng. Adelajda Duzha";
+const HEAD_OF_LAB_NAME = "Ing. Adelajda Duzha";
 
 /**
  * Who signs a report as laboratory responsible.
@@ -50,6 +50,33 @@ function signatureImageFor(name?: string) {
   if (!name) return undefined;
   const normalized = name.toLowerCase();
   return SIGNATURE_IMAGES.find((entry) => normalized.includes(entry.match))?.src;
+}
+
+/**
+ * The engineers of the laboratory, who sign with their title.
+ *
+ * "Ing." is Inxhinier, and it goes before the name. Matched the same way as
+ * the signatures above, by a lowercase substring, because the name reaching a
+ * report comes from whatever was typed into the test — "Adelajda Duzha" from
+ * one screen, "Eng. Adelajda Duzha" from the stored user record — and the
+ * report has to print the same thing either way.
+ */
+const ENGINEER_NAMES = ["adela", "ylli", "francesko"];
+
+/** Any title already on the front of a name: Ing., Eng., or Ing./Eng. */
+const EXISTING_TITLE = /^\s*(?:ing\.?\s*\/\s*eng\.?|ing\.?|eng\.?)\s+/i;
+
+/**
+ * A name as it should be signed. An engineer gets "Ing." in front of it,
+ * whatever title the stored name arrived with; everyone else is left exactly
+ * as they are — the technicians are not engineers and the report should not
+ * say they are.
+ */
+export function signedName(name?: string) {
+  if (!name) return name;
+  const bare = name.replace(EXISTING_TITLE, "").trim();
+  const normalized = bare.toLowerCase();
+  return ENGINEER_NAMES.some((engineer) => normalized.includes(engineer)) ? `Ing. ${bare}` : name;
 }
 
 function SignatureImg({
@@ -122,8 +149,8 @@ export function SignaturePair({
         <div className={labelClass}>{responsibleLabel}</div>
       </div>
       <div className={`mt-2 ${columnClassName}`}>
-        <div className={nameClass}>{testedByName || "-"}</div>
-        <div className={nameClass}>{responsibleName || "-"}</div>
+        <div className={nameClass}>{signedName(testedByName) || "-"}</div>
+        <div className={nameClass}>{signedName(responsibleName) || "-"}</div>
       </div>
       <div className={`mt-1.5 ${columnClassName}`}>
         <SignatureImg name={testedByName} heightMm={heightMm} align={align} />
