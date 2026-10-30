@@ -59,11 +59,7 @@ async function renderElementToPdfBlob(element: HTMLElement, options: PdfOptions 
   // render as a clean single-page A4; any others simply fall back to the normal
   // capture, which is still fitted onto one page below.
   const canvas = await withFontMetricsFixed(() => html2canvas(element, {
-    // One canvas pixel per CSS pixel, because `.print-surface.pdf-capture`
-    // lays the sheet out at twice size. Same canvas, same page, finer grid —
-    // see the note on that rule. Changing this without changing the zoom with
-    // it either halves the resolution of every PDF or doubles its weight.
-    scale: 1,
+    scale: 2,
     useCORS: true,
     backgroundColor: "#ffffff",
     // Pin the width the cloned document's media queries resolve against.
