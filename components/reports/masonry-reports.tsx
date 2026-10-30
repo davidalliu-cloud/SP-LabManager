@@ -24,6 +24,21 @@ import type { OfficialMetaEntry } from "./report-shared";
  * uncertainty. A parameter nobody measured shows a blank rather than a zero.
  */
 
+/**
+ * How tightly the result table has to be set for a given specimen count.
+ *
+ * The sheet is 210mm whatever is tested, and every extra unit is another
+ * column, so a size that reads well for six units cannot also fit ten. Six
+ * is the usual number under BS EN 772-1, and that case gets the largest
+ * type; beyond it the table steps down rather than letting the page
+ * overflow onto the signatures or a digit drop off a value.
+ */
+function masonryDensity(specimenCount: number) {
+  if (specimenCount > 8) return "masonry-cols-wide";
+  if (specimenCount > 6) return "masonry-cols-mid";
+  return "masonry-cols-normal";
+}
+
 const cell = "border border-black px-1 py-0.5";
 const headCell = "border border-black px-1 py-0.5 font-bold";
 
@@ -123,7 +138,7 @@ export function MasonryUnitReportPreview({
 
   function renderParamTable(rows: ParamRow[]) {
     return (
-      <table className="mt-1 w-full border-collapse text-center text-[6.5px]">
+      <table className={`masonry-result-table ${masonryDensity(units.length)} mt-1 w-full border-collapse text-center`}>
         <thead>
           <tr>
             <th className={`${headCell} text-left`}>
@@ -174,13 +189,13 @@ export function MasonryUnitReportPreview({
   }
 
   return (
-    <OfficialReportShell report={report} code="SL-RA-EM-7.8/1.1" title="RAPORT TESTIMI / TEST REPORT" className="compact-official-report">
+    <OfficialReportShell report={report} code="SL-RA-EM-7.8/1.1" title="RAPORT TESTIMI / TEST REPORT" className="compact-official-report masonry-unit-report">
       <OfficialMetaGrid entries={entries} />
       <OfficialTestingDates start={masonry.testStartDate} end={masonry.testEndDate} />
       <OfficialEnvironmental temperature={masonry.temperature} humidity={masonry.humidity} />
 
       {hasDeclared ? (
-        <div className="mt-2 text-[7px]">
+        <div className="masonry-note mt-2">
           <BiText>Përmasat e deklaruara / Declared dimensions</BiText>: {show(masonry.declaredLengthMm)} × {show(masonry.declaredWidthMm)} ×{" "}
           {show(masonry.declaredHeightMm)} mm
         </div>
@@ -188,7 +203,7 @@ export function MasonryUnitReportPreview({
 
       {renderParamTable(paramRows)}
 
-      <div className="mt-2 text-[7px]">
+      <div className="masonry-note mt-2">
         {masonry.surfacePreparation ? (
           <div>
             <BiText>Metoda për përgatitjen e sipërfaqes / Method of surface preparation</BiText>: {masonry.surfacePreparation}
@@ -202,7 +217,7 @@ export function MasonryUnitReportPreview({
       </div>
 
       {/* --- BS EN 772-1 — compressive strength, in the tested orientation --- */}
-      <div className="mt-3 text-[7px] font-bold">
+      <div className="masonry-note mt-3 font-bold">
         <BiText>Rezistenca në shtypje / Compressive strength</BiText> — BS EN 772-1:2011+A1:2015
         {" · "}
         <span className="font-normal">
@@ -216,13 +231,13 @@ export function MasonryUnitReportPreview({
       {renderParamTable(strengthRows)}
 
       {averages.compressiveStrengthMpa !== undefined && averages.normalisedStrengthMpa === undefined ? (
-        <div className="mt-1 text-[7px] italic">
+        <div className="masonry-note mt-1 italic">
           Rezistenca e normalizuar nuk raportohet: faktori i formës ose faktori i kondicionimit nuk është regjistruar. / Normalised strength not
           reported: shape or conditioning factor not recorded.
         </div>
       ) : null}
 
-      <div className="mt-1 text-[7px]">
+      <div className="masonry-note mt-1">
         <BiText>Numri i mostrave të testuara / Number of specimens tested</BiText>: {measuredCount || units.length}
         {crushedCount ? ` · ${crushedCount} në shtypje / in compression` : ""}
       </div>

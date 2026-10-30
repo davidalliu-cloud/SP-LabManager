@@ -1654,3 +1654,201 @@ textarea {
 .steel-report.pdf-capture .official-underline {
   padding-bottom: 4px !important;
 }
+
+/* ==================================================================== *
+ * Masonry units — SL-RA-EM-7.8/1.1, the "bricks" report.
+ *
+ * Its two result tables are hand-built rather than .official-table, so
+ * every rule the official family applies to tables missed them, and they
+ * carried a hard-coded 6.5px in the markup instead: about 1.7mm on the
+ * page, against roughly 2.5mm for the rest of the family. The numbers the
+ * report exists to carry were the smallest thing on the sheet, while the
+ * client and object block above them ran at 10pt.
+ *
+ * The page is not short of ink, it is short of room: the signature cluster
+ * is welded to the foot of the sheet, so the content band ends at 225mm and
+ * the report filled it to 221mm. Enlarging the results therefore has to be
+ * paid for, and the identification block is where the money is - 78mm of a
+ * 225mm band to say who the client is. Bringing it to 7.6pt (the steel
+ * report already sits at 7.4pt) buys back about 19mm, which is spent on the
+ * tables.
+ *
+ * Declared once so the preview, the browser print and the html2canvas
+ * capture cannot drift; the mirrors below only restate what print and
+ * capture would otherwise override.
+ * ==================================================================== */
+.masonry-unit-report .masonry-result-table {
+  font-size: 9.6px;
+  line-height: 1.05;
+}
+
+.masonry-unit-report .masonry-result-table th,
+.masonry-unit-report .masonry-result-table th,
+.masonry-unit-report .masonry-result-table td {
+  padding: 1px 2px;
+}
+
+.masonry-unit-report .masonry-note {
+  font-size: 9.6px;
+  line-height: 1.05;
+}
+
+.masonry-unit-report .official-meta {
+  font-size: 7.6pt;
+  line-height: 1.12;
+  row-gap: 1px;
+}
+
+@media print {
+  .masonry-unit-report .masonry-result-table {
+    font-size: 9.6px !important;
+    line-height: 1.05 !important;
+  }
+
+  .masonry-unit-report .masonry-result-table th,
+  .masonry-unit-report .masonry-result-table th,
+  .masonry-unit-report .masonry-result-table td {
+    padding: 1px 2px !important;
+  }
+
+  .masonry-unit-report .masonry-note {
+    font-size: 9.6px !important;
+  }
+
+  .masonry-unit-report .official-meta {
+    font-size: 7.6pt !important;
+    line-height: 1.12 !important;
+    row-gap: 1px !important;
+  }
+}
+
+.masonry-unit-report.pdf-capture .masonry-result-table {
+  font-size: 9.6px !important;
+  line-height: 1.05 !important;
+}
+
+.masonry-unit-report.pdf-capture .masonry-result-table th,
+.masonry-unit-report.pdf-capture .masonry-result-table th,
+.masonry-unit-report.pdf-capture .masonry-result-table td {
+  padding: 1px 2px !important;
+}
+
+.masonry-unit-report.pdf-capture .masonry-note {
+  font-size: 9.6px !important;
+}
+
+.masonry-unit-report.pdf-capture .official-meta {
+  font-size: 7.6pt !important;
+  line-height: 1.12 !important;
+  row-gap: 1px !important;
+}
+
+/* The gaps between the blocks, which on this report are the cheapest
+   millimetres on the page: four of them at Tailwind's 8-12px buy back the
+   last few millimetres the enlarged tables need, and nobody reads a gap. */
+.masonry-unit-report .masonry-note.mt-2,
+.masonry-unit-report .masonry-note.mt-3 {
+  margin-top: 3px;
+}
+
+@media print {
+  .masonry-unit-report .masonry-note.mt-2,
+  .masonry-unit-report .masonry-note.mt-3 {
+    margin-top: 3px !important;
+  }
+}
+
+.masonry-unit-report.pdf-capture .masonry-note.mt-2,
+.masonry-unit-report.pdf-capture .masonry-note.mt-3 {
+  margin-top: 3px !important;
+}
+
+/* The standard column is the reason every row was two lines deep.
+   "BS EN 772-16:2011, Clause 7.1" is a couple of millimetres too wide for
+   its column, so it wrapped — and a wrapped citation sets the height of a
+   row whose own label fits on one line. Pulling just that column down a
+   point lets it sit on one line, and two thirds of the rows then halve.
+   The citation is reference matter; the measured values beside it keep
+   the larger size, which is the whole point of the exercise. */
+.masonry-unit-report .masonry-result-table th:nth-child(3),
+.masonry-unit-report .masonry-result-table td:nth-child(3) {
+  font-size: 7px;
+}
+
+@media print {
+  .masonry-unit-report .masonry-result-table th:nth-child(3),
+  .masonry-unit-report .masonry-result-table td:nth-child(3) {
+    font-size: 7px !important;
+  }
+}
+
+.masonry-unit-report.pdf-capture .masonry-result-table th:nth-child(3),
+.masonry-unit-report.pdf-capture .masonry-result-table td:nth-child(3) {
+  font-size: 7px !important;
+}
+
+/* Column widths, so the table does not rearrange itself per sample.
+   The columns were auto-sized, so the label column was whatever the
+   specimen count left over: 74mm for six units, 39mm for ten, at which
+   point every label wrapped and the table grew by a third of a page.
+   Pinning the three description columns keeps the layout the same shape
+   whatever is tested, and the specimen columns only ever hold four or
+   five characters. */
+.masonry-unit-report .masonry-result-table {
+  table-layout: fixed;
+}
+
+.masonry-unit-report .masonry-result-table th:nth-child(1),
+.masonry-unit-report .masonry-result-table td:nth-child(1) {
+  width: 36%;
+}
+
+.masonry-unit-report .masonry-result-table th:nth-child(2),
+.masonry-unit-report .masonry-result-table td:nth-child(2) {
+  width: 5%;
+}
+
+.masonry-unit-report .masonry-result-table th:nth-child(3),
+.masonry-unit-report .masonry-result-table td:nth-child(3) {
+  width: 17%;
+}
+
+/* A fixed layout clips what will not fit instead of widening the column,
+   and the failure load is six digits in newtons. On a ten-specimen sheet
+   "300000" needed 8.2mm of a 7mm cell and simply lost its tail, with
+   nothing on the page to say a digit had gone. Wrapping is the lesser
+   evil by a long way: a value that breaks across two lines is ugly and
+   readable, a value quietly shortened is wrong. */
+.masonry-unit-report .masonry-result-table th,
+.masonry-unit-report .masonry-result-table td {
+  overflow-wrap: anywhere;
+}
+
+@media print {
+  .masonry-unit-report .masonry-result-table th,
+  .masonry-unit-report .masonry-result-table td {
+    overflow-wrap: anywhere !important;
+  }
+}
+
+.masonry-unit-report.pdf-capture .masonry-result-table th,
+.masonry-unit-report.pdf-capture .masonry-result-table td {
+  overflow-wrap: anywhere !important;
+}
+
+/* The three densities. Only the type size changes; the column widths and
+   everything else stay put, so the report reads the same whatever was
+   tested. Six specimens is the usual case and gets the largest setting. */
+.masonry-unit-report .masonry-result-table.masonry-cols-normal { font-size: 9.6px; }
+.masonry-unit-report .masonry-result-table.masonry-cols-mid { font-size: 8.8px; }
+.masonry-unit-report .masonry-result-table.masonry-cols-wide { font-size: 8px; }
+
+@media print {
+  .masonry-unit-report .masonry-result-table.masonry-cols-normal { font-size: 9.6px !important; }
+  .masonry-unit-report .masonry-result-table.masonry-cols-mid { font-size: 8.8px !important; }
+  .masonry-unit-report .masonry-result-table.masonry-cols-wide { font-size: 8px !important; }
+}
+
+.masonry-unit-report.pdf-capture .masonry-result-table.masonry-cols-normal { font-size: 9.6px !important; }
+.masonry-unit-report.pdf-capture .masonry-result-table.masonry-cols-mid { font-size: 8.8px !important; }
+.masonry-unit-report.pdf-capture .masonry-result-table.masonry-cols-wide { font-size: 8px !important; }
