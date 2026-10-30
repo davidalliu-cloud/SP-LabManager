@@ -471,12 +471,20 @@ textarea {
  * and the one under it another 212 - 540px, half the sheet, to say who
  * the client is and what arrived.
  *
- * At 8pt it is 202px and the sheet ends at 745, clear of the signatures
- * by 107px. That is about eight lines of headroom, which is what a long
- * client name or a second line of address needs, and it stays the
- * largest identification block in the family (steel sets 7.4pt, masonry
- * 7.6pt). The results table, the part of the sheet the report exists
- * for, is untouched at 9pt.
+ * At 8pt the two blocks come to 230px and 125px, the sheet ends at 818,
+ * and the signatures start 34px below it. It stays the largest
+ * identification block in the family (steel sets 7.4pt, masonry 7.6pt),
+ * and the results table, the part of the sheet the report exists for, is
+ * untouched at 9pt.
+ *
+ * The room the smaller type frees is spent on air rather than banked: a
+ * line and a half of leading instead of a bare 1.12, two px between the
+ * rows instead of one, and a real gap before the results table instead
+ * of the 4px the capture gives every block (see below). 34px is left
+ * over, which is two or three more lines than this sample needs - enough
+ * for a longer client name or a second line of address, not enough for a
+ * report that is longer again. If one of those turns up, this is the
+ * block to look at.
  *
  * Declared once for the preview, and mirrored below into print and the
  * html2canvas capture, so the three cannot drift apart.
@@ -484,24 +492,47 @@ textarea {
 .thermal-insulation-report .official-meta,
 .thermal-insulation-report .thermal-meta {
   font-size: 8pt;
-  line-height: 1.12;
-  row-gap: 1px;
+  line-height: 1.22;
+  row-gap: 2px;
 }
 
 @media print {
   .thermal-insulation-report .official-meta,
   .thermal-insulation-report .thermal-meta {
     font-size: 8pt !important;
-    line-height: 1.12 !important;
-    row-gap: 1px !important;
+    line-height: 1.22 !important;
+    row-gap: 2px !important;
   }
 }
 
 .thermal-insulation-report.pdf-capture .official-meta,
 .thermal-insulation-report.pdf-capture .thermal-meta {
   font-size: 8pt !important;
-  line-height: 1.12 !important;
-  row-gap: 1px !important;
+  line-height: 1.22 !important;
+  row-gap: 2px !important;
+}
+
+/* Capture only: the gap between one block of the report and the next.
+ *
+ * `.official-report.pdf-capture > *` puts 4px between every block, where
+ * the markup asks for 20 and 24 and the preview and the browser's own
+ * print give it them. That is why the exported sheet has always read
+ * tighter than the one on screen, and on this report it left the results
+ * table sitting directly against the line of text above it.
+ *
+ * 12px is the compromise the page can pay for: three times the gap, and
+ * still half of what the markup asks, because the rest of the room is
+ * wanted for the leading above. The header keeps its own zero.
+ *
+ * Named with `.official-report` as well so it outranks that rule rather
+ * than tying with it: the generic one is declared later in this file and
+ * would otherwise win on source order alone. */
+.official-report.thermal-insulation-report.pdf-capture > * {
+  margin-top: 12px !important;
+}
+
+.official-report.thermal-insulation-report.pdf-capture > header {
+  margin-top: 0 !important;
 }
 
 .compact-official-report header {
