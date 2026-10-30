@@ -113,14 +113,14 @@ export function ConcreteCubeReportPreview({
         <ConcreteCubeMeta label="VENDI KU ËSHTË PERFORMUAR TESTI / LAB. LOCATION:" value={concrete?.testingLocation || "01/A Lab. Fiziko-Mekanik / Physical-Mechanical laboratory"} />
         <div className="contents">
           <div className="font-bold">KUSHTET AMBJENTALE NË TË CILAT ZHVILLOHET TESTI / <span className="italic">ENVIRONMENTAL CONDITIONS</span>:</div>
-          <div className="grid grid-cols-[115px_120px] gap-x-3">
+          <div className="grid grid-cols-[max-content_120px] gap-x-3">
             <span>Temperatura / <span className="italic">Temperature</span>:</span><span className="border-b border-black text-center">{concrete?.temperature || "-"}</span>
             <span>Lagështia / <span className="italic">Humidity</span>:</span><span className="border-b border-black text-center">{concrete?.humidity || "-"}</span>
           </div>
         </div>
       </div>
 
-      <div className="mt-3 font-bold">Të dhëna të Kampionit / <span className="italic">Test specimen characteristics</span></div>
+      <div className="cube-section-title mt-3 font-bold">Të dhëna të Kampionit / <span className="italic">Test specimen characteristics</span></div>
       <table className="cube-table mt-1 w-full border-collapse text-center text-[9.5pt] leading-[1.12]">
         <thead>
           <tr>
@@ -151,7 +151,7 @@ export function ConcreteCubeReportPreview({
         </tbody>
       </table>
 
-      <div className="mt-2 font-bold">Rezultatet e testimit / <span className="italic">Test results</span></div>
+      <div className="cube-section-title mt-2 font-bold">Rezultatet e testimit / <span className="italic">Test results</span></div>
       <table className="cube-table mt-1 w-full border-collapse text-center text-[9.5pt] leading-[1.12]">
         <thead>
           <tr>

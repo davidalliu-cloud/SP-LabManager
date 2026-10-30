@@ -607,6 +607,31 @@ textarea {
   row-gap: 1px !important;
 }
 
+/* ------------------------------------------------------------------ *
+ * Keep a rule off the text it is meant to sit under (capture only).
+ *
+ * html2canvas draws a line of text lower inside its box than the browser
+ * does - here about 7px of a 12.8px line. The browser is unaffected, so
+ * this is wrong only in the exported PDF, and only where something is
+ * drawn right below the text: a border-bottom used as a fill-in rule, or
+ * a table border immediately under a section heading. On report 6738/26
+ * the rule ran through the middle of the humidity reading and through the
+ * issue date, and the results heading was struck by the top border of the
+ * table under it.
+ *
+ * A few px of room below the text is enough for the line to clear the
+ * glyphs. It is spent where the page can afford it: the report measures
+ * 296.5mm of its 297mm here, so nothing is scaled down to fit.
+ * ------------------------------------------------------------------ */
+.concrete-cube-report.pdf-capture .cube-meta .border-b,
+.concrete-cube-report.pdf-capture .report-issue-date .border-b {
+  padding-bottom: 5px !important;
+}
+
+.concrete-cube-report.pdf-capture .cube-section-title {
+  margin-bottom: 5px !important;
+}
+
 .concrete-cube-report.pdf-capture .cube-table {
   font-size: 8.3pt !important;
   line-height: 1.2 !important;
