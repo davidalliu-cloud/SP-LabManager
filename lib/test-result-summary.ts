@@ -1,5 +1,48 @@
 import type { LabState, LabTest } from "./types";
 
+/**
+ * The per-family result tables this summary reads.
+ *
+ * Named rather than taking the whole register, so a caller that holds only one
+ * client's slice of it — the client portal — can satisfy the same function
+ * without being handed the laboratory's other arrays. A full `LabState` still
+ * satisfies it, so every existing caller is unchanged.
+ */
+export const TEST_DETAIL_KEYS = [
+  "sclerometerTests",
+  "waterAnalysisTests",
+  "masonryUnitTests",
+  "pavingElementTests",
+  "admixtureTests",
+  "concreteTests",
+  "concreteWaterPenetrationTests",
+  "concreteFlexuralTests",
+  "concreteDensityTests",
+  "concreteIndirectTensileTests",
+  "concreteCoreTests",
+  "thermalInsulationTests",
+  "cementConsistencyTests",
+  "cementStrengthTests",
+  "cementBlaineTests",
+  "mortarTests",
+  "steelTests",
+  "aggregateTests",
+  "aggregateChemicalTests",
+  "aggregateLosAngelesTests",
+  "aggregateFreezeThawTests",
+  "aggregateAcvTests",
+  "aggregateDensityAbsorptionTests",
+  "aggregateFillerDensityTests",
+  "aggregateShapeIndexTests",
+  "aggregateFlakinessIndexTests",
+  "aggregateElongationIndexTests",
+  "aggregateBulkDensityTests",
+  "aggregateSandEquivalentTests",
+  "aggregateSoundnessTests"
+] as const satisfies readonly (keyof LabState)[];
+
+export type TestDetailTables = Pick<LabState, (typeof TEST_DETAIL_KEYS)[number]>;
+
 export interface TestResultSummary {
   testStartDate?: string;
   testEndDate?: string;
@@ -13,7 +56,7 @@ function formatNumber(value?: number, digits = 2) {
   return Number(value).toFixed(digits).replace(/\.?0+$/, "");
 }
 
-export function getTestResultSummary(store: LabState, test: LabTest): TestResultSummary {
+export function getTestResultSummary(store: TestDetailTables, test: LabTest): TestResultSummary {
   const sclerometer = store.sclerometerTests.find((item) => item.testId === test.id);
   if (sclerometer) {
     const parts: string[] = [];

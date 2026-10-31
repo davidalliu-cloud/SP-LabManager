@@ -1320,6 +1320,18 @@ function hasSupabaseConfig() {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 }
 
+/**
+ * The client portal is served by the same root layout, so this provider mounts
+ * for a portal visitor as well. It must not reach Supabase there. A portal
+ * visitor holds no Supabase session — by design, since the register's policies
+ * grant every authenticated role the whole row — so each call would fail and
+ * print an error that, to the client, looks like something broken. Their page
+ * is rendered on the server from their own slice and needs none of this.
+ */
+function isPortalPath() {
+  return typeof window !== "undefined" && window.location.pathname.startsWith("/portal");
+}
+
 function stableIdFromCode(prefix: string, code: string) {
   return `${prefix}-${code.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 }
@@ -1683,7 +1695,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
   // never re-sends the same row.
   const flushedActivityRef = useRef<Set<string>>(new Set());
   useEffect(() => {
-    if (!isHydrated || !hasSupabaseConfig()) return;
+    if (!isHydrated || !hasSupabaseConfig() || isPortalPath()) return;
     const flushed = flushedActivityRef.current;
     const pendingAudit = state.auditLog.filter((entry) => !flushed.has(entry.id));
     const pendingNotifications = state.notifications.filter((item) => !flushed.has(item.id));
@@ -1705,7 +1717,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
   }, [isHydrated, state.auditLog, state.notifications]);
 
   useEffect(() => {
-    if (!hasSupabaseConfig()) return;
+    if (!hasSupabaseConfig() || isPortalPath()) return;
 
     const supabase = createSupabaseBrowserClient();
     supabase.auth.getUser().then(({ data }) => setAuthUserId(data.user?.id ?? null));
@@ -1719,7 +1731,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isHydrated) return;
 
-    if (!hasSupabaseConfig()) {
+    if (!hasSupabaseConfig() || isPortalPath()) {
       setIsRemoteChecked(true);
       return;
     }
@@ -1766,7 +1778,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
 
   // Live updates: pick up other users' saves without waiting for a page refresh.
   useEffect(() => {
-    if (!isHydrated || !isRemoteChecked || !hasSupabaseConfig()) return;
+    if (!isHydrated || !isRemoteChecked || !hasSupabaseConfig() || isPortalPath()) return;
 
     const supabase = createSupabaseBrowserClient();
     const channel = supabase
@@ -1811,7 +1823,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
   }, [isHydrated, isRemoteChecked]);
 
   useEffect(() => {
-    if (!isHydrated || !isRemoteChecked || !hasSupabaseConfig()) return;
+    if (!isHydrated || !isRemoteChecked || !hasSupabaseConfig() || isPortalPath()) return;
     if (!remoteLoadOkRef.current) return;
 
     const timer = window.setTimeout(async () => {

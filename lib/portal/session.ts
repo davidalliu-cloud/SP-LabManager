@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
+import { TEST_DETAIL_KEYS, type TestDetailTables } from "@/lib/test-result-summary";
 import type { LabState } from "@/lib/types";
 
 /**
@@ -121,7 +122,8 @@ export async function endSession() {
  * browser receives is already filtered; there is no fuller copy behind it to
  * ask for.
  */
-export type ClientSlice = Pick<LabState, "clients" | "projects" | "samples" | "tests" | "reports" | "concreteTests" | "offers">;
+export type ClientSlice = Pick<LabState, "clients" | "projects" | "samples" | "tests" | "reports" | "offers"> &
+  TestDetailTables;
 
 export async function readClientSlice(clientId: string): Promise<ClientSlice | null> {
   const supabase = serviceClient();
@@ -139,13 +141,23 @@ export async function readClientSlice(clientId: string): Promise<ClientSlice | n
   const tests = (state.tests ?? []).filter((row) => row.clientId === clientId || sampleIds.has(row.sampleId));
   const testIds = new Set(tests.map((row) => row.id));
 
+  // Every per-family result table, cut down to this client's own tests. The
+  // portal shows the measured result beside each test, as the laboratory's own
+  // client page does, and these are the rows those results are read from.
+  const details = Object.fromEntries(
+    TEST_DETAIL_KEYS.map((key) => [
+      key,
+      ((state[key] ?? []) as Array<{ testId?: string }>).filter((row) => row.testId && testIds.has(row.testId))
+    ])
+  ) as TestDetailTables;
+
   return {
+    ...details,
     clients: [client],
     projects: (state.projects ?? []).filter((row) => row.clientId === clientId),
     samples,
     tests,
     reports: (state.reports ?? []).filter((row) => row.clientId === clientId || testIds.has(row.testId)),
-    concreteTests: (state.concreteTests ?? []).filter((row) => testIds.has(row.testId)),
     offers: (state.offers ?? []).filter((row) => row.clientId === clientId)
   };
 }
