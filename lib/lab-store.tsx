@@ -1191,7 +1191,7 @@ interface LabStoreValue extends LabState {
   markTestCompleted: (testId: string) => void;
   approveTestResult: (testId: string) => void;
   rejectTestResult: (testId: string, comments: string) => void;
-  generateReport: (testId: string, reportKind?: AsphaltReportKind) => string;
+  generateReport: (testId: string, reportKind?: AsphaltReportKind) => string | null;
   submitReport: (reportId: string) => void;
   approveReport: (reportId: string) => void;
   rejectReport: (reportId: string, comments: string) => void;
@@ -4743,7 +4743,36 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           return withDerivedSampleStatuses(draft);
         });
       },
+      /**
+       * Drafts the report (or reports) for a finished test and returns the id
+       * of the one the caller should open: the first of the new ones, or the
+       * live one that already existed, or null when nothing was drafted.
+       *
+       * The id is settled here, against the same snapshot the caller rendered
+       * from, rather than minted and hoped for. It used to return a fresh UUID
+       * unconditionally, so every bail-out below still handed back an id that
+       * named nothing — and both call sites push straight to that address, so
+       * the register answered "Raporti nuk u gjet" for a report it had never
+       * been asked to keep. Double-clicking "Gjenero raportin" was enough: the
+       * first click drafts the report, the second finds it already there, bails
+       * out, and navigates to the orphan.
+       *
+       * The guards inside the updater are kept as well. They are the ones that
+       * actually decide what is written, and a realtime merge can land between
+       * this render and the click.
+       */
       generateReport(testId, reportKind) {
+        const kind = reportKind ?? "";
+        const liveReport = state.reports.find(
+          (row) => row.testId === testId && (row.reportKind ?? "") === kind && row.reportStatus !== "Rejected"
+        );
+        if (liveReport) return liveReport.id;
+        const pendingTest = state.tests.find((row) => row.id === testId);
+        if (!pendingTest) return null;
+        const pendingWasRejected = state.reports.some(
+          (row) => row.testId === testId && (row.reportKind ?? "") === kind && row.reportStatus === "Rejected"
+        );
+        if (!canGenerateReportForTest(currentRole, pendingTest.status, pendingWasRejected)) return null;
         const reportId = crypto.randomUUID();
         setState((previous) => {
           const test = previous.tests.find((row) => row.id === testId);

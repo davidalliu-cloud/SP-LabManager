@@ -31,7 +31,21 @@ export default function ReportDetailPage() {
   // never replaces one the report already carries.
   const mintedShareToken = useRef(newShareToken());
   const report = store.reports.find((item) => item.id === params.id);
-  if (!report) return <PageHeader title="Raporti nuk u gjet" />;
+  // The shell holds every page back until the register has arrived, so a miss
+  // here means the address really names no report — a link to a draft that was
+  // never kept, or one deleted since. Say which, and give a way out: a bare
+  // title left the reader on a dead page with the browser's back button.
+  if (!report) {
+    return (
+      <>
+        <PageHeader
+          title="Raporti nuk u gjet"
+          description="Kjo adresë nuk i përgjigjet asnjë raporti në regjistër. Hapni raportin nga lista ose nga testi përkatës."
+        />
+        <Link href="/reports" className="btn-secondary inline-block">Kthehu te raportet</Link>
+      </>
+    );
+  }
   const activeReport = report;
   const test = store.tests.find((item) => item.id === activeReport.testId);
   const sample = store.samples.find((item) => item.id === activeReport.sampleId);

@@ -1348,6 +1348,9 @@ function TestDetailView({ test }: { test: LabTest }) {
   function generateReport() {
     if (!canGenerateReport) return;
     const reportId = nonAsphaltReport?.id ?? store.generateReport(activeTest.id);
+    // Only ever navigate to a report that exists. A refused draft returns null
+    // now, and pushing anyway is what put "Raporti nuk u gjet" on the screen.
+    if (!reportId) return;
     window.setTimeout(() => router.push(`/reports/${reportId}`), 0);
   }
 
@@ -1357,6 +1360,7 @@ function TestDetailView({ test }: { test: LabTest }) {
       (item) => item.testId === activeTest.id && item.reportKind === kind && item.reportStatus !== "Rejected"
     );
     const reportId = existing?.id ?? store.generateReport(activeTest.id, kind);
+    if (!reportId) return;
     window.setTimeout(() => router.push(`/reports/${reportId}`), 0);
   }
 
