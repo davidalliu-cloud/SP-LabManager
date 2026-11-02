@@ -54,5 +54,28 @@ export async function GET(_request: Request, context: { params: Promise<{ code: 
   // issued copy, and a rejected report was never one.
   if (report.reportStatus === "Rejected") return notFound();
 
+  // Sign the file again, here, rather than forwarding the signature stored
+  // against the report.
+  //
+  // That stored one was minted when the PDF was generated and lasts a year, so
+  // a link sent to a client in November 2026 stops opening in November 2027 —
+  // and the client is holding a WhatsApp message that used to work. Re-signing
+  // on every visit means the link lives as long as the file does.
+  //
+  // The signature also carries the filename the client's phone saves, so they
+  // get "Raport 6917-26.pdf" instead of "6788_26-1793617573808.pdf" — which is
+  // the difference between receiving a report and receiving a file.
+  const storedPath = report.pdfUrl.match(/\/reports\/([^?]+)/);
+  if (storedPath) {
+    const { data: signed } = await supabase.storage
+      .from("reports")
+      .createSignedUrl(decodeURIComponent(storedPath[1]), 60 * 10, {
+        download: `Raport ${parsed.reportNumber.replace("/", "-")}.pdf`
+      });
+    if (signed?.signedUrl) return NextResponse.redirect(signed.signedUrl, { status: 302 });
+  }
+
+  // Re-signing failed (the object was moved, or Storage is unhappy). The stored
+  // link is still the client's report, so send them there rather than nowhere.
   return NextResponse.redirect(report.pdfUrl, { status: 302 });
 }

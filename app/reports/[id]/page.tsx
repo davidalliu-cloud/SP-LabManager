@@ -219,27 +219,35 @@ export default function ReportDetailPage() {
 
   function sendReportToWhatsApp() {
     if (!whatsAppNumber.ok || !canSendToClient) return;
+    // No stored PDF means no report at the other end. This used to send anyway,
+    // with a line promising the PDF would follow by email, and then record the
+    // report as issued — so §7.8 said the client had it while the client had a
+    // message and nothing else. The PDF is the thing being sent; without one
+    // there is nothing to send.
+    if (!activeReport.pdfUrl) {
+      window.alert(
+        "Ky raport nuk ka PDF të ruajtur, kështu që klienti nuk do të marrë raportin.\n\nShtypni “Gjenero PDF” dhe provoni përsëri."
+      );
+      return;
+    }
     if (alreadySent && !confirmResend()) return;
 
-    const shareUrl = activeReport.pdfUrl
-      ? reportShareUrl(window.location.origin, activeReport.reportNumber, shareToken)
-      : null;
+    const shareUrl = reportShareUrl(window.location.origin, activeReport.reportNumber, shareToken);
+    // A greeting, what the report is, and the link that opens it. The result
+    // itself is deliberately absent: a strength typed into a chat is an
+    // uncontrolled result, and transcription is where those go wrong.
     const message = [
-      "Pershendetje,",
+      "Përshëndetje,",
       "",
-      `Raporti ${activeReport.reportNumber} eshte miratuar${sample?.sampleCode ? ` (kampioni ${sample.sampleCode})` : ""}.`,
-      shareUrl ? "" : null,
-      shareUrl ? shareUrl : "PDF-ja do t'ju dergohet me email.",
+      `Raporti ${activeReport.reportNumber}${test?.testType ? ` — ${test.testType}` : ""}`,
       "",
-      "SARP & LAB sh.p.k."
-    ]
-      .filter((line): line is string => line !== null)
-      .join("\n");
+      shareUrl
+    ].join("\n");
 
     // Fix the token before the message leaves, so the link in it resolves. It
     // is only ever set once, so sending again reuses the address the client
     // may already have.
-    if (shareUrl) store.setReportShareToken(activeReport.id, shareToken);
+    store.setReportShareToken(activeReport.id, shareToken);
     window.open(whatsAppLink(whatsAppNumber.e164, message), "_blank", "noopener");
     store.issueReport(
       activeReport.id,
@@ -367,7 +375,7 @@ export default function ReportDetailPage() {
               {whatsAppNumber.ok ? (
                 <button
                   onClick={sendReportToWhatsApp}
-                  disabled={!canSendToClient}
+                  disabled={!canSendToClient || !activeReport.pdfUrl}
                   className="flex w-full items-center justify-center gap-2 rounded-md bg-[#25D366] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[#1DA851] disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
                   <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 shrink-0" aria-hidden="true">
@@ -376,7 +384,14 @@ export default function ReportDetailPage() {
                   </svg>
                   Dërgo me WhatsApp
                 </button>
-              ) : (
+              ) : null}
+              {whatsAppNumber.ok && canSendToClient && !activeReport.pdfUrl ? (
+                <p className="rounded-md border border-line bg-lab-porcelain p-3 text-xs text-muted">
+                  Dërgimi është i bllokuar derisa raporti të ketë një PDF të ruajtur — ai PDF është ajo që merr
+                  klienti. Shtypni “Gjenero PDF” më sipër.
+                </p>
+              ) : null}
+              {!whatsAppNumber.ok ? (
                 <p className="rounded-md border border-line bg-lab-porcelain p-3 text-xs text-muted">
                   {whatsAppNumber.reason === "not-a-mobile"
                     ? "Numri i klientit nuk është celular, prandaj nuk mund të marrë WhatsApp."
@@ -387,7 +402,7 @@ export default function ReportDetailPage() {
                     </Link>
                   ) : null}
                 </p>
-              )}
+              ) : null}
 
               <p className="text-xs text-muted">Ky veprim lejohet vetëm pas statusit Miratuar dhe e ndryshon statusin në Dërguar klientit.</p>
             </div>
