@@ -1273,6 +1273,13 @@ const KEEP_ACTIVITY_IN_BLOB = false;
  */
 const SAVE_DEBOUNCE_MS = 2_500;
 
+/**
+ * How long to wait after a realtime ping before reading the register.
+ * Somebody else's save arrives as a notification, not as the data, so a burst
+ * of their saves should cost us one read rather than one read each.
+ */
+const REMOTE_REFRESH_DEBOUNCE_MS = 1_200;
+
 /** First wait after a failed save; doubles each attempt, capped. */
 const SAVE_RETRY_BASE_MS = 2_000;
 const SAVE_RETRY_MAX_MS = 60_000;
@@ -1473,6 +1480,76 @@ function mergeCollectionsPreferLocal(remote: LabState, base: LabState, local: La
   }
 
   return result as unknown as LabState;
+}
+
+/** What a save actually has to write, instead of the whole register. */
+type StateDelta = {
+  /** Per collection, the rows this session added or changed. */
+  upserts: Record<string, IdRecord[]>;
+  /** Per collection, the ids this session deleted. */
+  deletes: Record<string, string[]>;
+  /** True when both sides hold the same records, so there is nothing to write. */
+  isEmpty: boolean;
+};
+
+/**
+ * The difference between the register as the server last handed it to us and
+ * the register as this session now holds it, row by row.
+ *
+ * This is what makes a save small. The document is 4 MB and growing; one
+ * approved report changes one row of it. Sending the whole thing for every edit
+ * is what made three people working at once queue behind each other on a single
+ * row until Postgres cut the write off at its 8 s statement timeout.
+ *
+ * Both sides must already be `forPersistence`-trimmed, and for exactly the
+ * reason the merge insists on the opposite: the trim drops every equipment
+ * record nobody has edited, so a trimmed state read against an untrimmed one
+ * reports 850 deletions nobody asked for. Trimmed against trimmed, an untouched
+ * record is absent from both sides and produces nothing.
+ *
+ * Records are compared by JSON.stringify — the same test the merge uses — so
+ * the two agree about what "changed" means.
+ */
+function stateDelta(base: LabState, next: LabState): StateDelta {
+  const upserts: Record<string, IdRecord[]> = {};
+  const deletes: Record<string, string[]> = {};
+  let isEmpty = true;
+
+  for (const key of new Set([...Object.keys(base), ...Object.keys(next)])) {
+    const baseArr = (base[key as keyof LabState] as unknown as IdRecord[] | undefined) ?? [];
+    const nextArr = (next[key as keyof LabState] as unknown as IdRecord[] | undefined) ?? [];
+    const baseById = new Map(baseArr.map((row) => [row.id, JSON.stringify(row)]));
+
+    const changed: IdRecord[] = [];
+    const seen = new Set<string>();
+    for (const row of nextArr) {
+      seen.add(row.id);
+      const before = baseById.get(row.id);
+      if (before === undefined || before !== JSON.stringify(row)) changed.push(row);
+    }
+    const removed = baseArr.map((row) => row.id).filter((id) => !seen.has(id));
+
+    if (changed.length > 0) {
+      upserts[key] = changed;
+      isEmpty = false;
+    }
+    if (removed.length > 0) {
+      deletes[key] = removed;
+      isEmpty = false;
+    }
+  }
+
+  return { upserts, deletes, isEmpty };
+}
+
+/**
+ * Whether PostgREST is telling us the delta function is not in this database.
+ * A deployment can be ahead of its schema, and a save must still land.
+ */
+function isMissingDeltaFunction(error: { code?: string; message?: string }) {
+  if (error.code === "PGRST202") return true;
+  const message = error.message ?? "";
+  return /apply_shared_state_delta/.test(message) && /does not exist|not find|schema cache/i.test(message);
 }
 
 function mergeWithInitialState(saved: Partial<LabState>): LabState {
@@ -1752,7 +1829,13 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        remoteLoadOkRef.current = true;
+        // A read that comes back with no row is not a successful read of an
+        // empty register — it is RLS declining to show it, which is what a
+        // visitor who is not signed in gets. Treating that as "loaded" let the
+        // save effect decide the row did not exist and upsert this browser's
+        // seed data over everyone's work; only the write policy stopped it, and
+        // the attempt repeated for as long as the tab stayed open.
+        remoteLoadOkRef.current = Boolean(data?.state);
 
         if (!isCancelled && data?.state) {
           const mergedState = mergeWithInitialState(data.state as Partial<LabState>);
@@ -1781,6 +1864,57 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
     if (!isHydrated || !isRemoteChecked || !hasSupabaseConfig() || isPortalPath()) return;
 
     const supabase = createSupabaseBrowserClient();
+    let isCancelled = false;
+    let refreshTimer: number | null = null;
+
+    function applyIncoming(raw: Partial<LabState>, updatedAt: string) {
+      const incomingState = mergeWithInitialState(raw);
+      setState((current) => {
+        const base = lastSyncedStateRef.current ?? incomingState;
+        const merged = mergeCollectionsPreferLocal(incomingState, base, current);
+        lastSyncedStateRef.current = incomingState;
+        remoteUpdatedAtRef.current = updatedAt;
+        // If merging the remote change on top of ours produced nothing
+        // beyond the remote state itself, this client has no unsaved local
+        // work — so record the remote as our saved baseline and do NOT let
+        // the save effect echo it straight back. Without this, two live
+        // clients bounce every update back and forth forever (each re-save
+        // bumps updated_at), and that constant churn makes every genuine
+        // save — like submitting a report — lose its compare-and-swap race.
+        // When there ARE local changes, forPersistence(merged) differs from
+        // the remote, so we leave the baseline alone and the effect pushes
+        // our work as normal.
+        if (JSON.stringify(forPersistence(merged)) === JSON.stringify(forPersistence(incomingState))) {
+          lastSavedOnlineJson.current = JSON.stringify(merged);
+        }
+        return merged;
+      });
+    }
+
+    /**
+     * Realtime carries only `id` and `updated_at` now — the register itself is
+     * megabytes, and pushing all of it to every open tab on every save had the
+     * replication slot fighting to keep up, which is how clients stopped
+     * hearing about each other at all. So the message is a ping: the register
+     * moved, go and read it. One read per burst, not one per message.
+     */
+    function scheduleRefresh() {
+      if (refreshTimer !== null) return;
+      refreshTimer = window.setTimeout(() => {
+        refreshTimer = null;
+        void (async () => {
+          const { data, error } = await supabase
+            .from("app_state")
+            .select("state, updated_at")
+            .eq("id", ONLINE_STATE_ROW_ID)
+            .maybeSingle();
+          if (isCancelled || error || !data?.state || !data.updated_at) return;
+          if (data.updated_at === remoteUpdatedAtRef.current) return;
+          applyIncoming(data.state as Partial<LabState>, data.updated_at);
+        })();
+      }, REMOTE_REFRESH_DEBOUNCE_MS);
+    }
+
     const channel = supabase
       .channel("app_state_sync")
       .on(
@@ -1788,36 +1922,23 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
         { event: "UPDATE", schema: "public", table: "app_state", filter: `id=eq.${ONLINE_STATE_ROW_ID}` },
         (payload) => {
           const incoming = payload.new as { state?: Partial<LabState>; updated_at?: string } | null;
-          if (!incoming?.state || !incoming.updated_at) return;
+          if (!incoming?.updated_at) return;
           // Ignore the echo of our own save.
           if (incoming.updated_at === remoteUpdatedAtRef.current) return;
-
-          const incomingState = mergeWithInitialState(incoming.state);
-          setState((current) => {
-            const base = lastSyncedStateRef.current ?? incomingState;
-            const merged = mergeCollectionsPreferLocal(incomingState, base, current);
-            lastSyncedStateRef.current = incomingState;
-            remoteUpdatedAtRef.current = incoming.updated_at!;
-            // If merging the remote change on top of ours produced nothing
-            // beyond the remote state itself, this client has no unsaved local
-            // work — so record the remote as our saved baseline and do NOT let
-            // the save effect echo it straight back. Without this, two live
-            // clients bounce every update back and forth forever (each re-save
-            // bumps updated_at), and that constant churn makes every genuine
-            // save — like submitting a report — lose its compare-and-swap race.
-            // When there ARE local changes, forPersistence(merged) differs from
-            // the remote, so we leave the baseline alone and the effect pushes
-            // our work as normal.
-            if (JSON.stringify(forPersistence(merged)) === JSON.stringify(forPersistence(incomingState))) {
-              lastSavedOnlineJson.current = JSON.stringify(merged);
-            }
-            return merged;
-          });
+          // Older deployments published the whole row; use it when it is there
+          // rather than fetching what we have already been given.
+          if (incoming.state) {
+            applyIncoming(incoming.state, incoming.updated_at);
+            return;
+          }
+          scheduleRefresh();
         }
       )
       .subscribe();
 
     return () => {
+      isCancelled = true;
+      if (refreshTimer !== null) window.clearTimeout(refreshTimer);
       supabase.removeChannel(channel);
     };
   }, [isHydrated, isRemoteChecked]);
@@ -1854,24 +1975,94 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       // nobody has edited, the merge reads "in base, absent from local" as
       // "this session deleted it", and so a conflicting save deleted every
       // other session's equipment edits from the register on its way past.
-      async function attemptSave(expectedUpdatedAt: string | null, stateToSave: LabState, attempt: number): Promise<void> {
+      async function attemptSave(
+        expectedUpdatedAt: string | null,
+        baseState: LabState | null,
+        stateToSave: LabState,
+        attempt: number
+      ): Promise<void> {
         const nowIso = new Date().toISOString();
-        let query = supabase
-          .from("app_state")
-          .update({ state: forPersistence(stateToSave), updated_at: nowIso })
-          .eq("id", ONLINE_STATE_ROW_ID);
-        if (expectedUpdatedAt) {
-          query = query.eq("updated_at", expectedUpdatedAt);
-        }
-        const { data, error } = await query.select("updated_at");
 
-        if (error) {
-          console.warn("Could not save online SARP LAB data.", error.message);
-          setSaveState({ kind: "error", message: error.message });
+        // What this save actually has to write.
+        //
+        // With a baseline — the register as the server last handed it to us,
+        // which is the state `expectedUpdatedAt` names — that is the handful of
+        // rows that changed, and they go to a function that re-checks the
+        // timestamp under a row lock and edits those rows in place. An approved
+        // report is a few kB instead of 4 MB, and three people working at once
+        // no longer queue behind each other until Postgres cuts the write off.
+        //
+        // The whole-register write below is kept for the one case that has no
+        // baseline: a browser that has never managed to read the register.
+        const delta =
+          expectedUpdatedAt && baseState
+            ? stateDelta(forPersistence(baseState), forPersistence(stateToSave))
+            : null;
+
+        if (delta?.isEmpty) {
+          // The two differ only in what the trim drops, so there is nothing for
+          // the server to store. Record it as saved rather than writing to
+          // change nothing — otherwise the effect re-runs on every render.
+          lastSavedOnlineJson.current = JSON.stringify(stateToSave);
+          setSaveState({ kind: "saved" });
           return;
         }
 
-        if (!data || data.length === 0) {
+        let savedUpdatedAt: string | null = null;
+        let lostTheRace = false;
+        // True when this save must send the whole register: no baseline to
+        // describe a change against, or a database without the function.
+        let writeEverything = delta === null;
+
+        if (delta) {
+          const { data, error } = await supabase.rpc("apply_shared_state_delta", {
+            p_expected_updated_at: expectedUpdatedAt,
+            p_upserts: delta.upserts,
+            p_deletes: delta.deletes
+          });
+
+          if (error) {
+            if (isMissingDeltaFunction(error)) {
+              // The deployment is ahead of its database — the function has not
+              // been applied, or it has been rolled back. Saving is not
+              // optional, so fall back to the old whole-register write.
+              console.warn("apply_shared_state_delta is not installed; writing the whole register.", error.message);
+              writeEverything = true;
+            } else {
+              console.warn("Could not save online SARP LAB data.", error.message);
+              setSaveState({ kind: "error", message: error.message });
+              return;
+            }
+          } else if (typeof data === "string" && data.length > 0) {
+            // The function answers with the new timestamp, or NULL when the
+            // register moved under us and it refused to write.
+            savedUpdatedAt = data;
+          } else {
+            lostTheRace = true;
+          }
+        }
+
+        if (writeEverything) {
+          let query = supabase
+            .from("app_state")
+            .update({ state: forPersistence(stateToSave), updated_at: nowIso })
+            .eq("id", ONLINE_STATE_ROW_ID);
+          if (expectedUpdatedAt) {
+            query = query.eq("updated_at", expectedUpdatedAt);
+          }
+          const { data, error } = await query.select("updated_at");
+
+          if (error) {
+            console.warn("Could not save online SARP LAB data.", error.message);
+            setSaveState({ kind: "error", message: error.message });
+            return;
+          }
+
+          if (!data || data.length === 0) lostTheRace = true;
+          else savedUpdatedAt = (data[0] as { updated_at?: string | null }).updated_at ?? nowIso;
+        }
+
+        if (lostTheRace) {
           if (attempt >= 6) {
             // Previously this force-upserted, which silently overwrote whatever
             // the other person had just saved. Repeated failed compare-and-swaps
@@ -1924,18 +2115,21 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           setState(merged);
           lastSyncedStateRef.current = freshState;
           remoteUpdatedAtRef.current = fresh.updated_at ?? null;
-          await attemptSave(fresh.updated_at ?? null, merged, attempt + 1);
+          // `freshState` is both the baseline for the next delta and the state
+          // the timestamp we just read names. They have to travel together or
+          // the next save would describe its changes against the wrong register.
+          await attemptSave(fresh.updated_at ?? null, freshState, merged, attempt + 1);
           return;
         }
 
-        remoteUpdatedAtRef.current = nowIso;
+        remoteUpdatedAtRef.current = savedUpdatedAt;
         lastSyncedStateRef.current = stateToSave;
         lastSavedOnlineJson.current = JSON.stringify(stateToSave);
         setSaveState({ kind: "saved" });
       }
 
       try {
-        await attemptSave(remoteUpdatedAtRef.current, state, 0);
+        await attemptSave(remoteUpdatedAtRef.current, lastSyncedStateRef.current, state, 0);
       } catch (error) {
         console.warn("Could not save SARP LAB data to Supabase.", error);
         setSaveState({
