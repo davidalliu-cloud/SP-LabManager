@@ -50,6 +50,15 @@ const SCLEROMETER_READING_SLOTS = Array.from({ length: 16 }, (_, index) => index
 const SCLEROMETER_ANGLES = ["0°", "+90°", "-90°", "+45°", "-45°"];
 const MASONRY_UNIT_CATEGORIES: MasonryUnitCategory[] = ["Tullë Qeramike", "Tullë Silikate", "Tullë Betoni", "Bllok Betoni"];
 
+/**
+ * Who took the sample, and the only two answers there are: the laboratory went
+ * and took it, or the client brought it in. It was a free-text box, which on a
+ * field that prints verbatim on an accredited report invites a third spelling
+ * of the same two facts. Both strings are kept exactly as the reports already
+ * print them, so nothing on file is restated and the records stay comparable.
+ */
+const SAMPLING_OPERATORS = ["LABORATORI / LABORATORY", "KLIENTI / CLIENT"];
+
 export default function TestDetailPage() {
   const params = useParams<{ id: string }>();
   const store = useLabStore();
@@ -2170,7 +2179,13 @@ function TestDetailView({ test }: { test: LabTest }) {
               <Field label="Tipi dhe burimi i ujit"><input name="waterTypeAndSource" defaultValue={w?.waterTypeAndSource ?? ""} className="input" placeholder="p.sh. ujë rrjeti / pus" /></Field>
               <Field label="Vendi i marrjes së kampionit"><input name="samplingPlace" defaultValue={w?.samplingPlace ?? ""} className="input" /></Field>
               <Field label="Tipi i ambalazhit"><input name="packagingType" defaultValue={w?.packagingType ?? "SHISHE PLASTIKE / PLASTIC BOTTLE"} className="input" /></Field>
-              <Field label="Operatori i marrjes së kampionit"><input name="samplingOperator" defaultValue={w?.samplingOperator ?? "KLIENTI / CLIENT"} className="input" /></Field>
+              <Field label="Operatori i marrjes së kampionit">
+                <select name="samplingOperator" defaultValue={w?.samplingOperator ?? "KLIENTI / CLIENT"} className="input">
+                  {SAMPLING_OPERATORS.map((operator) => (
+                    <option key={operator} value={operator}>{operator}</option>
+                  ))}
+                </select>
+              </Field>
               <Field label="Pajisjet që përdoren"><input name="equipmentUsed" defaultValue={w?.equipmentUsed ?? "Enë kimike, kroxhol platini, Furrë Muffle, Furnelë, Peshore OHAUS, pH meter HANNA INSTRUMENTS"} className="input" /></Field>
               <Field label="Vendi ku kryhet testi"><input name="testingLocation" defaultValue={w?.testingLocation ?? "01/B Laboratori Kimik / Chemical laboratory"} className="input" /></Field>
               <Field label="Data e fillimit të testimit"><input name="testStartDate" type="date" defaultValue={w?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
@@ -2764,7 +2779,13 @@ function TestDetailView({ test }: { test: LabTest }) {
               <Field label="Prani hekuri"><input name="reinforcement" defaultValue={concreteCore?.reinforcement ?? "PO - NË QENDËR / YES - IN THE MIDDLE"} className="input" /></Field>
               <Field label="Përgatitja e kampionit"><input name="preparationMethod" defaultValue={concreteCore?.preparationMethod ?? "ME PRERJE / CUTTING"} className="input" /></Field>
               <Field label="Klasa e rezistencës"><input name="resistanceClass" defaultValue={concreteCore?.resistanceClass ?? "-"} className="input" /></Field>
-              <Field label="Operatori i marrjes së kampionit"><input name="samplingOperator" defaultValue={concreteCore?.samplingOperator ?? "LABORATORI / LABORATORY"} className="input" /></Field>
+              <Field label="Operatori i marrjes së kampionit">
+                <select name="samplingOperator" defaultValue={concreteCore?.samplingOperator ?? "LABORATORI / LABORATORY"} className="input">
+                  {SAMPLING_OPERATORS.map((operator) => (
+                    <option key={operator} value={operator}>{operator}</option>
+                  ))}
+                </select>
+              </Field>
               <Field label="Standardi"><input className="input bg-lab-porcelain" value={activeTest.standard} readOnly /></Field>
               <Field label="Tekniku"><EmployeeSelect name="technicianName" employees={activeEmployees} required value={concreteCore?.technicianName ?? "Ing./Eng."} /></Field>
               <Field label="Kontrolluar nga"><EmployeeSelect name="checkedBy" employees={activeEmployees} value={concreteCore?.checkedBy ?? "Ing./Eng. Besiana ALLIU"} /></Field>

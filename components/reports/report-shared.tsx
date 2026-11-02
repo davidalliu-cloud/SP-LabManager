@@ -24,14 +24,23 @@ export function headOfLabName(preferred?: string) {
   return named || HEAD_OF_LAB_NAME;
 }
 
-// Whoever physically handed the sample to the lab: the client's own person if
-// they delivered it, or the lab technician who went and collected it, per
-// Sample.collectionMethod — set at sample registration, shown here so it
-// reaches the report. Distinct from who ran the test ("tested by") and from
-// the lab-responsible signoff (headOfLabName).
+// Who took the sample, which has only two answers: the laboratory went and
+// took it, or the client brought it in. Read from Sample.collectionMethod,
+// which has recorded exactly that since registration began.
+//
+// It used to print the person's name instead — collectedBy or deliveredBy —
+// and those are free text, so the line came out as "KLIENTI", "klienti",
+// "KLIENTI / CLIENT", "Violeta Biba", "Olsi Duka", and on 354 of 500 samples
+// as nothing at all, because nobody filled a box whose answer the register
+// already held. One field, four spellings of one fact and a blank line on an
+// accredited report. The names are still on the sample, where they belong and
+// where they are read as names.
+//
+// Distinct from who ran the test ("tested by") and from the lab-responsible
+// signoff (headOfLabName).
 export function samplingOperator(sample?: Sample) {
   if (!sample) return undefined;
-  return sample.collectionMethod === "Collected by lab technician" ? sample.collectedBy : sample.deliveredBy;
+  return sample.collectionMethod === "Collected by lab technician" ? "LABORATORI / LABORATORY" : "KLIENTI / CLIENT";
 }
 
 // Stored signature images, matched by a lowercase substring of the name shown
