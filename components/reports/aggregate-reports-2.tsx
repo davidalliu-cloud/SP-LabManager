@@ -5,7 +5,7 @@ import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest,
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
-import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair, samplingOperator, SimpleReportLegalFooter, BiText } from "./report-shared";
+import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair, samplingOperator, SimpleReportLegalFooter, BiText, samplingDisclaimerApplies, defaultReportNotes } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
 
 export function AggregateDensityReportPreview({
@@ -93,7 +93,7 @@ export function AggregateDensityReportPreview({
 
       <div className="mt-8 soft-panel p-4 text-sm text-ink">
         <div className="font-semibold"><BiText>Notes / Shënime</BiText></div>
-        <p className="mt-1">{aggregateDensity.notes || "Results relate only to the items tested. The laboratory is not responsible for the sampling phase."}</p>
+        <p className="mt-1">{aggregateDensity.notes || defaultReportNotes(samplingOperator(sample))}</p>
       </div>
 
       <SignaturePair
@@ -106,7 +106,7 @@ export function AggregateDensityReportPreview({
         align="start"
         bordered
       />
-      <SimpleReportLegalFooter issueDate={issueDate} />
+      <SimpleReportLegalFooter issueDate={issueDate} sampledBy={samplingOperator(sample)} />
     </section>
   );
 }
@@ -194,7 +194,7 @@ export function AggregateFillerDensityReportPreview({
 
       <div className="mt-8 soft-panel p-4 text-sm text-ink">
         <div className="font-semibold"><BiText>Notes / Shënime</BiText></div>
-        <p className="mt-1">{aggregateFillerDensity.notes || "Results relate only to the items tested. The laboratory is not responsible for the sampling phase."}</p>
+        <p className="mt-1">{aggregateFillerDensity.notes || defaultReportNotes(samplingOperator(sample))}</p>
       </div>
 
       <SignaturePair
@@ -207,7 +207,7 @@ export function AggregateFillerDensityReportPreview({
         align="start"
         bordered
       />
-      <SimpleReportLegalFooter issueDate={issueDate} />
+      <SimpleReportLegalFooter issueDate={issueDate} sampledBy={samplingOperator(sample)} />
     </section>
   );
 }
@@ -271,7 +271,7 @@ export function AggregateSoundnessReportPreview({
         <Info label="Flaked after" value={String(aggregateSoundness.flakedParticles || "-")} />
         <Info label="Particles after" value={String(aggregateSoundness.totalParticlesAfter || "-")} />
       </div>
-      <div className="mt-8 soft-panel p-4 text-sm text-ink"><div className="font-semibold"><BiText>Notes / Shënime</BiText></div><p className="mt-1">{aggregateSoundness.notes || "Results relate only to the items tested. The laboratory is not responsible for the sampling phase."}</p></div>
+      <div className="mt-8 soft-panel p-4 text-sm text-ink"><div className="font-semibold"><BiText>Notes / Shënime</BiText></div><p className="mt-1">{aggregateSoundness.notes || defaultReportNotes(samplingOperator(sample))}</p></div>
       <SignaturePair
         wrapperClassName="mt-10"
         columnClassName="grid gap-6 sm:grid-cols-2"
@@ -282,7 +282,7 @@ export function AggregateSoundnessReportPreview({
         align="start"
         bordered
       />
-      <SimpleReportLegalFooter issueDate={issueDate} />
+      <SimpleReportLegalFooter issueDate={issueDate} sampledBy={samplingOperator(sample)} />
     </section>
   );
 }
@@ -342,7 +342,7 @@ export function AggregateElongationReportPreview({
         align="start"
         bordered
       />
-      <SimpleReportLegalFooter issueDate={issueDate} />
+      <SimpleReportLegalFooter issueDate={issueDate} sampledBy={samplingOperator(sample)} />
     </section>
   );
 }
@@ -399,7 +399,7 @@ export function AggregateBulkDensityReportPreview({
         align="start"
         bordered
       />
-      <SimpleReportLegalFooter issueDate={issueDate} />
+      <SimpleReportLegalFooter issueDate={issueDate} sampledBy={samplingOperator(sample)} />
     </section>
   );
 }
@@ -455,7 +455,7 @@ export function AggregateSandEquivalentReportPreview({
         align="start"
         bordered
       />
-      <SimpleReportLegalFooter issueDate={issueDate} />
+      <SimpleReportLegalFooter issueDate={issueDate} sampledBy={samplingOperator(sample)} />
     </section>
   );
 }
@@ -538,7 +538,7 @@ export function AggregateShapeIndexReportPreview({
 
       <div className="mt-8 soft-panel p-4 text-sm text-ink">
         <div className="font-semibold"><BiText>Notes / Shënime</BiText></div>
-        <p className="mt-1">{aggregateShapeIndex.notes || "Results relate only to the items tested. The laboratory is not responsible for the sampling phase."}</p>
+        <p className="mt-1">{aggregateShapeIndex.notes || defaultReportNotes(samplingOperator(sample))}</p>
       </div>
 
       <SignaturePair
@@ -551,7 +551,7 @@ export function AggregateShapeIndexReportPreview({
         align="start"
         bordered
       />
-      <SimpleReportLegalFooter issueDate={issueDate} />
+      <SimpleReportLegalFooter issueDate={issueDate} sampledBy={samplingOperator(sample)} />
     </section>
   );
 }
@@ -655,7 +655,7 @@ export function AggregateFlakinessReportPreview({
         align="start"
         bordered
       />
-      <SimpleReportLegalFooter issueDate={issueDate} />
+      <SimpleReportLegalFooter issueDate={issueDate} sampledBy={samplingOperator(sample)} />
     </section>
   );
 }

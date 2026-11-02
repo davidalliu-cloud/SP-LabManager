@@ -149,6 +149,7 @@ export function AsphaltJobMixReportPreview({
       </p>
 
       <OfficialNotesAndFooter
+        sampledBy={samplingOperator(sample)}
         notes={jobMix.notes}
         testedBy={jobMix.technicianName || report.draftedBy}
         responsible={jobMix.checkedBy}

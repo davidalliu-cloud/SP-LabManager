@@ -5,7 +5,7 @@ import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest,
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
-import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair, samplingOperator, SimpleReportLegalFooter, BiText } from "./report-shared";
+import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair, samplingOperator, SimpleReportLegalFooter, BiText, samplingDisclaimerApplies, defaultReportNotes } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
 
 export function AggregateReportPreview({
@@ -211,7 +211,9 @@ export function AggregateReportPreview({
         <div className="mt-3 space-y-0.5 text-[6.4px] leading-tight">
           <p>Rezultatet në këtë raport testimi i përkasin vetëm mostrës së testuar. / <span className="italic">The results relate only to the items tested.</span></p>
           <p>Ky raport testimi nuk mund të riprodhohet në mënyrë të pjesshme pa aprovimin me shkrim të laboratorit. / <span className="italic">The test report shall not be reproduced except in full without the written approval of the laboratory.</span></p>
-          <p>Laboratori nuk është përgjegjës për fazën e kampionmarrjes. / <span className="italic">The laboratory is not responsible for the sampling phase.</span></p>
+          {samplingDisclaimerApplies(samplingOperator(sample)) ? (
+            <p>Laboratori nuk është përgjegjës për fazën e kampionmarrjes. / <span className="italic">The laboratory is not responsible for the sampling phase.</span></p>
+          ) : null}
         </div>
 
         <div className="mt-2 grid grid-cols-[250px_160px] items-end gap-4 text-[6.4px]">
@@ -311,7 +313,7 @@ export function AggregateChemicalReportPreview({
 
       <div className="mt-8 soft-panel p-4 text-sm text-ink">
         <div className="font-semibold"><BiText>Notes / Shënime</BiText></div>
-        <p className="mt-1">{aggregateChemical.notes || "Results relate only to the items tested. The laboratory is not responsible for the sampling phase."}</p>
+        <p className="mt-1">{aggregateChemical.notes || defaultReportNotes(samplingOperator(sample))}</p>
       </div>
 
       <SignaturePair
@@ -324,7 +326,7 @@ export function AggregateChemicalReportPreview({
         align="start"
         bordered
       />
-      <SimpleReportLegalFooter issueDate={issueDate} />
+      <SimpleReportLegalFooter issueDate={issueDate} sampledBy={samplingOperator(sample)} />
     </section>
   );
 }
@@ -427,7 +429,7 @@ export function AggregateLosAngelesReportPreview({
 
       <div className="mt-8 soft-panel p-4 text-sm text-ink">
         <div className="font-semibold"><BiText>Notes / Shënime</BiText></div>
-        <p className="mt-1">{aggregateLosAngeles.notes || "Results relate only to the items tested. The laboratory is not responsible for the sampling phase."}</p>
+        <p className="mt-1">{aggregateLosAngeles.notes || defaultReportNotes(samplingOperator(sample))}</p>
       </div>
 
       <SignaturePair
@@ -440,7 +442,7 @@ export function AggregateLosAngelesReportPreview({
         align="start"
         bordered
       />
-      <SimpleReportLegalFooter issueDate={issueDate} />
+      <SimpleReportLegalFooter issueDate={issueDate} sampledBy={samplingOperator(sample)} />
     </section>
   );
 }
@@ -549,7 +551,7 @@ export function AggregateFreezeThawReportPreview({
 
       <div className="mt-8 soft-panel p-4 text-sm text-ink">
         <div className="font-semibold"><BiText>Notes / Shënime</BiText></div>
-        <p className="mt-1">{aggregateFreezeThaw.notes || "Results relate only to the items tested. The laboratory is not responsible for the sampling phase."}</p>
+        <p className="mt-1">{aggregateFreezeThaw.notes || defaultReportNotes(samplingOperator(sample))}</p>
       </div>
 
       <SignaturePair
@@ -562,7 +564,7 @@ export function AggregateFreezeThawReportPreview({
         align="start"
         bordered
       />
-      <SimpleReportLegalFooter issueDate={issueDate} />
+      <SimpleReportLegalFooter issueDate={issueDate} sampledBy={samplingOperator(sample)} />
     </section>
   );
 }
@@ -665,7 +667,7 @@ export function AggregateAcvReportPreview({
 
       <div className="mt-8 soft-panel p-4 text-sm text-ink">
         <div className="font-semibold"><BiText>Notes / Shënime</BiText></div>
-        <p className="mt-1">{aggregateAcv.notes || "Results relate only to the items tested. The laboratory is not responsible for the sampling phase."}</p>
+        <p className="mt-1">{aggregateAcv.notes || defaultReportNotes(samplingOperator(sample))}</p>
       </div>
 
       <SignaturePair
@@ -678,7 +680,7 @@ export function AggregateAcvReportPreview({
         align="start"
         bordered
       />
-      <SimpleReportLegalFooter issueDate={issueDate} />
+      <SimpleReportLegalFooter issueDate={issueDate} sampledBy={samplingOperator(sample)} />
     </section>
   );
 }

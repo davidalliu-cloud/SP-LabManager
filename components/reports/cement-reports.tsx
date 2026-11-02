@@ -85,7 +85,7 @@ export function CementConsistencyReportPreview({
       </table>
 
       <OfficialAsterisk />
-      <OfficialNotesAndFooter notes={cementConsistency.notes} testedBy={cementConsistency.technicianName || report.draftedBy} responsible={cementConsistency.checkedBy} issueDate={issueDate} />
+      <OfficialNotesAndFooter notes={cementConsistency.notes} testedBy={cementConsistency.technicianName || report.draftedBy} responsible={cementConsistency.checkedBy} issueDate={issueDate} sampledBy={samplingOperator(sample)} />
     </OfficialReportShell>
   );
 }
@@ -206,7 +206,7 @@ export function CementStrengthReportPreview({
       <div className="mt-1 text-[8pt] leading-tight">Pasiguria në matje për rezistencën në shtypje 2 MPa / <span className="italic">Measurement uncertainty of Comp. strength 2 MPa</span></div>
       <div className="text-[8pt] leading-tight">Pasiguria në matje për rezistencën në përkulje 0.5 MPa / <span className="italic">Measurement uncertainty of Flexural strength 0.5 MPa</span></div>
 
-      <OfficialNotesAndFooter notes={cementStrength.notes} testedBy={cementStrength.technicianName || report.draftedBy} responsible={cementStrength.checkedBy} issueDate={issueDate} />
+      <OfficialNotesAndFooter notes={cementStrength.notes} testedBy={cementStrength.technicianName || report.draftedBy} responsible={cementStrength.checkedBy} issueDate={issueDate} sampledBy={samplingOperator(sample)} />
     </OfficialReportShell>
   );
 }
@@ -287,7 +287,7 @@ export function CementBlaineReportPreview({
       </table>
 
       <OfficialAsterisk />
-      <OfficialNotesAndFooter notes={cementBlaine.notes} testedBy={cementBlaine.technicianName || report.draftedBy} responsible={cementBlaine.checkedBy} issueDate={issueDate} />
+      <OfficialNotesAndFooter notes={cementBlaine.notes} testedBy={cementBlaine.technicianName || report.draftedBy} responsible={cementBlaine.checkedBy} issueDate={issueDate} sampledBy={samplingOperator(sample)} />
     </OfficialReportShell>
   );
 }

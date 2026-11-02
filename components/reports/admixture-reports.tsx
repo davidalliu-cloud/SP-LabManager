@@ -8,7 +8,8 @@ import {
   OfficialTestingDates,
   OfficialEnvironmental,
   OfficialAsterisk,
-  OfficialNotesAndFooter
+  OfficialNotesAndFooter,
+  samplingOperator
 } from "./report-shared";
 
 function fmt(value?: number, digits = 1) {
@@ -105,7 +106,7 @@ export function AdmixtureReportPreview({
         </tbody>
       </table>
       <OfficialAsterisk />
-      <OfficialNotesAndFooter layout="flow" notes={admixture.notes} testedBy={admixture.technicianName} responsible={admixture.checkedBy || "Ing./Eng. Besiana ALLIU"} issueDate={issueDate} />
+      <OfficialNotesAndFooter layout="flow" notes={admixture.notes} testedBy={admixture.technicianName} responsible={admixture.checkedBy || "Ing./Eng. Besiana ALLIU"} issueDate={issueDate} sampledBy={samplingOperator(sample)} />
     </OfficialReportShell>
   );
 }

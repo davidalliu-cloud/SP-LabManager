@@ -213,7 +213,7 @@ export function PavingElementReportPreview({
       </table>
 
       <OfficialAsterisk />
-      <OfficialNotesAndFooter notes={paving.notes} issueDate={issueDate} testedBy={paving.technicianName} responsible={paving.checkedBy} />
+      <OfficialNotesAndFooter notes={paving.notes} issueDate={issueDate} testedBy={paving.technicianName} responsible={paving.checkedBy} sampledBy={samplingOperator(sample)} />
     </OfficialReportShell>
   );
 }

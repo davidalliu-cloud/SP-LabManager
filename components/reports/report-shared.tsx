@@ -38,9 +38,39 @@ export function headOfLabName(preferred?: string) {
 //
 // Distinct from who ran the test ("tested by") and from the lab-responsible
 // signoff (headOfLabName).
+export const SAMPLING_OPERATOR_LAB = "LABORATORI / LABORATORY";
+export const SAMPLING_OPERATOR_CLIENT = "KLIENTI / CLIENT";
+
 export function samplingOperator(sample?: Sample) {
   if (!sample) return undefined;
-  return sample.collectionMethod === "Collected by lab technician" ? "LABORATORI / LABORATORY" : "KLIENTI / CLIENT";
+  return sample.collectionMethod === "Collected by lab technician" ? SAMPLING_OPERATOR_LAB : SAMPLING_OPERATOR_CLIENT;
+}
+
+/**
+ * Whether this report should carry "Laboratori nuk është përgjegjës për fazën
+ * e kampionmarrjes".
+ *
+ * It is a disclaimer about somebody else's work. Where the client took the
+ * sample it says something true and necessary: we tested what we were handed
+ * and cannot vouch for how it was taken. Where the laboratory went and took
+ * the sample itself, the same line disclaims our own work — printed under our
+ * own accreditation mark, on a sampling phase we performed.
+ *
+ * An unknown operator keeps the line, because not knowing who sampled is not
+ * the same as knowing it was us.
+ */
+export function samplingDisclaimerApplies(sampledBy?: string) {
+  return sampledBy !== SAMPLING_OPERATOR_LAB;
+}
+
+/**
+ * The note a simple report prints when nobody typed one. Same rule: the
+ * sampling half only where the client did the sampling.
+ */
+export function defaultReportNotes(sampledBy?: string) {
+  return samplingDisclaimerApplies(sampledBy)
+    ? "Results relate only to the items tested. The laboratory is not responsible for the sampling phase."
+    : "Results relate only to the items tested.";
 }
 
 // Stored signature images, matched by a lowercase substring of the name shown
@@ -212,13 +242,15 @@ export function ReportHeader({
 // other report family already has (see OfficialNotesAndFooter) — the
 // ReportHeader-based "simple-report" family (aggregate reports) never had
 // one; this brings it in line, at the same small scale.
-export function SimpleReportLegalFooter({ issueDate }: { issueDate?: string }) {
+export function SimpleReportLegalFooter({ issueDate, sampledBy }: { issueDate?: string; sampledBy?: string }) {
   return (
     <>
       <div className="mt-3 space-y-0.5 text-[6.4px] leading-tight text-ink">
         <p>Rezultatet në këtë raport testimi i përkasin vetëm mostrës së testuar. / <span className="italic">The results relate only to the items tested.</span></p>
         <p>Ky raport testimi nuk mund të riprodhohet në mënyrë të pjesshme pa aprovimin me shkrim të laboratorit. / <span className="italic">The test report shall not be reproduced except in full without the written approval of the laboratory.</span></p>
-        <p>Laboratori nuk është përgjegjës për fazën e kampionmarrjes. / <span className="italic">The laboratory is not responsible for the sampling phase.</span></p>
+        {samplingDisclaimerApplies(sampledBy) ? (
+          <p>Laboratori nuk është përgjegjës për fazën e kampionmarrjes. / <span className="italic">The laboratory is not responsible for the sampling phase.</span></p>
+        ) : null}
         <p>Deklaroj që testi është kryer në përputhje me standardin. / <span className="italic">I declare that the test was performed in accordance with the standard.</span></p>
       </div>
       <div className="mt-2 grid grid-cols-[220px_140px] items-end gap-4 text-[6.4px]">
@@ -410,11 +442,19 @@ export function OfficialNotesAndFooter({
   responsible,
   issueDate,
   layout = "pinned",
-  disclaimers
+  disclaimers,
+  sampledBy
 }: {
   notes?: string;
   testedBy?: string;
   responsible?: string;
+  /**
+   * Who took the sample, exactly as this report prints it on the OPERATORI I
+   * MARRJES SË KAMPIONIT line — so the disclaimer below and that line can
+   * never disagree. Pass `samplingOperator(sample)`, or the test's own stored
+   * operator where it keeps one.
+   */
+  sampledBy?: string;
   /**
    * The asphalt family carries its own two lines instead of the three below —
    * different wording, not a shortened version of them. Supplied by the report
@@ -454,7 +494,9 @@ export function OfficialNotesAndFooter({
           {disclaimers ?? <>
           <p>Rezultatet në këtë raport testimi i përkasin vetëm mostrës së testuar. / <span className="italic">The results relate only to the items tested.</span></p>
           <p>Ky raport testimi nuk mund të riprodhohet në mënyrë të pjesshme pa aprovimin me shkrim të laboratorit. / <span className="italic">The test report shall not be reproduced except in full without the written approval of the laboratory.</span></p>
-          <p>Laboratori nuk është përgjegjës për fazën e kampionmarrjes. / <span className="italic">The laboratory is not responsible for the sampling phase.</span></p>
+          {samplingDisclaimerApplies(sampledBy) ? (
+            <p>Laboratori nuk është përgjegjës për fazën e kampionmarrjes. / <span className="italic">The laboratory is not responsible for the sampling phase.</span></p>
+          ) : null}
           </>}
         </div>
         <div className="official-issue-date mt-2 grid grid-cols-[285px_150px] items-end gap-4 text-[6pt]">

@@ -66,6 +66,7 @@ export function AsphaltReportPreview({
       </div>
       <AsphaltReportBody kind={kind} asphalt={asphalt} />
       <OfficialNotesAndFooter
+        sampledBy={samplingOperator(sample)}
         notes={asphalt.notes}
         testedBy={asphalt.technicianName || report.draftedBy}
         responsible={asphalt.checkedBy}

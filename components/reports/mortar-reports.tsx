@@ -5,7 +5,7 @@ import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest,
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
-import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair, samplingOperator, BiText } from "./report-shared";
+import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair, samplingOperator, BiText, samplingDisclaimerApplies, defaultReportNotes } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
 
 export function MortarReportPreview({
@@ -119,7 +119,7 @@ export function MortarReportPreview({
       {mortar.testKind === "dry-density" || mortar.testKind === "fresh-density" ? <MortarPhysicalReport mortar={mortar} /> : null}
       {mortar.testKind === "chemical" ? <MortarChemicalReport mortar={mortar} /> : null}
 
-      <MortarNotesAndFooter notes={mortar.notes} testedBy={mortar.technicianName || report.draftedBy} responsible={mortar.checkedBy} issueDate={issueDate} />
+      <MortarNotesAndFooter notes={mortar.notes} testedBy={mortar.technicianName || report.draftedBy} responsible={mortar.checkedBy} issueDate={issueDate} sampledBy={samplingOperator(sample)} />
     </section>
   );
 }
@@ -355,12 +355,15 @@ export function MortarNotesAndFooter({
   notes,
   testedBy,
   responsible,
-  issueDate
+  issueDate,
+  sampledBy
 }: {
   notes?: string;
   testedBy?: string;
   responsible?: string;
   issueDate?: string;
+  /** As printed on this report's sampling-operator line — see samplingDisclaimerApplies. */
+  sampledBy?: string;
 }) {
   return (
     <>
@@ -384,7 +387,9 @@ export function MortarNotesAndFooter({
         <div className="mt-3 space-y-0.5 text-[5.7pt] leading-tight">
           <p>Rezultatet në këtë raport testimi i përkasin vetëm mostrës së testuar. / <span className="italic">The results relate only to the items tested.</span></p>
           <p>Ky raport testimi nuk mund të riprodhohet në mënyrë të pjesshme pa aprovimin me shkrim të laboratorit. / <span className="italic">The test report shall not be reproduced except in full without the written approval of the laboratory.</span></p>
-          <p>Laboratori nuk është përgjegjës për fazën e kampionmarrjes. / <span className="italic">The laboratory is not responsible for the sampling phase.</span></p>
+          {samplingDisclaimerApplies(sampledBy) ? (
+            <p>Laboratori nuk është përgjegjës për fazën e kampionmarrjes. / <span className="italic">The laboratory is not responsible for the sampling phase.</span></p>
+          ) : null}
         </div>
         <div className="mt-2 grid grid-cols-[285px_150px] items-end gap-4 text-[5.7pt]">
           <div>Data e Lëshimit të Raportit të Testimit / <span className="italic">Test Report Issue Date:</span></div>

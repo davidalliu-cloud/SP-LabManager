@@ -7,7 +7,8 @@ import {
   OfficialMetaGrid,
   OfficialEnvironmental,
   OfficialAsterisk,
-  OfficialNotesAndFooter
+  OfficialNotesAndFooter,
+  samplingOperator
 } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
 
@@ -196,6 +197,7 @@ export function SclerometerReportPreview({
 
       <OfficialAsterisk />
       <OfficialNotesAndFooter
+        sampledBy={samplingOperator(sample)}
         layout="flow"
         notes={s.notes}
         issueDate={issueDate}

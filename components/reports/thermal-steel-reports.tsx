@@ -63,7 +63,7 @@ export function ThermalInsulationReportPreview({
           <ThermalReportRow no="6" labelSq="Përcaktimi i sjelljes ndaj shtypjes" labelEn="Determination of compression behaviour" standard="BS EN 826:2013" unit="kPa" values={sampleValues((i) => thermalInsulation.specimens[i]?.compressiveStressAtTenPercentKpa || thermalInsulation.specimens[i]?.compressiveStressKpa || 0)} average={thermalInsulation.averages.compressiveStressKpa} uncertainty="2.70" />
         </tbody>
       </table>
-      <OfficialNotesAndFooter notes={thermalInsulation.notes} testedBy={thermalInsulation.technicianName || report.draftedBy} responsible={thermalInsulation.checkedBy} issueDate={issueDate} />
+      <OfficialNotesAndFooter notes={thermalInsulation.notes} testedBy={thermalInsulation.technicianName || report.draftedBy} responsible={thermalInsulation.checkedBy} issueDate={issueDate} sampledBy={samplingOperator(sample)} />
     </OfficialReportShell>
   );
 }
@@ -219,7 +219,7 @@ export function SteelReportPreview({
           content above grew past it the signatures and stamp were drawn across
           the results table. Flowing it under the notes makes that impossible,
           and the .steel-report rules below keep the whole page inside one A4. */}
-      <OfficialNotesAndFooter notes={steel.notes} testedBy={steel.technicianName || report.draftedBy} responsible={steel.checkedBy} issueDate={issueDate} layout="flow" />
+      <OfficialNotesAndFooter notes={steel.notes} testedBy={steel.technicianName || report.draftedBy} responsible={steel.checkedBy} issueDate={issueDate} layout="flow" sampledBy={samplingOperator(sample)} />
     </OfficialReportShell>
   );
 }

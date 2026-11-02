@@ -65,7 +65,7 @@ export function ConcreteWaterPenetrationReportPreview({
         </tbody>
       </table>
       <OfficialAsterisk />
-      <OfficialNotesAndFooter notes={concreteWater.notes} testedBy={concreteWater.technicianName || report.draftedBy} responsible={concreteWater.checkedBy} issueDate={issueDate} />
+      <OfficialNotesAndFooter notes={concreteWater.notes} testedBy={concreteWater.technicianName || report.draftedBy} responsible={concreteWater.checkedBy} issueDate={issueDate} sampledBy={samplingOperator(sample)} />
     </OfficialReportShell>
   );
 }
@@ -130,7 +130,7 @@ export function ConcreteFlexuralReportPreview({
         </tbody>
       </table>
       <OfficialAsterisk />
-      <OfficialNotesAndFooter notes={concreteFlexural.notes} testedBy={concreteFlexural.technicianName || report.draftedBy} responsible={concreteFlexural.checkedBy} issueDate={issueDate} />
+      <OfficialNotesAndFooter notes={concreteFlexural.notes} testedBy={concreteFlexural.technicianName || report.draftedBy} responsible={concreteFlexural.checkedBy} issueDate={issueDate} sampledBy={samplingOperator(sample)} />
     </OfficialReportShell>
   );
 }
@@ -207,7 +207,7 @@ export function ConcreteDensityReportPreview({
         </tbody>
       </table>
       <OfficialAsterisk />
-      <OfficialNotesAndFooter notes={concreteDensity.notes} testedBy={concreteDensity.technicianName || report.draftedBy} responsible={concreteDensity.checkedBy} issueDate={issueDate} />
+      <OfficialNotesAndFooter notes={concreteDensity.notes} testedBy={concreteDensity.technicianName || report.draftedBy} responsible={concreteDensity.checkedBy} issueDate={issueDate} sampledBy={samplingOperator(sample)} />
     </OfficialReportShell>
   );
 }
@@ -269,7 +269,7 @@ export function ConcreteIndirectTensileReportPreview({
         </tbody>
       </table>
       <OfficialAsterisk />
-      <OfficialNotesAndFooter notes={concreteIndirectTensile.notes} testedBy={concreteIndirectTensile.technicianName || report.draftedBy} responsible={concreteIndirectTensile.checkedBy} issueDate={issueDate} />
+      <OfficialNotesAndFooter notes={concreteIndirectTensile.notes} testedBy={concreteIndirectTensile.technicianName || report.draftedBy} responsible={concreteIndirectTensile.checkedBy} issueDate={issueDate} sampledBy={samplingOperator(sample)} />
     </OfficialReportShell>
   );
 }

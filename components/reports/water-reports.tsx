@@ -9,7 +9,8 @@ import {
   OfficialEnvironmental,
   OfficialAsterisk,
   OfficialNotesAndFooter,
-  BiText
+  BiText,
+  SAMPLING_OPERATOR_CLIENT
 } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
 
@@ -217,6 +218,7 @@ export function WaterAnalysisReportPreview({
 
       <OfficialAsterisk />
       <OfficialNotesAndFooter
+        sampledBy={water.samplingOperator || SAMPLING_OPERATOR_CLIENT}
         notes={water.notes}
         issueDate={issueDate}
         testedBy={water.technicianName}

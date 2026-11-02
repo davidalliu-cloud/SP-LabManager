@@ -243,7 +243,7 @@ export function MasonryUnitReportPreview({
       </div>
 
       <OfficialAsterisk />
-      <OfficialNotesAndFooter notes={masonry.notes} issueDate={issueDate} testedBy={masonry.technicianName} responsible={masonry.checkedBy} />
+      <OfficialNotesAndFooter notes={masonry.notes} issueDate={issueDate} testedBy={masonry.technicianName} responsible={masonry.checkedBy} sampledBy={samplingOperator(sample)} />
     </OfficialReportShell>
   );
 }
