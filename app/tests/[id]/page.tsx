@@ -4556,7 +4556,10 @@ function TestDetailView({ test }: { test: LabTest }) {
               <Field label="Register number"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
               <Field label="Sample name"><input className="input bg-lab-porcelain" value={sample?.sampleDescription ?? ""} readOnly /></Field>
               <Field label="Sample received in lab"><input className="input bg-lab-porcelain" value={formatEuropeanDate(sample?.dateReceived)} readOnly /></Field>
-              <Field label="Supply date"><input name="supplyDate" type="date" defaultValue={steel?.supplyDate ?? sample?.dateReceived} className="input" /></Field>
+              {/* Prints on the report as DATA E FURNIZIMIT, so it is left empty rather
+                  than pre-filled with the receipt date: a date nobody entered would
+                  otherwise go out as the day the steel was supplied. */}
+              <Field label="Data e furnizimit / Supply date"><input name="supplyDate" type="date" defaultValue={steel?.supplyDate ?? ""} className="input" /></Field>
               <Field label="Testing start date"><input name="testStartDate" type="date" defaultValue={steel?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Testing end date"><input name="testEndDate" type="date" defaultValue={steel?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Test"><input className="input bg-lab-porcelain" value="Physical-mechanical tensile characteristics of steel rebar" readOnly /></Field>

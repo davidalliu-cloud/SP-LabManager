@@ -148,6 +148,11 @@ export function SteelReportPreview({
         { sq: "KAMPIONI", en: "SAMPLE", value: `${sample?.sampleDescription || sample?.sampleType || "Shufër çeliku / Steel rebar"}${diameter ? ` - Ø ${diameter} mm` : ""}` },
         { sq: "DATA E MARRJES SË KAMPIONIT", en: "SAMPLING DATE", value: sample?.dateReceived },
         { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: sample?.dateReceived },
+        // Row 14 of the controlled sheet: the date the steel was supplied to the
+        // site. The worksheet has always asked for it; it simply never reached the
+        // report. It is the technician's figure, not one the register holds, so
+        // left blank it prints a dash, exactly as the master does.
+        { sq: "DATA E FURNIZIMIT", en: "SAMPLE SUPPLY DATE", value: steel.supplyDate },
         { sq: "OPERATORI I MARRJES SË KAMPIONIT", en: "SAMPLING OPERATOR", value: samplingOperator(sample) }
       ]} />
       <div className="official-meta mt-1 grid grid-cols-[315px_1fr] gap-x-8 gap-y-1 text-[10pt] leading-[1.15]">
