@@ -140,10 +140,10 @@ export function SteelReportPreview({
   return (
     <OfficialReportShell report={report} code="SL-RA-H-7.8/1.1" title="RAPORT TESTIMI / TEST REPORT" className="compact-official-report steel-report">
       <OfficialMetaGrid entries={[
+        { sq: "Nr. REGJISTRI", en: "REGISTER No.", value: sample?.sampleCode },
         { sq: "KLIENTI", en: "CLIENT", value: client?.clientName },
         { sq: "ADRESA", en: "ADRESS", value: client?.address },
         { sq: "KONTAKTET", en: "CONTACT", value: client?.phone || client?.email },
-        { sq: "Nr. REGJISTRI", en: "REGISTER No.", value: sample?.sampleCode },
         { sq: "OBJEKTI", en: "OBJECT", value: project?.projectName },
         { sq: "KAMPIONI", en: "SAMPLE", value: `${sample?.sampleDescription || sample?.sampleType || "Shufër çeliku / Steel rebar"}${diameter ? ` - Ø ${diameter} mm` : ""}` },
         { sq: "DATA E MARRJES SË KAMPIONIT", en: "SAMPLING DATE", value: sample?.dateReceived },
