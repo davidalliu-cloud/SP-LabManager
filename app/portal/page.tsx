@@ -1,6 +1,9 @@
 import { redirect } from "next/navigation";
 import { SummaryCard } from "@/components/ui/summary-card";
-import { buildClientAnalysis, formatPeriod, monthPeriod } from "@/lib/client-analysis";
+import { PlantComparison } from "@/components/portal/plant-comparison";
+import { batchingPlantsBySample } from "@/lib/batching-plant";
+import { round } from "@/lib/calculations";
+import { formatPeriod, monthPeriod } from "@/lib/client-analysis";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { currentPortalUser, readClientSlice } from "@/lib/portal/session";
 import {
@@ -47,6 +50,14 @@ function dateInRange(value: string | undefined, from: string, to: string) {
  * vocabulary, off one register; that is the only way this saves the phone call
  * it was built to save.
  *
+ * One thing is added. Where the client's pours name the batching plant they
+ * were mixed at, the register carries an Impianti column, the filters carry the
+ * plant, and a comparison of what each plant has given sits above the table —
+ * the question a client with two plants asks first, and the one they used to
+ * answer by reading thirty certificates side by side. The laboratory's own
+ * client page carries the same column on its cube table, so the two still read
+ * off one register in one vocabulary.
+ *
  * Two things are left off, and only these two. There is no column of links into
  * the test and the sample, because a client has no business inside the
  * laboratory's working records; and a report's file opens only once it has been
@@ -65,6 +76,7 @@ export default async function PortalPage({
     to?: string;
     project?: string;
     testType?: string;
+    plant?: string;
     reportStatus?: string;
     fromDate?: string;
     toDate?: string;
@@ -93,6 +105,7 @@ export default async function PortalPage({
   // above, which sets what the downloaded summary covers.
   const projectFilter = params.project || "all";
   const testTypeFilter = params.testType || "all";
+  const plantFilter = params.plant || "all";
   const reportStatusFilter = params.reportStatus || "all";
   const fromDate = params.fromDate || "";
   const toDate = params.toDate || "";
@@ -101,6 +114,7 @@ export default async function PortalPage({
   const client = slice.clients[0];
   const analysisPeriodLabel = formatPeriod(period);
   const openable = new Set(clientVisibleReports(slice).map((report) => report.id));
+  const plantBySample = batchingPlantsBySample(slice.concreteTests, slice.tests);
 
   const rows = slice.tests
     .map((test) => {
@@ -109,13 +123,19 @@ export default async function PortalPage({
       const reports = slice.reports.filter((row) => row.testId === test.id);
       const result = getTestResultSummary(slice, test);
       const conductedDate = result.testEndDate || test.completedAt?.slice(0, 10) || test.requiredTestDate;
-      return { test, sample, project, reports, result, conductedDate };
+      return { test, sample, project, reports, result, conductedDate, plant: plantBySample.get(test.sampleId) };
     })
     .sort((a, b) => a.conductedDate.localeCompare(b.conductedDate) || a.test.testCode.localeCompare(b.test.testCode));
 
   const testTypes = Array.from(new Set(rows.map(({ test }) => test.testType))).sort();
+  // The plants this client's own pours were mixed at. Everything to do with the
+  // plant — the column, the filter and the comparison below — appears only when
+  // there is at least one, so a client who never records it sees the page they
+  // have always seen.
+  const plants = Array.from(new Set(rows.map(({ plant }) => plant).filter((plant): plant is string => Boolean(plant)))).sort();
+  const somePourHasNoPlant = rows.some(({ plant }) => !plant);
 
-  const filteredRows = rows.filter(({ test, sample, project, reports, result, conductedDate }) => {
+  const filteredRows = rows.filter(({ test, sample, project, reports, result, conductedDate, plant }) => {
     const reportStatusMatch =
       reportStatusFilter === "all" ||
       (reportStatusFilter === "No Report"
@@ -128,7 +148,8 @@ export default async function PortalPage({
       test.testCode,
       test.testType,
       reports.map((report) => report.reportNumber).join(" "),
-      result.result
+      result.result,
+      plant
     ]
       .filter(Boolean)
       .join(" ")
@@ -137,6 +158,7 @@ export default async function PortalPage({
     return (
       (projectFilter === "all" || test.projectId === projectFilter) &&
       (testTypeFilter === "all" || test.testType === testTypeFilter) &&
+      (plantFilter === "all" || (plantFilter === "none" ? !plant : plant === plantFilter)) &&
       reportStatusMatch &&
       dateInRange(conductedDate, fromDate, toDate) &&
       (!search || haystack.includes(search.toLowerCase()))
@@ -158,6 +180,62 @@ export default async function PortalPage({
   )
     .map(([label, count]) => ({ label, count, percent: totalReports ? Math.round((count / totalReports) * 100) : 0 }))
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+
+  /**
+   * Çfarë ka dhënë secili impiant — the comparison the plant column exists for.
+   *
+   * Measured over the client's whole register rather than the download period,
+   * because it sits above a table that lists the whole register; a panel scoped
+   * to the month someone picked for the PDF would quietly disagree with the rows
+   * underneath it.
+   *
+   * Every cube counts once — from the specimen list where the worksheet has one,
+   * from the single stored result where it is an older test. No pass or fail
+   * column: conformity against the class is judged by EN 206 over the whole
+   * pour, and this page has no business making a declaration no report made.
+   */
+  const plantStrengths = new Map<string, number[]>();
+  for (const concrete of slice.concreteTests) {
+    const sampleId = slice.tests.find((row) => row.id === concrete.testId)?.sampleId;
+    const plant = sampleId ? plantBySample.get(sampleId) : undefined;
+    if (!plant) continue;
+    const values = concrete.specimens?.length
+      ? concrete.specimens.map((specimen) => specimen.compressiveStrengthMpa)
+      : [concrete.compressiveStrengthMpa];
+    const list = plantStrengths.get(plant) ?? [];
+    for (const value of values) {
+      if (typeof value === "number" && Number.isFinite(value) && value > 0) list.push(value);
+    }
+    plantStrengths.set(plant, list);
+  }
+  const plantRows = [...plantStrengths.entries()]
+    .filter(([, values]) => values.length)
+    .map(([plant, values]) => ({
+      plant,
+      cubes: values.length,
+      average: round(values.reduce((sum, value) => sum + value, 0) / values.length, 2),
+      min: round(Math.min(...values), 2),
+      max: round(Math.max(...values), 2)
+    }))
+    .sort((a, b) => a.plant.localeCompare(b.plant, "sq"));
+  /**
+   * One scale for every plant, in whole 5 MPa steps around the results.
+   *
+   * Not from zero. Two plants supplying one site differ by a megapascal or two,
+   * and on a 0–40 track both sit in the last tenth of it, touching, which is
+   * exactly the comparison this panel exists to show. These are ranges with
+   * their own low and high end rather than bars growing out of an origin, so a
+   * window that starts where the concrete does is honest as long as both ends
+   * are printed — and they are, under the bars. Ten megapascals is the narrowest
+   * window allowed, so a single plant cannot fill the track and look like a
+   * spread it does not have.
+   */
+  const plantAxis = (() => {
+    if (!plantRows.length) return { from: 0, to: 10 };
+    const low = Math.floor(Math.min(...plantRows.map((row) => row.min)) / 5) * 5;
+    const high = Math.ceil(Math.max(...plantRows.map((row) => row.max)) / 5) * 5;
+    return { from: low, to: Math.max(high, low + 10) };
+  })();
 
   const summaryHref = `/api/portal/summary?from=${period.from}&to=${period.to}`;
   const clearHref = `/portal?from=${period.from}&to=${period.to}`;
@@ -203,6 +281,7 @@ export default async function PortalPage({
           <form method="get" className="flex flex-wrap items-end gap-3">
             <input type="hidden" name="project" value={projectFilter} />
             <input type="hidden" name="testType" value={testTypeFilter} />
+            <input type="hidden" name="plant" value={plantFilter} />
             <input type="hidden" name="reportStatus" value={reportStatusFilter} />
             <input type="hidden" name="fromDate" value={fromDate} />
             <input type="hidden" name="toDate" value={toDate} />
@@ -267,11 +346,13 @@ export default async function PortalPage({
           </div>
         </section>
 
+        <PlantComparison rows={plantRows} axis={plantAxis} />
+
         <section className="surface-card mb-5 p-4">
           <form method="get">
             <input type="hidden" name="from" value={period.from} />
             <input type="hidden" name="to" value={period.to} />
-            <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
+            <div className={`grid gap-3 md:grid-cols-3 ${plants.length ? "xl:grid-cols-7" : "xl:grid-cols-6"}`}>
               <label className="text-sm font-medium text-ink">
                 Projekti
                 <select name="project" defaultValue={projectFilter} className="input mt-1">
@@ -290,6 +371,18 @@ export default async function PortalPage({
                   ))}
                 </select>
               </label>
+              {plants.length ? (
+                <label className="text-sm font-medium text-ink">
+                  Impianti
+                  <select name="plant" defaultValue={plantFilter} className="input mt-1">
+                    <option value="all">Të gjithë impiantet</option>
+                    {plants.map((plant) => (
+                      <option key={plant} value={plant}>{plant}</option>
+                    ))}
+                    {somePourHasNoPlant ? <option value="none">Pa impiant të shënuar</option> : null}
+                  </select>
+                </label>
+              ) : null}
               <label className="text-sm font-medium text-ink">
                 Statusi i raportit
                 <select name="reportStatus" defaultValue={reportStatusFilter} className="input mt-1">
@@ -327,12 +420,13 @@ export default async function PortalPage({
 
         <div className="surface-card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1080px] text-left text-sm">
+            <table className={`w-full ${plants.length ? "min-w-[1200px]" : "min-w-[1080px]"} text-left text-sm`}>
               <thead className="table-head">
                 <tr>
                   <th className="px-4 py-3">Data</th>
                   <th className="px-4 py-3">Projekti</th>
                   <th className="px-4 py-3">Kampioni</th>
+                  {plants.length ? <th className="px-4 py-3">Impianti</th> : null}
                   <th className="px-4 py-3">Testi</th>
                   <th className="px-4 py-3">Rezultati</th>
                   <th className="px-4 py-3">Raportet</th>
@@ -340,7 +434,7 @@ export default async function PortalPage({
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
-                {filteredRows.map(({ test, sample, project, reports, result, conductedDate }) => (
+                {filteredRows.map(({ test, sample, project, reports, result, conductedDate, plant }) => (
                   <tr key={test.id} className="align-top">
                     <td className="px-4 py-3">
                       <div className="font-semibold text-ink">{formatEuropeanDate(conductedDate)}</div>
@@ -352,6 +446,7 @@ export default async function PortalPage({
                       <div className="font-semibold text-ink">{sample?.sampleCode ?? "-"}</div>
                       <div className="text-xs text-muted">{sample?.sampleType ?? "-"}</div>
                     </td>
+                    {plants.length ? <td className="px-4 py-3">{plant ?? "-"}</td> : null}
                     <td className="px-4 py-3">
                       <div className="font-semibold text-ink">{test.testType}</div>
                       <div className="text-xs text-muted">{test.testCode}</div>

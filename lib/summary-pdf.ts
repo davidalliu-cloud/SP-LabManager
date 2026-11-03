@@ -271,9 +271,12 @@ export async function buildSummaryPdf(input: SummaryPdfInput): Promise<Blob> {
       { header: "Kubi", width: 36, value: ({ cube }) => cube.specimenCode },
       {
         header: "Objekti / elementi",
-        width: 66,
+        width: 52,
         value: ({ row }) => [row.element, row.projectName !== "—" ? row.projectName : ""].filter(Boolean).join(" · ")
       },
+      // Which plant mixed the pour, so a client reading down the month can see
+      // whether a run of low results came off one of theirs.
+      { header: "Impianti", width: 20, value: ({ row }) => row.batchingPlant ?? "—" },
       { header: "Klasa", width: 17, value: ({ row }) => row.strengthClass },
       { header: "Betonimi", width: 21, value: ({ row }) => formatEuropeanDate(row.castingDate) },
       { header: "Prova", width: 21, value: ({ row }) => formatEuropeanDate(row.testDate) },
@@ -281,7 +284,7 @@ export async function buildSummaryPdf(input: SummaryPdfInput): Promise<Blob> {
       { header: "Pesha (kg)", width: 19, align: "right", value: ({ cube }) => number(cube.weightKg, 2) },
       { header: "Ngark. (kN)", width: 21, align: "right", value: ({ cube }) => number(cube.loadKn, 1) },
       { header: "Rez. (MPa)", width: 24, align: "right", value: ({ cube }) => number(cube.strengthMpa, 2) },
-      { header: "Targa", width: 25, value: ({ cube }) => cube.truckPlate ?? "—" },
+      { header: "Targa", width: 19, value: ({ cube }) => cube.truckPlate ?? "—" },
       { header: "Raporti", width: 13, value: ({ row }) => row.reportNumber }
     ],
     cubeLines,

@@ -515,6 +515,7 @@ export default function ClientAnalysisPage() {
                   <tr>
                     <th className="px-3 py-2">Kubi</th>
                     <th className="px-3 py-2">Objekti / elementi</th>
+                    <th className="px-3 py-2">Impianti</th>
                     <th className="px-3 py-2">Klasa</th>
                     <th className="px-3 py-2">Betonimi</th>
                     <th className="px-3 py-2">Prova</th>
@@ -542,6 +543,7 @@ export default function ClientAnalysisPage() {
                             <span className="block text-[11px] text-muted">{row.projectName}</span>
                           ) : null}
                         </td>
+                        <td className="whitespace-nowrap px-3 py-1.5">{row.batchingPlant ?? "—"}</td>
                         <td className="whitespace-nowrap px-3 py-1.5 tabular-nums">{row.strengthClass}</td>
                         <td className="whitespace-nowrap px-3 py-1.5 tabular-nums">{formatEuropeanDate(row.castingDate)}</td>
                         <td className="whitespace-nowrap px-3 py-1.5 tabular-nums">{formatEuropeanDate(row.testDate)}</td>

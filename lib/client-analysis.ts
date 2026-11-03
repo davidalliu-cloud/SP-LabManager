@@ -1,3 +1,4 @@
+import { batchingPlantsBySample } from "./batching-plant";
 import { labMonthly, quantityMode, type OfferValues } from "./offer-fill";
 import { priceReport, type PriceSource } from "./offer-pricing";
 import type {
@@ -127,6 +128,12 @@ export type ConcreteCubeRow = {
   sampleCode: string;
   projectName: string;
   element: string;
+  /**
+   * Impianti — which batching plant the pour was mixed at, where the worksheet
+   * said so. Undefined is the common case and prints as a dash: most clients
+   * never record it.
+   */
+  batchingPlant: string | undefined;
   strengthClass: string;
   castingDate: string;
   testDate: string;
@@ -299,6 +306,10 @@ export function buildClientAnalysis(
   const concrete = summariseConcrete(source.concreteTests, periodTests, sampleById);
 
   const reportByTest = new Map(periodReports.map((report) => [report.testId, report]));
+  // Resolved over the client's whole concrete register rather than the period's
+  // tests, because the plant is typed on whichever worksheet the technician had
+  // open — often the 7-day one, which a 28-day period does not contain.
+  const plantBySample = batchingPlantsBySample(source.concreteTests, source.tests);
   const concreteRows: ConcreteCubeRow[] = periodTests
     .map((test): ConcreteCubeRow | undefined => {
       const result = source.concreteTests.find((row) => row.testId === test.id);
@@ -335,6 +346,7 @@ export function buildClientAnalysis(
         // Element as the worksheet recorded it, falling back to how the sample
         // was described at reception — which is what it is called on site.
         element: result.element || sample?.sampleDescription || "—",
+        batchingPlant: sample ? plantBySample.get(sample.id) : undefined,
         strengthClass: result.strengthClass || sample?.notes?.match(/C\d+\/\d+/)?.[0] || "—",
         castingDate: result.castingDate || sample?.concretingDate || "—",
         testDate: result.testEndDate || result.testDate || test.completedAt?.slice(0, 10) || "—",
