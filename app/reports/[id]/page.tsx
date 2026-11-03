@@ -251,7 +251,10 @@ export default function ReportDetailPage() {
    * second copy arriving unexplained invites them to ask which one counts.
    */
   function confirmResend() {
-    const when = activeReport.issuedAt ? new Date(activeReport.issuedAt).toLocaleString("sq-AL") : "më parë";
+    // The last send, which is the one the client remembers; issuedAt is the
+    // issue date and does not move.
+    const lastSent = activeReport.lastIssuedAt ?? activeReport.issuedAt;
+    const when = lastSent ? new Date(lastSent).toLocaleString("sq-AL") : "më parë";
     const where = activeReport.issuedTo ? ` te ${activeReport.issuedTo}` : "";
     return window.confirm(
       `Raporti ${activeReport.reportNumber} i është dërguar tashmë klientit${where} (${when}).\n\nDëshironi ta dërgoni përsëri?`
@@ -411,8 +414,13 @@ export default function ReportDetailPage() {
                   <p className="mt-1">
                     {activeReport.issuedVia === "whatsapp" ? "Me WhatsApp" : "Me email"}
                     {activeReport.issuedTo ? ` te ${activeReport.issuedTo}` : ""}
-                    {activeReport.issuedAt ? `, më ${new Date(activeReport.issuedAt).toLocaleString("sq-AL")}` : ""}.
+                    {activeReport.lastIssuedAt || activeReport.issuedAt
+                      ? `, më ${new Date((activeReport.lastIssuedAt ?? activeReport.issuedAt) as string).toLocaleString("sq-AL")}`
+                      : ""}.
                     Mund ta dërgoni përsëri; do t'ju kërkohet të konfirmoni.
+                    {activeReport.lastIssuedAt && activeReport.issuedAt && activeReport.lastIssuedAt !== activeReport.issuedAt
+                      ? ` Data e lëshimit mbetet ${formatEuropeanDate(activeReport.issuedAt)}.`
+                      : ""}
                   </p>
                 </div>
               ) : null}

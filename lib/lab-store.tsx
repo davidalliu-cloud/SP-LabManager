@@ -5122,7 +5122,9 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
                     ...row,
                     reportStatus: "Sent to Client",
                     issuedBy: currentUserId,
-                    issuedAt: sentAt,
+                    // The first send is the issue date and stays put; see Report.
+                    issuedAt: row.issuedAt ?? sentAt,
+                    lastIssuedAt: sentAt,
                     issuedVia: channel,
                     issuedTo: destination,
                     // Left alone for a WhatsApp issue: a phone number filed
@@ -5252,11 +5254,16 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       },
       sendReportsToClient(reportIds, destination, notes, channel = "email") {
         setState((previous) => {
-          const approvedReports = previous.reports.filter((row) => reportIds.includes(row.id) && row.reportStatus === "Approved");
-          if (!approvedReports.length) return previous;
+          // Approved, or already sent and going out again — the same rule the
+          // single report has always had. A client who lost the email asks for
+          // all five reports back, not one.
+          const sendableReports = previous.reports.filter(
+            (row) => reportIds.includes(row.id) && (row.reportStatus === "Approved" || row.reportStatus === "Sent to Client")
+          );
+          if (!sendableReports.length) return previous;
           const sentAt = new Date().toISOString();
-          const sentReportIds = new Set(approvedReports.map((report) => report.id));
-          const sentTestIds = new Set(approvedReports.map((report) => report.testId));
+          const sentReportIds = new Set(sendableReports.map((report) => report.id));
+          const sentTestIds = new Set(sendableReports.map((report) => report.testId));
           const draft: LabState = {
             ...previous,
             reports: previous.reports.map((row) =>
@@ -5265,7 +5272,8 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
                     ...row,
                     reportStatus: "Sent to Client",
                     issuedBy: currentUserId,
-                    issuedAt: sentAt,
+                    issuedAt: row.issuedAt ?? sentAt,
+                    lastIssuedAt: sentAt,
                     issuedVia: channel,
                     issuedTo: destination,
                     // Same rule as a single issue: a phone number filed under
@@ -5279,10 +5287,13 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             notifications: [...previous.notifications],
             auditLog: [...previous.auditLog]
           };
-          for (const report of approvedReports) {
+          for (const report of sendableReports) {
             addAudit(
               draft,
-              "report_sent_to_client",
+              // Told apart in the log the way a single send is, so the history
+              // shows how many times a report went out rather than pretending
+              // the first one was the only one.
+              report.reportStatus === "Sent to Client" ? "report_resent_to_client" : "report_sent_to_client",
               "report",
               report.id,
               `${report.reportNumber} sent to ${destination}${channel === "whatsapp" ? " by WhatsApp" : ""}.`

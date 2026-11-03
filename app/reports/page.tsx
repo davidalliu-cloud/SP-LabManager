@@ -100,8 +100,13 @@ export default function ReportsPage() {
   const selectedRows = filteredRows.filter(({ report }) => selectedReportIds.includes(report.id));
   const selectedClientIds = Array.from(new Set(selectedRows.map(({ report }) => report.clientId)));
   const selectedClient = selectedClientIds.length === 1 ? store.clients.find((client) => client.id === selectedClientIds[0]) : undefined;
-  const selectedApprovedRows = selectedRows.filter(({ report }) => report.reportStatus === "Approved");
-  const selectedHasOnlyApproved = selectedRows.length > 0 && selectedRows.every(({ report }) => report.reportStatus === "Approved");
+  // Approved, or already sent and going out again — a client who lost the
+  // email asks for all five reports back, not one. What must never go out is a
+  // report that has not been approved.
+  const isSendable = (status: ReportStatus) => status === "Approved" || status === "Sent to Client";
+  const selectedSendableRows = selectedRows.filter(({ report }) => isSendable(report.reportStatus));
+  const selectedHasOnlySendable = selectedRows.length > 0 && selectedRows.every(({ report }) => isSendable(report.reportStatus));
+  const selectedResends = selectedSendableRows.filter(({ report }) => report.reportStatus === "Sent to Client");
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
   const canSend = canSendReportsToClient(currentUser?.email);
   // The client record is the source of truth for where reports go. A typed
@@ -110,7 +115,7 @@ export default function ReportsPage() {
   const selectedEmail = selectedClientHasEmail ? batchEmail.trim() || selectedClient?.email || "" : "";
   // A report with no stored PDF has nothing to give the client, so flag it
   // rather than sending a link to a file that was never generated.
-  const selectedWithoutPdf = selectedApprovedRows.filter(({ report }) => !report.pdfUrl);
+  const selectedWithoutPdf = selectedSendableRows.filter(({ report }) => !report.pdfUrl);
   // The client card is where the number lives, and it is written every way a
   // person writes a number, so it is parsed rather than trusted.
   const selectedWhatsAppNumber = toWhatsAppNumber(selectedClient?.phone);
@@ -118,7 +123,7 @@ export default function ReportsPage() {
   const canSendSelected =
     canSend &&
     selectedRows.length > 0 &&
-    selectedHasOnlyApproved &&
+    selectedHasOnlySendable &&
     selectedClientIds.length === 1 &&
     Boolean(selectedEmail) &&
     selectedWithoutPdf.length === 0;
@@ -127,7 +132,7 @@ export default function ReportsPage() {
   const canSendSelectedWhatsApp =
     canSend &&
     selectedRows.length > 0 &&
-    selectedHasOnlyApproved &&
+    selectedHasOnlySendable &&
     selectedClientIds.length === 1 &&
     selectedWhatsAppNumber.ok &&
     selectedWithoutPdf.length === 0;
@@ -173,6 +178,21 @@ export default function ReportsPage() {
   }
 
   /**
+   * Sending again is allowed and often necessary, but it should be deliberate:
+   * the client already has these, and a second copy arriving unexplained
+   * invites them to ask which one counts.
+   */
+  function confirmResends() {
+    if (!selectedResends.length) return true;
+    const numbers = selectedResends.map(({ report }) => report.reportNumber).join(", ");
+    return window.confirm(
+      `${selectedResends.length} nga raportet e zgjedhur i janë dërguar tashmë klientit (${numbers}).
+
+Dëshironi t'i dërgoni përsëri?`
+    );
+  }
+
+  /**
    * Sends the selected reports with the PDFs actually attached, via the Graph
    * route. mailto: cannot carry files, so this does not open a mail client -
    * the message goes from njoftime@sarpandlab.al with Reply-To set to whoever
@@ -180,8 +200,9 @@ export default function ReportsPage() {
    */
   async function sendSelectedReports() {
     if (!canSendSelected || sending) return;
-    const reportIds = selectedApprovedRows.map(({ report }) => report.id);
-    const reportNumbers = selectedApprovedRows.map(({ report }) => report.reportNumber);
+    if (!testToSelf && !confirmResends()) return;
+    const reportIds = selectedSendableRows.map(({ report }) => report.id);
+    const reportNumbers = selectedSendableRows.map(({ report }) => report.reportNumber);
     const subject = `Raportet laboratorike SARP LAB - ${selectedClient?.clientCode ?? ""}`;
     const body = [
       "Pershendetje,",
@@ -235,12 +256,13 @@ export default function ReportsPage() {
    */
   function sendSelectedReportsToWhatsApp() {
     if (!canSendSelectedWhatsApp || !selectedWhatsAppNumber.ok) return;
+    if (!confirmResends()) return;
     const origin = window.location.origin;
     // A token is minted for any report that has never been shared and kept for
     // any that has, so a client who already has a link keeps the address it
     // points to. Fixed before the message leaves, or the links resolve to
     // nothing.
-    const items = selectedApprovedRows.map(({ report, test, sample }) => {
+    const items = selectedSendableRows.map(({ report, test, sample }) => {
       const token = report.shareToken ?? newShareToken();
       store.setReportShareToken(report.id, token);
       return {
@@ -358,7 +380,7 @@ Dërgojini në grupe më të vogla, ose vazhdoni?`
           <div className="mt-4 rounded-md border border-lab-steel bg-lab-mist p-3 text-sm text-ink">
             <div className="font-semibold">Zgjedhje për dërgim në grup</div>
             <div className="mt-1 text-muted">
-              {selectedClient ? `Zgjidhni vetëm raporte me status Miratuar për t'i dërguar klientit ${selectedClient.clientName}.` : "Zgjidh raporte nga i njëjti klient për të përgatitur një grup të rregullt dërgimi."}
+              {selectedClient ? `Zgjidhni raporte të miratuara (ose të dërguara më parë) për t'i dërguar klientit ${selectedClient.clientName}.` : "Zgjidh raporte nga i njëjti klient për të përgatitur një grup të rregullt dërgimi."}
             </div>
             <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_auto]">
               <input
@@ -398,7 +420,13 @@ Dërgojini në grupe më të vogla, ose vazhdoni?`
             <p className="mt-1 text-[11px] text-muted">
               Emaili niset nga njoftime@sarpandlab.al me PDF-të bashkëngjitur; përgjigjet e klientit kthehen te ju.
             </p>
-            {!selectedHasOnlyApproved ? <div className="mt-2 text-xs font-medium text-lab-red">Dërgimi lejohet vetëm pasi raportet të jenë Miratuar.</div> : null}
+            {!selectedHasOnlySendable ? <div className="mt-2 text-xs font-medium text-lab-red">Dërgimi lejohet vetëm pasi raportet të jenë Miratuar.</div> : null}
+            {selectedResends.length ? (
+              <div className="mt-2 text-xs font-medium text-ink">
+                {selectedResends.length} nga këto i janë dërguar tashmë klientit. Dërgimi përsëri lejohet — data e lëshimit
+                mbetet e para.
+              </div>
+            ) : null}
             {selectedClientIds.length > 1 ? <div className="mt-2 text-xs font-medium text-lab-red">Zgjidhni raporte nga një klient i vetëm për dërgim në grup.</div> : null}
             {selectedClient && !selectedWhatsAppNumber.ok ? (
               <div className="mt-2 text-xs font-medium text-lab-red">

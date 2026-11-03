@@ -1380,7 +1380,23 @@ export interface Report {
   rejectedBy?: string;
   rejectionComments?: string;
   issuedBy?: string;
+  /**
+   * When the report FIRST reached the client, and never overwritten after.
+   *
+   * A report goes out more than once often enough — the message is lost in a
+   * chat, the client changes hands, somebody asks for it again months later —
+   * and every one of those is a real send worth recording. But the date the
+   * report was issued is the first one: it is what the certificate prints, what
+   * the client's summary is dated by, and what tells the lab whether it was
+   * late. Letting a resend move it would make a report issued on time look late
+   * by however long it took somebody to ask for a second copy.
+   *
+   * Each send is recorded in its own right in the audit log; lastIssuedAt below
+   * is the most recent one.
+   */
   issuedAt?: string;
+  /** The most recent send, when there has been more than one. */
+  lastIssuedAt?: string;
   clientEmail?: string;
   /**
    * How the report reached the client, and where it was sent.

@@ -84,10 +84,13 @@ export async function POST(request: Request) {
 
   if (!reports.length) return NextResponse.json({ ok: false, error: "Those reports could not be found." }, { status: 404 });
 
-  const notApproved = reports.filter((r) => r.report_status !== "Approved");
-  if (notApproved.length) {
+  // Approved, or already sent and going out again. A report the client asks
+  // for a second time is the same approved report; what must never go out is
+  // one that has not been approved at all.
+  const notSendable = reports.filter((r) => r.report_status !== "Approved" && r.report_status !== "Sent to Client");
+  if (notSendable.length) {
     return NextResponse.json(
-      { ok: false, error: `Only approved reports can be sent. Not approved: ${notApproved.map((r) => r.report_number).join(", ")}` },
+      { ok: false, error: `Only approved reports can be sent. Not approved: ${notSendable.map((r) => r.report_number).join(", ")}` },
       { status: 400 }
     );
   }
