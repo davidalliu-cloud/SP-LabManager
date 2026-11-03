@@ -2,7 +2,7 @@
 import { splitBilingual } from "@/lib/bilingual";
 
 import type { ReactNode } from "react";
-import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabTest, MortarTest, Project, Report, Sample, SteelTensileTest, ThermalInsulationTest } from "@/lib/types";
+import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteCubeSpecimen, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabTest, MortarTest, Project, Report, Sample, SteelTensileTest, ThermalInsulationTest } from "@/lib/types";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { reportLifecycle } from "@/lib/sample-stage";
 import { round } from "@/lib/calculations";
@@ -71,6 +71,61 @@ export function defaultReportNotes(sampledBy?: string) {
   return samplingDisclaimerApplies(sampledBy)
     ? "Results relate only to the items tested. The laboratory is not responsible for the sampling phase."
     : "Results relate only to the items tested.";
+}
+
+/**
+ * The cubes a compressive-strength report prints, in the order it prints them.
+ *
+ * The certificate and the WhatsApp message that carries it both read from
+ * here, so a strength quoted in a chat cannot disagree with the strength on
+ * the report. A report that selected specimens shows those; one that did not
+ * shows every cube on the worksheet. A test recorded before specimen lists
+ * existed holds its single result on the test row itself, and is rebuilt here
+ * as one cube so both readers see it the same way.
+ */
+export function concreteCubeSpecimens(report: Report, sample?: Sample, concrete?: ConcreteCompressiveTest): ConcreteCubeSpecimen[] {
+  if (!concrete) return [];
+  const selectedSpecimenCodes = report.specimenCodes ?? [];
+  if (concrete.specimens?.length) {
+    return selectedSpecimenCodes.length
+      ? concrete.specimens.filter((specimen) => selectedSpecimenCodes.includes(specimen.specimenCode))
+      : concrete.specimens;
+  }
+  return [
+    {
+      specimenCode: sample?.sampleCode ?? "-",
+      ageDays: concrete.ageDays,
+      lengthMm: concrete.cubeLength,
+      widthMm: concrete.cubeWidth,
+      heightMm: concrete.cubeHeight,
+      weightKg: concrete.weight,
+      maximumLoadKn: concrete.maximumLoadKn,
+      loadedAreaMm2: concrete.loadedAreaMm2,
+      compressiveStrengthMpa: concrete.compressiveStrengthMpa,
+      visualInspection: concrete.failureType,
+      notes: concrete.notes,
+      // Older tests hold one result rather than a specimen list. With a
+      // single cube the first plate is its plate, by the same rule that
+      // pairs the second plate with the second cube.
+      truckPlate: concrete.truckPlates?.[0]
+    }
+  ];
+}
+
+/** R(mes), rounded exactly as the certificate's average row prints it. */
+export function concreteCubeAverageStrength(specimens: Array<Pick<ConcreteCubeSpecimen, "compressiveStrengthMpa">>) {
+  return specimens.length
+    ? round(specimens.reduce((sum, specimen) => sum + specimen.compressiveStrengthMpa, 0) / specimens.length, 2)
+    : undefined;
+}
+
+/**
+ * The strength class the report prints: the worksheet's, or else the class
+ * written into the sample's notes at intake, which is where it lived before
+ * the worksheet had a field for it.
+ */
+export function concreteStrengthClass(concrete?: ConcreteCompressiveTest, sample?: Sample) {
+  return concrete?.strengthClass || sample?.notes?.match(new RegExp("C\d+/\d+"))?.[0];
 }
 
 // Stored signature images, matched by a lowercase substring of the name shown

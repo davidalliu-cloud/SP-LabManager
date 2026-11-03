@@ -6,7 +6,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
 import { formatPlatesForReport } from "@/lib/truck-plates";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
-import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair, samplingOperator, BiText, samplingDisclaimerApplies } from "./report-shared";
+import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair, samplingOperator, BiText, samplingDisclaimerApplies, concreteCubeSpecimens, concreteCubeAverageStrength, concreteStrengthClass } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
 
 export function ConcreteCubeReportPreview({
@@ -24,39 +24,13 @@ export function ConcreteCubeReportPreview({
   project?: Project;
   concrete?: ConcreteCompressiveTest;
 }) {
-  const selectedSpecimenCodes = report.specimenCodes ?? [];
-  const reportSpecimens = concrete?.specimens?.length
-    ? selectedSpecimenCodes.length
-      ? concrete.specimens.filter((specimen) => selectedSpecimenCodes.includes(specimen.specimenCode))
-      : concrete.specimens
-    : concrete
-      ? [
-          {
-            specimenCode: sample?.sampleCode ?? "-",
-            ageDays: concrete.ageDays,
-            lengthMm: concrete.cubeLength,
-            widthMm: concrete.cubeWidth,
-            heightMm: concrete.cubeHeight,
-            weightKg: concrete.weight,
-            maximumLoadKn: concrete.maximumLoadKn,
-            compressiveStrengthMpa: concrete.compressiveStrengthMpa,
-            visualInspection: concrete.failureType,
-            notes: concrete.notes,
-            // Older tests hold one result rather than a specimen list. With a
-            // single cube the first plate is its plate, by the same rule that
-            // pairs the second plate with the second cube.
-            truckPlate: concrete.truckPlates?.[0]
-          }
-        ]
-      : [];
-  const averageStrength = reportSpecimens.length
-    ? Math.round((reportSpecimens.reduce((sum, specimen) => sum + specimen.compressiveStrengthMpa, 0) / reportSpecimens.length) * 100) / 100
-    : undefined;
+  const reportSpecimens = concreteCubeSpecimens(report, sample, concrete);
+  const averageStrength = concreteCubeAverageStrength(reportSpecimens);
   const specimenDensity = (specimen: (typeof reportSpecimens)[number]) => {
     const volumeM3 = (specimen.lengthMm * specimen.widthMm * specimen.heightMm) / 1_000_000_000;
     return volumeM3 ? round(specimen.weightKg / volumeM3, 0) : 0;
   };
-  const strengthClass = concrete?.strengthClass || sample?.notes?.match(new RegExp("C\\d+/\\d+"))?.[0];
+  const strengthClass = concreteStrengthClass(concrete, sample);
 
   const paddedSpecimens = [reportSpecimens[0], reportSpecimens[1], reportSpecimens[2]];
   const issueDate = report.issuedAt || report.approvedAt || concrete?.testEndDate || concrete?.testDate || sample?.reportDueDate;
