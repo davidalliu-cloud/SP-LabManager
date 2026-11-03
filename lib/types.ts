@@ -119,7 +119,12 @@ export interface Sample {
     reportDueDate: string;
   }>;
   notes?: string;
-  /** Shared by every sample created from the same intake form when a client delivers more than one material at once (e.g. sand + gravel together) - lets the UI show them as linked without merging their data. */
+  /**
+   * Links samples that were registered together from one intake form, back when
+   * the form could take several materials at once. One delivery of sand and
+   * gravel is now registered as one sample each, so nothing sets this any more —
+   * the samples that carry it still show as linked.
+   */
   sampleGroupId?: string;
   createdBy: string;
   createdAt: string;

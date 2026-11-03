@@ -57,7 +57,6 @@ export default function NewSamplePage() {
   const initialTestId = getAccreditedTestsForSampleType(initialSampleType)[0]?.id ?? "";
   const [sampleType, setSampleType] = useState(initialSampleType);
   const [accreditedTestId, setAccreditedTestId] = useState(initialTestId);
-  const [extraMaterials, setExtraMaterials] = useState<Array<{ sampleType: string; accreditedTestId: string }>>([]);
   // Other accredited tests asked for on this same material. An aggregate
   // usually arrives for several at once, and each one is its own worksheet and
   // its own certificate, so each becomes a test of its own when the sample is
@@ -83,7 +82,6 @@ export default function NewSamplePage() {
   const pavingKind = pavingElementKind(sampleType);
   const showSteelWorksheet = isSteelSampleType(sampleType);
   const showAsphaltWorksheet = isAsphaltSampleType(sampleType);
-  const canAddMaterials = isAggregateGranulometrySampleType(sampleType);
   // Only aggregates for now: a cube sample's several tests are the same test at
   // different ages (that is what the schedule below does), and masonry, kerbs
   // and flags already register as one package.
@@ -95,30 +93,7 @@ export default function NewSamplePage() {
   const chosenExtraTests = extraTestIds
     .map((id) => getAccreditedTestById(id))
     .filter((test): test is NonNullable<typeof test> => Boolean(test));
-  const aggregateMaterialTypes = useMemo(
-    () => accreditedSampleTypes.filter((type) => isAggregateGranulometrySampleType(type)),
-    []
-  );
-  const chosenMaterialTypes = [sampleType, ...extraMaterials.map((row) => row.sampleType)];
 
-  function addExtraMaterial() {
-    const nextType = aggregateMaterialTypes.find((type) => !chosenMaterialTypes.includes(type)) ?? aggregateMaterialTypes[0];
-    const nextTests = getAccreditedTestsForSampleType(nextType);
-    setExtraMaterials((rows) => [...rows, { sampleType: nextType, accreditedTestId: nextTests[0]?.id ?? "" }]);
-  }
-
-  function updateExtraMaterialType(index: number, nextType: string) {
-    const nextTests = getAccreditedTestsForSampleType(nextType);
-    setExtraMaterials((rows) => rows.map((row, rowIndex) => (rowIndex === index ? { sampleType: nextType, accreditedTestId: nextTests[0]?.id ?? "" } : row)));
-  }
-
-  function updateExtraMaterialTest(index: number, testId: string) {
-    setExtraMaterials((rows) => rows.map((row, rowIndex) => (rowIndex === index ? { ...row, accreditedTestId: testId } : row)));
-  }
-
-  function removeExtraMaterial(index: number) {
-    setExtraMaterials((rows) => rows.filter((_, rowIndex) => rowIndex !== index));
-  }
   const activeEmployees = store.users.filter((user) => user.isActive !== false);
   const defaultTechnicianId =
     activeEmployees.find((user) => user.fullName.toLowerCase().includes("astrit"))?.id ??
@@ -138,11 +113,6 @@ export default function NewSamplePage() {
     setAccreditedTestId(isSteelSampleType(nextSampleType) ? "AT-073" : isAggregateGranulometrySampleType(nextSampleType) ? nextTests[0]?.id ?? "" : nextTests[0]?.id ?? "");
     // The other tests belonged to the material being left behind.
     setExtraTestIds([]);
-    if (!isAggregateGranulometrySampleType(nextSampleType)) {
-      setExtraMaterials([]);
-    } else {
-      setExtraMaterials((rows) => rows.filter((row) => row.sampleType !== nextSampleType));
-    }
   }
 
   function toggleExtraTest(testId: string) {
@@ -213,44 +183,6 @@ export default function NewSamplePage() {
       .join(" | ");
   }
 
-  function buildInputFor(
-    materialSampleType: string,
-    test: ReturnType<typeof getAccreditedTestById>,
-    shared: {
-      quantity: number;
-      dateReceived: string;
-      timeReceived: string;
-      collectionMethod: "Delivered by client" | "Collected by lab technician";
-      deliveredBy: string;
-      collectedBy: string;
-      assignedTechnician: string;
-      freeformNotes: string;
-      requiredTestDate: string;
-      reportDueDate: string;
-    }
-  ): NewSampleInput {
-    return {
-      clientId: "",
-      projectId: "",
-      sampleType: materialSampleType,
-      sampleDescription: "",
-      quantity: shared.quantity,
-      dateReceived: shared.dateReceived,
-      timeReceived: shared.timeReceived,
-      collectionMethod: shared.collectionMethod,
-      deliveredBy: shared.deliveredBy,
-      collectedBy: shared.collectedBy,
-      concretingDate: "",
-      requestedTestType: test?.testName ?? "",
-      standard: test?.standard || "Standardi nuk është përcaktuar në listën e akreditimit",
-      requiredTestDate: shared.requiredTestDate,
-      reportDueDate: shared.reportDueDate,
-      assignedTechnician: shared.assignedTechnician,
-      schedules: [],
-      notes: buildNoteFor(test, shared.freeformNotes)
-    };
-  }
-
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -310,27 +242,8 @@ export default function NewSamplePage() {
       notes
     };
 
-    if (!extraMaterials.length) {
-      const sampleId = store.createSample(primaryInput);
-      router.push(`/samples/${sampleId}`);
-      return;
-    }
-
-    const shared = {
-      quantity: primaryInput.quantity,
-      dateReceived: primaryInput.dateReceived,
-      timeReceived: primaryInput.timeReceived,
-      collectionMethod: primaryInput.collectionMethod,
-      deliveredBy: primaryInput.deliveredBy ?? "",
-      collectedBy: primaryInput.collectedBy ?? "",
-      assignedTechnician: primaryInput.assignedTechnician ?? "",
-      freeformNotes,
-      requiredTestDate,
-      reportDueDate
-    };
-    const extraInputs = extraMaterials.map((row) => buildInputFor(row.sampleType, getAccreditedTestById(row.accreditedTestId), shared));
-    const sampleIds = store.createSampleGroup([primaryInput, ...extraInputs]);
-    router.push(`/samples/${sampleIds[0]}`);
+    const sampleId = store.createSample(primaryInput);
+    router.push(`/samples/${sampleId}`);
   }
 
   return (
@@ -399,59 +312,6 @@ export default function NewSamplePage() {
         {showAsphaltWorksheet ? (
           <div className="soft-panel p-4 text-sm text-muted lg:col-span-2">
             Për asfalt mund të regjistrohet vetëm Tapet, vetëm Binder, ose Tapet + Binder në të njëjtin kampion. Fleta e testimit më pas ruan të dhënat e përbashkëta dhe raportet dalin veçmas.
-          </div>
-        ) : null}
-        {canAddMaterials ? (
-          <div className="soft-panel p-4 lg:col-span-2">
-            <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-              <div>
-                <h2 className="text-sm font-semibold text-ink">Materiale të tjera në të njëjtin dorëzim</h2>
-                <p className="mt-1 text-sm text-muted">
-                  Nëse klienti ka sjellë disa materiale njëherësh (p.sh. rërë dhe zhavorr), shtoji këtu. Për secilin krijohet kampion i vet, me kod dhe raport të veçantë, por i lidhur me këtë dorëzim.
-                </p>
-              </div>
-              <button type="button" onClick={addExtraMaterial} className="btn-secondary shrink-0 px-3">
-                Shto material
-              </button>
-            </div>
-            {extraMaterials.length ? (
-              <div className="mt-4 space-y-3">
-                {extraMaterials.map((row, index) => {
-                  const rowTests = getAccreditedTestsForSampleType(row.sampleType);
-                  return (
-                    <div key={index} className="grid gap-3 rounded-md border border-line bg-white p-3 sm:grid-cols-[1fr_1fr_auto]">
-                      <label className="block text-sm font-medium text-ink">
-                        Materiali
-                        <select value={row.sampleType} onChange={(event) => updateExtraMaterialType(index, event.target.value)} className="input mt-1">
-                          {aggregateMaterialTypes.map((type) => (
-                            <option key={type} value={type} disabled={type !== row.sampleType && chosenMaterialTypes.includes(type)}>
-                              {type}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="block text-sm font-medium text-ink">
-                        Testi i kërkuar
-                        <select value={row.accreditedTestId} onChange={(event) => updateExtraMaterialTest(index, event.target.value)} className="input mt-1">
-                          {rowTests.map((test) => (
-                            <option key={test.id} value={test.id}>{test.testName}</option>
-                          ))}
-                        </select>
-                      </label>
-                      <div className="flex items-end">
-                        <button
-                          type="button"
-                          onClick={() => removeExtraMaterial(index)}
-                          className="rounded-md border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-lab-red transition hover:bg-red-50"
-                        >
-                          Hiq
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : null}
           </div>
         ) : null}
         <Field label={showConcreteSchedule ? "Numri total i kubeve të pranuara" : showSteelWorksheet ? "Numri total i mostrave të çelikut të pranuara" : showAsphaltWorksheet ? "Numri i mostrave të asfaltit të pranuara" : "Sasia e pranuar"}><input name="quantity" required type="number" min="1" defaultValue={showConcreteSchedule ? "60" : showSteelWorksheet ? "6" : showAsphaltWorksheet ? "2" : "1"} className="input" /></Field>

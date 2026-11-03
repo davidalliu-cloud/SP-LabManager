@@ -1156,8 +1156,6 @@ interface LabStoreValue extends LabState {
   rewriteSample: (sampleId: string) => void;
   acceptSample: (sampleId: string) => void;
   createSample: (input: NewSampleInput) => string;
-  /** Registers several samples from one intake (e.g. sand + gravel delivered together) - one Sample per material, linked by a shared sampleGroupId when there's more than one. */
-  createSampleGroup: (inputs: NewSampleInput[]) => string[];
   saveConcreteTest: (testId: string, input: ConcreteInput) => void;
   saveConcreteWaterPenetrationTest: (testId: string, input: ConcreteWaterPenetrationInput) => void;
   saveConcreteFlexuralTest: (testId: string, input: ConcreteFlexuralInput) => void;
@@ -3215,75 +3213,6 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           return draft;
         });
         return sampleId;
-      },
-      createSampleGroup(inputs) {
-        const sampleGroupId = inputs.length > 1 ? crypto.randomUUID() : undefined;
-        const createdIds: string[] = [];
-        setState((previous) => {
-          const draft: LabState = {
-            ...previous,
-            samples: [...previous.samples],
-            auditLog: [...previous.auditLog],
-            notifications: [...previous.notifications]
-          };
-          const newSamples: Sample[] = [];
-          inputs.forEach((input) => {
-            const sampleId = crypto.randomUUID();
-            const sampleCode = nextSampleCodeFor(input.sampleType, input.dateReceived, [...previous.samples, ...newSamples]);
-            const schedules =
-              input.schedules.length > 0
-                ? input.schedules
-                : [
-                    {
-                      cubeCount: input.quantity,
-                      ageDays: 0,
-                      concretingDate: input.concretingDate,
-                      requiredTestDate: input.requiredTestDate,
-                      reportDueDate: input.reportDueDate
-                    }
-                  ];
-            const sample: Sample = {
-              id: sampleId,
-              sampleCode,
-              clientId: input.clientId,
-              projectId: input.projectId,
-              sampleType: input.sampleType,
-              sampleDescription: input.sampleDescription,
-              quantity: input.quantity,
-              dateReceived: input.dateReceived,
-              timeReceived: input.timeReceived,
-              collectionMethod: input.collectionMethod,
-              deliveredBy: input.deliveredBy,
-              collectedBy: input.collectedBy,
-              concretingDate: input.concretingDate,
-              requestedTestType: input.requestedTestType,
-              standard: input.standard,
-              additionalTests: input.additionalTests?.length ? input.additionalTests : undefined,
-              requiredTestDate: input.requiredTestDate,
-              reportDueDate: input.reportDueDate,
-              status: "Registered",
-              assignedTechnician: input.assignedTechnician,
-              testSchedules: schedules,
-              notes: input.notes,
-              sampleGroupId,
-              createdBy: currentUserId,
-              createdAt: new Date().toISOString()
-            };
-            newSamples.push(sample);
-            createdIds.push(sampleId);
-            addAudit(
-              draft,
-              "sample_created",
-              "sample",
-              sampleId,
-              `Sample ${sampleCode} (${input.sampleType}) registered${sampleGroupId ? ` as part of a ${inputs.length}-material intake` : ""} and waiting for Chief of Lab acceptance.`
-            );
-          });
-          draft.samples = [...newSamples, ...previous.samples];
-          const codeList = newSamples.map((sample) => `${sample.sampleCode} (${sample.sampleType})`).join(", ");
-          return draft;
-        });
-        return createdIds;
       },
       saveConcreteTest(testId, input) {
         setState((previous) => {
