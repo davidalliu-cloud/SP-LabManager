@@ -32,6 +32,26 @@ function toMailtoText(text: string) {
     .replace(/Ç/g, "C")
     .replace(/—/g, "-");
 }
+/**
+ * Hands the draft to the mail client without taking this page down with it.
+ *
+ * `window.location.href = "mailto:…"` is a navigation: the browser passes the
+ * address to the operating system and may unload the page on the way. The
+ * register's save waits 2.5 seconds after a change, so the send recorded just
+ * before that assignment never reached the server — five email sends are in the
+ * audit log and were never in the register, which left a client holding a report
+ * the register still called Approved. WhatsApp never lost one, because
+ * window.open leaves the page running; a clicked link does the same.
+ */
+function openMailDraft(url: string) {
+  const link = document.createElement("a");
+  link.href = url;
+  link.rel = "noopener";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
 export default function ReportDetailPage() {
   const params = useParams<{ id: string }>();
   const store = useLabStore();
@@ -231,9 +251,11 @@ export default function ReportDetailPage() {
         .filter((line): line is string => line !== undefined)
         .join("\n")
     );
+    // Recorded first, then handed over: whatever the mail client does to this
+    // page afterwards, the register already knows the report went out.
     store.setReportShareToken(activeReport.id, shareToken);
-    window.location.href = `mailto:${encodeURIComponent(recipientEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     store.issueReport(activeReport.id, recipientEmail, `Dërguar me email: ${activeReport.reportNumber}`);
+    openMailDraft(`mailto:${encodeURIComponent(recipientEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
   }
 
   /**
