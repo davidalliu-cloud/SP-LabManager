@@ -75,6 +75,20 @@ export interface Project {
   description?: string;
 }
 
+/**
+ * One accredited test asked for on a sample.
+ *
+ * Most materials arrive for a single determination, which is what
+ * requestedTestType holds. An aggregate rarely does: the same sand is asked
+ * for granulometry, sand equivalent and Los Angeles at once, and each of those
+ * is its own worksheet, its own standard and its own certificate. Those extra
+ * ones are listed on the sample, and accepting it creates a test for each.
+ */
+export interface RequestedTest {
+  testName: string;
+  standard: string;
+}
+
 export interface Sample {
   id: string;
   sampleCode: string;
@@ -91,6 +105,8 @@ export interface Sample {
   concretingDate?: string;
   requestedTestType: string;
   standard: string;
+  /** Further tests asked for on the same material — see RequestedTest. Absent on everything registered before aggregates could carry more than one. */
+  additionalTests?: RequestedTest[];
   requiredTestDate: string;
   reportDueDate: string;
   status: SampleStatus;

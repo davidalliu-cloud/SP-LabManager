@@ -111,7 +111,7 @@ import { mergeProceduresWithSeed, proceduresForPersistence } from "./procedures"
 import { procedureSeed } from "./procedure-seed";
 import { createSupabaseBrowserClient } from "./supabase/client";
 import { pushAuditEntries, pushNotifications } from "./activity-log";
-import type { AdmixtureTest, AdmixtureDensityRun, AdmixtureDryMassRun, AdmixtureWaterMixRun, AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltGradationLimit, AsphaltGradationTarget, AsphaltJobMixTest, AsphaltMixtureKind, AsphaltReportKind, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ClientAnalysisRecord, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabState, LabTest, LabUser, MasonryUnitTest, MortarTest, PavingElementKind, PavingElementTest, WaterAnalysisTest, SclerometerTest, MortarTestKind, Notification, OfferRecord, OfferStatus, Project, Report, Role, Sample, SampleStatus, SteelTensileTest, ThermalInsulationTest } from "./types";
+import type { AdmixtureTest, AdmixtureDensityRun, AdmixtureDryMassRun, AdmixtureWaterMixRun, AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltGradationLimit, AsphaltGradationTarget, AsphaltJobMixTest, AsphaltMixtureKind, AsphaltReportKind, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ClientAnalysisRecord, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabState, LabTest, LabUser, MasonryUnitTest, MortarTest, PavingElementKind, PavingElementTest, WaterAnalysisTest, SclerometerTest, MortarTestKind, Notification, OfferRecord, OfferStatus, Project, Report, RequestedTest, Role, Sample, SampleStatus, SteelTensileTest, ThermalInsulationTest } from "./types";
 
 export interface NewSampleInput {
   clientId: string;
@@ -127,6 +127,8 @@ export interface NewSampleInput {
   concretingDate?: string;
   requestedTestType: string;
   standard: string;
+  /** Further accredited tests on the same material; one test is created for each when the sample is accepted. */
+  additionalTests?: RequestedTest[];
   requiredTestDate: string;
   reportDueDate: string;
   assignedTechnician?: string;
@@ -3005,8 +3007,16 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
                     ...row,
                     clientId: input.clientId,
                     projectId: input.projectId,
-                    standard: input.standard,
-                    testType: ["Pending", "Scheduled"].includes(row.status) ? input.requestedTestType : row.testType,
+                    standard: sample.additionalTests?.length ? row.standard : input.standard,
+                    // Retargeting only makes sense while the sample asks for one
+                    // test. With several on the same material, every untouched
+                    // test would be rewritten to the first one — which would
+                    // quietly turn a sand's Los Angeles and sand equivalent into
+                    // two more granulometries.
+                    testType:
+                      !sample.additionalTests?.length && ["Pending", "Scheduled"].includes(row.status)
+                        ? input.requestedTestType
+                        : row.testType,
                     // The date is a booking, not a result: a test already under
                     // way still needs to be done on the day the sample now says.
                     requiredTestDate: syncsDates ? input.requiredTestDate : row.requiredTestDate,
@@ -3109,14 +3119,22 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
                     reportDueDate: sample.reportDueDate
                   }
                 ];
-          const tests: LabTest[] = schedules.map((schedule, index) => ({
+          // Everything asked for on this material: the test it was registered
+          // under, then any others added beside it. A cube sample has one and
+          // several schedules; a sand sample has several and one schedule.
+          const requestedTests: RequestedTest[] = [
+            { testName: sample.requestedTestType, standard: sample.standard },
+            ...(sample.additionalTests ?? [])
+          ];
+          const bookings = requestedTests.flatMap((requested) => schedules.map((schedule) => ({ requested, schedule })));
+          const tests: LabTest[] = bookings.map(({ requested, schedule }, index) => ({
             id: crypto.randomUUID(),
             testCode: nextNumber("TEST", previous.tests.map((row) => row.testCode), index),
             sampleId,
             clientId: sample.clientId,
             projectId: sample.projectId,
-            testType: schedules.length > 1 && schedule.ageDays ? `${sample.requestedTestType} - ${schedule.ageDays} ditë` : sample.requestedTestType,
-            standard: sample.standard,
+            testType: schedules.length > 1 && schedule.ageDays ? `${requested.testName} - ${schedule.ageDays} ditë` : requested.testName,
+            standard: requested.standard,
             assignedTechnician: sample.assignedTechnician || sample.createdBy || currentUserId,
             cubeCount: schedule.cubeCount,
             scheduledAgeDays: schedule.ageDays,
@@ -3177,6 +3195,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             concretingDate: input.concretingDate,
             requestedTestType: input.requestedTestType,
             standard: input.standard,
+            additionalTests: input.additionalTests?.length ? input.additionalTests : undefined,
             requiredTestDate: input.requiredTestDate,
             reportDueDate: input.reportDueDate,
             status: "Registered",
@@ -3239,6 +3258,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
               concretingDate: input.concretingDate,
               requestedTestType: input.requestedTestType,
               standard: input.standard,
+              additionalTests: input.additionalTests?.length ? input.additionalTests : undefined,
               requiredTestDate: input.requiredTestDate,
               reportDueDate: input.reportDueDate,
               status: "Registered",

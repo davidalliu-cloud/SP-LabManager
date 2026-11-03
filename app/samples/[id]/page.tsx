@@ -340,7 +340,11 @@ export default function SampleDetailPage() {
                   <div className="soft-panel p-4 text-sm text-muted md:col-span-3">
                     Korrigjimi i kampionit nuk ndryshon grupet e testeve (kube/mostra, moshat) që janë krijuar tashmë. Kodi i klientit/projekti, standardi dhe tekniku i caktuar përditësohen për të gjitha testet e lidhura.
                     {" "}
-                    {retargetableTests.length ? `${retargetableTests.length} test ende pa filluar do të kalojnë automatikisht te "${editSelectedTest?.testName ?? sample.requestedTestType}".` : null}
+                    {sample.additionalTests?.length
+                      ? "Ky kampion ka disa teste të kërkuara, prandaj ndryshimi i testit këtu nuk i prek ato që janë krijuar."
+                      : retargetableTests.length
+                        ? `${retargetableTests.length} test ende pa filluar do të kalojnë automatikisht te "${editSelectedTest?.testName ?? sample.requestedTestType}".`
+                        : null}
                     {" "}
                     {lockedTests.length ? `${lockedTests.length} test tashmë në proces mban llojin e vet origjinal - kontrolloje veç e veç nëse duhet ricaktuar ose rikrijuar.` : null}
                   </div>
@@ -368,7 +372,10 @@ export default function SampleDetailPage() {
                 <Info label="Dorëzuar nga" value={sample.deliveredBy} />
                 <Info label="Marrë nga" value={sample.collectedBy} />
                 <Info label="Personi që do të kryejë testin" value={store.users.find((user) => user.id === sample.assignedTechnician)?.fullName ?? "-"} />
-                <Info label="Testi i kërkuar" value={sample.requestedTestType} />
+                <Info
+                  label={sample.additionalTests?.length ? "Testet e kërkuara" : "Testi i kërkuar"}
+                  value={[sample.requestedTestType, ...(sample.additionalTests ?? []).map((test) => test.testName)].join(" · ")}
+                />
                 <Info label="Standardi" value={sample.standard} />
                 <Info label="Afati i raportit" value={sample.reportDueDate} />
                 <div className="md:col-span-3">
@@ -475,6 +482,11 @@ export default function SampleDetailPage() {
                 <p className="mt-1 text-sm text-muted">
                   Cakto kodin e klientit dhe personin që do të kryejë testin, pastaj prano kampionin për të krijuar testet e planifikuara.
                 </p>
+                {sample.additionalTests?.length ? (
+                  <p className="mt-2 text-sm text-muted">
+                    Ky kampion është regjistruar me {sample.additionalTests.length + 1} teste: secili merr fletën e vet të punës dhe raportin e vet.
+                  </p>
+                ) : null}
                 <label className="mt-3 block text-sm font-medium text-ink">
                   Personi që do të kryejë testin
                   <select

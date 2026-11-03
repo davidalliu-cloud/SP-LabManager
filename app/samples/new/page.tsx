@@ -58,6 +58,11 @@ export default function NewSamplePage() {
   const [sampleType, setSampleType] = useState(initialSampleType);
   const [accreditedTestId, setAccreditedTestId] = useState(initialTestId);
   const [extraMaterials, setExtraMaterials] = useState<Array<{ sampleType: string; accreditedTestId: string }>>([]);
+  // Other accredited tests asked for on this same material. An aggregate
+  // usually arrives for several at once, and each one is its own worksheet and
+  // its own certificate, so each becomes a test of its own when the sample is
+  // accepted — under one sample code, because it is one delivery of one sand.
+  const [extraTestIds, setExtraTestIds] = useState<string[]>([]);
   const [scheduleRows, setScheduleRows] = useState(2);
   const [scheduleAges, setScheduleAges] = useState([7, 28]);
   const [concretingDate, setConcretingDate] = useState(formatDateInput(new Date()));
@@ -79,6 +84,17 @@ export default function NewSamplePage() {
   const showSteelWorksheet = isSteelSampleType(sampleType);
   const showAsphaltWorksheet = isAsphaltSampleType(sampleType);
   const canAddMaterials = isAggregateGranulometrySampleType(sampleType);
+  // Only aggregates for now: a cube sample's several tests are the same test at
+  // different ages (that is what the schedule below does), and masonry, kerbs
+  // and flags already register as one package.
+  const canAddTests = isAggregateGranulometrySampleType(sampleType);
+  const extraTestOptions = useMemo(
+    () => testOptions.filter((test) => test.id !== (selectedTest?.id ?? "")),
+    [testOptions, selectedTest]
+  );
+  const chosenExtraTests = extraTestIds
+    .map((id) => getAccreditedTestById(id))
+    .filter((test): test is NonNullable<typeof test> => Boolean(test));
   const aggregateMaterialTypes = useMemo(
     () => accreditedSampleTypes.filter((type) => isAggregateGranulometrySampleType(type)),
     []
@@ -120,11 +136,23 @@ export default function NewSamplePage() {
     const nextTests = getAccreditedTestsForSampleType(nextSampleType);
     setSampleType(nextSampleType);
     setAccreditedTestId(isSteelSampleType(nextSampleType) ? "AT-073" : isAggregateGranulometrySampleType(nextSampleType) ? nextTests[0]?.id ?? "" : nextTests[0]?.id ?? "");
+    // The other tests belonged to the material being left behind.
+    setExtraTestIds([]);
     if (!isAggregateGranulometrySampleType(nextSampleType)) {
       setExtraMaterials([]);
     } else {
       setExtraMaterials((rows) => rows.filter((row) => row.sampleType !== nextSampleType));
     }
+  }
+
+  function toggleExtraTest(testId: string) {
+    setExtraTestIds((ids) => (ids.includes(testId) ? ids.filter((id) => id !== testId) : [...ids, testId]));
+  }
+
+  /** The main test moving into the list would ask for the same thing twice. */
+  function chooseMainTest(testId: string) {
+    setAccreditedTestId(testId);
+    setExtraTestIds((ids) => ids.filter((id) => id !== testId));
   }
 
   function updateScheduleAge(index: number, ageDays: number) {
@@ -271,6 +299,12 @@ export default function NewSamplePage() {
             : (selectedTest?.standard || "Standardi nuk është përcaktuar në listën e akreditimit"),
       requiredTestDate,
       reportDueDate,
+      additionalTests: canAddTests
+        ? chosenExtraTests.map((test) => ({
+            testName: test.testName,
+            standard: test.standard || "Standardi nuk është përcaktuar në listën e akreditimit"
+          }))
+        : undefined,
       assignedTechnician: String(form.get("assignedTechnician") || ""),
       schedules: showConcreteSchedule ? concreteSchedules : [],
       notes
@@ -325,13 +359,43 @@ export default function NewSamplePage() {
           </Field>
         ) : (
           <Field label="Testi i akredituar i kërkuar">
-            <select value={selectedTest?.id ?? ""} onChange={(event) => setAccreditedTestId(event.target.value)} name="requestedTestType" className="input">
+            <select value={selectedTest?.id ?? ""} onChange={(event) => chooseMainTest(event.target.value)} name="requestedTestType" className="input">
               {testOptions.map((test) => (
                 <option key={test.id} value={test.id}>{test.testName}</option>
               ))}
             </select>
           </Field>
         )}
+        {canAddTests && extraTestOptions.length ? (
+          <div className="soft-panel p-4 lg:col-span-2">
+            <h2 className="text-sm font-semibold text-ink">Teste të tjera për të njëjtin material</h2>
+            <p className="mt-1 text-sm text-muted">
+              Zgjidh çdo test tjetër që kërkohet për këtë {sampleType}. Kampioni mbetet një, me një kod të vetëm; për secilin
+              test krijohet fleta e vet e punës dhe raporti i vet kur Kryelaboranti e pranon kampionin.
+            </p>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {extraTestOptions.map((test) => (
+                <label key={test.id} className="flex items-start gap-2 rounded-md border border-line bg-white p-2 text-sm text-ink">
+                  <input
+                    type="checkbox"
+                    checked={extraTestIds.includes(test.id)}
+                    onChange={() => toggleExtraTest(test.id)}
+                    className="mt-0.5 h-4 w-4 accent-lab-burgundy"
+                  />
+                  <span>
+                    {test.testName}
+                    <span className="block text-xs text-muted">{test.standard}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+            {chosenExtraTests.length ? (
+              <p className="mt-3 text-sm font-medium text-ink">
+                Do të krijohen {chosenExtraTests.length + 1} teste për këtë kampion.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
         {showAsphaltWorksheet ? (
           <div className="soft-panel p-4 text-sm text-muted lg:col-span-2">
             Për asfalt mund të regjistrohet vetëm Tapet, vetëm Binder, ose Tapet + Binder në të njëjtin kampion. Fleta e testimit më pas ruan të dhënat e përbashkëta dhe raportet dalin veçmas.
