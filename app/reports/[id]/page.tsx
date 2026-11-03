@@ -13,6 +13,25 @@ import { concreteCubeAverageStrength, concreteCubeSpecimens, concreteStrengthCla
 import { formatEuropeanDate } from "@/lib/date-format";
 import { newShareToken, reportShareUrl } from "@/lib/report-link";
 
+
+/**
+ * The email body, written without Albanian diacritics.
+ *
+ * A mailto: address is handed to the operating system and then to whichever
+ * mail client answers it, and that is a handoff this app does not control; the
+ * bodies here have always been written in plain ASCII because of it. Folding
+ * the text at the end rather than keeping a second hand-written copy means the
+ * email and the WhatsApp message cannot drift apart in what they say — only in
+ * how the letters are spelled.
+ */
+function toMailtoText(text: string) {
+  return text
+    .replace(/ë/g, "e")
+    .replace(/Ë/g, "E")
+    .replace(/ç/g, "c")
+    .replace(/Ç/g, "C")
+    .replace(/—/g, "-");
+}
 export default function ReportDetailPage() {
   const params = useParams<{ id: string }>();
   const store = useLabStore();
@@ -168,31 +187,45 @@ export default function ReportDetailPage() {
 
   function sendReportToClient() {
     if (!recipientEmail || !canSendToClient) return;
+    // The same rule as WhatsApp: the stored PDF is the report. This used to
+    // send regardless, with a line promising the PDF would arrive in a later
+    // email, and then record the report as issued — so §7.8 said the client
+    // had their report while the client had a promise. No PDF, no send.
+    if (!activeReport.pdfUrl) {
+      window.alert(
+        "Ky raport nuk ka PDF të ruajtur, kështu që klienti nuk do të marrë raportin.\n\nShtypni “Gjenero PDF” dhe provoni përsëri."
+      );
+      return;
+    }
     if (alreadySent && !confirmResend()) return;
-    const shareUrl = activeReport.pdfUrl
-      ? reportShareUrl(window.location.origin, activeReport.reportNumber, shareToken)
-      : null;
+    const shareUrl = reportShareUrl(window.location.origin, activeReport.reportNumber, shareToken);
     const subject = `Raporti laboratorik SARP LAB - ${activeReport.reportNumber}`;
-    const body = [
-      "Pershendetje,",
-      "",
-      `Raporti ${activeReport.reportNumber} eshte miratuar dhe gati per shqyrtim.`,
-      "",
-      // The short link rather than the storage URL, for the same reason as the
-      // WhatsApp message: a hundred characters of bucket path and signing token
-      // is a wall of noise the reader can only take on trust. `/reports/<id>`
-      // was tried once and is worse — that page is behind a login the client
-      // does not have.
-      shareUrl
-        ? `Shkarkoni PDF-ne e raportit: ${shareUrl}`
-        : "PDF-ja e raportit do te dergohet ne nje email vijues.",
-      "",
-      "Me respekt,",
-      "SARP LAB"
-    ]
-      .filter((line): line is string => line !== null)
-      .join("\n");
-    if (shareUrl) store.setReportShareToken(activeReport.id, shareToken);
+    const body = toMailtoText(
+      [
+        "Pershendetje,",
+        "",
+        `Raporti ${activeReport.reportNumber} eshte miratuar dhe gati per shqyrtim.`,
+        // Labelled as the certificate labels it, so the reader is looking at
+        // the same words in the email and on the sheet.
+        test?.testType ? `Testimi: ${test.testType}` : undefined,
+        // The pour date and the strengths, for a cube report only — the same
+        // lines, from the same helpers, as the WhatsApp message.
+        ...concreteResultLines(),
+        "",
+        // The short link rather than the storage URL, for the same reason as the
+        // WhatsApp message: a hundred characters of bucket path and signing token
+        // is a wall of noise the reader can only take on trust. `/reports/<id>`
+        // was tried once and is worse — that page is behind a login the client
+        // does not have.
+        `Shkarkoni PDF-ne e raportit: ${shareUrl}`,
+        "",
+        "Me respekt,",
+        "SARP LAB"
+      ]
+        .filter((line): line is string => line !== undefined)
+        .join("\n")
+    );
+    store.setReportShareToken(activeReport.id, shareToken);
     window.location.href = `mailto:${encodeURIComponent(recipientEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     store.issueReport(activeReport.id, recipientEmail, `Dërguar me email: ${activeReport.reportNumber}`);
   }
@@ -400,11 +433,19 @@ export default function ReportDetailPage() {
               )}
               <button
                 onClick={sendReportToClient}
-                disabled={!canSendToClient || !recipientEmail}
+                disabled={!canSendToClient || !recipientEmail || !activeReport.pdfUrl}
                 className="btn-success w-full disabled:cursor-not-allowed disabled:bg-slate-300"
               >
                 Dërgo te klienti
               </button>
+              {/* Covers both sends: without a stored PDF neither of them has a
+                  report to deliver, so both buttons are off and this says why. */}
+              {canSendToClient && !activeReport.pdfUrl ? (
+                <p className="rounded-md border border-line bg-lab-porcelain p-3 text-xs text-muted">
+                  Dërgimi është i bllokuar derisa raporti të ketë një PDF të ruajtur — ai PDF është ajo që merr
+                  klienti. Shtypni “Gjenero PDF” më sipër.
+                </p>
+              ) : null}
 
               {alreadySent ? (
                 <div className="rounded-md border border-[#f0a93a] bg-brand-risk p-3 text-xs text-ink">
@@ -430,12 +471,6 @@ export default function ReportDetailPage() {
                   </svg>
                   Dërgo me WhatsApp
                 </button>
-              ) : null}
-              {whatsAppNumber.ok && canSendToClient && !activeReport.pdfUrl ? (
-                <p className="rounded-md border border-line bg-lab-porcelain p-3 text-xs text-muted">
-                  Dërgimi është i bllokuar derisa raporti të ketë një PDF të ruajtur — ai PDF është ajo që merr
-                  klienti. Shtypni “Gjenero PDF” më sipër.
-                </p>
               ) : null}
               {!whatsAppNumber.ok ? (
                 <p className="rounded-md border border-line bg-lab-porcelain p-3 text-xs text-muted">
