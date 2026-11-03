@@ -15,16 +15,17 @@ export function canReviewTests(role?: Role) {
   return isSuperAdmin(role) || role === "Chief of Lab";
 }
 
-// Who may reject a report, and from which state. A report awaiting approval can
-// be rejected by any reviewer (Chief of Lab or superadmin). Beyond that, the
-// superadmin can override-reject a report that was already approved, issued or
-// sent to the client but turns out to be incorrect, sending it back for
-// correction.
+// Who may reject a report, and from which state. A reviewer (Chief of Lab or
+// superadmin) rejects what is waiting for them, and can also take back an
+// approval: the Chief of Lab is usually the one who approved it in the first
+// place, and having to ask the superadmin to undo that approval put a person in
+// the way of a correction. Once the report has left the building — issued or
+// sent to the client — only the superadmin can call it back, because by then it
+// is the client's copy that is wrong and somebody has to tell them.
 export function canRejectReport(role?: Role, status?: ReportStatus) {
   if (!status || status === "Rejected") return false;
-  if (status === "Pending Approval") return canReviewTests(role);
-  // The superadmin can reject a report at any other stage — drafted, approved,
-  // issued or already sent — sending it back for correction.
+  if (status === "Pending Approval" || status === "Approved") return canReviewTests(role);
+  // Drafted, issued or already sent: the superadmin's call.
   return isSuperAdmin(role);
 }
 

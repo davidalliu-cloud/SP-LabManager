@@ -109,9 +109,15 @@ export default function ReportDetailPage() {
   const currentUser = store.users.find((user) => user.id === store.currentUserId);
   const canReviewReport = canReviewTests(currentUser?.role);
   const canReject = canRejectReport(currentUser?.role, activeReport.reportStatus);
-  // A superadmin rejecting a report that was already approved/issued/sent is an
-  // override (the normal flow only rejects while "Pending Approval").
+  // Rejecting anything past "Pending Approval" is an override, and the note
+  // under the button says so in the reader's own terms: taking back an approval
+  // is the reviewer's own doing, while pulling an issued report back is the
+  // superadmin's.
   const isRejectOverride = canReject && activeReport.reportStatus !== "Pending Approval";
+  const rejectOverrideNote =
+    activeReport.reportStatus === "Approved"
+      ? "Ky raport është miratuar. Refuzimi e heq miratimin dhe e kthen për korrigjim."
+      : "Si Administrator, mund ta refuzoni këtë raport dhe ta ktheni për korrigjim.";
   // The client record is the source of truth for where reports go. Sending is
   // blocked until it has an email, rather than letting a one-off typed address
   // paper over it - 80 of 129 clients had none, and every send that worked
@@ -331,7 +337,7 @@ export default function ReportDetailPage() {
               </button>
               {isRejectOverride ? (
                 <p className="text-xs text-lab-red">
-                  Si Administrator, mund ta refuzoni këtë raport dhe ta ktheni për korrigjim.
+                  {rejectOverrideNote}
                 </p>
               ) : null}
             </div>
