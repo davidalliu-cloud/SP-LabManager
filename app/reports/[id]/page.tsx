@@ -9,9 +9,9 @@ import { useLabStore } from "@/lib/lab-store";
 import { canRejectReport, canReviewTests } from "@/lib/permissions";
 import { generateAndStoreReportPdf } from "@/lib/pdf";
 import { formatInternational, toWhatsAppNumber, whatsAppLink } from "@/lib/phone";
-import { concreteCubeAverageStrength, concreteCubeSpecimens, concreteStrengthClass } from "@/components/reports/report-shared";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { newShareToken, reportShareUrl } from "@/lib/report-link";
+import { concreteResultLines, reportWhatsAppMessage } from "@/lib/report-message";
 
 
 /**
@@ -210,7 +210,7 @@ export default function ReportDetailPage() {
         test?.testType ? `Testimi: ${test.testType}` : undefined,
         // The pour date and the strengths, for a cube report only — the same
         // lines, from the same helpers, as the WhatsApp message.
-        ...concreteResultLines(),
+        ...concreteResultLines(messageItem(shareUrl)),
         "",
         // The short link rather than the storage URL, for the same reason as the
         // WhatsApp message: a hundred characters of bucket path and signing token
@@ -252,47 +252,9 @@ export default function ReportDetailPage() {
     );
   }
 
-  /**
-   * The pour date and the strengths, for a cube report only.
-   *
-   * A client reading a compressive-strength result wants two things before
-   * they open anything: which pour this is, and whether it passed. Putting
-   * them in the message means the answer is in the chat, searchable, next to
-   * the date it arrived — and a result that came out low is seen rather than
-   * sitting unopened in a link.
-   *
-   * Every figure comes from the helpers the certificate prints from, so the
-   * message is a shorter view of the same report and not a second
-   * transcription of it. A cube test is the only worksheet a test can carry
-   * (nothing in the register holds two), so `concrete` existing is the same
-   * as the cube report being the sheet that printed.
-   *
-   * Only this family: a strength is a number a client can read at a glance
-   * and check against their mix. The other reports are tables.
-   */
-  function concreteResultLines() {
-    if (!concrete) return [];
-    const specimens = concreteCubeSpecimens(activeReport, sample, concrete);
-    if (!specimens.length) return [];
-    const average = concreteCubeAverageStrength(specimens);
-    const strengthClass = concreteStrengthClass(concrete, sample);
-    // The age the cubes were actually crushed at, which is what the
-    // certificate's curing column shows. The test's name carries the age it
-    // was *scheduled* for, and the two part company whenever a pour is
-    // crushed a day either side of its date.
-    const ages = Array.from(new Set(specimens.map((specimen) => specimen.ageDays)));
-    const strengths = specimens.map((specimen) => specimen.compressiveStrengthMpa);
-    return [
-      "",
-      concrete.castingDate ? `Data e betonimit: ${formatEuropeanDate(concrete.castingDate)}` : undefined,
-      strengthClass ? `Klasa e rezistencës: ${strengthClass}` : undefined,
-      `Mosha: ${ages.join(", ")} ditë`,
-      "",
-      `Rezistenca në shtypje: ${strengths.join(" / ")} MPa`,
-      // One cube is its own average, and saying so twice reads like two
-      // different measurements.
-      strengths.length > 1 && average !== undefined ? `Mesatarja: ${average} MPa` : undefined
-    ].filter((line): line is string => line !== undefined);
+  /** What the message builder needs about this report, in one place. */
+  function messageItem(shareUrl: string) {
+    return { report: activeReport, test, sample, concrete, shareUrl };
   }
 
   function sendReportToWhatsApp() {
@@ -311,17 +273,7 @@ export default function ReportDetailPage() {
     if (alreadySent && !confirmResend()) return;
 
     const shareUrl = reportShareUrl(window.location.origin, activeReport.reportNumber, shareToken);
-    // A greeting, what the report is, its result where the client can read
-    // one at a glance, and the link that opens the signed PDF. The PDF is
-    // still the report; these lines are its headline.
-    const message = [
-      "Përshëndetje,",
-      "",
-      `Raporti ${activeReport.reportNumber}${test?.testType ? ` — ${test.testType}` : ""}`,
-      ...concreteResultLines(),
-      "",
-      shareUrl
-    ].join("\n");
+    const message = reportWhatsAppMessage([messageItem(shareUrl)]);
 
     // Fix the token before the message leaves, so the link in it resolves. It
     // is only ever set once, so sending again reuses the address the client

@@ -1196,7 +1196,7 @@ interface LabStoreValue extends LabState {
   approveReport: (reportId: string) => void;
   rejectReport: (reportId: string, comments: string) => void;
   issueReport: (reportId: string, destination: string, notes?: string, channel?: "email" | "whatsapp") => void;
-  sendReportsToClient: (reportIds: string[], clientEmail: string, notes?: string) => void;
+  sendReportsToClient: (reportIds: string[], destination: string, notes?: string, channel?: "email" | "whatsapp") => void;
   setReportPdfUrl: (reportId: string, pdfUrl: string) => void;
   setReportShareToken: (reportId: string, token: string) => void;
   saveClientAnalysis: (input: { clientId: string; from: string; to: string; pdfUrl: string; shareToken: string }) => void;
@@ -5301,7 +5301,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           return draft;
         });
       },
-      sendReportsToClient(reportIds, clientEmail, notes) {
+      sendReportsToClient(reportIds, destination, notes, channel = "email") {
         setState((previous) => {
           const approvedReports = previous.reports.filter((row) => reportIds.includes(row.id) && row.reportStatus === "Approved");
           if (!approvedReports.length) return previous;
@@ -5312,7 +5312,18 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             ...previous,
             reports: previous.reports.map((row) =>
               sentReportIds.has(row.id)
-                ? { ...row, reportStatus: "Sent to Client", issuedBy: currentUserId, issuedAt: sentAt, clientEmail }
+                ? {
+                    ...row,
+                    reportStatus: "Sent to Client",
+                    issuedBy: currentUserId,
+                    issuedAt: sentAt,
+                    issuedVia: channel,
+                    issuedTo: destination,
+                    // Same rule as a single issue: a phone number filed under
+                    // clientEmail would quietly spoil the one field the older
+                    // records are searchable by.
+                    ...(channel === "email" ? { clientEmail: destination } : {})
+                  }
                 : row
             ),
             tests: previous.tests.map((row) => (sentTestIds.has(row.id) ? { ...row, status: "Sent to Client", notes } : row)),
@@ -5320,7 +5331,13 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             auditLog: [...previous.auditLog]
           };
           for (const report of approvedReports) {
-            addAudit(draft, "report_sent_to_client", "report", report.id, `${report.reportNumber} sent to ${clientEmail}.`);
+            addAudit(
+              draft,
+              "report_sent_to_client",
+              "report",
+              report.id,
+              `${report.reportNumber} sent to ${destination}${channel === "whatsapp" ? " by WhatsApp" : ""}.`
+            );
           }
           return withDerivedSampleStatuses(draft);
         });

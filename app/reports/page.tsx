@@ -11,6 +11,9 @@ import { SavedViews } from "@/components/ui/saved-views";
 import { useLabStore } from "@/lib/lab-store";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { canSendReportsToClient } from "@/lib/permissions";
+import { formatInternational, toWhatsAppNumber, whatsAppLink } from "@/lib/phone";
+import { newShareToken, reportShareUrl } from "@/lib/report-link";
+import { reportWhatsAppMessage } from "@/lib/report-message";
 import { reportNumberSortKey } from "@/lib/report-number";
 import { sampleCodeSortKey } from "@/lib/sample-code";
 import { reportLifecycle, sampleStageIndex } from "@/lib/sample-stage";
@@ -108,6 +111,9 @@ export default function ReportsPage() {
   // A report with no stored PDF has nothing to give the client, so flag it
   // rather than sending a link to a file that was never generated.
   const selectedWithoutPdf = selectedApprovedRows.filter(({ report }) => !report.pdfUrl);
+  // The client card is where the number lives, and it is written every way a
+  // person writes a number, so it is parsed rather than trusted.
+  const selectedWhatsAppNumber = toWhatsAppNumber(selectedClient?.phone);
   const clientHasNoEmailOnRecord = selectedClientIds.length === 1 && !selectedClient?.email;
   const canSendSelected =
     canSend &&
@@ -115,6 +121,15 @@ export default function ReportsPage() {
     selectedHasOnlyApproved &&
     selectedClientIds.length === 1 &&
     Boolean(selectedEmail) &&
+    selectedWithoutPdf.length === 0;
+  // WhatsApp asks for the same things, except that the address is a number on
+  // the client card rather than an email on it.
+  const canSendSelectedWhatsApp =
+    canSend &&
+    selectedRows.length > 0 &&
+    selectedHasOnlyApproved &&
+    selectedClientIds.length === 1 &&
+    selectedWhatsAppNumber.ok &&
     selectedWithoutPdf.length === 0;
 
   // Only non-default values reach the URL, and any change here sends the table
@@ -209,6 +224,59 @@ export default function ReportsPage() {
     }
   }
 
+  /**
+   * Hands the whole selection to WhatsApp as one message, and leaves the send
+   * itself to whoever is at the keyboard — the same shape as a single report on
+   * its own page, which opens a draft rather than sending one.
+   *
+   * One message rather than one per report: the client gets a single chat entry
+   * listing every report with its link, which is the thing that was missing —
+   * nine reports used to mean opening nine pages and pressing send nine times.
+   */
+  function sendSelectedReportsToWhatsApp() {
+    if (!canSendSelectedWhatsApp || !selectedWhatsAppNumber.ok) return;
+    const origin = window.location.origin;
+    // A token is minted for any report that has never been shared and kept for
+    // any that has, so a client who already has a link keeps the address it
+    // points to. Fixed before the message leaves, or the links resolve to
+    // nothing.
+    const items = selectedApprovedRows.map(({ report, test, sample }) => {
+      const token = report.shareToken ?? newShareToken();
+      store.setReportShareToken(report.id, token);
+      return {
+        report,
+        test,
+        sample,
+        concrete: store.concreteTests.find((row) => row.testId === report.testId),
+        shareUrl: reportShareUrl(origin, report.reportNumber, token)
+      };
+    });
+    const reportIds = items.map(({ report }) => report.id);
+    const reportNumbers = items.map(({ report }) => report.reportNumber);
+    const destination = formatInternational(selectedWhatsAppNumber.e164);
+    const message = reportWhatsAppMessage(items);
+    // The whole message travels inside the wa.me address, and a long enough
+    // one is refused or cut short by WhatsApp rather than by us. Say so
+    // before it happens; a client receiving half a list would not know the
+    // rest existed.
+    if (
+      message.length > 3500 &&
+      !window.confirm(
+        `Mesazhi për ${reportNumbers.length} raporte është i gjatë dhe WhatsApp mund ta presë.
+
+Dërgojini në grupe më të vogla, ose vazhdoni?`
+      )
+    ) {
+      return;
+    }
+    window.open(whatsAppLink(selectedWhatsAppNumber.e164, message), "_blank", "noopener");
+    store.sendReportsToClient(reportIds, destination, `Dërguar me WhatsApp: ${reportNumbers.join(", ")}`, "whatsapp");
+    setSendMessage(
+      `${reportNumbers.length} raport${reportNumbers.length === 1 ? "" : "e"} u çuan te WhatsApp për ${destination}. Dërgojini nga biseda që u hap.`
+    );
+    setSelectedReportIds([]);
+  }
+
   return (
     <>
       <PageHeader title="Raportet" description="Filtro, zgjidh, mirato, shkarko dhe përgatit raporte në grup për dërgim te klienti." />
@@ -299,14 +367,24 @@ export default function ReportsPage() {
                 placeholder={selectedClient?.email || "Email i klientit"}
                 className="input bg-white"
               />
-              <button
-                type="button"
-                onClick={() => void sendSelectedReports()}
-                disabled={!canSendSelected || sending}
-                className="btn-primary px-4 py-2 disabled:cursor-not-allowed disabled:bg-slate-300"
-              >
-                {sending ? "Duke dërguar…" : testToSelf ? "Dërgo kopje testuese" : "Dërgo te klienti"}
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => void sendSelectedReports()}
+                  disabled={!canSendSelected || sending}
+                  className="btn-primary px-4 py-2 disabled:cursor-not-allowed disabled:bg-slate-300"
+                >
+                  {sending ? "Duke dërguar…" : testToSelf ? "Dërgo kopje testuese" : "Dërgo me email"}
+                </button>
+                <button
+                  type="button"
+                  onClick={sendSelectedReportsToWhatsApp}
+                  disabled={!canSendSelectedWhatsApp || sending}
+                  className="btn-secondary whitespace-nowrap px-4 py-2 disabled:cursor-not-allowed disabled:text-slate-400"
+                >
+                  Dërgo me WhatsApp
+                </button>
+              </div>
             </div>
             <label className="mt-3 inline-flex items-center gap-2 text-xs font-medium text-ink">
               <input
@@ -322,6 +400,11 @@ export default function ReportsPage() {
             </p>
             {!selectedHasOnlyApproved ? <div className="mt-2 text-xs font-medium text-lab-red">Dërgimi lejohet vetëm pasi raportet të jenë Miratuar.</div> : null}
             {selectedClientIds.length > 1 ? <div className="mt-2 text-xs font-medium text-lab-red">Zgjidhni raporte nga një klient i vetëm për dërgim në grup.</div> : null}
+            {selectedClient && !selectedWhatsAppNumber.ok ? (
+              <div className="mt-2 text-xs font-medium text-lab-red">
+                Klienti nuk ka numër telefoni të përdorshëm në kartelë, kështu që dërgimi me WhatsApp është i mbyllur.
+              </div>
+            ) : null}
             {clientHasNoEmailOnRecord ? (
               <div className="mt-2 rounded-md border border-[#ff3d3d] bg-brand-late p-3 text-xs text-ink">
                 <div className="font-semibold">Klienti nuk ka email të regjistruar</div>
