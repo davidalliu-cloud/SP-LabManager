@@ -104,7 +104,7 @@ import {
   type EquipmentInput
 } from "./equipment";
 import { balancedGroups } from "./report-grouping";
-import { nextReportNumber } from "./report-number";
+import { nextReportNumber, reportNumberSortKey } from "./report-number";
 import { initialState } from "./seed-data";
 import { deriveSampleStage, SAMPLE_STAGES } from "./sample-stage";
 import { mergeProceduresWithSeed, proceduresForPersistence } from "./procedures";
@@ -1285,6 +1285,24 @@ const SAVE_RETRY_BASE_MS = 2_000;
 const SAVE_RETRY_MAX_MS = 60_000;
 
 /** What actually gets persisted, as opposed to what is held in memory. */
+/**
+ * The rejected reports a regeneration should take over, earliest number first.
+ *
+ * A rejection sends a report back to be corrected; it does not void the number
+ * the register already spent on it. Regeneration used to draft a brand-new
+ * report and take the next number in the series, so a test rejected twice
+ * walked three numbers down the register and the client was quoted a different
+ * number each round. These are the numbers to reuse, in the order they were
+ * taken, so the report that finally goes out carries the number it was first
+ * drafted under.
+ */
+function rejectedReportsToReuse(reports: Report[], testId: string, reportKind?: string) {
+  const kind = reportKind ?? "";
+  return reports
+    .filter((row) => row.testId === testId && (row.reportKind ?? "") === kind && row.reportStatus === "Rejected")
+    .sort((a, b) => reportNumberSortKey(a.reportNumber) - reportNumberSortKey(b.reportNumber));
+}
+
 function forPersistence(state: LabState): LabState {
   const trimmed = {
     ...state,
@@ -4916,7 +4934,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           (row) => row.testId === testId && (row.reportKind ?? "") === kind && row.reportStatus === "Rejected"
         );
         if (!canGenerateReportForTest(currentRole, pendingTest.status, pendingWasRejected)) return null;
-        const reportId = crypto.randomUUID();
+        const reportId = rejectedReportsToReuse(state.reports, testId, reportKind)[0]?.id ?? crypto.randomUUID();
         setState((previous) => {
           const test = previous.tests.find((row) => row.id === testId);
           if (!test) return previous;
@@ -4994,13 +5012,22 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
                 ? balancedGroups(concrete.specimens.map((specimen) => specimen.specimenCode), 3)
                 : [[previous.samples.find((sample) => sample.id === test.sampleId)?.sampleCode ?? test.testCode]];
           const specimenCount = reportGroups.reduce((sum, group) => sum + group.length, 0);
+          // One number per report, however many rounds of correction it takes.
+          // The rejected rows are taken over rather than left beside the new
+          // ones: a rejected report was never issued, so nothing outside the
+          // lab has ever seen it, and leaving it behind would put the same
+          // number in the register twice.
+          const reusable = rejectedReportsToReuse(previous.reports, testId, reportKind).slice(0, reportGroups.length);
+          const reusedIds = new Set(reusable.map((row) => row.id));
           const reports: Report[] = reportGroups.map((codes, index) => ({
-            id: index === 0 ? reportId : crypto.randomUUID(),
-            reportNumber: nextReportNumber(
-              previous.reports.map((row) => row.reportNumber),
-              new Date().getFullYear(),
-              index
-            ),
+            id: reusable[index]?.id ?? (index === 0 ? reportId : crypto.randomUUID()),
+            reportNumber:
+              reusable[index]?.reportNumber ??
+              nextReportNumber(
+                previous.reports.map((row) => row.reportNumber),
+                new Date().getFullYear(),
+                index - reusable.length
+              ),
             testId,
             sampleId: test.sampleId,
             clientId: test.clientId,
@@ -5011,11 +5038,15 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             reportKind,
             reportStatus: "Report Drafted",
             draftedBy: currentUserId,
-            createdAt: new Date().toISOString()
+            // The number is the one the report was first drafted under, so the
+            // date it was first drafted belongs with it. Rejection fields are
+            // simply not carried over: the row is a draft again, and the
+            // rejection itself stays in the audit log.
+            createdAt: reusable[index]?.createdAt ?? new Date().toISOString()
           }));
           const draft: LabState = {
             ...previous,
-            reports: [...reports, ...previous.reports],
+            reports: [...reports, ...previous.reports.filter((row) => !reusedIds.has(row.id))],
             tests: previous.tests.map((row) => (row.id === testId ? { ...row, status: "Report Drafted" } : row)),
             auditLog: [...previous.auditLog]
           };
@@ -5024,7 +5055,14 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             "report_generated",
             "test",
             testId,
-            `${reports.length} draft report${reports.length === 1 ? "" : "s"} generated for ${specimenCount} specimen${specimenCount === 1 ? "" : "s"}.`
+            [
+              `${reports.length} draft report${reports.length === 1 ? "" : "s"} generated for ${specimenCount} specimen${specimenCount === 1 ? "" : "s"}.`,
+              reusable.length
+                ? `Kept after rejection: ${reusable.map((row) => row.reportNumber).join(", ")}.`
+                : ""
+            ]
+              .filter(Boolean)
+              .join(" ")
           );
           return draft;
         });
