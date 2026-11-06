@@ -1,6 +1,15 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { MAX_TOTAL_PDF_BYTES, authoriseSender, pdfAttachment, sendMail } from "@/lib/graph-mail";
+import {
+  MAX_RECIPIENTS,
+  MAX_TOTAL_PDF_BYTES,
+  authoriseSender,
+  invalidRecipients,
+  parseRecipients,
+  pdfAttachment,
+  sendMail,
+  withoutDuplicates
+} from "@/lib/graph-mail";
 import type { LabState } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -21,6 +30,8 @@ type SendRequest = {
   clientId: string;
   from: string;
   to: string;
+  /** Copied in. The main address still comes from the client card, not the browser. */
+  cc?: string | string[];
   /** Route the mail to the sender instead of the client, to check it first. */
   testToSelf?: boolean;
 };
@@ -69,6 +80,19 @@ export async function POST(request: Request) {
   if (!recipient) {
     return NextResponse.json({ ok: false, error: "Klienti nuk ka email të regjistruar." }, { status: 400 });
   }
+  // A test copy goes to the sender alone, copies included: the point of it is
+  // that nobody outside the lab sees the run.
+  const copies = payload.testToSelf ? [] : withoutDuplicates(parseRecipients(payload.cc), [recipient]);
+  const malformed = invalidRecipients(copies);
+  if (malformed.length) {
+    return NextResponse.json({ ok: false, error: `Adresa e pavlefshme: ${malformed.join(", ")}` }, { status: 400 });
+  }
+  if (copies.length + 1 > MAX_RECIPIENTS) {
+    return NextResponse.json(
+      { ok: false, error: `Shumë marrës (${copies.length + 1}); kufiri është ${MAX_RECIPIENTS}.` },
+      { status: 400 }
+    );
+  }
 
   const name = `Permbledhje-${client.clientCode}-${payload.from}_${payload.to}`;
   const prepared = await pdfAttachment(record.pdfUrl, name);
@@ -91,7 +115,14 @@ export async function POST(request: Request) {
   ].join("\n");
 
   try {
-    await sendMail({ to: recipient, replyTo: auth.email, subject, body, attachments: [prepared.attachment] });
+    await sendMail({
+      to: [recipient],
+      cc: copies,
+      replyTo: auth.email,
+      subject,
+      body,
+      attachments: [prepared.attachment]
+    });
   } catch (sendError) {
     return NextResponse.json(
       { ok: false, error: sendError instanceof Error ? sendError.message : "Dërgimi dështoi." },
@@ -102,6 +133,7 @@ export async function POST(request: Request) {
   return NextResponse.json({
     ok: true,
     sentTo: recipient,
+    copiedTo: copies.join(", "),
     testToSelf: Boolean(payload.testToSelf),
     attached: `${name}.pdf`,
     bytes: prepared.bytes

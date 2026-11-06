@@ -30,6 +30,50 @@ const ALLOWED_SENDERS = ["d.alliu@sarpandlab.al", "a.duzha@sarpandlab.al"];
 
 export type SenderIdentity = { email: string };
 
+/**
+ * The addresses typed into a send box, as a list.
+ *
+ * A report rarely goes to one person: the site engineer gets it and the office
+ * is copied, or two engineers share the job. The box takes them separated by
+ * commas, semicolons or spaces, because that is how a list of addresses is
+ * already written and how Outlook pastes one back.
+ *
+ * The same address twice — typed once in each box, or pasted twice — is one
+ * recipient, not two copies of the mail.
+ */
+export function parseRecipients(value: string | string[] | undefined | null): string[] {
+  const raw = Array.isArray(value) ? value : String(value ?? "").split(/[,;\s]+/);
+  const seen = new Set<string>();
+  const list: string[] = [];
+  for (const entry of raw) {
+    const address = String(entry ?? "").trim();
+    if (!address || seen.has(address.toLowerCase())) continue;
+    seen.add(address.toLowerCase());
+    list.push(address);
+  }
+  return list;
+}
+
+/**
+ * How many people one send may reach.
+ *
+ * Not a Graph limit — a guard against the slip that matters here, pasting a
+ * column of addresses into the wrong box and mailing one client's reports to
+ * everyone in it.
+ */
+export const MAX_RECIPIENTS = 20;
+
+/** Anything in the list that is not an address, so the refusal can name it. */
+export function invalidRecipients(list: string[]): string[] {
+  return list.filter((address) => !/^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/.test(address));
+}
+
+/** The copies, with anyone already on the main line dropped. */
+export function withoutDuplicates(cc: string[], to: string[]): string[] {
+  const main = new Set(to.map((address) => address.toLowerCase()));
+  return cc.filter((address) => !main.has(address.toLowerCase()));
+}
+
 /** Confirms the caller is signed in and permitted to send. Never trusts the browser. */
 export async function authoriseSender(request: Request): Promise<SenderIdentity | { error: string }> {
   const caller = await signedInEmail(request);
@@ -86,7 +130,9 @@ export async function pdfAttachment(
 }
 
 export async function sendMail(options: {
-  to: string;
+  to: string[];
+  /** Copied, not addressed: the office that files it, the colleague who asked. */
+  cc?: string[];
   replyTo: string;
   subject: string;
   body: string;
@@ -101,7 +147,10 @@ export async function sendMail(options: {
       message: {
         subject: options.subject,
         body: { contentType: "Text", content: options.body },
-        toRecipients: [{ emailAddress: { address: options.to } }],
+        toRecipients: options.to.map((address) => ({ emailAddress: { address } })),
+        ...(options.cc?.length
+          ? { ccRecipients: options.cc.map((address) => ({ emailAddress: { address } })) }
+          : {}),
         replyTo: [{ emailAddress: { address: options.replyTo } }],
         attachments: options.attachments
       },

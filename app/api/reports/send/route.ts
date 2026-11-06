@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { MAX_TOTAL_PDF_BYTES, authoriseSender, getGraphToken } from "@/lib/graph-mail";
+import {
+  MAX_RECIPIENTS,
+  MAX_TOTAL_PDF_BYTES,
+  authoriseSender,
+  invalidRecipients,
+  parseRecipients,
+  sendMail,
+  withoutDuplicates
+} from "@/lib/graph-mail";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,7 +33,10 @@ export const dynamic = "force-dynamic";
 
 type SendRequest = {
   reportIds: string[];
-  to: string;
+  /** One address or several, typed into the box or already split. */
+  to: string | string[];
+  /** Copied in: the office, the project manager, whoever else keeps the file. */
+  cc?: string | string[];
   subject: string;
   body: string;
   /** Route the mail to the caller instead of the client, to check the result
@@ -46,8 +57,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Malformed request." }, { status: 400 });
   }
 
-  const recipient = payload.testToSelf ? auth.email : (payload.to ?? "").trim();
-  if (!recipient) return NextResponse.json({ ok: false, error: "No recipient address." }, { status: 400 });
+  // A test copy goes to the sender alone — copying the client on a trial run
+  // is exactly what the trial run exists to avoid.
+  const recipients = payload.testToSelf ? [auth.email] : parseRecipients(payload.to);
+  const copies = payload.testToSelf ? [] : withoutDuplicates(parseRecipients(payload.cc), recipients);
+  if (!recipients.length) return NextResponse.json({ ok: false, error: "No recipient address." }, { status: 400 });
+  const malformed = invalidRecipients([...recipients, ...copies]);
+  if (malformed.length) {
+    return NextResponse.json(
+      { ok: false, error: `Adresa e pavlefshme: ${malformed.join(", ")}` },
+      { status: 400 }
+    );
+  }
+  if (recipients.length + copies.length > MAX_RECIPIENTS) {
+    return NextResponse.json(
+      { ok: false, error: `Shumë marrës (${recipients.length + copies.length}); kufiri është ${MAX_RECIPIENTS}.` },
+      { status: 400 }
+    );
+  }
   if (!payload.reportIds?.length) return NextResponse.json({ ok: false, error: "No reports selected." }, { status: 400 });
 
   // Read the reports server-side. The browser does not get to decide which file
@@ -126,35 +153,24 @@ export async function POST(request: Request) {
     });
   }
 
-  const mailbox = process.env.MS_SENDER_MAILBOX || "njoftime@sarpandlab.al";
   try {
-    const token = await getGraphToken();
-    const response = await fetch(`https://graph.microsoft.com/v1.0/users/${encodeURIComponent(mailbox)}/sendMail`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: {
-          subject: payload.subject,
-          body: { contentType: "Text", content: payload.body },
-          toRecipients: [{ emailAddress: { address: recipient } }],
-          // Replies go to whoever pressed the button, not the notifications mailbox.
-          replyTo: [{ emailAddress: { address: auth.email } }],
-          attachments
-        },
-        saveToSentItems: "true"
-      })
+    // Replies go to whoever pressed the button, not the notifications mailbox.
+    await sendMail({
+      to: recipients,
+      cc: copies,
+      replyTo: auth.email,
+      subject: payload.subject,
+      body: payload.body,
+      attachments
     });
-    if (!response.ok) {
-      const detail = await response.text();
-      return NextResponse.json({ ok: false, error: `Graph rejected the send (${response.status}): ${detail}` }, { status: 502 });
-    }
   } catch (error) {
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "Send failed." }, { status: 500 });
   }
 
   return NextResponse.json({
     ok: true,
-    sentTo: recipient,
+    sentTo: recipients.join(", "),
+    copiedTo: copies.join(", "),
     testToSelf: Boolean(payload.testToSelf),
     attached: attachments.map((a) => a.name),
     totalBytes

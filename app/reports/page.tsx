@@ -53,6 +53,7 @@ export default function ReportsPage() {
   const [selectedReportIds, setSelectedReportIds] = useState<string[]>([]);
   const { sort, toggle } = useSort("number");
   const [batchEmail, setBatchEmail] = useState("");
+  const [batchCc, setBatchCc] = useState("");
   const [sendMessage, setSendMessage] = useState("");
   const [sending, setSending] = useState(false);
   // Lets the sender post the exact message to themselves first, attachments and
@@ -113,6 +114,10 @@ export default function ReportsPage() {
   // one-off address cannot stand in for a missing one, or the gap never closes.
   const selectedClientHasEmail = Boolean(selectedClient?.email);
   const selectedEmail = selectedClientHasEmail ? batchEmail.trim() || selectedClient?.email || "" : "";
+  // Both boxes take a list: a report usually goes to the engineer and the
+  // office, and asking for one address meant sending twice or leaving someone
+  // off. The server splits and checks them; this is only what gets typed.
+  const selectedCc = batchCc.trim();
   // A report with no stored PDF has nothing to give the client, so flag it
   // rather than sending a link to a file that was never generated.
   const selectedWithoutPdf = selectedSendableRows.filter(({ report }) => !report.pdfUrl);
@@ -223,9 +228,15 @@ Dëshironi t'i dërgoni përsëri?`
       const response = await fetch("/api/reports/send", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken ?? ""}` },
-        body: JSON.stringify({ reportIds, to: selectedEmail, subject, body, testToSelf })
+        body: JSON.stringify({ reportIds, to: selectedEmail, cc: selectedCc, subject, body, testToSelf })
       });
-      const result = (await response.json()) as { ok: boolean; error?: string; sentTo?: string; attached?: string[] };
+      const result = (await response.json()) as {
+        ok: boolean;
+        error?: string;
+        sentTo?: string;
+        copiedTo?: string;
+        attached?: string[];
+      };
       if (!result.ok) {
         setSendMessage(`Nuk u dërgua: ${result.error ?? "gabim i panjohur"}`);
         return;
@@ -235,8 +246,15 @@ Dëshironi t'i dërgoni përsëri?`
         return;
       }
       // Only now is the report actually with the client.
-      store.sendReportsToClient(reportIds, selectedEmail, `Dërguar me email: ${reportNumbers.join(", ")}`);
-      setSendMessage(`${reportNumbers.length} raport${reportNumbers.length === 1 ? "" : "e"} u dërguan te ${result.sentTo} me PDF bashkëngjitur.`);
+      // The register records every address the reports actually reached, copies
+      // included — "who has this report" is the question it gets asked later.
+      const reached = [result.sentTo, result.copiedTo].filter(Boolean).join(", ");
+      store.sendReportsToClient(reportIds, reached, `Dërguar me email: ${reportNumbers.join(", ")}`);
+      setSendMessage(
+        `${reportNumbers.length} raport${reportNumbers.length === 1 ? "" : "e"} u dërguan te ${result.sentTo}${
+          result.copiedTo ? `, me kopje te ${result.copiedTo}` : ""
+        } me PDF bashkëngjitur.`
+      );
       setSelectedReportIds([]);
     } catch (error) {
       setSendMessage(`Nuk u dërgua: ${error instanceof Error ? error.message : "gabim rrjeti"}`);
@@ -383,12 +401,26 @@ Dërgojini në grupe më të vogla, ose vazhdoni?`
               {selectedClient ? `Zgjidhni raporte të miratuara (ose të dërguara më parë) për t'i dërguar klientit ${selectedClient.clientName}.` : "Zgjidh raporte nga i njëjti klient për të përgatitur një grup të rregullt dërgimi."}
             </div>
             <div className="mt-3 grid gap-3 lg:grid-cols-[1fr_auto]">
-              <input
-                value={batchEmail}
-                onChange={(event) => setBatchEmail(event.target.value)}
-                placeholder={selectedClient?.email || "Email i klientit"}
-                className="input bg-white"
-              />
+              <div className="grid gap-2 sm:grid-cols-2">
+                <label className="block">
+                  <span className="mb-1 block text-xs font-semibold text-ink">Marrësit</span>
+                  <input
+                    value={batchEmail}
+                    onChange={(event) => setBatchEmail(event.target.value)}
+                    placeholder={selectedClient?.email || "Email i klientit"}
+                    className="input w-full bg-white"
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-xs font-semibold text-ink">Kopje (Cc)</span>
+                  <input
+                    value={batchCc}
+                    onChange={(event) => setBatchCc(event.target.value)}
+                    placeholder="bosh"
+                    className="input w-full bg-white"
+                  />
+                </label>
+              </div>
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
@@ -418,7 +450,8 @@ Dërgojini në grupe më të vogla, ose vazhdoni?`
               Dërgo fillimisht një kopje testuese te vetja ({currentUser?.email})
             </label>
             <p className="mt-1 text-[11px] text-muted">
-              Emaili niset nga njoftime@sarpandlab.al me PDF-të bashkëngjitur; përgjigjet e klientit kthehen te ju.
+              Disa adresa ndahen me presje. Emaili niset nga njoftime@sarpandlab.al me PDF-të bashkëngjitur;
+              përgjigjet e klientit kthehen te ju. Kopja testuese shkon vetëm te ju, pa Cc.
             </p>
             {!selectedHasOnlySendable ? <div className="mt-2 text-xs font-medium text-lab-red">Dërgimi lejohet vetëm pasi raportet të jenë Miratuar.</div> : null}
             {selectedResends.length ? (

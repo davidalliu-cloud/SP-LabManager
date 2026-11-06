@@ -65,6 +65,9 @@ export default function ClientAnalysisPage() {
   const [pdfError, setPdfError] = useState("");
   const [sending, setSending] = useState(false);
   const [sendMessage, setSendMessage] = useState("");
+  // The summary itself still goes to the address on the client card — that is
+  // the one the lab keeps correct. These are the people copied on it.
+  const [cc, setCc] = useState("");
   /**
    * Whether this summary carries what the period is worth.
    *
@@ -161,9 +164,9 @@ export default function ClientAnalysisPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${data.session?.access_token ?? ""}`
         },
-        body: JSON.stringify({ clientId: params.id, from: period.from, to: period.to, testToSelf })
+        body: JSON.stringify({ clientId: params.id, from: period.from, to: period.to, cc, testToSelf })
       });
-      const result = (await response.json()) as { ok: boolean; error?: string; sentTo?: string };
+      const result = (await response.json()) as { ok: boolean; error?: string; sentTo?: string; copiedTo?: string };
       if (!result.ok) {
         setSendMessage(`Nuk u dërgua: ${result.error ?? "gabim i panjohur"}`);
         return;
@@ -172,8 +175,11 @@ export default function ClientAnalysisPage() {
         setSendMessage(`Kopje testuese u dërgua te ${result.sentTo}. Përmbledhja nuk u shënua si e dërguar.`);
         return;
       }
-      store.recordClientAnalysisSent(params.id, period.from, period.to, result.sentTo ?? "", "email");
-      setSendMessage(`Përmbledhja u dërgua te ${result.sentTo} me PDF-në bashkëngjitur.`);
+      const reached = [result.sentTo, result.copiedTo].filter(Boolean).join(", ");
+      store.recordClientAnalysisSent(params.id, period.from, period.to, reached, "email");
+      setSendMessage(
+        `Përmbledhja u dërgua te ${result.sentTo}${result.copiedTo ? `, me kopje te ${result.copiedTo}` : ""} me PDF-në bashkëngjitur.`
+      );
     } catch (error) {
       setSendMessage(error instanceof Error ? error.message : "Dërgimi dështoi.");
     } finally {
@@ -251,6 +257,20 @@ export default function ClientAnalysisPage() {
             </span>
           </span>
         </label>
+        <label className="mt-3 block max-w-md">
+          <span className="mb-1 block text-xs font-semibold text-ink">Kopje (Cc)</span>
+          <input
+            value={cc}
+            onChange={(event) => setCc(event.target.value)}
+            placeholder="bosh — disa adresa ndahen me presje"
+            className="input w-full bg-white"
+          />
+          <span className="mt-1 block text-[11px] text-muted">
+            Marrësi kryesor mbetet {client.email || "adresa e kartelës së klientit"}. Kopja testuese shkon vetëm te
+            ju, pa Cc.
+          </span>
+        </label>
+
         <div className="flex flex-wrap items-center gap-2">
           <button onClick={storePdf} disabled={pdfState === "working"} className="btn-primary disabled:bg-slate-300">
             {pdfState === "working" ? "Duke gjeneruar…" : record?.pdfUrl ? "Rigjenero PDF-në" : "Gjenero dhe ruaj PDF-në"}
