@@ -9,7 +9,9 @@ import {
   discountPercent,
   hasPriceOverride,
   labMonthly,
+  minimumPrice,
   unitPrice,
+  usesMinimum,
   withVat,
   type OfferValues,
   type QuantityMode
@@ -24,11 +26,12 @@ import {
  * from the document, and a group with nothing ticked loses its table and its
  * heading too.
  *
- * Every test is priced per unit, as the template prints it, and either lever
- * can change that: the offer's discount moves every price together, or a
- * figure typed against one row sets that row outright. A typed price is a
- * decision, so the discount does not take a further slice off it — the row
- * says so when it is carrying one.
+ * Every test is priced per unit, as the template prints it, and three levers
+ * can change that: the offer's discount moves every price together, the
+ * minimum ticked against a row drops that row to the floor the price list
+ * allows, or a figure typed against one row sets it outright. Both the typed
+ * price and the minimum are decisions, so the discount does not take a further
+ * slice off either — the row says so when it is carrying one.
  *
  * The quantity mode is the other half of the question. A client who has not
  * scoped the work yet wants the unit prices and will order test by test, so
@@ -46,6 +49,7 @@ export function CataloguePicker({
   onToggleGroup,
   onQuantity,
   onPrice,
+  onMinimum,
   onValue,
   onMode
 }: {
@@ -58,6 +62,7 @@ export function CataloguePicker({
   onToggleGroup: (codes: string[], on: boolean) => void;
   onQuantity: (code: string, value: string) => void;
   onPrice: (code: string, value: string) => void;
+  onMinimum: (code: string, on: boolean) => void;
   /** Writes any other value on the draft — the term and the quoted rate. */
   onValue: (key: string, value: string) => void;
   onMode: (mode: QuantityMode) => void;
@@ -266,7 +271,7 @@ export function CataloguePicker({
               </button>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[900px] text-left text-sm">
+              <table className="w-full min-w-[1000px] text-left text-sm">
                 <thead>
                   <tr className="text-[11px] uppercase tracking-[0.1em] text-muted">
                     <th className="w-10 px-2 py-1"></th>
@@ -276,6 +281,7 @@ export function CataloguePicker({
                     <th className="w-24 px-2 py-1">Njësia</th>
                     <th className="w-24 px-2 py-1 text-right">Listë pa TVSH</th>
                     <th className="w-28 px-2 py-1 text-right">Çmimi /njësi pa TVSH</th>
+                    <th className="w-24 px-2 py-1 text-center">Minimumi</th>
                     <th className="w-20 px-2 py-1 text-right">{monthlyMode ? "Sasia /muaj" : "Sasia"}</th>
                     <th className="w-28 px-2 py-1 text-right">{monthlyMode ? "Vlera /muaj" : "Vlera pa TVSH"}</th>
                   </tr>
@@ -286,6 +292,8 @@ export function CataloguePicker({
                     const free = isFree(test);
                     const net = quoted(test);
                     const typed = hasPriceOverride(values, test.code);
+                    const atMinimum = usesMinimum(values, test.code);
+                    const floor = minimumPrice(test.price);
                     const moved = !free && net !== test.price;
                     return (
                       <tr key={test.code} className={`border-b border-line ${on ? "bg-lab-porcelain" : ""}`}>
@@ -324,10 +332,27 @@ export function CataloguePicker({
                               <div className="mt-1 text-[11px] leading-4 text-muted">
                                 {money(withVat(net))} me TVSH
                                 {typed ? <span className="block text-amber-700">çmim i caktuar</span> : null}
+                                {!typed && atMinimum ? <span className="block text-amber-700">minimumi</span> : null}
                               </div>
                             </>
                           ) : on && free ? (
                             <span className="text-muted">{test.priceLabel}</span>
+                          ) : null}
+                        </td>
+                        <td className="px-2 py-2 text-center">
+                          {on && !free ? (
+                            <label
+                              className="flex items-center justify-center gap-1 text-[11px] leading-4 text-muted"
+                              title="Çmimi më i ulët i lejuar: 90% e listës, kufiri 10% mbi të cilin është ndërtuar lista 2027"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={atMinimum}
+                                disabled={typed}
+                                onChange={(event) => onMinimum(test.code, event.target.checked)}
+                              />
+                              <span className="tabular-nums">{money(floor)}</span>
+                            </label>
                           ) : null}
                         </td>
                         <td className="px-2 py-2 text-right">

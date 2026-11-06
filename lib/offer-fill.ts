@@ -221,19 +221,42 @@ export function labTotals(values: OfferValues): OfferTotals {
 /* ------------------------------------------------------------------ prices */
 
 /**
+ * How far a price may be cut for a client, and the floor that leaves.
+ *
+ * The 2027 list was built on a 10% cap: the lab needs clients to pay 90% of
+ * list to clear its costs with a margin, so 90% is the lowest price a test may
+ * be sold at. The cap is the reason the list prices are what they are, which
+ * is why the floor is worked out from the list rather than typed per row —
+ * change a list price and its minimum follows on its own.
+ */
+export const MINIMUM_PRICE_SHARE = 0.9;
+
+/** The lowest price this test may be quoted at. */
+export function minimumPrice(listPrice: number): number {
+  return Math.round(listPrice * MINIMUM_PRICE_SHARE);
+}
+
+/** True when the row is ticked to be quoted at its minimum. */
+export function usesMinimum(values: OfferValues, code: string): boolean {
+  return String(values[`min.${code}`] ?? "") === "1";
+}
+
+/**
  * What a line actually costs on this offer.
  *
- * Three things can set it, in order. A price typed against the line wins
- * outright — it is a decision, not a starting point, so the discount does not
- * then take another slice off it. Failing that the list price carries the
- * offer's discount. Failing that it is the list price as the template prints
- * it.
+ * Four things can set it, in order. A price typed against the line wins
+ * outright — it is a decision, not a starting point, so nothing below takes
+ * another slice off it. Then the minimum, ticked for the client who had to be
+ * met: it is already the floor, so the offer's discount does not cut into it
+ * either. Failing both, the list price carries the offer's discount. Failing
+ * that it is the list price as the template prints it.
  *
  * Rounded to whole lekë, because every printed figure in both templates is.
  */
 export function unitPrice(values: OfferValues, code: string, listPrice: number): number {
   const typed = values[`price.${code}`];
   if (typed !== undefined && typed !== "") return Math.max(0, Math.round(numberOf(values, `price.${code}`)));
+  if (usesMinimum(values, code)) return minimumPrice(listPrice);
 
   const discount = discountPercent(values);
   return Math.max(0, Math.round(listPrice * (1 - discount / 100)));
@@ -614,7 +637,7 @@ export function fillOfferDocument(xml: string, kind: OfferKind, values: OfferVal
         const note = replaceSentence(
           working,
           CATALOGUE_CLOSING_SENTENCE,
-          `Çmimet e mëposhtme përmbajnë një zbritje prej ${money(discount)}% ndaj çmimeve standarde të vitit 2026. ${CATALOGUE_CLOSING_SENTENCE}`
+          `Çmimet e mëposhtme përmbajnë një zbritje prej ${money(discount)}% ndaj çmimeve standarde të vitit 2027. ${CATALOGUE_CLOSING_SENTENCE}`
         );
         working = note.xml;
         if (!note.replaced) warnings.push("Teksti i çmimeve në Seksionin 9 nuk u gjet për t'u përshtatur.");

@@ -444,6 +444,7 @@ export default function NewOfferPage() {
           }
           onQuantity={(code, value) => setQuantities((previous) => ({ ...previous, [code]: value }))}
           onPrice={(code, value) => set(`price.${code}`, value)}
+          onMinimum={(code, on) => set(`min.${code}`, on ? "1" : "")}
           onValue={set}
           onMode={setMode}
         />
