@@ -952,6 +952,14 @@ textarea {
     font-size: 12pt !important;
   }
 
+  /* The certificate is two sheets: the sieve ladder, then the grading curve.
+     Each section is its own 297mm box, so the break falls where the markup
+     says it does rather than wherever the content happens to run out. */
+  .aggregate-gradation-report.gradation-page-1 {
+    break-after: page;
+    page-break-after: always;
+  }
+
   /* The cluster used to be pinned to the foot of the sheet. The content grew
      past it: the grading curve ran to 274mm while the cluster began at 241mm,
      so the signatures, the names and the stamp were drawn across the chart,
@@ -964,25 +972,37 @@ textarea {
 
   /* The sieve ladder is 19 rows of short numbers. Fixed 0.52cm rows spent
      110mm of the page on it — a third of the sheet — and that is what pushed
-     the chart down into the footer. Let the padding size the row instead. */
+     the chart down into the footer. Let the padding size the row instead.
+     The ladder has a sheet to itself now, so the rows can breathe again. */
   .aggregate-gradation-report table tbody tr,
   .aggregate-gradation-report table thead tr {
     height: auto !important;
   }
 
+  /* The sieve ladder is the result. It was set at 7.8px — under 6pt — because
+     it was sharing a sheet with the chart; on a sheet of its own it is set at
+     a size a reader can check a figure in. */
+  .aggregate-gradation-report table {
+    font-size: 9pt !important;
+  }
+
   .aggregate-gradation-report table th,
   .aggregate-gradation-report table td {
-    padding: 1px 3px 2px !important;
-    line-height: 1.1 !important;
+    padding: 3px 3px 4px !important;
+    line-height: 1.25 !important;
   }
 
   .aggregate-gradation-report .gradation-meta {
-    line-height: 1.1 !important;
-    row-gap: 0 !important;
+    line-height: 1.25 !important;
+    row-gap: 1px !important;
   }
 
+  /* Height comes from the viewBox now. Forcing 48mm did not crop the drawing,
+     it scaled the whole thing down and centred it: the chart was rendered
+     about 103mm wide on a 182mm page, with 40mm of white either side. */
   .aggregate-gradation-report .border-dashed svg {
-    height: 48mm !important;
+    height: auto !important;
+    width: 100% !important;
   }
 
   .aggregate-gradation-report .signature-block-img {
@@ -1541,20 +1561,28 @@ textarea {
    rule drawn through the digits — 1px of clearance at scale 2, which reads as
    a line struck through every figure. Moving the padding to the bottom and
    top-aligning the content opens that to 7px without making the row taller. */
+/* KEEP IN SYNC with the print rule. */
+.aggregate-gradation-report.pdf-capture table {
+    font-size: 9pt !important;
+}
+
 .aggregate-gradation-report.pdf-capture table th,
 .aggregate-gradation-report.pdf-capture table td {
-    padding: 0 3px 6px !important;
-    line-height: 1.1 !important;
+    padding: 2px 3px 6px !important;
+    line-height: 1.25 !important;
     vertical-align: top !important;
 }
 
 .aggregate-gradation-report.pdf-capture .gradation-meta {
-    line-height: 1.1 !important;
-    row-gap: 0 !important;
+    line-height: 1.25 !important;
+    row-gap: 1px !important;
 }
 
+/* KEEP IN SYNC with the print rule: height from the viewBox, not a forced
+   48mm that shrank the drawing to 103mm of a 182mm page. */
 .aggregate-gradation-report.pdf-capture .border-dashed svg {
-    height: 48mm !important;
+    height: auto !important;
+    width: 100% !important;
 }
 
 .aggregate-gradation-report.pdf-capture .signature-block-img {

@@ -155,6 +155,17 @@ export default function ReportDetailPage() {
   const canSendToClient = activeReport.reportStatus === "Approved" || alreadySent;
   const shareToken = activeReport.shareToken ?? mintedShareToken.current;
 
+  /**
+   * The sheets this report is made of, in page order.
+   *
+   * One for almost every report. The granulometry certificate is written as
+   * two — the sieve table, then the grading curve — because squeezed onto one
+   * sheet the curve was 48mm tall and the table's rows were a pixel apart.
+   */
+  function reportSheets() {
+    return Array.from(reportSurfaceRef.current?.querySelectorAll<HTMLElement>(".print-surface") ?? []);
+  }
+
   function downloadApprovedPdf() {
     const originalTitle = document.title;
     document.title = "";
@@ -177,18 +188,21 @@ export default function ReportDetailPage() {
    * an issued report. Nothing here writes to storage.
    */
   function printForWetSignature() {
-    const surface = reportSurfaceRef.current?.querySelector<HTMLElement>(".print-surface");
-    if (!surface) return;
+    // Every sheet, not just the first: a report written as two pages — the
+    // granulometry certificate is — would otherwise print its second page with
+    // the signature already on it.
+    const surfaces = reportSheets();
+    if (!surfaces.length) return;
     const originalTitle = document.title;
     let restored = false;
     const restore = () => {
       if (restored) return;
       restored = true;
-      surface.classList.remove("wet-signature");
+      surfaces.forEach((surface) => surface.classList.remove("wet-signature"));
       document.title = originalTitle;
       window.removeEventListener("afterprint", restore);
     };
-    surface.classList.add("wet-signature");
+    surfaces.forEach((surface) => surface.classList.add("wet-signature"));
     document.title = "";
     window.addEventListener("afterprint", restore);
     window.print();
@@ -197,12 +211,12 @@ export default function ReportDetailPage() {
   }
 
   async function generateStoredPdf() {
-    const surface = reportSurfaceRef.current?.querySelector<HTMLElement>(".print-surface");
-    if (!surface) return;
+    const surfaces = reportSheets();
+    if (!surfaces.length) return;
     setPdfStatus("generating");
     setPdfError("");
     try {
-      const pdfUrl = await generateAndStoreReportPdf(surface, activeReport.reportNumber, activeReport.pdfUrl);
+      const pdfUrl = await generateAndStoreReportPdf(surfaces, activeReport.reportNumber, activeReport.pdfUrl);
       store.setReportPdfUrl(activeReport.id, pdfUrl);
       setPdfStatus("idle");
     } catch (error) {

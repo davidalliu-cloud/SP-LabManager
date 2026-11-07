@@ -48,7 +48,69 @@ async function withFontMetricsFixed<T>(run: () => Promise<T>): Promise<T> {
   }
 }
 
-async function renderElementToPdfBlob(element: HTMLElement, options: PdfOptions = {}): Promise<Blob> {
+/**
+ * Draws one captured sheet onto the document.
+ *
+ * Most reports are a single sheet, but a few are written as two — the
+ * granulometry certificate puts the sieve ladder on one page and the grading
+ * curve on the next — and each of those sheets is captured separately rather
+ * than sliced out of one tall image. Slicing by pixel would cut wherever the
+ * page boundary happened to fall, which is fine for a statement of account and
+ * wrong for a certificate: it would halve a row of figures or a signature.
+ * Capturing per sheet means each page of the PDF is exactly the page the
+ * operator sees, header and footer included.
+ */
+function placeCapturedSheet(
+  pdf: import("jspdf").jsPDF,
+  canvas: HTMLCanvasElement,
+  { pageWidthMm, pageHeightMm, multiPage, startNewPage }: { pageWidthMm: number; pageHeightMm: number; multiPage?: boolean; startNewPage: boolean }
+) {
+  if (startNewPage) pdf.addPage();
+  const naturalPageHeightMm = (canvas.height * pageWidthMm) / canvas.width;
+
+  if (naturalPageHeightMm <= pageHeightMm) {
+    pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, pageWidthMm, naturalPageHeightMm);
+    return;
+  }
+
+  if (!multiPage) {
+    // A sheet is a sheet by definition, so content taller than the page is
+    // shrunk to fit rather than split — a sheet continuing overleaf would be a
+    // different document.
+    const fittedWidthMm = (pageHeightMm / naturalPageHeightMm) * pageWidthMm;
+    const xOffsetMm = (pageWidthMm - fittedWidthMm) / 2;
+    pdf.addImage(canvas.toDataURL("image/png"), "PNG", xOffsetMm, 0, fittedWidthMm, pageHeightMm);
+    return;
+  }
+
+  // A client summary is as long as the month was. Shrinking a year of pours onto
+  // one sheet would make it unreadable, so it is sliced across pages at the same
+  // scale — the table simply continues, as a statement of account does.
+  const pageHeightPx = Math.floor((canvas.width * pageHeightMm) / pageWidthMm);
+  const slice = document.createElement("canvas");
+  slice.width = canvas.width;
+  const context = slice.getContext("2d");
+  if (!context) throw new Error("Could not prepare the page canvas.");
+
+  for (let offset = 0; offset < canvas.height; offset += pageHeightPx) {
+    const sliceHeight = Math.min(pageHeightPx, canvas.height - offset);
+    slice.height = sliceHeight;
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, slice.width, sliceHeight);
+    context.drawImage(canvas, 0, offset, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
+    if (offset > 0) pdf.addPage();
+    pdf.addImage(
+      slice.toDataURL("image/png"),
+      "PNG",
+      0,
+      0,
+      pageWidthMm,
+      (sliceHeight * pageWidthMm) / canvas.width
+    );
+  }
+}
+
+async function renderElementToPdfBlob(elements: HTMLElement[], options: PdfOptions = {}): Promise<Blob> {
   const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
 
   // html2canvas renders the DOM under *screen* CSS and ignores @media print, so the
@@ -58,7 +120,7 @@ async function renderElementToPdfBlob(element: HTMLElement, options: PdfOptions 
   // families that define a `.pdf-capture` mirror (concrete cube, official family)
   // render as a clean single-page A4; any others simply fall back to the normal
   // capture, which is still fitted onto one page below.
-  const canvas = await withFontMetricsFixed(() => html2canvas(element, {
+  const capture = (element: HTMLElement) => withFontMetricsFixed(() => html2canvas(element, {
     scale: 2,
     useCORS: true,
     backgroundColor: "#ffffff",
@@ -87,6 +149,14 @@ async function renderElementToPdfBlob(element: HTMLElement, options: PdfOptions 
     }
   }));
 
+  // Sheets are captured one after another, not in parallel: html2canvas clones
+  // the whole document for each capture, and two clones of a report in flight
+  // at once is a lot of DOM for the operator's browser to hold.
+  const canvases: HTMLCanvasElement[] = [];
+  for (const element of elements) {
+    canvases.push(await capture(element));
+  }
+
   const landscape = options.orientation === "landscape";
   const pageWidthMm = landscape ? A4_HEIGHT_MM : A4_WIDTH_MM;
   const pageHeightMm = landscape ? A4_WIDTH_MM : A4_HEIGHT_MM;
@@ -98,48 +168,14 @@ async function renderElementToPdfBlob(element: HTMLElement, options: PdfOptions 
   });
   // Use PNG (lossless) rather than JPEG: the reports are thin 1px rules and small
   // text, which JPEG compression blurs and smears. PNG keeps the lines crisp.
-  const naturalPageHeightMm = (canvas.height * pageWidthMm) / canvas.width;
-
-  if (naturalPageHeightMm <= pageHeightMm) {
-    pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, pageWidthMm, naturalPageHeightMm);
-    return pdf.output("blob");
-  }
-
-  if (!options.multiPage) {
-    // A report is one sheet by definition, so content taller than the page is
-    // shrunk to fit rather than split — a report continuing overleaf would be a
-    // different document.
-    const fittedWidthMm = (pageHeightMm / naturalPageHeightMm) * pageWidthMm;
-    const xOffsetMm = (pageWidthMm - fittedWidthMm) / 2;
-    pdf.addImage(canvas.toDataURL("image/png"), "PNG", xOffsetMm, 0, fittedWidthMm, pageHeightMm);
-    return pdf.output("blob");
-  }
-
-  // A client summary is as long as the month was. Shrinking a year of pours onto
-  // one sheet would make it unreadable, so it is sliced across pages at the same
-  // scale — the table simply continues, as a statement of account does.
-  const pageHeightPx = Math.floor((canvas.width * pageHeightMm) / pageWidthMm);
-  const slice = document.createElement("canvas");
-  slice.width = canvas.width;
-  const context = slice.getContext("2d");
-  if (!context) throw new Error("Could not prepare the page canvas.");
-
-  for (let offset = 0; offset < canvas.height; offset += pageHeightPx) {
-    const sliceHeight = Math.min(pageHeightPx, canvas.height - offset);
-    slice.height = sliceHeight;
-    context.fillStyle = "#ffffff";
-    context.fillRect(0, 0, slice.width, sliceHeight);
-    context.drawImage(canvas, 0, offset, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
-    if (offset > 0) pdf.addPage();
-    pdf.addImage(
-      slice.toDataURL("image/png"),
-      "PNG",
-      0,
-      0,
+  canvases.forEach((canvas, index) => {
+    placeCapturedSheet(pdf, canvas, {
       pageWidthMm,
-      (sliceHeight * pageWidthMm) / canvas.width
-    );
-  }
+      pageHeightMm,
+      multiPage: options.multiPage,
+      startNewPage: index > 0
+    });
+  });
 
   return pdf.output("blob");
 }
@@ -163,12 +199,14 @@ export type PdfOptions = {
  * print dialog.
  */
 export async function generateAndStoreReportPdf(
-  element: HTMLElement,
+  element: HTMLElement | HTMLElement[],
   reportNumber: string,
   previousUrl?: string,
   options: PdfOptions = {}
 ): Promise<string> {
-  const blob = await renderElementToPdfBlob(element, options);
+  const sheets = Array.isArray(element) ? element : [element];
+  if (!sheets.length) throw new Error("There is nothing to put in the PDF.");
+  const blob = await renderElementToPdfBlob(sheets, options);
   return storePdfBlob(blob, reportNumber, previousUrl);
 }
 
