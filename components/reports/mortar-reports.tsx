@@ -5,7 +5,7 @@ import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest,
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
-import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair, samplingOperator, BiText, samplingDisclaimerApplies, defaultReportNotes } from "./report-shared";
+import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair, samplingOperator, BiText, samplingDisclaimerApplies, defaultReportNotes, gradingCurvePath } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
 
 export function MortarReportPreview({
@@ -194,7 +194,7 @@ export function MortarGranulometryChart({ rows }: { rows: NonNullable<MortarTest
   const logMax = Math.log10(chart.max);
   const chartX = (sieveSizeMm: number) => chart.left + ((Math.log10(Math.min(Math.max(sieveSizeMm, chart.min), chart.max)) - logMin) / (logMax - logMin)) * (chart.right - chart.left);
   const chartY = (passingPercent: number) => chart.bottom - (Math.min(Math.max(passingPercent, 0), 100) / 100) * (chart.bottom - chart.top);
-  const passingPoints = chartRows.map((row) => `${round(chartX(row.sieveSizeMm), 1)},${round(chartY(row.passingPercent), 1)}`).join(" ");
+  const passingPath = gradingCurvePath(chartRows.map((row) => ({ x: chartX(row.sieveSizeMm), y: chartY(row.passingPercent) })));
   return (
     <div className="mt-2 border border-dashed border-black px-2 pb-1 pt-1">
       <div className="text-center text-[7pt] font-bold uppercase">GRAFIKU I SHPËRNDARJES SË MADHËSISË SË GRIMCËS / <span className="italic">GRAIN SIZE DISTRIBUTION GRAPH</span></div>
@@ -215,7 +215,7 @@ export function MortarGranulometryChart({ rows }: { rows: NonNullable<MortarTest
           const x = chartX(value);
           return <line key={value} x1={x} y1={chart.top} x2={x} y2={chart.bottom} stroke="#d5d5d5" strokeWidth="0.35" />;
         })}
-        {passingPoints ? <polyline points={passingPoints} fill="none" stroke="#ff2d20" strokeWidth="1.7" /> : null}
+        {passingPath ? <path d={passingPath} fill="none" stroke="#ff2d20" strokeWidth="1.7" /> : null}
         {chartRows.map((row) => <circle key={row.sieveSizeMm} cx={chartX(row.sieveSizeMm)} cy={chartY(row.passingPercent)} r="1.7" fill="#b7b7b7" stroke="#555" strokeWidth="0.3" />)}
         <text x="18" y="128" fontSize="7" textAnchor="middle">P A S S I N G %</text>
         <text x="582" y="128" fontSize="7" textAnchor="middle">R E T A I N E D %</text>

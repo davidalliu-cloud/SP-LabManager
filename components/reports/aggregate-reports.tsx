@@ -5,7 +5,7 @@ import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest,
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
-import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair, samplingOperator, SimpleReportLegalFooter, BiText, samplingDisclaimerApplies, defaultReportNotes } from "./report-shared";
+import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair, samplingOperator, SimpleReportLegalFooter, BiText, samplingDisclaimerApplies, defaultReportNotes, gradingCurvePath } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
 
 export function AggregateReportPreview({
@@ -42,8 +42,8 @@ export function AggregateReportPreview({
     return chart.left + ((Math.log10(clamped) - logMin) / (logMax - logMin)) * (chart.right - chart.left);
   };
   const chartY = (passingPercent: number) => chart.bottom - (Math.min(Math.max(passingPercent, 0), 100) / 100) * (chart.bottom - chart.top);
-  const passingPoints = sortedChartRows.map((row) => `${round(chartX(row.sieveSizeMm), 1)},${round(chartY(row.cumulativePassingPercent), 1)}`).join(" ");
-  const retainedPoints = sortedChartRows.map((row) => `${round(chartX(row.sieveSizeMm), 1)},${round(chartY(100 - row.cumulativePassingPercent), 1)}`).join(" ");
+  const passingPath = gradingCurvePath(sortedChartRows.map((row) => ({ x: chartX(row.sieveSizeMm), y: chartY(row.cumulativePassingPercent) })));
+  const retainedPath = gradingCurvePath(sortedChartRows.map((row) => ({ x: chartX(row.sieveSizeMm), y: chartY(100 - row.cumulativePassingPercent) })));
   const issueDate = report.issuedAt || report.approvedAt || aggregate.testEndDate || sample?.reportDueDate;
   const sampleLabel = sample?.sampleDescription || sample?.sampleType;
   return (
@@ -167,8 +167,8 @@ export function AggregateReportPreview({
             const x = chartX(value);
             return <line key={`minor-${index}`} x1={x} y1={chart.top} x2={x} y2={chart.bottom} stroke="#d5d5d5" strokeWidth="0.35" />;
           })}
-          {retainedPoints ? <polyline points={retainedPoints} fill="none" stroke="#9aa0a6" strokeWidth="1.2" /> : null}
-          {passingPoints ? <polyline points={passingPoints} fill="none" stroke="#ff2d20" strokeWidth="1.8" /> : null}
+          {retainedPath ? <path d={retainedPath} fill="none" stroke="#9aa0a6" strokeWidth="1.2" /> : null}
+          {passingPath ? <path d={passingPath} fill="none" stroke="#ff2d20" strokeWidth="1.8" /> : null}
           {sortedChartRows.map((row) => (
             <circle key={`point-${row.sieveSizeMm}`} cx={chartX(row.sieveSizeMm)} cy={chartY(row.cumulativePassingPercent)} r="1.8" fill="#b7b7b7" stroke="#555" strokeWidth="0.3" />
           ))}

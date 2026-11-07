@@ -636,3 +636,64 @@ export function ChemicalReportRow({ no, parameter, unit, method, result }: { no:
   );
 }
 
+
+/**
+ * A grading curve drawn as a curve.
+ *
+ * A sieve analysis is a continuous distribution sampled at a handful of
+ * openings, so joining the points with straight segments draws something the
+ * material never did — a chain of kinks at the sieves we happen to own. The
+ * printed curve should read as the smooth S the grading actually is.
+ *
+ * Monotone cubic Hermite (Fritsch–Carlson), not a plain spline: cumulative
+ * passing only ever rises with sieve size, and an ordinary Catmull-Rom
+ * overshoots at a flat shoulder — it would arch a curve above 100 % passing or
+ * below 0, or dip back on itself between two sieves, which on an accredited
+ * report would read as a measurement nobody made. Clamping the tangents keeps
+ * every point exactly where it was measured and the curve between them
+ * monotone.
+ *
+ * Takes points already in chart pixels, x ascending, and returns an SVG `d`.
+ */
+export function gradingCurvePath(points: Array<{ x: number; y: number }>) {
+  if (points.length < 2) return "";
+  const n = points.length;
+  const h: number[] = [];
+  const delta: number[] = [];
+  for (let i = 0; i < n - 1; i += 1) {
+    const dx = points[i + 1].x - points[i].x;
+    // Two sieves on the same x (a repeated opening) would divide by zero.
+    h.push(dx);
+    delta.push(dx === 0 ? 0 : (points[i + 1].y - points[i].y) / dx);
+  }
+
+  const m: number[] = new Array(n);
+  m[0] = delta[0];
+  m[n - 1] = delta[n - 2];
+  for (let i = 1; i < n - 1; i += 1) {
+    m[i] = delta[i - 1] * delta[i] <= 0 ? 0 : (delta[i - 1] + delta[i]) / 2;
+  }
+  for (let i = 0; i < n - 1; i += 1) {
+    if (delta[i] === 0) {
+      m[i] = 0;
+      m[i + 1] = 0;
+      continue;
+    }
+    const alpha = m[i] / delta[i];
+    const beta = m[i + 1] / delta[i];
+    const magnitude = Math.hypot(alpha, beta);
+    if (magnitude > 3) {
+      const scale = 3 / magnitude;
+      m[i] = scale * alpha * delta[i];
+      m[i + 1] = scale * beta * delta[i];
+    }
+  }
+
+  const at = (value: number) => round(value, 2);
+  let d = `M ${at(points[0].x)},${at(points[0].y)}`;
+  for (let i = 0; i < n - 1; i += 1) {
+    const third = h[i] / 3;
+    d += ` C ${at(points[i].x + third)},${at(points[i].y + m[i] * third)} ${at(points[i + 1].x - third)},${at(points[i + 1].y - m[i + 1] * third)} ${at(points[i + 1].x)},${at(points[i + 1].y)}`;
+  }
+  return d;
+}
