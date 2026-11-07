@@ -24,8 +24,13 @@ export function AggregateReportPreview({
   aggregate: AggregateGradationTest;
 }) {
   const rows = aggregate.rows;
+  // The pan — the 0 mm row — is part of the curve, not a footnote to it. It
+  // used to be filtered out because log(0) has no place on a logarithmic axis,
+  // which left the curve starting in mid-air above the left edge instead of
+  // running down to the origin. chartX clamps to the axis minimum, so the pan
+  // is drawn on the left edge at the percentage that actually passed it.
   const sortedChartRows = rows
-    .filter((row) => row.sieveSizeMm > 0)
+    .filter((row) => row.sieveSizeMm >= 0)
     .sort((a, b) => a.sieveSizeMm - b.sieveSizeMm);
   const chart = {
     left: 52,
@@ -43,7 +48,6 @@ export function AggregateReportPreview({
   };
   const chartY = (passingPercent: number) => chart.bottom - (Math.min(Math.max(passingPercent, 0), 100) / 100) * (chart.bottom - chart.top);
   const passingPath = gradingCurvePath(sortedChartRows.map((row) => ({ x: chartX(row.sieveSizeMm), y: chartY(row.cumulativePassingPercent) })));
-  const retainedPath = gradingCurvePath(sortedChartRows.map((row) => ({ x: chartX(row.sieveSizeMm), y: chartY(100 - row.cumulativePassingPercent) })));
   /**
    * Where the nth letter of a side axis title sits.
    *
@@ -180,7 +184,9 @@ export function AggregateReportPreview({
               const x = chartX(value);
               return <line key={`minor-${index}`} x1={x} y1={chart.top} x2={x} y2={chart.bottom} stroke="#d5d5d5" strokeWidth="0.35" />;
             })}
-            {retainedPath ? <path d={retainedPath} fill="none" stroke="#9aa0a6" strokeWidth="1.2" /> : null}
+            {/* Cumulative passing only. The retained curve was its mirror —
+                100 minus the same figures — and said nothing the right-hand
+                scale does not already say. */}
             {passingPath ? <path d={passingPath} fill="none" stroke="#ff2d20" strokeWidth="1.8" /> : null}
             {sortedChartRows.map((row) => (
               <circle key={`point-${row.sieveSizeMm}`} cx={chartX(row.sieveSizeMm)} cy={chartY(row.cumulativePassingPercent)} r="1.8" fill="#b7b7b7" stroke="#555" strokeWidth="0.3" />
