@@ -979,11 +979,13 @@ textarea {
     height: auto !important;
   }
 
-  /* The sieve ladder is the result. It was set at 7.8px — under 6pt — because
-     it was sharing a sheet with the chart; on a sheet of its own it is set at
-     a size a reader can check a figure in. */
-  .aggregate-gradation-report table {
-    font-size: 9pt !important;
+  /* The sample details and the sieve ladder are one document and are set at
+     one size. Both were under 6pt, to fit a sheet they were sharing with the
+     chart; 7pt is what they fit at now the chart has its own sheet, and it
+     leaves the first sheet about 30mm short of the print box. */
+  .aggregate-gradation-report table,
+  .aggregate-gradation-report .gradation-meta {
+    font-size: 7pt !important;
   }
 
   .aggregate-gradation-report table th,
@@ -992,6 +994,9 @@ textarea {
     line-height: 1.25 !important;
   }
 
+  /* The sample and client details read as one document with the table below
+     them, so they are set at the same size. They were at 7.8px against the
+     table's 9pt, which made the head of the sheet look like a footnote to it. */
   .aggregate-gradation-report .gradation-meta {
     line-height: 1.25 !important;
     row-gap: 1px !important;
@@ -1562,8 +1567,9 @@ textarea {
    a line struck through every figure. Moving the padding to the bottom and
    top-aligning the content opens that to 7px without making the row taller. */
 /* KEEP IN SYNC with the print rule. */
-.aggregate-gradation-report.pdf-capture table {
-    font-size: 9pt !important;
+.aggregate-gradation-report.pdf-capture table,
+.aggregate-gradation-report.pdf-capture .gradation-meta {
+    font-size: 7pt !important;
 }
 
 .aggregate-gradation-report.pdf-capture table th,

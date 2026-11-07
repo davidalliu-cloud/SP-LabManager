@@ -68,7 +68,7 @@ export function AggregateReportPreview({
       <section className="report-a4 aggregate-gradation-report gradation-page-1 print-surface relative rounded-md border border-line bg-white p-6 text-[#111] shadow-sm" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
         <GradationHeader reportNumber={report.reportNumber} page="1/2" />
 
-        <div className="gradation-meta mt-4 grid grid-cols-[210px_1fr] gap-x-10 text-[7.8px] leading-tight">
+        <div className="gradation-meta mt-4 grid grid-cols-[210px_1fr] gap-x-10 text-[7pt] leading-tight">
           <AggregateMeta label="Nr. REGJISTRI / REGISTER No.:" value={sample?.sampleCode} />
           <AggregateMeta label="KLIENTI / PURCHASER:" value={client?.clientName} />
           <AggregateMeta label="ADRESA / ADDRESS:" value={client?.address} />
@@ -102,7 +102,7 @@ export function AggregateReportPreview({
           </div>
         </div>
 
-        <table className="mt-3 w-full border-collapse text-center text-[7.8px] leading-tight">
+        <table className="mt-3 w-full border-collapse text-center text-[7pt] leading-tight">
           <thead>
             <tr>
               <th className="border border-black py-0.5 font-bold">Sitat<br /><span className="font-normal italic">Sieves</span></th>
@@ -143,7 +143,7 @@ export function AggregateReportPreview({
 
         {/* A loose second sheet has to say which report and which sample it
             belongs to, or it is a graph of nothing. */}
-        <div className="gradation-meta mt-4 grid grid-cols-[210px_1fr] gap-x-10 text-[7.8px] leading-tight">
+        <div className="gradation-meta mt-4 grid grid-cols-[210px_1fr] gap-x-10 text-[7pt] leading-tight">
           <AggregateMeta label="Nr. REGJISTRI / REGISTER No.:" value={sample?.sampleCode} />
           <AggregateMeta label="KLIENTI / PURCHASER:" value={client?.clientName} />
           <AggregateMeta label="OBJEKTI / OBJECT:" value={project?.projectName} />
