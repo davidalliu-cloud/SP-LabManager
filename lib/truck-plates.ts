@@ -22,8 +22,9 @@ export function platesForReport(
   const plates: string[] = [];
 
   for (const specimen of specimens) {
-    const plate = specimen?.truckPlate?.trim();
-    if (!plate) continue;
+    const typed = specimen?.truckPlate?.trim();
+    if (!typed) continue;
+    const plate = plateOnly(typed);
     // Case and inner spacing vary with whoever typed it; AA123BB and
     // aa 123 bb are one truck, and the register should not imply two.
     const key = plate.replace(/\s+/g, "").toUpperCase();
@@ -40,4 +41,36 @@ export function platesForReport(
 export function formatPlatesForReport(specimens: { truckPlate?: string }[], limit = 3) {
   const plates = platesForReport(specimens, limit);
   return plates.length ? `Targat / Plates: ${plates.join(", ")}` : undefined;
+}
+
+/**
+ * Where the registration stops, in a plate box that holds more than one thing.
+ *
+ * Either a separator, or the first word that names something else about the
+ * delivery. The hour is written ORA or ORE and the plant IMPIANTI or IMP, and
+ * neither is ever part of a registration.
+ */
+const PLATE_ENDS = /[,;]|\b(?:ora|ore|data|kuota|imp|impiant|impjant|fabrik)/i;
+
+/**
+ * The registration alone, out of whatever was typed into the plate box.
+ *
+ * The box is one line on the worksheet, and the delivery note in front of the
+ * technician carries three things, so some of them type all three:
+ * "AB 916 KK, ORA 10:00, IMP 2" — the plate, the hour the lorry left, and the
+ * plant it was mixed at. Printed whole, that line reads as a registration: the
+ * certificate's plate line names an hour and a plant as though they were
+ * trucks, and the client's own summary shows the plant under Targa with a dash
+ * under Impianti, which is how this was noticed.
+ *
+ * Nothing is lost by cutting here. The plant is read back out of the same text
+ * by `batchingPlant`, and the line as typed stays in the register and on the
+ * worksheet.
+ */
+export function plateOnly(text: string) {
+  const cut = text.search(PLATE_ENDS);
+  const plate = (cut < 0 ? text : text.slice(0, cut)).replace(/[,;.\s]+$/, "").trim();
+  // A line that starts with one of those words has no registration in front of
+  // it. Better to show what was typed than an empty cell.
+  return plate || text.trim();
 }

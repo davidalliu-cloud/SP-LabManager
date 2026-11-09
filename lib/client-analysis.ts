@@ -1,6 +1,7 @@
-import { batchingPlantsBySample } from "./batching-plant";
+import { batchingPlant, batchingPlantsBySample } from "./batching-plant";
 import { labMonthly, quantityMode, type OfferValues } from "./offer-fill";
 import { priceReport, type PriceSource } from "./offer-pricing";
+import { plateOnly } from "./truck-plates";
 import type {
   Client,
   ConcreteCompressiveTest,
@@ -131,7 +132,7 @@ export type ConcreteCubeRow = {
   /**
    * Impianti — which batching plant the pour was mixed at, where the worksheet
    * said so. Undefined is the common case and prints as a dash: most clients
-   * never record it.
+   * never record it. A cube that names its own plant overrides this one.
    */
   batchingPlant: string | undefined;
   strengthClass: string;
@@ -151,6 +152,12 @@ export type ConcreteCubeLine = {
   loadKn: number | undefined;
   strengthMpa: number | undefined;
   truckPlate: string | undefined;
+  /**
+   * Impianti, where this cube's own plate line named it. Per cube rather than
+   * per pour because that is how it is written: one delivery note per lorry,
+   * and a pour can arrive from two plants.
+   */
+  batchingPlant: string | undefined;
 };
 
 export type ConcreteSummary = {
@@ -325,7 +332,8 @@ export function buildClientAnalysis(
             weightKg: specimen.weightKg,
             loadKn: specimen.maximumLoadKn,
             strengthMpa: specimen.compressiveStrengthMpa,
-            truckPlate: specimen.truckPlate?.trim() || undefined
+            truckPlate: plateOnly(specimen.truckPlate ?? "") || undefined,
+            batchingPlant: batchingPlant(specimen.truckPlate)
           }))
         : [
             {
@@ -334,7 +342,8 @@ export function buildClientAnalysis(
               weightKg: result.weight,
               loadKn: result.maximumLoadKn,
               strengthMpa: result.compressiveStrengthMpa,
-              truckPlate: result.truckPlates?.[0]?.trim() || undefined
+              truckPlate: plateOnly(result.truckPlates?.[0] ?? "") || undefined,
+              batchingPlant: batchingPlant(result.truckPlates?.[0])
             }
           ];
       const strengths = cubes

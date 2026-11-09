@@ -563,7 +563,11 @@ export default function ClientAnalysisPage() {
                             <span className="block text-[11px] text-muted">{row.projectName}</span>
                           ) : null}
                         </td>
-                        <td className="whitespace-nowrap px-3 py-1.5">{row.batchingPlant ?? "—"}</td>
+                        {/* The cube's own plant where its plate line named one, since a
+                            pour can arrive from two; otherwise the pour's. */}
+                        <td className="whitespace-nowrap px-3 py-1.5">
+                          {cube.batchingPlant ?? row.batchingPlant ?? "—"}
+                        </td>
                         <td className="whitespace-nowrap px-3 py-1.5 tabular-nums">{row.strengthClass}</td>
                         <td className="whitespace-nowrap px-3 py-1.5 tabular-nums">{formatEuropeanDate(row.castingDate)}</td>
                         <td className="whitespace-nowrap px-3 py-1.5 tabular-nums">{formatEuropeanDate(row.testDate)}</td>

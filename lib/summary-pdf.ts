@@ -274,9 +274,15 @@ export async function buildSummaryPdf(input: SummaryPdfInput): Promise<Blob> {
         width: 52,
         value: ({ row }) => [row.element, row.projectName !== "—" ? row.projectName : ""].filter(Boolean).join(" · ")
       },
-      // Which plant mixed the pour, so a client reading down the month can see
-      // whether a run of low results came off one of theirs.
-      { header: "Impianti", width: 20, value: ({ row }) => row.batchingPlant ?? "—" },
+      // Which plant mixed the concrete, so a client reading down the month can
+      // see whether a run of low results came off one of theirs. Per cube where
+      // the cube's own plate line named a plant, because a pour can arrive from
+      // two.
+      {
+        header: "Impianti",
+        width: 20,
+        value: ({ row, cube }) => cube.batchingPlant ?? row.batchingPlant ?? "—"
+      },
       { header: "Klasa", width: 17, value: ({ row }) => row.strengthClass },
       { header: "Betonimi", width: 21, value: ({ row }) => formatEuropeanDate(row.castingDate) },
       { header: "Prova", width: 21, value: ({ row }) => formatEuropeanDate(row.testDate) },
