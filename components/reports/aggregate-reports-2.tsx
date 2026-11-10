@@ -471,7 +471,14 @@ export function AggregateSandEquivalentReportPreview({
         </tbody>
       </table>
       <OfficialAsterisk />
+      {/* Three result rows: the sheet is half empty by the time it reaches the
+          notes. Pinned to the foot, the signature sat 50mm below the last
+          thing written, with a band of blank paper between — so the page read
+          as though something had failed to print. Flowing it keeps the
+          certificate continuous and leaves the empty paper at the bottom,
+          where empty paper belongs. */}
       <OfficialNotesAndFooter
+        layout="flow"
         notes={aggregateSandEquivalent.notes}
         testedBy={aggregateSandEquivalent.technicianName || report.draftedBy}
         responsible={aggregateSandEquivalent.checkedBy}
