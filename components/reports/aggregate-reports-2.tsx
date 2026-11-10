@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabTest, MortarTest, Project, Report, Sample, SteelTensileTest, ThermalInsulationTest } from "@/lib/types";
+import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, DensityAbsorptionSpecimen, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabTest, MortarTest, Project, Report, Sample, SteelTensileTest, ThermalInsulationTest } from "@/lib/types";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
@@ -24,90 +24,80 @@ export function AggregateDensityReportPreview({
   aggregateDensity: AggregateDensityAbsorptionTest;
 }) {
   const issueDate = report.issuedAt || report.approvedAt || aggregateDensity.testEndDate || sample?.reportDueDate;
-  const sampleValues = (selector: (index: number) => number) => [selector(0), selector(1)];
+  const specimens = [aggregateDensity.specimens[0], aggregateDensity.specimens[1]];
+  const each = (read: (specimen: DensityAbsorptionSpecimen) => number | undefined) =>
+    specimens.map((specimen) => (specimen ? read(specimen) : undefined));
   return (
-    <section className="report-a4 simple-report print-surface rounded-md border border-line bg-white p-8 shadow-sm">
-      <ReportHeader
-        report={report}
-        code="SL-RA-AG-7.8/1.2"
-        title="RAPORT TESTIMI / TEST REPORT"
-        subtitle="Particle density and water absorption"
+    <OfficialReportShell report={report} code="SL-RA-AG-7.8/1.2" className="compact-official-report">
+      <OfficialMetaGrid entries={[
+        { sq: "Nr. REGJISTRI", en: "REGISTER No.", value: sample?.sampleCode },
+        { sq: "KLIENTI", en: "PURCHASER", value: client?.clientName },
+        { sq: "ADRESA", en: "ADRESS", value: client?.address },
+        { sq: "KONTAKTET", en: "CONTACT", value: client?.phone || client?.email },
+        { sq: "OBJEKTI", en: "OBJECT", value: project?.projectName },
+        { sq: "KAMPIONI", en: "SAMPLE", value: sample?.sampleDescription || sample?.sampleType },
+        { sq: "DATA E MARRJES SË KAMPIONIT", en: "SAMPLING DATE", value: samplingDate(sample) },
+        { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: sample?.dateReceived }
+      ]} />
+      <div className="mt-1 grid grid-cols-[315px_1fr] gap-x-8 gap-y-1 text-[10pt] leading-[1.15]">
+        <OfficialTestingDates start={aggregateDensity.testStartDate} end={aggregateDensity.testEndDate} />
+        <OfficialMetaGrid className="contents" entries={[
+          { sq: "OPERATORI I MARRJES SË KAMPIONIT", en: "SAMPLING OPERATOR", value: samplingOperator(sample) },
+          { sq: "TESTI", en: "TEST", value: "PËRCAKTIMI I DENSITETIT SPECIFIK DHE ABSORBIMIT* / DETERMINATION OF PARTICLE DENSITY AND WATER ABSORPTION*" },
+          { sq: "METODA E TESTIMIT", en: "TEST METHOD", value: aggregateDensity.testMethod || "Metoda me piknometer / Pycnometer method" },
+          { sq: "STANDARDI I TESTIMIT", en: "TEST STANDARD", value: test?.standard || "BS EN 1097-6:2022" },
+          { sq: "VENDI KU ËSHTË PERFORMUAR TESTI", en: "LABORATORY LOCATION", value: aggregateDensity.testingLocation || "01/A (Laboratori Fiziko-Mekanik / Physical-Mechanical Laboratory)" }
+        ]} />
+        <OfficialEnvironmental
+          temperature={aggregateDensity.temperature}
+          humidity={aggregateDensity.humidity}
+          humidityLabel={<>Lagështia / <span className="italic">Relative Humidity</span></>}
+        />
+      </div>
+      <div className="mt-3 text-center text-[10pt] font-bold">Rezultatet e testimit / <span className="italic font-normal">Test results</span></div>
+      <table className="official-table mt-1 w-full border-collapse text-center text-[9pt]">
+        <thead>
+          <tr>
+            <th rowSpan={2} className="w-[7%]">Nr.<br /><span>No.</span></th>
+            <th rowSpan={2}>Përshkrimi<br /><span>Description</span></th>
+            <th rowSpan={2} className="w-[9%]">Njësia<br /><span>Unit</span></th>
+            <th colSpan={2} className="w-[26%]">Mostra / <span>Sample</span></th>
+          </tr>
+          <tr><th className="w-[13%]">1</th><th className="w-[13%]">2</th></tr>
+        </thead>
+        <tbody>
+          <DensityReportRow no="1" sq="Temperatura" en="Temperature" unit="ºC" decimals={0} values={each((specimen) => specimen.waterTemperatureC)} />
+          <DensityReportRow no="2" sq="Densiteti i ujit" en="Water density" unit="g/Lt" decimals={4} values={each((specimen) => specimen.waterDensity)} />
+          <DensityReportRow no="3" sq="Pesha e agregatit në gjendje të thatë" en="Mass of oven dry test portion in air [A]" unit="g" decimals={2} values={each((specimen) => specimen.ovenDryMassG)} />
+          <DensityReportRow no="4" sq="Pesha e agregatit SSD" en="Mass of saturated and surface dry of aggregate in the air [S]" unit="g" decimals={2} values={each((specimen) => specimen.ssdMassG)} />
+          <DensityReportRow no="5" sq="Masa e piknometrit me ujë" en="Mass of the pyknometer with water [B]" unit="g" decimals={2} values={each((specimen) => specimen.pycnometerWaterMassG)} />
+          <DensityReportRow no="6" sq="Masa e piknometrit me ujë + agregat" en="Mass of the pyknometer with water + aggregate [C]" unit="g" decimals={2} values={each((specimen) => specimen.pycnometerWaterSampleMassG)} />
+          {/* The unit spans each per-sample row and the average under it, as the
+              template merges them: one unit for the pair of lines. */}
+          <DensityReportRow no="7" sq="Vlera e absorbimit të çdo mostre" en="Each sample absorption value" unit="%" unitRowSpan={2} decimals={2} values={each((specimen) => specimen.absorptionPercent)} />
+          <DensityReportRow no="8" sq="Vlera mesatare e absorbimit" en="Absorption average value" decimals={2} average={aggregateDensity.averageAbsorptionPercent} />
+          <DensityReportRow no="9" sq="Pesha specifike në gjendje të thatë (për çdo mostër)" en="Bulk specifik gravity OD (for each sample)" unit="Mg/m³" unitRowSpan={2} decimals={3} values={each((specimen) => specimen.ovenDryBulkDensity)} />
+          <DensityReportRow no="10" sq="Pesha specifike në të thatë (mesatarja)" en="Oven dry bulk specific gravity (Gsb)" decimals={3} average={aggregateDensity.averageOvenDryBulkDensity} />
+          <DensityReportRow no="11" sq="Pesha specifike SSD (për çdo mostër)" en="Bulk specific gravity SSD (for each sample)" unit="Mg/m³" unitRowSpan={2} decimals={3} values={each((specimen) => specimen.ssdBulkDensity)} />
+          <DensityReportRow no="12" sq="Peshë specifike SSD (mesatarja)" en="SSD bulk specific density (Gsb SSD)" decimals={3} average={aggregateDensity.averageSsdBulkDensity} />
+          <DensityReportRow no="13" sq="Pesha specifike (për çdo mostër)" en="Apparent particle density (for each sample)" unit="Mg/m³" unitRowSpan={2} decimals={3} values={each((specimen) => specimen.apparentDensity)} />
+          <DensityReportRow no="14" sq="Pesha specifike" en="Apparent particle density (Gsa)" decimals={3} average={aggregateDensity.averageApparentDensity} />
+        </tbody>
+      </table>
+      <div className="mt-1 text-[8pt] leading-tight">
+        <div>Pasiguria në matje për peshën specifike aparente / <span className="italic">Measurement uncertainty of apparent particle density</span> 0.010 Mg/m³</div>
+        <div>Pasiguria në matje për absorbimin / <span className="italic">Measurement uncertainty of water absorption</span> 0.08%</div>
+      </div>
+      <OfficialAsterisk />
+      <OfficialNotesAndFooter
+        notes={aggregateDensity.notes}
+        testedBy={aggregateDensity.technicianName || report.draftedBy}
+        testedByLabel={<>TESTUESI / <span className="italic font-normal">TESTED BY</span></>}
+        responsible={aggregateDensity.checkedBy}
+        issueDate={issueDate}
+        sampledBy={samplingOperator(sample)}
       />
-
-      <div className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
-        <Info label="Register No." value={sample?.sampleCode} />
-        <Info label="Client / Purchaser" value={client?.clientName} />
-        <Info label="Address" value={client?.address} />
-        <Info label="Contact" value={client?.phone || client?.email} />
-        <Info label="Object / Project" value={project?.projectName} />
-        <Info label="Sample" value={sample?.sampleDescription || sample?.sampleType} />
-        <Info label="Sampling date" value={sample?.dateReceived} />
-        <Info label="Receipt date" value={sample?.dateReceived} />
-        <Info label="Sampling operator" value={samplingOperator(sample)} />
-        <Info label="Testing start" value={aggregateDensity.testStartDate} />
-        <Info label="Testing end" value={aggregateDensity.testEndDate} />
-        <Info label="Test method" value={aggregateDensity.testMethod || "Metoda me piknometer / Pycnometer method"} />
-        <Info label="Test standard" value={test?.standard || "BS EN 1097-6:2022"} />
-        <Info label="Lab location" value={aggregateDensity.testingLocation || "01/A Laboratori Fiziko-Mekanik / Physical-Mechanical Laboratory"} />
-        <Info label="Temperature" value={aggregateDensity.temperature} />
-        <Info label="Relative humidity" value={aggregateDensity.humidity} />
-      </div>
-
-      <div className="mt-8">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-ink"><BiText>Test results / Rezultatet e testimit</BiText></h3>
-        <div className="mt-3 overflow-x-auto rounded-md border border-line">
-          <table className="w-full min-w-[980px] text-left text-sm">
-            <thead className="table-head">
-              <tr>
-                <th className="px-3 py-2">No.</th>
-                <th className="px-3 py-2">Description</th>
-                <th className="px-3 py-2">Unit</th>
-                <th className="px-3 py-2">Sample 1</th>
-                <th className="px-3 py-2">Sample 2</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              <DensityReportRow no="1" label="Temperature" unit="C" values={sampleValues((index) => aggregateDensity.specimens[index]?.waterTemperatureC ?? 0)} />
-              <DensityReportRow no="2" label="Water density" unit="g/Lt" values={sampleValues((index) => aggregateDensity.specimens[index]?.waterDensity ?? 0)} />
-              <DensityReportRow no="3" label="Mass of oven dry test portion in air [A]" unit="g" values={sampleValues((index) => aggregateDensity.specimens[index]?.ovenDryMassG ?? 0)} />
-              <DensityReportRow no="4" label="Mass of saturated and surface dry aggregate in air [S]" unit="g" values={sampleValues((index) => aggregateDensity.specimens[index]?.ssdMassG ?? 0)} />
-              <DensityReportRow no="5" label="Mass of pycnometer with water [B]" unit="g" values={sampleValues((index) => aggregateDensity.specimens[index]?.pycnometerWaterMassG ?? 0)} />
-              <DensityReportRow no="6" label="Mass of pycnometer with water + aggregate [C]" unit="g" values={sampleValues((index) => aggregateDensity.specimens[index]?.pycnometerWaterSampleMassG ?? 0)} />
-              <DensityReportRow no="7" label="Each sample absorption value" unit="%" values={sampleValues((index) => aggregateDensity.specimens[index]?.absorptionPercent ?? 0)} />
-              <DensityReportRow no="8" label="Absorption average value" unit="%" values={[aggregateDensity.averageAbsorptionPercent]} />
-              <DensityReportRow no="9" label="Oven dry bulk specific gravity for each sample" unit="Mg/m3" values={sampleValues((index) => aggregateDensity.specimens[index]?.ovenDryBulkDensity ?? 0)} />
-              <DensityReportRow no="10" label="Oven dry bulk specific gravity average (Gsb)" unit="Mg/m3" values={[aggregateDensity.averageOvenDryBulkDensity]} />
-              <DensityReportRow no="11" label="SSD bulk specific density for each sample" unit="Mg/m3" values={sampleValues((index) => aggregateDensity.specimens[index]?.ssdBulkDensity ?? 0)} />
-              <DensityReportRow no="12" label="SSD bulk specific density average (Gsb SSD)" unit="Mg/m3" values={[aggregateDensity.averageSsdBulkDensity]} />
-              <DensityReportRow no="13" label="Apparent particle density for each sample" unit="Mg/m3" values={sampleValues((index) => aggregateDensity.specimens[index]?.apparentDensity ?? 0)} />
-              <DensityReportRow no="14" label="Apparent particle density average (Gsa)" unit="Mg/m3" values={[aggregateDensity.averageApparentDensity]} />
-            </tbody>
-          </table>
-        </div>
-        <div className="mt-3 space-y-1 text-xs text-muted">
-          <div>Measurement uncertainty of apparent particle density: 0.010 Mg/m3.</div>
-          <div>Measurement uncertainty of water absorption: 0.08%.</div>
-          <div>Asterisk (*) means that the laboratory is accredited for this test.</div>
-        </div>
-      </div>
-
-      <div className="mt-8 soft-panel p-4 text-sm text-ink">
-        <div className="font-semibold"><BiText>Notes / Shënime</BiText></div>
-        <p className="mt-1">{aggregateDensity.notes || defaultReportNotes(samplingOperator(sample))}</p>
-      </div>
-
-      <SignaturePair
-        wrapperClassName="mt-10"
-        columnClassName="grid gap-6 sm:grid-cols-2"
-        testedByLabel="TESTUESI / TESTED BY"
-        testedByName={aggregateDensity.technicianName || report.draftedBy}
-        responsibleLabel="PËRGJEGJËSI I LABORATORIT / LABORATORY RESPONSIBLE"
-        responsibleName={headOfLabName(aggregateDensity.checkedBy)}
-        align="start"
-        bordered
-      />
-      <SimpleReportLegalFooter issueDate={issueDate} sampledBy={samplingOperator(sample)} />
-    </section>
+    </OfficialReportShell>
   );
 }
 
@@ -421,42 +411,74 @@ export function AggregateSandEquivalentReportPreview({
 }) {
   const issueDate = report.issuedAt || report.approvedAt || aggregateSandEquivalent.testEndDate || sample?.reportDueDate;
   return (
-    <section className="report-a4 simple-report print-surface rounded-md border border-line bg-white p-8 shadow-sm">
-      <ReportHeader report={report} code="SL-RA-AG-7.8/1.8" title="RAPORT TESTIMI / TEST REPORT" subtitle="Sand Equivalent test" />
-      <div className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
-        <Info label="Register No." value={sample?.sampleCode} />
-        <Info label="Client / Purchaser" value={client?.clientName} />
-        <Info label="Object / Project" value={project?.projectName} />
-        <Info label="Sample" value={sample?.sampleDescription || sample?.sampleType} />
-        <Info label="Receipt date" value={sample?.dateReceived} />
-        <Info label="Sampling operator" value={samplingOperator(sample)} />
-        <Info label="Testing date" value={aggregateSandEquivalent.testStartDate} />
-        <Info label="Test standard" value={test?.standard || "BS EN 933-8:2012+A1:2015"} />
-        <Info label="Testing place" value={aggregateSandEquivalent.testingLocation} />
+    <OfficialReportShell report={report} code="SL-RA-AG-7.8/1.8" className="compact-official-report">
+      <OfficialMetaGrid entries={[
+        { sq: "Nr. REGJISTRI", en: "REGISTER No.", value: sample?.sampleCode },
+        { sq: "KLIENTI", en: "PURCHASER", value: client?.clientName },
+        { sq: "ADRESA", en: "ADRESS", value: client?.address },
+        { sq: "KONTAKTET", en: "CONTACT", value: client?.phone || client?.email },
+        { sq: "OBJEKTI", en: "OBJECT", value: project?.projectName },
+        { sq: "KAMPIONI", en: "SAMPLE", value: sample?.sampleDescription || sample?.sampleType },
+        { sq: "DATA E MARRJES SË KAMPIONIT", en: "SAMPLING DATE", value: samplingDate(sample) },
+        { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: sample?.dateReceived }
+      ]} />
+      <div className="mt-1 grid grid-cols-[315px_1fr] gap-x-8 gap-y-1 text-[10pt] leading-[1.15]">
+        <OfficialTestingDates start={aggregateSandEquivalent.testStartDate} end={aggregateSandEquivalent.testEndDate} />
+        <OfficialMetaGrid className="contents" entries={[
+          { sq: "OPERATORI I MARRJES SË KAMPIONIT", en: "SAMPLING OPERATOR", value: samplingOperator(sample) },
+          { sq: "TESTI", en: "TEST", value: "VLERËSIMI I IMTËSISË. PËRCAKTIMI I EKUIVALENTIT TË RËRËS* / ASSESSMENT OF FINES. SAND EQUIVALENT TEST*" },
+          { sq: "STANDARDI I TESTIMIT", en: "TEST STANDARD", value: test?.standard || "BS EN 933-8:2012+A1:2015" },
+          { sq: "VENDI KU ËSHTË PERFORMUAR TESTI", en: "LAB. LOCATION", value: aggregateSandEquivalent.testingLocation || "01/A (Laboratori Fiziko-Mekanik / Physical-Mechanical Laboratory)" }
+        ]} />
+        <OfficialEnvironmental
+          temperature={aggregateSandEquivalent.temperature}
+          humidity={aggregateSandEquivalent.humidity}
+          humidityLabel={<>Lagështia relative / <span className="italic">Relative Humidity</span></>}
+        />
       </div>
-      <div className="mt-8 overflow-x-auto rounded-md border border-line">
-        <table className="w-full min-w-[760px] text-left text-sm">
-          <thead className="table-head"><tr><th className="px-3 py-2">Result</th><th className="px-3 py-2">Unit</th><th className="px-3 py-2">Value</th><th className="px-3 py-2">Uncertainty</th></tr></thead>
-          <tbody className="divide-y divide-line">
-            <tr><td className="px-3 py-2 font-semibold text-ink">Water content</td><td className="px-3 py-2">%</td><td className="px-3 py-2">{aggregateSandEquivalent.averageMoisturePercent}</td><td className="px-3 py-2">-</td></tr>
-            <tr><td className="px-3 py-2 font-semibold text-ink">Fines content</td><td className="px-3 py-2">%</td><td className="px-3 py-2">{aggregateSandEquivalent.averageFinesPercent}</td><td className="px-3 py-2">-</td></tr>
-            <tr><td className="px-3 py-2 font-semibold text-ink">Sand equivalent SE10</td><td className="px-3 py-2">%</td><td className="px-3 py-2 font-semibold text-ink">{aggregateSandEquivalent.sandEquivalentValue}</td><td className="px-3 py-2">1</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div className="mt-8 soft-panel p-4 text-sm text-ink"><div className="font-semibold"><BiText>Notes / Shënime</BiText></div><p className="mt-1">{aggregateSandEquivalent.notes || "This test report belongs only to the tested sample."}</p></div>
-      <SignaturePair
-        wrapperClassName="mt-10"
-        columnClassName="grid gap-6 sm:grid-cols-2"
-        testedByLabel="TESTUAR NGA / TESTED BY"
-        testedByName={aggregateSandEquivalent.technicianName || report.draftedBy}
-        responsibleLabel="PËRGJEGJËSI I LABORATORIT / HEAD OF LABORATORY"
-        responsibleName={headOfLabName(aggregateSandEquivalent.checkedBy)}
-        align="start"
-        bordered
+      <table className="official-table mt-6 w-full border-collapse text-center text-[10pt]">
+        <thead>
+          <tr>
+            <th className="w-[45%]">Parametri i matur<br /><span>Measured parameter</span></th>
+            <th>Njësitë<br /><span>Units</span></th>
+            <th>Rezultati i testimit<br /><span>Test Result</span></th>
+            <th>Pasiguria në matje<br /><span>Measurement uncertainty</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {/* The uncertainty is stated for the sand equivalent only. The
+              template hatches the other two cells to say so; this suite prints
+              no fills, so they are left empty rather than carrying a figure
+              that was never declared for them. */}
+          <tr>
+            <td className="text-left">Përmbajtja e lagështisë / <span className="italic">Water content</span></td>
+            <td>%</td>
+            <td>{reportFigure(aggregateSandEquivalent.averageMoisturePercent, 2)}</td>
+            <td />
+          </tr>
+          <tr>
+            <td className="text-left">Përmbajtja e finesës / <span className="italic">Fines content</span></td>
+            <td>%</td>
+            <td>{reportFigure(aggregateSandEquivalent.averageFinesPercent, 2)}</td>
+            <td />
+          </tr>
+          <tr>
+            <td className="text-left font-bold">Ekuivalenti i rërës / <span className="italic">Sand equivalent value</span> (SE<sub>10</sub>)</td>
+            <td>_</td>
+            <td className="font-bold">{reportFigure(aggregateSandEquivalent.sandEquivalentValue, 0)}</td>
+            <td>1</td>
+          </tr>
+        </tbody>
+      </table>
+      <OfficialAsterisk />
+      <OfficialNotesAndFooter
+        notes={aggregateSandEquivalent.notes}
+        testedBy={aggregateSandEquivalent.technicianName || report.draftedBy}
+        responsible={aggregateSandEquivalent.checkedBy}
+        issueDate={issueDate}
+        sampledBy={samplingOperator(sample)}
       />
-      <SimpleReportLegalFooter issueDate={issueDate} sampledBy={samplingOperator(sample)} />
-    </section>
+    </OfficialReportShell>
   );
 }
 
@@ -660,16 +682,68 @@ export function AggregateFlakinessReportPreview({
   );
 }
 
-export function DensityReportRow({ no, label, unit, values }: { no: string; label: string; unit: string; values: number[] }) {
-  const padded = [values[0], values[1]];
+export function DensityReportRow({
+  no,
+  sq,
+  en,
+  unit,
+  unitRowSpan,
+  decimals,
+  values,
+  average
+}: {
+  no: string;
+  sq: string;
+  en: string;
+  unit?: string;
+  /** How many rows this unit cell covers, where the template merges it. */
+  unitRowSpan?: number;
+  decimals: number;
+  values?: Array<number | undefined>;
+  /**
+   * An average line. It runs across both sample columns, because an average of
+   * the two is not a result belonging to either one.
+   */
+  average?: number;
+}) {
   return (
     <tr>
-      <td className="px-3 py-2 font-semibold text-ink">{no}</td>
-      <td className="px-3 py-2">{label}</td>
-      <td className="px-3 py-2">{unit}</td>
-      {padded.map((value, index) => <td key={index} className="px-3 py-2 font-semibold text-ink">{value || value === 0 ? value : "-"}</td>)}
+      <td className="font-bold">{no}</td>
+      <td className="text-left">{sq} / <span className="italic">{en}</span></td>
+      {unit === undefined ? null : <td rowSpan={unitRowSpan}>{unit}</td>}
+      {average === undefined ? (
+        (values ?? []).map((value, index) => <td key={index}>{reportFigure(value, decimals)}</td>)
+      ) : (
+        <td colSpan={2} className="font-bold">{reportFigure(average, decimals)}</td>
+      )}
     </tr>
   );
+}
+
+/**
+ * A measured figure as a certificate prints it: fixed decimals, or a dash
+ * where nothing was recorded.
+ *
+ * Fixed rather than as stored, because a column of 2.612, 0.88 and 2.6653 is
+ * harder to read down than one of 2.612, 0.880 and 2.665, and the number of
+ * decimals is what states the precision the method actually claims.
+ */
+export function reportFigure(value: number | undefined, decimals: number) {
+  return typeof value === "number" && Number.isFinite(value) ? value.toFixed(decimals) : "-";
+}
+
+/**
+ * The date the sample was taken, where the laboratory can state it.
+ *
+ * The register has no sampling date of its own: for a sample the client
+ * delivered, nobody here saw it taken and the date is not ours to assert on an
+ * accredited certificate, so the line prints a dash. Where the laboratory
+ * collected the sample itself, the collection and the receipt are the same
+ * visit, so the receipt date is the sampling date.
+ */
+export function samplingDate(sample?: Sample) {
+  if (!sample) return undefined;
+  return sample.collectionMethod === "Collected by lab technician" ? sample.dateReceived : undefined;
 }
 
 export function FillerDensityReportRow({ label, symbol, unit, values }: { label: string; symbol: string; unit: string; values: number[] }) {

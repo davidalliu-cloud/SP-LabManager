@@ -493,12 +493,27 @@ export function OfficialEnvironmental({
       <div className="font-bold uppercase">KUSHTET AMBJENTALE NË TË CILAT ZHVILLOHET TESTI / <span className="italic font-normal normal-case">ENVIRONMENTAL CONDITIONS</span>:</div>
       <div className="grid grid-cols-[145px_135px] gap-x-3 font-normal">
         <span>Temperatura / <span className="italic">Temperature</span>:</span>
-        <span className="official-underline border-b border-black text-center">{temperature || "-"}{temperature ? " °C" : ""}</span>
+        <span className="official-underline border-b border-black text-center">{withUnit(temperature, " °C")}</span>
         <span>{humidityLabel ?? <>Lagështia / <span className="italic">Humidity</span></>}:</span>
-        <span className="official-underline border-b border-black text-center">{humidity || "-"}{humidity ? "%" : ""}</span>
+        <span className="official-underline border-b border-black text-center">{withUnit(humidity, "%")}</span>
       </div>
     </div>
   );
+}
+
+/**
+ * A recorded condition with its unit, added only where the technician did not
+ * already type one.
+ *
+ * The worksheet takes these as free text and both habits are in the register:
+ * "20.1" on one test and "20.4 ˚C" on the next, "50" and "50 %". Appending
+ * unconditionally printed "20.4 ˚C °C" and "50 % %" on the certificate.
+ */
+function withUnit(value: string | undefined, unit: string) {
+  const text = value?.trim();
+  if (!text) return "-";
+  // Any symbol or letter beyond the number itself is the technician's own unit.
+  return /[^\d.,\s+-]/.test(text) ? text : `${text}${unit}`;
 }
 
 export function OfficialAsterisk() {
