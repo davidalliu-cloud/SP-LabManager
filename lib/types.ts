@@ -96,6 +96,14 @@ export interface Sample {
   projectId: string;
   sampleType: SampleType;
   sampleDescription: string;
+  /**
+   * Sand and gravel only: where the material was won and which fraction it is.
+   * Kept beside the description rather than only inside it, so a question like
+   * "every river sand tested this year" can be answered from the register.
+   * Absent on everything registered before the two were asked for.
+   */
+  aggregateOrigin?: string;
+  aggregateFraction?: string;
   quantity: number;
   dateReceived: string;
   timeReceived: string;

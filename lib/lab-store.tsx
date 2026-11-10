@@ -118,6 +118,9 @@ export interface NewSampleInput {
   projectId: string;
   sampleType: string;
   sampleDescription: string;
+  /** Sand and gravel only — see Sample. */
+  aggregateOrigin?: string;
+  aggregateFraction?: string;
   quantity: number;
   dateReceived: string;
   timeReceived: string;
@@ -3202,6 +3205,8 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             projectId: input.projectId,
             sampleType: input.sampleType,
             sampleDescription: input.sampleDescription,
+            aggregateOrigin: input.aggregateOrigin,
+            aggregateFraction: input.aggregateFraction,
             quantity: input.quantity,
             dateReceived: input.dateReceived,
             timeReceived: input.timeReceived,

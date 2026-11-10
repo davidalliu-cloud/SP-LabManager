@@ -21,6 +21,12 @@ import {
   PAVING_FLAG_PACKAGE_NAME,
   PAVING_FLAG_PACKAGE_STANDARD
 } from "@/lib/accredited-tests";
+import {
+  AGGREGATE_ORIGINS,
+  aggregateFractions,
+  aggregateSampleDescription,
+  aggregateSubtypeKind
+} from "@/lib/aggregate-subtypes";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { isFieldSampleType } from "@/lib/field-register";
 import { useLabStore, type NewSampleInput } from "@/lib/lab-store";
@@ -57,6 +63,11 @@ export default function NewSamplePage() {
   const initialTestId = getAccreditedTestsForSampleType(initialSampleType)[0]?.id ?? "";
   const [sampleType, setSampleType] = useState(initialSampleType);
   const [accreditedTestId, setAccreditedTestId] = useState(initialTestId);
+  // Sand and gravel carry an origin and a fraction. Both start empty so the
+  // technician has to choose: a pre-selected first option would have half the
+  // register reading "river sand 0.0/0.2" by default.
+  const [aggregateOrigin, setAggregateOrigin] = useState("");
+  const [aggregateFraction, setAggregateFraction] = useState("");
   // Other accredited tests asked for on this same material. An aggregate
   // usually arrives for several at once, and each one is its own worksheet and
   // its own certificate, so each becomes a test of its own when the sample is
@@ -86,6 +97,7 @@ export default function NewSamplePage() {
   // different ages (that is what the schedule below does), and masonry, kerbs
   // and flags already register as one package.
   const canAddTests = isAggregateGranulometrySampleType(sampleType);
+  const subtypeKind = aggregateSubtypeKind(sampleType);
   const extraTestOptions = useMemo(
     () => testOptions.filter((test) => test.id !== (selectedTest?.id ?? "")),
     [testOptions, selectedTest]
@@ -110,6 +122,10 @@ export default function NewSamplePage() {
   function changeSampleType(nextSampleType: string) {
     const nextTests = getAccreditedTestsForSampleType(nextSampleType);
     setSampleType(nextSampleType);
+    // Sand fractions are not gravel fractions, and the origin belongs to the
+    // delivery being left behind either way.
+    setAggregateOrigin("");
+    setAggregateFraction("");
     setAccreditedTestId(isSteelSampleType(nextSampleType) ? "AT-073" : isAggregateGranulometrySampleType(nextSampleType) ? nextTests[0]?.id ?? "" : nextTests[0]?.id ?? "");
     // The other tests belonged to the material being left behind.
     setExtraTestIds([]);
@@ -207,7 +223,9 @@ export default function NewSamplePage() {
       clientId: "",
       projectId: "",
       sampleType,
-      sampleDescription: "",
+      sampleDescription: subtypeKind ? aggregateSampleDescription(sampleType, aggregateOrigin, aggregateFraction) : "",
+      aggregateOrigin: subtypeKind ? aggregateOrigin : undefined,
+      aggregateFraction: subtypeKind ? aggregateFraction : undefined,
       quantity: Number(form.get("quantity")),
       dateReceived: String(form.get("dateReceived")),
       timeReceived: String(form.get("timeReceived")),
@@ -260,6 +278,44 @@ export default function NewSamplePage() {
             ))}
           </select>
         </Field>
+        {subtypeKind ? (
+          <>
+            <Field label="Origjina / Origin">
+              <select
+                value={aggregateOrigin}
+                onChange={(event) => setAggregateOrigin(event.target.value)}
+                className="input"
+                required
+              >
+                <option value="">— Zgjidh origjinën —</option>
+                {AGGREGATE_ORIGINS.map((origin) => (
+                  <option key={origin} value={origin}>{origin}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Fraksioni / Particle size">
+              <select
+                value={aggregateFraction}
+                onChange={(event) => setAggregateFraction(event.target.value)}
+                className="input"
+                required
+              >
+                <option value="">— Zgjidh fraksionin —</option>
+                {aggregateFractions(subtypeKind).map((fraction) => (
+                  <option key={fraction} value={fraction}>{fraction}</option>
+                ))}
+              </select>
+            </Field>
+            <div className="soft-panel p-3 text-sm text-muted lg:col-span-2">
+              Përshkrimi i kampionit në raport:{" "}
+              <span className="font-semibold text-ink">
+                {aggregateOrigin && aggregateFraction
+                  ? aggregateSampleDescription(sampleType, aggregateOrigin, aggregateFraction)
+                  : "— plotëso origjinën dhe fraksionin —"}
+              </span>
+            </div>
+          </>
+        ) : null}
         {isMasonryUnit || isPavingElement ? (
           <Field label="Testi i akredituar i kërkuar">
             <div className="input flex items-center bg-lab-porcelain text-muted">
