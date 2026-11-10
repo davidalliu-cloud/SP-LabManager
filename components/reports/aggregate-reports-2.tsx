@@ -28,7 +28,7 @@ export function AggregateDensityReportPreview({
   const each = (read: (specimen: DensityAbsorptionSpecimen) => number | undefined) =>
     specimens.map((specimen) => (specimen ? read(specimen) : undefined));
   return (
-    <OfficialReportShell report={report} code="SL-RA-AG-7.8/1.2" className="compact-official-report">
+    <OfficialReportShell report={report} code="SL-RA-AG-7.8/1.2" className="aggregate-density-report compact-official-report">
       <OfficialMetaGrid entries={[
         { sq: "Nr. REGJISTRI", en: "REGISTER No.", value: sample?.sampleCode },
         { sq: "KLIENTI", en: "PURCHASER", value: client?.clientName },
