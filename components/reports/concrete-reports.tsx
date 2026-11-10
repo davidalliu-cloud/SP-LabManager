@@ -28,7 +28,7 @@ export function ConcreteWaterPenetrationReportPreview({
   const dimensions = sampleDimensions(specimens);
   const issueDate = report.issuedAt || report.approvedAt || concreteWater.testEndDate || sample?.reportDueDate;
   return (
-    <OfficialReportShell report={report} code="SL-RA-B-7.8/1.10" className="compact-official-report">
+    <OfficialReportShell report={report} code="SL-RA-B-7.8/1.10" className="water-penetration-report compact-official-report">
       <OfficialMetaGrid entries={[
         { sq: "Nr. REGJISTRI", en: "REGISTER No.", value: sample?.sampleCode },
         { sq: "KLIENTI", en: "PURCHASER", value: client?.clientName },
@@ -59,7 +59,12 @@ export function ConcreteWaterPenetrationReportPreview({
           humidityLabel={<>Lagështia relative / <span className="italic">Relative Humidity</span></>}
         />
       </div>
-      <table className="official-table mt-10 w-full border-collapse text-center text-[10pt]">
+      {/* Three sample columns, always drawn. A pour tested for water
+          penetration may yield one, two or three cubes and the certificate
+          looks the same either way: the empty columns are part of the form,
+          not a gap. That is what keeps the signature at one height from one
+          report to the next. */}
+      <table className="official-table w-full border-collapse text-center text-[10pt]">
         <thead>
           <tr><th>Parametri i matur<br /><span>The measured parameter</span></th><th>Njësia matëse<br /><span>Unit</span></th><th>Mostra 1<br /><span>Sample 1</span></th><th>Mostra 2<br /><span>Sample 2</span></th><th>Mostra 3<br /><span>Sample 3</span></th><th>Mesatarja<br /><span>Average</span></th><th>Pasiguria në matje<br /><span>Measurement uncertainty</span></th></tr>
         </thead>

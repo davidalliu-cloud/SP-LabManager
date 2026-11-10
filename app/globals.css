@@ -2166,3 +2166,59 @@ textarea {
     padding: 6px 6px !important;
   }
 }
+
+/* ------------------------------------------------------------------ *
+ * Water penetration — one result row, read at the size of the details
+ * above it.
+ *
+ * The shared compact rules take the table to 7.8pt. On a certificate
+ * whose table is a single row that made the one measurement the report
+ * exists to state the smallest thing on the page, under sample details
+ * set at 10pt. There is room here for both to read the same size.
+ *
+ * The margins above and below the table are stated rather than left to
+ * a utility class, so the block sits in a fixed place. The table height
+ * does not vary — the three sample columns are always drawn, whether
+ * one cube was tested or three — and with the footer pinned to the foot
+ * of the sheet, every water penetration certificate puts its signature
+ * at the same height.
+ * ------------------------------------------------------------------ */
+.water-penetration-report.compact-official-report .official-table,
+.water-penetration-report.compact-official-report.pdf-capture .official-table {
+  font-size: 9.5pt !important;
+  line-height: 1.15 !important;
+  margin-top: 2mm !important;
+  margin-bottom: 2mm !important;
+}
+
+.water-penetration-report.compact-official-report .official-table th,
+.water-penetration-report.compact-official-report .official-table td,
+.water-penetration-report.compact-official-report.pdf-capture .official-table th,
+.water-penetration-report.compact-official-report.pdf-capture .official-table td {
+  padding: 4px 5px !important;
+}
+
+.water-penetration-report.compact-official-report .official-table span,
+.water-penetration-report.compact-official-report.pdf-capture .official-table span {
+  font-size: inherit !important;
+}
+
+@media print {
+  .water-penetration-report.compact-official-report .official-table {
+    font-size: 10pt !important;
+    line-height: 1.2 !important;
+    margin-top: 8mm !important;
+    margin-bottom: 2mm !important;
+  }
+
+  .water-penetration-report.compact-official-report .official-table th,
+  .water-penetration-report.compact-official-report .official-table td {
+    padding: 4px 5px !important;
+  }
+}
+
+.water-penetration-report .official-meta,
+.water-penetration-report .official-meta + .grid {
+  font-size: 9.5pt;
+  line-height: 1.15;
+}
