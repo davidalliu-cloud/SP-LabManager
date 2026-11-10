@@ -2183,6 +2183,12 @@ textarea {
  * of the sheet, every water penetration certificate puts its signature
  * at the same height.
  * ------------------------------------------------------------------ */
+/* No @media print twin: these selectors carry one class more than the
+   shared compact rules they lift, so they win in print as well. A print
+   block here would be a second copy of the same sizes, and the first
+   draft proved what that costs — it kept 10pt and 8mm after the screen
+   and capture rules came down to 9.5pt and 2mm, which would have printed
+   the table straight through the signature. */
 .water-penetration-report.compact-official-report .official-table,
 .water-penetration-report.compact-official-report.pdf-capture .official-table {
   font-size: 9.5pt !important;
@@ -2201,20 +2207,6 @@ textarea {
 .water-penetration-report.compact-official-report .official-table span,
 .water-penetration-report.compact-official-report.pdf-capture .official-table span {
   font-size: inherit !important;
-}
-
-@media print {
-  .water-penetration-report.compact-official-report .official-table {
-    font-size: 10pt !important;
-    line-height: 1.2 !important;
-    margin-top: 8mm !important;
-    margin-bottom: 2mm !important;
-  }
-
-  .water-penetration-report.compact-official-report .official-table th,
-  .water-penetration-report.compact-official-report .official-table td {
-    padding: 4px 5px !important;
-  }
 }
 
 .water-penetration-report .official-meta,
