@@ -66,7 +66,12 @@ export function ConcreteWaterPenetrationReportPreview({
           report to the next. */}
       <table className="official-table w-full border-collapse text-center text-[10pt]">
         <thead>
-          <tr><th>Parametri i matur<br /><span>The measured parameter</span></th><th>Njësia matëse<br /><span>Unit</span></th><th>Mostra 1<br /><span>Sample 1</span></th><th>Mostra 2<br /><span>Sample 2</span></th><th>Mostra 3<br /><span>Sample 3</span></th><th>Mesatarja<br /><span>Average</span></th><th>Pasiguria në matje<br /><span>Measurement uncertainty</span></th></tr>
+          {/* The sample columns are kept on one line each. Left to wrap they
+              broke after the word, so "Mostra 1" read as "Mostra" over "1" and
+              the header stood four lines deep for a number. Holding them
+              together lets the parameter column give up the width instead,
+              which it can afford — its text wraps anyway. */}
+          <tr><th>Parametri i matur<br /><span>The measured parameter</span></th><th className="whitespace-nowrap">Njësia matëse<br /><span>Unit</span></th><th className="whitespace-nowrap">Mostra 1<br /><span>Sample 1</span></th><th className="whitespace-nowrap">Mostra 2<br /><span>Sample 2</span></th><th className="whitespace-nowrap">Mostra 3<br /><span>Sample 3</span></th><th className="whitespace-nowrap">Mesatarja<br /><span>Average</span></th><th>Pasiguria në matje<br /><span>Measurement uncertainty</span></th></tr>
         </thead>
         <tbody>
           <tr>
