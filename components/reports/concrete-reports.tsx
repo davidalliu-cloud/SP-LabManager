@@ -24,6 +24,8 @@ export function ConcreteWaterPenetrationReportPreview({
   concreteWater: ConcreteWaterPenetrationTest;
 }) {
   const specimens = [concreteWater.specimens[0], concreteWater.specimens[1], concreteWater.specimens[2]];
+  // Blank rather than a bare "mm" when no cube carries its dimensions.
+  const dimensions = sampleDimensions(specimens);
   const issueDate = report.issuedAt || report.approvedAt || concreteWater.testEndDate || sample?.reportDueDate;
   return (
     <OfficialReportShell report={report} code="SL-RA-B-7.8/1.10" className="compact-official-report">
@@ -34,21 +36,28 @@ export function ConcreteWaterPenetrationReportPreview({
         { sq: "KONTAKTET", en: "CONTACT", value: client?.phone || client?.email },
         { sq: "OBJEKTI", en: "OBJECT", value: project?.projectName },
         { sq: "KAMPIONI", en: "SAMPLE", value: sample?.sampleDescription || sample?.sampleType },
-        { sq: "PËRSHKRIMI I KAMPIONËVE (FORMA DHE DIMENSIONET)", en: "DESCRIPTION OF THE SPECIMEN (SHAPE AND DIMENSIONS)", value: `${sampleDimensions(specimens)} mm` },
-        { sq: "DATA E PËRGATITJES SË KAMPIONËVE", en: "DATE OF CASTING", value: concreteWater.castingDate },
-        { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: sample?.dateReceived },
-        { sq: "OPERATORI I MARRJES SË KAMPIONIT", en: "SAMPLING OPERATOR", value: samplingOperator(sample) }
+        { sq: "PËRSHKRIMI I KAMPIONËVE (FORMA DHE DIMENSIONET)", en: "DESCRIPTION OF THE SPECIMEN (SHAPE AND DIMENSIONS)", value: dimensions ? `${dimensions} mm` : undefined },
+        { sq: "DATA E PËRGATITJES SË KAMPIONEVE", en: "DATE OF CASTING", value: concreteWater.castingDate },
+        { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: sample?.dateReceived }
       ]} />
       <div className="mt-1 grid grid-cols-[315px_1fr] gap-x-8 gap-y-1 text-[10pt] leading-[1.15]">
         <OfficialTestingDates start={concreteWater.testStartDate} end={concreteWater.testEndDate} />
         <OfficialMetaGrid className="contents" entries={[
           { sq: "MATURIMI I KAMPIONËVE", en: "CURING PERIOD", value: concreteWater.curingMethod },
           { sq: "DREJTIMI I APLIKIMIT TË PRESIONIT TË UJIT", en: "DIRECTION OF APPLICATION OF WATER PRESSURE", value: concreteWater.pressureDirection },
+          // The template carries the sampling operator here, between the
+          // pressure direction and the test, not up with the sample's own
+          // details.
+          { sq: "OPERATORI I MARRJES SË KAMPIONIT", en: "SAMPLING OPERATOR", value: samplingOperator(sample) },
           { sq: "TESTIMI", en: "TEST", value: "THELLËSIA E PENETRIMIT TË UJIT NËN PRESION NË BETONIN E NGURTËSUAR* / DEPTH OF THE PENETRATION OF WATER UNDER PRESSURE*" },
           { sq: "STANDARDI I TESTIMIT", en: "TEST STANDARD", value: test?.standard || "BS EN 12390-8:2019" },
-          { sq: "VENDI KU ËSHTË PERFORMUAR TESTI", en: "LAB. LOCATION", value: concreteWater.testingLocation || "01/A Lab. Fiziko-Mekanik / Physical-mechanical laboratory" }
+          { sq: "VENDI KU ËSHTË PERFORMUAR TESTI", en: "LAB. LOCATION", value: concreteWater.testingLocation || "01/A (Laboratori Fiziko-Mekanik / Physical-Mechanical laboratory)" }
         ]} />
-        <OfficialEnvironmental temperature={concreteWater.temperature} humidity={concreteWater.humidity} />
+        <OfficialEnvironmental
+          temperature={concreteWater.temperature}
+          humidity={concreteWater.humidity}
+          humidityLabel={<>Lagështia relative / <span className="italic">Relative Humidity</span></>}
+        />
       </div>
       <table className="official-table mt-10 w-full border-collapse text-center text-[10pt]">
         <thead>
@@ -65,7 +74,14 @@ export function ConcreteWaterPenetrationReportPreview({
         </tbody>
       </table>
       <OfficialAsterisk />
-      <OfficialNotesAndFooter notes={concreteWater.notes} testedBy={concreteWater.technicianName || report.draftedBy} responsible={concreteWater.checkedBy} issueDate={issueDate} sampledBy={samplingOperator(sample)} />
+      <OfficialNotesAndFooter
+        notes={concreteWater.notes}
+        testedBy={concreteWater.technicianName || report.draftedBy}
+        testedByLabel={<>TESTUESI / <span className="italic font-normal">TESTED BY</span></>}
+        responsible={concreteWater.checkedBy}
+        issueDate={issueDate}
+        sampledBy={samplingOperator(sample)}
+      />
     </OfficialReportShell>
   );
 }

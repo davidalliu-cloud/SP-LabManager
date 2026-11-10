@@ -473,14 +473,28 @@ export function OfficialTestingDates({ start, end }: { start?: string; end?: str
   );
 }
 
-export function OfficialEnvironmental({ temperature, humidity }: { temperature?: string; humidity?: string }) {
+export function OfficialEnvironmental({
+  temperature,
+  humidity,
+  humidityLabel
+}: {
+  temperature?: string;
+  humidity?: string;
+  /**
+   * The humidity line as this report's own controlled template words it. The
+   * templates disagree — SL-RA-B-7.8/1.10 says "Lagështia relative / Relative
+   * Humidity", SL-RA-AS-7.8/1.3 says "Lagështi / Humidity" — so the wording
+   * belongs to the report, not to this shell. Left out, the short form stands.
+   */
+  humidityLabel?: ReactNode;
+}) {
   return (
     <div className="contents">
       <div className="font-bold uppercase">KUSHTET AMBJENTALE NË TË CILAT ZHVILLOHET TESTI / <span className="italic font-normal normal-case">ENVIRONMENTAL CONDITIONS</span>:</div>
       <div className="grid grid-cols-[145px_135px] gap-x-3 font-normal">
         <span>Temperatura / <span className="italic">Temperature</span>:</span>
         <span className="official-underline border-b border-black text-center">{temperature || "-"}{temperature ? " °C" : ""}</span>
-        <span>Lagështia / <span className="italic">Humidity</span>:</span>
+        <span>{humidityLabel ?? <>Lagështia / <span className="italic">Humidity</span></>}:</span>
         <span className="official-underline border-b border-black text-center">{humidity || "-"}{humidity ? "%" : ""}</span>
       </div>
     </div>
@@ -494,6 +508,7 @@ export function OfficialAsterisk() {
 export function OfficialNotesAndFooter({
   notes,
   testedBy,
+  testedByLabel,
   responsible,
   issueDate,
   layout = "pinned",
@@ -502,6 +517,12 @@ export function OfficialNotesAndFooter({
 }: {
   notes?: string;
   testedBy?: string;
+  /**
+   * The caption over the tester's signature, where this report's controlled
+   * template words it differently — SL-RA-B-7.8/1.10 says "TESTUESI", others
+   * say "TESTUAR NGA". Left out, "TESTUAR NGA" stands.
+   */
+  testedByLabel?: ReactNode;
   responsible?: string;
   /**
    * Who took the sample, exactly as this report prints it on the OPERATORI I
@@ -539,7 +560,7 @@ export function OfficialNotesAndFooter({
         <SignaturePair
           wrapperClassName="official-signatures"
           columnClassName="grid grid-cols-2 gap-16 text-center text-[9.5pt]"
-          testedByLabel={<>TESTUAR NGA / <span className="italic font-normal">TESTED BY</span></>}
+          testedByLabel={testedByLabel ?? <>TESTUAR NGA / <span className="italic font-normal">TESTED BY</span></>}
           testedByName={testedBy}
           responsibleLabel={<>PËRGJEGJËSI I LABORATORIT / <span className="italic font-normal">LABORATORY RESPONSIBLE</span></>}
           responsibleName={headOfLabName(responsible)}
@@ -567,8 +588,28 @@ export function OfficialNotesAndFooter({
   );
 }
 
-export function sampleDimensions(values: Array<{ lengthMm?: number; widthMm?: number; heightMm?: number }>) {
-  return values.map((row) => [row.lengthMm, row.widthMm, row.heightMm].filter(Boolean).join("x")).filter(Boolean).join("; ");
+/**
+ * The cube sizes a certificate prints, out of a padded specimen list.
+ *
+ * The caller pads to three — `[specimens[0], specimens[1], specimens[2]]` —
+ * because the sheet has three sample columns. A test with one cube therefore
+ * hands this two `undefined`s, and reading dimensions straight off them threw.
+ * The throw was not contained to the field: it unmounted the whole tree, so
+ * every route showed "Application error: a client-side exception has occurred",
+ * including the one the user reloaded into. A water-penetration test is
+ * routinely a single cube, so its certificate could not be opened at all.
+ *
+ * Cubes of the same size collapse to one entry. Three identical cubes are one
+ * description of a specimen, not a list repeating itself three times.
+ */
+export function sampleDimensions(
+  values: Array<{ lengthMm?: number; widthMm?: number; heightMm?: number } | undefined>
+) {
+  const described = values
+    .filter((row) => Boolean(row))
+    .map((row) => [row?.lengthMm, row?.widthMm, row?.heightMm].filter(Boolean).join("x"))
+    .filter(Boolean);
+  return [...new Set(described)].join("; ");
 }
 
 export function ReportInfoRow({ label, value }: { label: string; value?: string }) {
