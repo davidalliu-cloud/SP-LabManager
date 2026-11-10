@@ -411,7 +411,7 @@ export function AggregateSandEquivalentReportPreview({
 }) {
   const issueDate = report.issuedAt || report.approvedAt || aggregateSandEquivalent.testEndDate || sample?.reportDueDate;
   return (
-    <OfficialReportShell report={report} code="SL-RA-AG-7.8/1.8" className="compact-official-report">
+    <OfficialReportShell report={report} code="SL-RA-AG-7.8/1.8" className="aggregate-sand-equivalent-report compact-official-report">
       <OfficialMetaGrid entries={[
         { sq: "Nr. REGJISTRI", en: "REGISTER No.", value: sample?.sampleCode },
         { sq: "KLIENTI", en: "PURCHASER", value: client?.clientName },
@@ -471,14 +471,12 @@ export function AggregateSandEquivalentReportPreview({
         </tbody>
       </table>
       <OfficialAsterisk />
-      {/* Three result rows: the sheet is half empty by the time it reaches the
-          notes. Pinned to the foot, the signature sat 50mm below the last
-          thing written, with a band of blank paper between — so the page read
-          as though something had failed to print. Flowing it keeps the
-          certificate continuous and leaves the empty paper at the bottom,
-          where empty paper belongs. */}
+      {/* Three result rows cannot fill an A4. The signatures follow the notes
+          so the certificate reads continuously, and the legal lines, the issue
+          date and the address sit at the foot of the page, which is where a
+          reader looks for them and what the spare paper is for. */}
       <OfficialNotesAndFooter
-        layout="flow"
+        layout="split"
         notes={aggregateSandEquivalent.notes}
         testedBy={aggregateSandEquivalent.technicianName || report.draftedBy}
         responsible={aggregateSandEquivalent.checkedBy}

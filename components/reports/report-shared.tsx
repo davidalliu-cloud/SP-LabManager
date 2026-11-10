@@ -562,8 +562,14 @@ export function OfficialNotesAndFooter({
    *
    * "flow" lets the block sit directly under the notes instead, which is how
    * the concrete cube report reads, and what a short report should do.
+   *
+   * "split" is for a short report on a page you still want to look finished:
+   * the signatures follow the notes, while the legal lines, the issue date
+   * and the address go where they belong on any letterhead — the foot of the
+   * page. The spare paper then sits between the signature and the foot
+   * instead of below everything.
    */
-  layout?: "pinned" | "flow";
+  layout?: "pinned" | "flow" | "split";
 }) {
   return (
     <>
@@ -571,7 +577,7 @@ export function OfficialNotesAndFooter({
         <div className="pl-14">Shënime / <span className="italic">Notes</span>:</div>
         <div className="official-underline min-h-4 border-b border-black">{notes}</div>
       </div>
-      <div className={layout === "flow" ? "official-footer-flow" : "official-footer-cluster"}>
+      <div className={layout === "pinned" ? "official-footer-cluster" : "official-footer-flow"}>
         <SignaturePair
           wrapperClassName="official-signatures"
           columnClassName="grid grid-cols-2 gap-16 text-center text-[9.5pt]"
@@ -581,6 +587,10 @@ export function OfficialNotesAndFooter({
           responsibleName={headOfLabName(responsible)}
           heightMm={30}
         />
+        {/* Under "split" these three travel together to the foot of the
+            sheet; under the other two they stay where they are, which is why
+            the wrapper carries no layout of its own. */}
+        <div className={layout === "split" ? "official-page-foot" : "contents"}>
         <div className="official-disclaimers mt-2 space-y-0.5 text-[6pt] leading-tight">
           {disclaimers ?? <>
           <p>Rezultatet në këtë raport testimi i përkasin vetëm mostrës së testuar. / <span className="italic">The results relate only to the items tested.</span></p>
@@ -598,6 +608,7 @@ export function OfficialNotesAndFooter({
           <div className="font-bold">SARP &amp; LAB</div>
           <div>Adresa: Autostrada Tiranë-Durrës, km 29, Fshati Vrrin-Komuna Rrashbull, Durrës Shqipëri. Mob: +355 67 20 22 609; Web: www.sarpandlab.al; Email: d.alliu@sarpandlab.al; NIPT: L 41526502 B</div>
         </footer>
+        </div>
       </div>
     </>
   );

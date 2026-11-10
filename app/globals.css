@@ -2095,3 +2095,74 @@ textarea {
 .aggregate-density-report .official-meta {
   margin-top: 10px;
 }
+
+/* ------------------------------------------------------------------ *
+ * Official report family — the page foot on a short certificate.
+ *
+ * With layout="split" the signatures follow the notes while the legal
+ * lines, the issue date and the address go to the foot of the sheet.
+ * Same pinning as .official-footer-cluster, applied to that block only.
+ * ------------------------------------------------------------------ */
+.official-page-foot {
+  margin-top: 6mm;
+}
+
+.official-report.pdf-capture .official-page-foot {
+  position: absolute !important;
+  left: 9mm !important;
+  right: 9mm !important;
+  bottom: 3mm !important;
+  margin: 0 !important;
+}
+
+@media print {
+  .official-report .official-page-foot {
+    position: absolute !important;
+    left: 9mm !important;
+    right: 9mm !important;
+    bottom: 3mm !important;
+    margin: 0 !important;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Sand equivalent — three result rows, read at the size of the details
+ * above them.
+ *
+ * The shared compact rules take every official table down to 7.8pt,
+ * which is right for a certificate whose table fills the page and wrong
+ * for one with three rows: it printed the results smaller than the
+ * sample details, as though the results mattered less. There is room on
+ * this sheet for both to read the same size.
+ * ------------------------------------------------------------------ */
+/* !important throughout: the shared compact mirror declares its 7.8pt with
+   !important, so nothing without it can raise the size back. */
+.aggregate-sand-equivalent-report.compact-official-report .official-table,
+.aggregate-sand-equivalent-report.compact-official-report.pdf-capture .official-table {
+  font-size: 10pt !important;
+  line-height: 1.2 !important;
+}
+
+.aggregate-sand-equivalent-report.compact-official-report .official-table th,
+.aggregate-sand-equivalent-report.compact-official-report .official-table td,
+.aggregate-sand-equivalent-report.compact-official-report.pdf-capture .official-table th,
+.aggregate-sand-equivalent-report.compact-official-report.pdf-capture .official-table td {
+  padding: 6px 6px !important;
+}
+
+.aggregate-sand-equivalent-report.compact-official-report .official-table span,
+.aggregate-sand-equivalent-report.compact-official-report.pdf-capture .official-table span {
+  font-size: inherit !important;
+}
+
+@media print {
+  .aggregate-sand-equivalent-report.compact-official-report .official-table {
+    font-size: 10pt !important;
+    line-height: 1.2 !important;
+  }
+
+  .aggregate-sand-equivalent-report.compact-official-report .official-table th,
+  .aggregate-sand-equivalent-report.compact-official-report .official-table td {
+    padding: 6px 6px !important;
+  }
+}
