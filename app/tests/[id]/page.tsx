@@ -3260,7 +3260,21 @@ function TestDetailView({ test }: { test: LabTest }) {
               <Field label="Testing start date"><input name="testStartDate" type="date" defaultValue={concreteWater?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Testing end date"><input name="testEndDate" type="date" defaultValue={concreteWater?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Curing period"><input name="curingMethod" defaultValue={concreteWater?.curingMethod ?? ""} className="input" /></Field>
-              <Field label="Water pressure direction"><input name="pressureDirection" defaultValue={concreteWater?.pressureDirection ?? ""} className="input" /></Field>
+              {/* The direction is an arrow on the certificate, not a sentence —
+                  water is driven up into the moulded face. Offering it as a
+                  choice is what stops one worksheet reading "lart", the next
+                  "nga poshte lart" and a third nothing at all. Anything typed
+                  into the free-text box this replaces stays selectable, so no
+                  worksheet loses what it already recorded. */}
+              <Field label="Water pressure direction">
+                <select name="pressureDirection" defaultValue={concreteWater?.pressureDirection ?? ""} className="input">
+                  <option value="">—</option>
+                  <option value="↑">↑ &nbsp;Lart / Upwards</option>
+                  {concreteWater?.pressureDirection && concreteWater.pressureDirection !== "↑" ? (
+                    <option value={concreteWater.pressureDirection}>{concreteWater.pressureDirection}</option>
+                  ) : null}
+                </select>
+              </Field>
               <Field label="Applied standard"><input className="input bg-lab-porcelain" value={activeTest.standard} readOnly /></Field>
               <Field label="Technician"><EmployeeSelect name="technicianName" employees={activeEmployees} required value={concreteWater?.technicianName ?? "Ing./Eng."} /></Field>
               <Field label="Checked by"><EmployeeSelect name="checkedBy" employees={activeEmployees} value={concreteWater?.checkedBy ?? "Ing./Eng. Besiana ALLIU"} /></Field>
