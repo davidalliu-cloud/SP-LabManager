@@ -35,7 +35,7 @@ export function ConcreteCubeReportPreview({
 
   const paddedSpecimens = [reportSpecimens[0], reportSpecimens[1], reportSpecimens[2]];
   const issueDate = report.issuedAt || report.approvedAt || concrete?.testEndDate || concrete?.testDate || sample?.reportDueDate;
-  const recordedOtherData = concrete?.otherData || sample?.notes
+  const recordedOtherData = concrete?.otherData?.trim() || sample?.notes
     ?.split("|")
     .find((note) => !note.includes("Intervali i akredituar") && !note.includes("Standardi i kampionimit") && !note.match(new RegExp("C\\d+/\\d+")))
     ?.trim();
@@ -43,13 +43,16 @@ export function ConcreteCubeReportPreview({
   // written once each. They sit with the other data rather than in a column
   // of their own, because a plate describes where a cube came from, not
   // anything measured about it.
-  // The batching plant (Impianti 2/3) is typed next to the plate in each cube's
-  // box, so it is read back out the same way and printed beside the plates. It
-  // was being parsed for the client portal but never reaching the certificate.
-  const otherData =
-    [recordedOtherData, formatPlatesForReport(reportSpecimens), formatPlantsForReport(reportSpecimens, concrete?.otherData)]
-      .filter(Boolean)
-      .join(" · ") || undefined;
+  //
+  // The plant goes in front of them. It is read off the cubes only where the
+  // technician did not already name one in the other-data box: named there, it
+  // is printed as typed, and a second copy would read as a second plant. The
+  // test is a named plant, not the word — "BALFIN ALESIO IMPIANTI" says only
+  // that there was a plant, so a 2 found on the cubes is still worth printing.
+  const plant = formatPlantsForReport([recordedOtherData])
+    ? undefined
+    : formatPlantsForReport(reportSpecimens.map((specimen) => specimen.truckPlate));
+  const otherData = [recordedOtherData, plant, formatPlatesForReport(reportSpecimens)].filter(Boolean).join(" · ") || undefined;
 
   return (
     <section className="report-a4 concrete-cube-report print-surface relative rounded-md border border-line bg-white p-4 text-[11pt] leading-[1.16] text-black shadow-sm" style={{ fontFamily: '"Times New Roman", Times, serif' }}>

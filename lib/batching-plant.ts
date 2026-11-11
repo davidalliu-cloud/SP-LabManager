@@ -50,38 +50,6 @@ export function batchingPlant(otherData?: string): string | undefined {
 }
 
 /**
- * The distinct plants behind the cubes on one report, in cube order.
- *
- * A report carries at most three cubes, and a pour can arrive from more than
- * one plant (IMP 2 for two cubes, IMP 3 for the third), so the certificate
- * names each plant that actually mixed a cube it reports, written once. Read
- * from each cube's plate box, where the plant is typed next to the registration
- * ("AB 051 KL, ORA 15:25, IMP 2"); falls back to the worksheet's other-data box
- * when nothing was typed per cube.
- */
-export function plantsForReport(specimens: Array<{ truckPlate?: string }>, otherData?: string): string[] {
-  const seen = new Set<string>();
-  const plants: string[] = [];
-  for (const specimen of specimens) {
-    const plant = batchingPlant(specimen?.truckPlate);
-    if (!plant || seen.has(plant)) continue;
-    seen.add(plant);
-    plants.push(plant);
-  }
-  if (!plants.length) {
-    const fromOther = batchingPlant(otherData);
-    if (fromOther) plants.push(fromOther);
-  }
-  return plants;
-}
-
-/** The plant line as it reads on the report, or undefined when there is none. */
-export function formatPlantsForReport(specimens: Array<{ truckPlate?: string }>, otherData?: string) {
-  const plants = plantsForReport(specimens, otherData);
-  return plants.length ? `Impianti / Batching plant: ${plants.join(", ")}` : undefined;
-}
-
-/**
  * The plant each pour came from, keyed by sample.
  *
  * Keyed by the pour rather than by the test on purpose. The plant is a property
@@ -141,4 +109,38 @@ function plantAcrossCubes(concrete: PlantSource): string | undefined {
     if (plant) plants.add(plant);
   }
   return plants.size === 1 ? [...plants][0] : undefined;
+}
+
+/**
+ * The plant behind the cubes on one report, as its other-data line reads it.
+ *
+ * Written from the cubes rather than from the pour, because a certificate
+ * speaks only for the three cubes on it: a pour that arrived from two plants
+ * has no single plant and is kept out of the client's per-plant averages, but
+ * the two cubes printed here may still have come off one. Order follows the
+ * cubes, as the plate line does, so a mixed report reads in the same order as
+ * its specimen table; a plant named twice is written once, the way a plate
+ * repeated across cubes is.
+ *
+ * The keyword alone, with no number behind it, names no plant and is left off —
+ * printing "Impianti" under Impianti tells the client nothing they could act on.
+ *
+ * Written the way the technicians write it, "Impianti 2", and not glossed into
+ * English like the labels around it. Every certificate that already carries a
+ * plant carries it in that form — it was typed into this same box — so a gloss
+ * would make the ones read off the cubes look like a different field. It also
+ * costs the line eighteen characters it does not have: the sheet measures 300mm
+ * of its 297 before anything is added, and a second line here is a second line
+ * the whole page is scaled down to absorb.
+ */
+export function formatPlantsForReport(lines: Array<string | undefined>): string | undefined {
+  const designators: string[] = [];
+  for (const line of lines) {
+    const plant = batchingPlant(line);
+    if (!plant) continue;
+    const designator = plant.replace(/^impianti\s*/i, "").trim();
+    if (!designator || designators.includes(designator)) continue;
+    designators.push(designator);
+  }
+  return designators.length ? `Impianti ${designators.join(", ")}` : undefined;
 }
