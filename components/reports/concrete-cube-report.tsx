@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabTest, MortarTest, Project, Report, Sample, SteelTensileTest, ThermalInsulationTest } from "@/lib/types";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
-import { formatPlatesForReport } from "@/lib/truck-plates";
+import { formatHoursForReport, formatPlatesForReport } from "@/lib/truck-plates";
 import { formatPlantsForReport } from "@/lib/batching-plant";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
 import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair, samplingOperator, BiText, samplingDisclaimerApplies, concreteCubeSpecimens, concreteCubeAverageStrength, concreteStrengthClass } from "./report-shared";
@@ -49,10 +49,19 @@ export function ConcreteCubeReportPreview({
   // is printed as typed, and a second copy would read as a second plant. The
   // test is a named plant, not the word — "BALFIN ALESIO IMPIANTI" says only
   // that there was a plant, so a 2 found on the cubes is still worth printing.
+  //
+  // The hour each lorry left the plant is typed into the same box, and reads
+  // beside the plant for the same reason: a client comparing a low cube
+  // against the delivery note wants the plant and the hour together. Both are
+  // suppressed where the technician already wrote one into the other-data box.
+  const typedPlates = reportSpecimens.map((specimen) => specimen.truckPlate);
   const plant = formatPlantsForReport([recordedOtherData])
     ? undefined
-    : formatPlantsForReport(reportSpecimens.map((specimen) => specimen.truckPlate));
-  const otherData = [recordedOtherData, plant, formatPlatesForReport(reportSpecimens)].filter(Boolean).join(" · ") || undefined;
+    : formatPlantsForReport(typedPlates);
+  const hours = formatHoursForReport([recordedOtherData])
+    ? undefined
+    : formatHoursForReport(typedPlates);
+  const otherData = [recordedOtherData, plant, hours, formatPlatesForReport(reportSpecimens)].filter(Boolean).join(" · ") || undefined;
 
   return (
     <section className="report-a4 concrete-cube-report print-surface relative rounded-md border border-line bg-white p-4 text-[11pt] leading-[1.16] text-black shadow-sm" style={{ fontFamily: '"Times New Roman", Times, serif' }}>

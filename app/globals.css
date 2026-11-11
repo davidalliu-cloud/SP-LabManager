@@ -718,10 +718,25 @@ textarea {
   height: 20mm !important;
 }
 
+/* No gap between the metadata rows, in exchange for one line of room.
+ *
+ * The other-data line now carries the batching plant and the delivery hours
+ * as well as the plates, and a pour that arrived on three lorries cannot fit
+ * all three on one line at any phrasing — 72 characters is what the value
+ * column holds, and three plates alone are 64. A quarter of the concrete
+ * reports in the register are that shape, so the second line is the normal
+ * case, not an edge one, and it has to fit on the sheet rather than be scaled
+ * to fit by the capture.
+ *
+ * Thirteen gaps of 1px are 3.4mm — one line of this text exactly. Spending
+ * them here costs nothing legible: the rows are 12.8px lines of 8.9pt Times
+ * and they read as a block either way. Before: content ended 293.9mm into the
+ * 296mm box, a wrapped line pushed it to 297.3 and over the edge. After: the
+ * wrapped line ends where the unwrapped one used to. */
 .concrete-cube-report.pdf-capture .cube-meta {
   font-size: 8.9pt !important;
   line-height: 1.08 !important;
-  row-gap: 1px !important;
+  row-gap: 0 !important;
 }
 
 /* ------------------------------------------------------------------ *
@@ -1142,11 +1157,11 @@ textarea {
     width: 66px !important;
   }
 
-  /* Metadata block */
+  /* Metadata block. No row gap; see the capture block for why. */
   .concrete-cube-report .cube-meta {
     font-size: 8.9pt !important;
     line-height: 1.08 !important;
-    row-gap: 1px !important;
+    row-gap: 0 !important;
   }
 
   /* Data tables. vertical-align:middle + a fixed specimen-row height keep the

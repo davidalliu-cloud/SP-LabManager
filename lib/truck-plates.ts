@@ -68,9 +68,65 @@ const PLATE_ENDS = /[,;]|\b(?:ora|ore|data|kuota|imp|impiant|impjant|fabrik)/i;
  * worksheet.
  */
 export function plateOnly(text: string) {
-  const cut = text.search(PLATE_ENDS);
+  // Whichever comes first: a separator, a word that names something else, or
+  // the hour. The hour is its own test because it is written in forms the
+  // keyword list does not hold — "0RA 14:10" with a zero for the O, "OR 11:03"
+  // shortened — and a plate not cut short of one of those carries the time into
+  // the plate line, where it reads as part of the registration and is printed a
+  // second time beside the plant.
+  const ends = [text.search(PLATE_ENDS), text.search(HOUR_IN_TEXT)].filter((index) => index >= 0);
+  const cut = ends.length ? Math.min(...ends) : -1;
   const plate = (cut < 0 ? text : text.slice(0, cut)).replace(/[,;.\s]+$/, "").trim();
   // A line that starts with one of those words has no registration in front of
   // it. Better to show what was typed than an empty cell.
   return plate || text.trim();
+}
+
+/**
+ * The hour the lorry left the plant, out of the same box as the plate.
+ *
+ * Written ORA, and written loosely: "ORA 15:25", "ORA13:40", "ORA 8 :30",
+ * "ORE 11:50", and with a zero for the O — "0RA 14:10" — or shortened to OR.
+ * The minutes are sometimes divided off with a semicolon: "ORA 11;00".
+ *
+ * The keyword is required, and that is a deliberate limit rather than an
+ * oversight. Most boxes in the register write the hour with no keyword at all
+ * ("AB 029 XE 12:20"), and on those the time is already printed, stuck to the
+ * end of the registration on the plate line, because plateOnly has nothing to
+ * cut at. Reading it here as well would print it twice. Cutting the plate at a
+ * bare time instead would fix both, but it would also drop the slump those
+ * same boxes carry ("SL-19"), which is recorded nowhere else — so that is a
+ * decision for the lab, not a regex.
+ *
+ * Padded to two digits so a column of them lines up: the box holds 8:30 and
+ * 08:15 for the same hour of the same morning.
+ */
+const HOUR_IN_TEXT = /\b(?:ora|ore|0ra|or)\s*\.?\s*:?\s*([0-9]{1,2})\s*[:;]\s*([0-9]{2})/i;
+
+export function deliveryHour(text?: string): string | undefined {
+  const match = text?.match(HOUR_IN_TEXT);
+  if (!match) return undefined;
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (hour > 23 || minute > 59) return undefined;
+  return `${String(hour).padStart(2, "0")}:${match[2]}`;
+}
+
+/**
+ * The delivery hours behind the cubes on one report, as the other-data line
+ * reads them.
+ *
+ * Order follows the cubes, as the plant and the plates do, so the three lists
+ * can be read down together against the specimen table. An hour repeated across
+ * cubes is written once: two cubes moulded off one lorry-load are one delivery,
+ * and printing 15:15 three times would read as three.
+ */
+export function formatHoursForReport(lines: Array<string | undefined>): string | undefined {
+  const hours: string[] = [];
+  for (const line of lines) {
+    const hour = deliveryHour(line);
+    if (!hour || hours.includes(hour)) continue;
+    hours.push(hour);
+  }
+  return hours.length ? `Ora ${hours.join(", ")}` : undefined;
 }
