@@ -354,43 +354,96 @@ export function AggregateBulkDensityReportPreview({
 }) {
   const issueDate = report.issuedAt || report.approvedAt || aggregateBulkDensity.testEndDate || sample?.reportDueDate;
   return (
-    <section className="report-a4 simple-report print-surface rounded-md border border-line bg-white p-8 shadow-sm">
-      <ReportHeader report={report} code="SL-RA-AG-7.8/1.7" title="RAPORT TESTIMI / TEST REPORT" subtitle="Loose bulk density and voids of aggregate" />
-      <div className="mt-6 grid gap-4 text-sm sm:grid-cols-2">
-        <Info label="Register No." value={sample?.sampleCode} />
-        <Info label="Client / Purchaser" value={client?.clientName} />
-        <Info label="Object / Project" value={project?.projectName} />
-        <Info label="Sample" value={sample?.sampleDescription || sample?.sampleType} />
-        <Info label="Receipt date" value={sample?.dateReceived} />
-        <Info label="Sampling operator" value={samplingOperator(sample)} />
-        <Info label="Testing date" value={aggregateBulkDensity.testStartDate} />
-        <Info label="Test standard" value={test?.standard || "BS EN 1097-3:1998"} />
-        <Info label="Specific density" value={`${aggregateBulkDensity.specificDensityMgM3 || "-"} Mg/m3`} />
-        <Info label="Temperature" value={aggregateBulkDensity.temperature} />
-        <Info label="Humidity" value={aggregateBulkDensity.humidity} />
+    <OfficialReportShell report={report} code="SL-RA-AG-7.8/1.7" className="aggregate-bulk-density-report compact-official-report">
+      <OfficialMetaGrid entries={[
+        { sq: "Nr. REGJISTRI", en: "REGISTER No.", value: sample?.sampleCode },
+        { sq: "KLIENTI", en: "PURCHASER", value: client?.clientName },
+        { sq: "ADRESA", en: "ADRESS", value: client?.address },
+        { sq: "KONTAKTET", en: "CONTACT", value: client?.phone || client?.email },
+        { sq: "OBJEKTI", en: "OBJECT", value: project?.projectName },
+        { sq: "KAMPIONI", en: "SAMPLE", value: sample?.sampleDescription || sample?.sampleType },
+        { sq: "DATA E MARRJES SË KAMPIONIT", en: "SAMPLING DATE", value: samplingDate(sample) },
+        { sq: "DATA E PRANIMIT TË KAMPIONIT NË LABORATOR", en: "DATE OF RECEIPT OF THE SPECIMENS IN LABORATORY", value: sample?.dateReceived }
+      ]} />
+      <div className="mt-1 grid grid-cols-[315px_1fr] gap-x-8 gap-y-1 text-[10pt] leading-[1.15]">
+        <OfficialTestingDates start={aggregateBulkDensity.testStartDate} end={aggregateBulkDensity.testEndDate} />
+        <OfficialMetaGrid className="contents" entries={[
+          { sq: "OPERATORI I MARRJES SË KAMPIONIT", en: "SAMPLING OPERATOR", value: samplingOperator(sample) },
+          { sq: "TESTI", en: "TEST", value: "PËRCAKTIMI I PESHËS VOLUMORE DHE PËRMBAJTJES SË BOSHLLËQEVE NË AGREGATE* / DETERMINATION OF LOOSE BULK DENSITY AND VOIDS*" },
+          { sq: "STANDARDI I TESTIMIT", en: "TEST STANDARD", value: test?.standard || "BS EN 1097-3:1998" },
+          { sq: "VENDI KU ËSHTË PERFORMUAR TESTI", en: "LAB. LOCATION", value: aggregateBulkDensity.testingLocation || "01/A (Laboratori Fiziko-Mekanik / Physical-Mechanical laboratory)" }
+        ]} />
+        <OfficialEnvironmental
+          temperature={aggregateBulkDensity.temperature}
+          humidity={aggregateBulkDensity.humidity}
+          humidityLabel={<>Lagështia relative / <span className="italic">Relative Humidity</span></>}
+        />
       </div>
-      <div className="mt-8 overflow-x-auto rounded-md border border-line">
-        <table className="w-full min-w-[900px] text-left text-sm">
-          <thead className="table-head"><tr><th className="px-3 py-2">Parameter</th><th className="px-3 py-2">Unit</th>{aggregateBulkDensity.runs.map((_, index) => <th key={index} className="px-3 py-2">Test {index + 1}</th>)}<th className="px-3 py-2">Average</th><th className="px-3 py-2">Uncertainty</th></tr></thead>
-          <tbody className="divide-y divide-line">
-            <tr><td className="px-3 py-2 font-semibold text-ink">Loose bulk density</td><td className="px-3 py-2">Mg/m3</td>{aggregateBulkDensity.runs.map((row, index) => <td key={index} className="px-3 py-2">{row.bulkDensityMgM3}</td>)}<td className="px-3 py-2 font-semibold text-ink">{aggregateBulkDensity.averageBulkDensityMgM3}</td><td className="px-3 py-2">0.02</td></tr>
-            <tr><td className="px-3 py-2 font-semibold text-ink">Voids</td><td className="px-3 py-2">%</td>{aggregateBulkDensity.runs.map((row, index) => <td key={index} className="px-3 py-2">{row.voidsPercent}</td>)}<td className="px-3 py-2 font-semibold text-ink">{aggregateBulkDensity.averageVoidsPercent}</td><td className="px-3 py-2">1.2</td></tr>
-          </tbody>
-        </table>
+
+      <div className="mt-5 text-center text-[10pt] font-bold">
+        PËRCAKTIMI I PESHËS VOLUMORE / <span className="italic font-normal">Determination of bulk density</span> [ Mg/m³ ]
       </div>
-      <div className="mt-8 soft-panel p-4 text-sm text-ink"><div className="font-semibold"><BiText>Notes / Shënime</BiText></div><p className="mt-1">{aggregateBulkDensity.notes || "Results relate only to the items tested."}</p></div>
-      <SignaturePair
-        wrapperClassName="mt-10"
-        columnClassName="grid gap-6 sm:grid-cols-2"
-        testedByLabel="TESTUAR NGA / TESTED BY"
-        testedByName={aggregateBulkDensity.technicianName || report.draftedBy}
-        responsibleLabel="PËRGJEGJËSI I LABORATORIT / HEAD OF LABORATORY"
-        responsibleName={headOfLabName(aggregateBulkDensity.checkedBy)}
-        align="start"
-        bordered
+      <table className="official-table mt-1 w-full border-collapse text-center text-[10pt]">
+        <thead>
+          <tr>
+            <th colSpan={4}>Rezultati i testimit<br /><span className="italic font-normal">Test Result</span></th>
+            <th rowSpan={2}>Pasiguria në matje<br /><span className="italic font-normal">Measurement uncertainty</span><br />Vlera / <span className="italic">Value</span></th>
+          </tr>
+          <tr>
+            <th>1</th>
+            <th>2</th>
+            <th>3</th>
+            <th>Vlera mes. / <span className="italic font-normal">Avg. Value</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>{reportFigure(aggregateBulkDensity.runs[0]?.bulkDensityMgM3, 3)}</td>
+            <td>{reportFigure(aggregateBulkDensity.runs[1]?.bulkDensityMgM3, 3)}</td>
+            <td>{reportFigure(aggregateBulkDensity.runs[2]?.bulkDensityMgM3, 3)}</td>
+            <td className="font-bold">{reportFigure(aggregateBulkDensity.averageBulkDensityMgM3, 3)}</td>
+            <td>0.02</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div className="mt-4 text-center text-[10pt] font-bold">
+        PËRCAKTIMI I PËRMBAJTJES SË BOSHLLËQEVE / <span className="italic font-normal">Determination of voids</span> [ % ]
+      </div>
+      <table className="official-table mt-1 w-full border-collapse text-center text-[10pt]">
+        <thead>
+          <tr>
+            <th colSpan={4}>Rezultati i testimit<br /><span className="italic font-normal">Test Result</span></th>
+            <th rowSpan={2}>Pasiguria në matje<br /><span className="italic font-normal">Measurement uncertainty</span><br />Vlera / <span className="italic">Value</span></th>
+          </tr>
+          <tr>
+            <th>1</th>
+            <th>2</th>
+            <th>3</th>
+            <th>Vlera mes. / <span className="italic font-normal">Avg. Value</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>{reportFigure(aggregateBulkDensity.runs[0]?.voidsPercent, 2)}</td>
+            <td>{reportFigure(aggregateBulkDensity.runs[1]?.voidsPercent, 2)}</td>
+            <td>{reportFigure(aggregateBulkDensity.runs[2]?.voidsPercent, 2)}</td>
+            <td className="font-bold">{reportFigure(aggregateBulkDensity.averageVoidsPercent, 2)}</td>
+            <td>1.2</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <OfficialAsterisk />
+      <OfficialNotesAndFooter
+        layout="split"
+        notes={aggregateBulkDensity.notes}
+        testedBy={aggregateBulkDensity.technicianName || report.draftedBy}
+        responsible={aggregateBulkDensity.checkedBy}
+        issueDate={issueDate}
+        sampledBy={samplingOperator(sample)}
       />
-      <SimpleReportLegalFooter issueDate={issueDate} sampledBy={samplingOperator(sample)} />
-    </section>
+    </OfficialReportShell>
   );
 }
 
