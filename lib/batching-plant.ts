@@ -50,6 +50,38 @@ export function batchingPlant(otherData?: string): string | undefined {
 }
 
 /**
+ * The distinct plants behind the cubes on one report, in cube order.
+ *
+ * A report carries at most three cubes, and a pour can arrive from more than
+ * one plant (IMP 2 for two cubes, IMP 3 for the third), so the certificate
+ * names each plant that actually mixed a cube it reports, written once. Read
+ * from each cube's plate box, where the plant is typed next to the registration
+ * ("AB 051 KL, ORA 15:25, IMP 2"); falls back to the worksheet's other-data box
+ * when nothing was typed per cube.
+ */
+export function plantsForReport(specimens: Array<{ truckPlate?: string }>, otherData?: string): string[] {
+  const seen = new Set<string>();
+  const plants: string[] = [];
+  for (const specimen of specimens) {
+    const plant = batchingPlant(specimen?.truckPlate);
+    if (!plant || seen.has(plant)) continue;
+    seen.add(plant);
+    plants.push(plant);
+  }
+  if (!plants.length) {
+    const fromOther = batchingPlant(otherData);
+    if (fromOther) plants.push(fromOther);
+  }
+  return plants;
+}
+
+/** The plant line as it reads on the report, or undefined when there is none. */
+export function formatPlantsForReport(specimens: Array<{ truckPlate?: string }>, otherData?: string) {
+  const plants = plantsForReport(specimens, otherData);
+  return plants.length ? `Impianti / Batching plant: ${plants.join(", ")}` : undefined;
+}
+
+/**
  * The plant each pour came from, keyed by sample.
  *
  * Keyed by the pour rather than by the test on purpose. The plant is a property

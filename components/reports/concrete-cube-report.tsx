@@ -5,6 +5,7 @@ import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest,
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
 import { formatPlatesForReport } from "@/lib/truck-plates";
+import { formatPlantsForReport } from "@/lib/batching-plant";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
 import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair, samplingOperator, BiText, samplingDisclaimerApplies, concreteCubeSpecimens, concreteCubeAverageStrength, concreteStrengthClass } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
@@ -42,7 +43,13 @@ export function ConcreteCubeReportPreview({
   // written once each. They sit with the other data rather than in a column
   // of their own, because a plate describes where a cube came from, not
   // anything measured about it.
-  const otherData = [recordedOtherData, formatPlatesForReport(reportSpecimens)].filter(Boolean).join(" · ") || undefined;
+  // The batching plant (Impianti 2/3) is typed next to the plate in each cube's
+  // box, so it is read back out the same way and printed beside the plates. It
+  // was being parsed for the client portal but never reaching the certificate.
+  const otherData =
+    [recordedOtherData, formatPlatesForReport(reportSpecimens), formatPlantsForReport(reportSpecimens, concrete?.otherData)]
+      .filter(Boolean)
+      .join(" · ") || undefined;
 
   return (
     <section className="report-a4 concrete-cube-report print-surface relative rounded-md border border-line bg-white p-4 text-[11pt] leading-[1.16] text-black shadow-sm" style={{ fontFamily: '"Times New Roman", Times, serif' }}>
