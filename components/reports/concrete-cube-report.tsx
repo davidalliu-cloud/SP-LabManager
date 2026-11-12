@@ -4,8 +4,7 @@ import type { ReactNode } from "react";
 import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabTest, MortarTest, Project, Report, Sample, SteelTensileTest, ThermalInsulationTest } from "@/lib/types";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
-import { formatHoursForReport, formatPlatesForReport } from "@/lib/truck-plates";
-import { formatPlantsForReport } from "@/lib/batching-plant";
+import { formatDeliveriesForReport } from "@/lib/truck-plates";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
 import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, SignaturePair, samplingOperator, BiText, samplingDisclaimerApplies, concreteCubeSpecimens, concreteCubeAverageStrength, concreteStrengthClass } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
@@ -39,29 +38,12 @@ export function ConcreteCubeReportPreview({
     ?.split("|")
     .find((note) => !note.includes("Intervali i akredituar") && !note.includes("Standardi i kampionimit") && !note.match(new RegExp("C\\d+/\\d+")))
     ?.trim();
-  // The delivery trucks behind the cubes on this report, in cube order and
-  // written once each. They sit with the other data rather than in a column
-  // of their own, because a plate describes where a cube came from, not
-  // anything measured about it.
-  //
-  // The plant goes in front of them. It is read off the cubes only where the
-  // technician did not already name one in the other-data box: named there, it
-  // is printed as typed, and a second copy would read as a second plant. The
-  // test is a named plant, not the word — "BALFIN ALESIO IMPIANTI" says only
-  // that there was a plant, so a 2 found on the cubes is still worth printing.
-  //
-  // The hour each lorry left the plant is typed into the same box, and reads
-  // beside the plant for the same reason: a client comparing a low cube
-  // against the delivery note wants the plant and the hour together. Both are
-  // suppressed where the technician already wrote one into the other-data box.
-  const typedPlates = reportSpecimens.map((specimen) => specimen.truckPlate);
-  const plant = formatPlantsForReport([recordedOtherData])
-    ? undefined
-    : formatPlantsForReport(typedPlates);
-  const hours = formatHoursForReport([recordedOtherData])
-    ? undefined
-    : formatHoursForReport(typedPlates);
-  const otherData = [recordedOtherData, plant, hours, formatPlatesForReport(reportSpecimens)].filter(Boolean).join(" · ") || undefined;
+  // The delivery behind each cube on this report, in cube order, exactly as the
+  // technician typed it: registration plate, hour of collection and slump kept
+  // together on one line, because all three belong to one lorry-load and the
+  // certificate reads them as one delivery — not as separate "plates", "hours"
+  // and "slump" facts. One item per cube; an identical line is written once.
+  const otherData = [recordedOtherData, formatDeliveriesForReport(reportSpecimens)].filter(Boolean).join(" · ") || undefined;
 
   return (
     <section className="report-a4 concrete-cube-report print-surface relative rounded-md border border-line bg-white p-4 text-[11pt] leading-[1.16] text-black shadow-sm" style={{ fontFamily: '"Times New Roman", Times, serif' }}>

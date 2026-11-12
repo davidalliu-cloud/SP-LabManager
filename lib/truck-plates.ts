@@ -44,6 +44,40 @@ export function formatPlatesForReport(specimens: { truckPlate?: string }[], limi
 }
 
 /**
+ * Each cube's delivery line exactly as the technician typed it — the
+ * registration plate, the hour the lorry left and the slump kept together as
+ * one item, because all three describe the same lorry-load and the certificate
+ * reads them as one delivery, not as separate facts.
+ *
+ * One line per cube, in cube order. An identical line is written once, so a
+ * truck that filled two of the cubes on this report does not read as two
+ * deliveries; two genuinely different lines (even from the same plate at
+ * different hours) are both kept.
+ */
+export function deliveriesForReport(specimens: { truckPlate?: string }[], limit = 3): string[] {
+  const seen = new Set<string>();
+  const lines: string[] = [];
+
+  for (const specimen of specimens) {
+    const line = specimen?.truckPlate?.trim().replace(/\s+/g, " ");
+    if (!line) continue;
+    const key = line.toUpperCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    lines.push(line);
+    if (lines.length >= limit) break;
+  }
+
+  return lines;
+}
+
+/** The per-cube delivery lines as they read on the report, joined with " ; ". */
+export function formatDeliveriesForReport(specimens: { truckPlate?: string }[], limit = 3) {
+  const lines = deliveriesForReport(specimens, limit);
+  return lines.length ? lines.join(" ; ") : undefined;
+}
+
+/**
  * Where the registration stops, in a plate box that holds more than one thing.
  *
  * Either a separator, or the first word that names something else about the
