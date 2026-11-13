@@ -85,6 +85,7 @@ import { officialClientCodes2026 } from "./client-directory";
 import { aggregateNamingStage, canAssignSampleClient, canDeleteSamples, canGenerateOffers, canEditSampleAfterRegistration, canEditTestData, canReviewTests, canGenerateReportForTest, canAmendEnvironment, canCloseNonconformity, canManageClients, canManageEmployees, canManageEquipment, canNameAggregateSample, canRaiseNonconformity, canRecordEnvironment, canRewriteSample, isSampleLocked } from "./permissions";
 import { AGGREGATE_ORIGINS, aggregateSampleDescription, aggregateSubtypeKind, formatAggregateFraction, isValidAggregateFraction } from "./aggregate-subtypes";
 import { plateCase } from "./truck-plates";
+import { thermalAverages } from "./thermal-insulation";
 import { hasRegisteredResult } from "./test-result-summary";
 import { isFieldSampleType } from "./field-register";
 import { properName } from "./proper-case";
@@ -3748,21 +3749,11 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             notes: input.notes,
             specimens,
             subSpecimens,
-            // Averaged over the cells that hold a reading. The first four are
-            // taken over the boards delivered - three arriving means three
-            // figures - and the last two over the sub-specimens the five-fold
-            // determinations were run on, which is a different count and a
-            // different set of things. Each average is held to the width its
-            // row prints at on SL-RA-PT-7.8/1; see
-            // calculateThermalApparentDensityKgM3.
-            averages: {
-              lengthMm: averageMeasured(specimens.map((row) => row.lengthMm), 1),
-              widthMm: averageMeasured(specimens.map((row) => row.widthMm), 1),
-              thicknessMm: averageMeasured(specimens.map((row) => row.thicknessMm), 1),
-              apparentDensityKgM3: averageMeasured(specimens.map((row) => row.apparentDensityKgM3), 2),
-              waterAbsorptionKgM2: averageMeasured(subSpecimens.map((row) => row.waterAbsorptionKgM2), 3),
-              compressiveStressKpa: averageMeasured(subSpecimens.map((row) => row.compressiveStressAtTenPercentKpa || row.compressiveStressKpa), 1)
-            },
+            // Stored so the record describes itself, but nothing displays this
+            // copy: every screen works the averages out from the readings, so a
+            // certificate saved under an older rule is not left printing it.
+            // See thermalAverages in lib/thermal-insulation.ts.
+            averages: thermalAverages({ specimens, subSpecimens }),
             createdAt: new Date().toISOString()
           };
           const existing = previous.thermalInsulationTests.some((row) => row.testId === testId);

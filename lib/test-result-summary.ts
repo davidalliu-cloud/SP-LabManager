@@ -1,3 +1,4 @@
+import { thermalAverages } from "./thermal-insulation";
 import type { LabState, LabTest } from "./types";
 
 /**
@@ -236,7 +237,10 @@ export function getTestResultSummary(store: TestDetailTables, test: LabTest): Te
     testEndDate: thermal.testEndDate,
     technicianName: thermal.technicianName,
     checkedBy: thermal.checkedBy,
-    result: `Densiteti: ${formatNumber(thermal.averages.apparentDensityKgM3, 0)} kg/m3; absorbimi: ${formatNumber(thermal.averages.waterAbsorptionKgM2, 3)} kg/m2; shtypja: ${formatNumber(thermal.averages.compressiveStressKpa, 0)} kPa`
+    result: (() => {
+      const means = thermalAverages(thermal);
+      return `Densiteti: ${formatNumber(means.apparentDensityKgM3, 0)} kg/m3; absorbimi: ${formatNumber(means.waterAbsorptionKgM2, 3)} kg/m2; shtypja: ${formatNumber(means.compressiveStressKpa, 0)} kPa`;
+    })()
   };
 
   const cementConsistency = store.cementConsistencyTests.find((item) => item.testId === test.id);

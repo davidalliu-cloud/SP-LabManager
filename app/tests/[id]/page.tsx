@@ -15,7 +15,7 @@ import { canEditTestData, canGenerateReportForTest, canReviewTests, canViewClien
 import type { AsphaltGradationTarget, AsphaltReportKind, LabTest, LabUser, MasonryUnitCategory, MortarTest, MortarTestKind, Sample } from "@/lib/types";
 import { ASPHALT_GRADATION_TARGETS, assessGradation, defaultGradationTarget, formatLimit, gradationVerdict, limitAtSieve } from "@/lib/asphalt-gradation-limits";
 import { plateCase } from "@/lib/truck-plates";
-import { THERMAL_SUB_SPECIMEN_COUNT, thermalSubSpecimens } from "@/lib/thermal-insulation";
+import { THERMAL_SUB_SPECIMEN_COUNT, thermalAverages, thermalSubSpecimens } from "@/lib/thermal-insulation";
 import { DEFAULT_BITUMEN_DENSITY_GCM3, calculateInitialGaugeLength, calculateJobMixDosageMasses, calculateJobMixFractionMasses, isMarshallHeightInRange, jobMixOptimumCandidates, round } from "@/lib/calculations";
 
 /** The fractions and dosages the lab's own Job Mix master starts from. */
@@ -1437,6 +1437,7 @@ function TestDetailView({ test }: { test: LabTest }) {
     // the sub-specimens it effectively held; and the board codes those rows
     // may be linked to, which is what the sheet has typed above them.
     const savedSubSpecimens = thermalInsulation ? thermalSubSpecimens(thermalInsulation) : [];
+    const thermalMeans = thermalInsulation ? thermalAverages(thermalInsulation) : undefined;
     const sampleCodes = [1, 2, 3, 4, 5]
       .map((index) => thermalInsulation?.specimens[index - 1]?.specimenCode || `${sample?.sampleCode ?? "Sample"}/${index}`)
       .filter((code, index, codes) => codes.indexOf(code) === index);
@@ -1552,15 +1553,15 @@ function TestDetailView({ test }: { test: LabTest }) {
               </div>
 
               <div className="grid gap-3 text-sm md:grid-cols-3">
-                <InfoInline label="Average length" value={thermalInsulation ? `${thermalInsulation.averages.lengthMm} mm` : "Save"} />
-                <InfoInline label="Average density" value={thermalInsulation ? `${thermalInsulation.averages.apparentDensityKgM3} kg/m3` : "Save"} />
-                <InfoInline label="Average compression" value={thermalInsulation ? `${thermalInsulation.averages.compressiveStressKpa} kPa` : "Save"} />
+                <InfoInline label="Average length" value={thermalMeans ? `${thermalMeans.lengthMm} mm` : "Save"} />
+                <InfoInline label="Average density" value={thermalMeans ? `${thermalMeans.apparentDensityKgM3} kg/m3` : "Save"} />
+                <InfoInline label="Average compression" value={thermalMeans ? `${thermalMeans.compressiveStressKpa} kPa` : "Save"} />
               </div>
               <div><label className="text-sm font-medium text-ink">Notes</label><textarea name="notes" rows={4} defaultValue={thermalInsulation?.notes} className="input mt-1" /></div>
               <div className="flex justify-end"><button className="btn-secondary">Save thermal insulation data</button></div>
             </div>
           </fieldset></form>
-          <TestActionsSidebar ready={Boolean(thermalInsulation)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={thermalInsulation ? `Thermal report data saved with density ${thermalInsulation.averages.apparentDensityKgM3} kg/m3.` : "Save worksheet data first to calculate the report values."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+          <TestActionsSidebar ready={Boolean(thermalInsulation)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={thermalMeans ? `Thermal report data saved with density ${thermalMeans.apparentDensityKgM3} kg/m3.` : "Save worksheet data first to calculate the report values."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
     );

@@ -1,4 +1,17 @@
-import type { ThermalInsulationSpecimen, ThermalInsulationSubSpecimen, ThermalInsulationTest } from "./types";
+import {
+  averageMeasured,
+  calculateCompressionDeformationPercent,
+  calculateCompressionStressKpa,
+  calculateThermalAbsorptionKgM2,
+  calculateThermalApparentDensityKgM3,
+  calculateThermalVolumeM3
+} from "./calculations";
+import type {
+  ThermalInsulationAverages,
+  ThermalInsulationSpecimen,
+  ThermalInsulationSubSpecimen,
+  ThermalInsulationTest
+} from "./types";
 
 /**
  * Thermal insulation is measured on two different things, and the certificate
@@ -17,6 +30,62 @@ import type { ThermalInsulationSpecimen, ThermalInsulationSubSpecimen, ThermalIn
 export const THERMAL_SUB_SPECIMEN_COUNT = 5;
 
 /**
+ * The six averages the certificate prints, worked out from the readings.
+ *
+ * Derived on every read rather than taken from the `averages` the record was
+ * saved with. A stored average is only as right as the rules in force the day
+ * somebody pressed save: the certificates written while blank sample columns
+ * counted as zeros hold 600 mm for three boards of 1000, and went on printing
+ * it after the rule was fixed, because the report was reading the number
+ * rather than the measurements. The measurements are what the laboratory
+ * recorded; the mean of them is arithmetic, and arithmetic is cheap.
+ *
+ * The first four are taken over the boards delivered and the last two over
+ * the sub-specimens the five-fold determinations were run on - a different
+ * count of a different set of things - and in both cases only over the cells
+ * that hold a reading. Each is held to the width its row prints at on
+ * SL-RA-PT-7.8/1.
+ */
+export function thermalAverages(
+  test: Pick<ThermalInsulationTest, "specimens" | "subSpecimens">
+): ThermalInsulationAverages {
+  const boards = thermalBoards(test);
+  const subSpecimens = thermalSubSpecimens(test);
+  return {
+    lengthMm: averageMeasured(boards.map((row) => row.lengthMm), 1),
+    widthMm: averageMeasured(boards.map((row) => row.widthMm), 1),
+    thicknessMm: averageMeasured(boards.map((row) => row.thicknessMm), 1),
+    apparentDensityKgM3: averageMeasured(boards.map((row) => row.apparentDensityKgM3), 2),
+    waterAbsorptionKgM2: averageMeasured(subSpecimens.map((row) => row.waterAbsorptionKgM2), 3),
+    compressiveStressKpa: averageMeasured(
+      subSpecimens.map((row) => row.compressiveStressAtTenPercentKpa || row.compressiveStressKpa),
+      1
+    )
+  };
+}
+
+/**
+ * The boards delivered, with what follows from their readings worked out
+ * afresh.
+ *
+ * Same reasoning as the averages: a density stored in 2024 was rounded by
+ * whatever rule applied then, and the certificates written before apparent
+ * density went to two places hold 20.6 where the measurement says 20.57. The
+ * mass and the three sides are the readings; the density is arithmetic over
+ * them, so it is done when it is needed. A row that kept a density but lost
+ * the readings behind it keeps the density.
+ */
+export function thermalBoards(
+  test: Pick<ThermalInsulationTest, "specimens">
+): ThermalInsulationSpecimen[] {
+  return test.specimens.map((row) => {
+    if (!row.massKg || !row.lengthMm || !row.widthMm || !row.thicknessMm) return row;
+    const volumeM3 = calculateThermalVolumeM3(row.lengthMm, row.widthMm, row.thicknessMm);
+    return { ...row, volumeM3, apparentDensityKgM3: calculateThermalApparentDensityKgM3(row.massKg, volumeM3) };
+  });
+}
+
+/**
  * The sub-specimens absorption and compression were measured on.
  *
  * Written straight onto the test since the split. Three certificates predate
@@ -27,8 +96,31 @@ export const THERMAL_SUB_SPECIMEN_COUNT = 5;
 export function thermalSubSpecimens(
   test: Pick<ThermalInsulationTest, "specimens" | "subSpecimens">
 ): ThermalInsulationSubSpecimen[] {
-  if (test.subSpecimens?.length) return test.subSpecimens;
-  return test.specimens.filter(hasLegacySubSpecimenData).map(fromLegacySpecimen);
+  const rows = test.subSpecimens?.length
+    ? test.subSpecimens
+    : test.specimens.filter(hasLegacySubSpecimenData).map(fromLegacySpecimen);
+  return rows.map(recomputed);
+}
+
+/** As thermalBoards, for the figures a sub-specimen's readings imply. */
+function recomputed(row: ThermalInsulationSubSpecimen): ThermalInsulationSubSpecimen {
+  const absorbed = row.massAfterImmersionKg && row.absorptionLengthMm && row.absorptionWidthMm;
+  const pressed = row.compressionLengthMm && row.compressionWidthMm;
+  return {
+    ...row,
+    waterAbsorptionKgM2: absorbed
+      ? calculateThermalAbsorptionKgM2(row.massBeforeImmersionKg, row.massAfterImmersionKg, row.absorptionLengthMm, row.absorptionWidthMm)
+      : row.waterAbsorptionKgM2,
+    deformationPercent: row.initialThicknessMm
+      ? calculateCompressionDeformationPercent(row.displacementMm, row.initialThicknessMm)
+      : row.deformationPercent,
+    compressiveStressKpa: pressed
+      ? calculateCompressionStressKpa(row.maximumForceN, row.compressionLengthMm, row.compressionWidthMm)
+      : row.compressiveStressKpa,
+    compressiveStressAtTenPercentKpa: pressed
+      ? calculateCompressionStressKpa(row.forceAtTenPercentN, row.compressionLengthMm, row.compressionWidthMm)
+      : row.compressiveStressAtTenPercentKpa
+  };
 }
 
 function hasLegacySubSpecimenData(specimen: ThermalInsulationSpecimen) {
