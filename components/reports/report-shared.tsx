@@ -415,12 +415,27 @@ export type OfficialMetaEntry = {
 export function OfficialReportShell({
   report,
   code,
+  version,
+  effectiveDate,
   title = "RAPORT TESTIM / TEST REPORT",
   className = "",
   children
 }: {
   report: Report;
   code: string;
+  /**
+   * Which revision of the controlled form this certificate follows, and the
+   * date that revision took effect — the pair the paper form carries in its
+   * top right corner, beside the code.
+   *
+   * Passed per report rather than held here, because each form is revised on
+   * its own: SL-RA-PT-7.8/1 is at version 8, effective 10.04.2026, and says
+   * so on every sheet. A report whose form has not been checked against the
+   * controlled copy passes neither and prints neither, rather than claiming
+   * a revision nobody verified.
+   */
+  version?: string;
+  effectiveDate?: string;
   title?: string;
   className?: string;
   children: ReactNode;
@@ -436,9 +451,17 @@ export function OfficialReportShell({
           </div>
           <img src="/brand/da-accreditation.png" alt="DA accreditation Testim S SH ISO/IEC 17025 LT 069" className="ml-auto mt-1 h-auto w-[80px]" />
         </div>
-        <div className="mt-1 text-[6pt] leading-tight">
-          <div>Kodi / <span className="italic">Code</span>: {code}</div>
-          <div>Faqe / <span className="italic">Page</span>: 1/1</div>
+        <div className="mt-1 flex items-start justify-between text-[6pt] leading-tight">
+          <div>
+            <div>Kodi / <span className="italic">Code</span>: {code}</div>
+            <div>Faqe / <span className="italic">Page</span>: 1/1</div>
+          </div>
+          {version || effectiveDate ? (
+            <div className="text-right">
+              {version ? <div>Versioni / <span className="italic">Version</span>: {version}</div> : null}
+              {effectiveDate ? <div>Data Efektive / <span className="italic">Effective date</span>: {effectiveDate}</div> : null}
+            </div>
+          ) : null}
         </div>
       </header>
       {children}

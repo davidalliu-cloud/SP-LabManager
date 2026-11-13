@@ -26,7 +26,7 @@ export function ThermalInsulationReportPreview({
   const sampleValues = (selector: (index: number) => number | undefined) => [0, 1, 2, 3, 4].map(selector);
   const issueDate = report.issuedAt || report.approvedAt || thermalInsulation.testEndDate || sample?.reportDueDate;
   return (
-    <OfficialReportShell report={report} code="SL-RA-PT-7.8/1" title="RAPORT TESTIMI / TEST REPORT" className="compact-official-report thermal-insulation-report">
+    <OfficialReportShell report={report} code="SL-RA-PT-7.8/1" version="8" effectiveDate="10.04.2026" title="RAPORT TESTIMI / TEST REPORT" className="compact-official-report thermal-insulation-report">
       <OfficialMetaGrid entries={[
         { sq: "Nr. REGJISTRI", en: "REGISTER No.", value: sample?.sampleCode },
         { sq: "KLIENTI", en: "PURCHASER", value: client?.clientName },
@@ -56,7 +56,7 @@ export function ThermalInsulationReportPreview({
         </thead>
         <tbody>
           <ThermalReportRow no="1" labelSq="Përcaktimi i gjatësisë" labelEn="Determination of length" standard="BS EN 822:2013" unit="mm" values={sampleValues((i) => thermalInsulation.specimens[i]?.lengthMm)} average={thermalInsulation.averages.lengthMm} averageDecimals={0} uncertainty="1.40" />
-          <ThermalReportRow no="2" labelSq="Përcaktimi i gjerësisë" labelEn="Determination of width" standard="BS EN 822:2013" unit="mm" values={sampleValues((i) => thermalInsulation.specimens[i]?.widthMm)} average={thermalInsulation.averages.widthMm} averageDecimals={0} uncertainty="1.70" />
+          <ThermalReportRow no="2" labelSq="Përcaktimi i gjerësisë" labelEn="Determination of width" standard="BS EN 822:2013" unit="mm" values={sampleValues((i) => thermalInsulation.specimens[i]?.widthMm)} average={thermalInsulation.averages.widthMm} uncertainty="1.70" />
           <ThermalReportRow no="3" labelSq="Përcaktimi i trashësisë" labelEn="Determination of thickness" standard="BS EN 823:2013" unit="mm" values={sampleValues((i) => thermalInsulation.specimens[i]?.thicknessMm)} average={thermalInsulation.averages.thicknessMm} averageDecimals={0} uncertainty="1.40" />
           <ThermalReportRow no="4" labelSq="Përcaktimi i densitetit aparent" labelEn="Determination of the apparent density" standard="BS EN 1602:2013" unit="kg/m³" values={sampleValues((i) => thermalInsulation.specimens[i]?.apparentDensityKgM3)} average={thermalInsulation.averages.apparentDensityKgM3} decimals={2} uncertainty="1.00" />
           <ThermalReportRow no="5" labelSq="Përcaktimi i absorbimit të ujit me zhytje të pjesshme (me kohë të shkurtër)" labelEn="Determination of short-term water absorption by partial immersion" standard="BS EN ISO 29767:2019" unit="kg/m²" values={sampleValues((i) => thermalInsulation.specimens[i]?.waterAbsorptionKgM2)} average={thermalInsulation.averages.waterAbsorptionKgM2} decimals={3} uncertainty="0.001" />
