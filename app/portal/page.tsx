@@ -462,15 +462,26 @@ export default async function PortalPage({
                         <div className="flex flex-col gap-1.5">
                           {reports.map((report) =>
                             openable.has(report.id) ? (
-                              <a
-                                key={report.id}
-                                href={`/api/portal/report/${report.id}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="font-semibold text-lab-burgundy hover:text-lab-purple"
-                              >
-                                {report.reportNumber} ({report.reportSequence}/{report.totalReports})
-                              </a>
+                              // The number opens the report to read; Shkarko saves it. Two
+                              // links because they are two different jobs: an engineer going
+                              // down the register wants to glance at a result, and the one
+                              // filing it with the works documents wants a named file.
+                              <div key={report.id} className="flex flex-wrap items-baseline gap-x-2">
+                                <a
+                                  href={`/api/portal/report/${report.id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="font-semibold text-lab-burgundy hover:text-lab-purple"
+                                >
+                                  {report.reportNumber} ({report.reportSequence}/{report.totalReports})
+                                </a>
+                                <a
+                                  href={`/api/portal/report/${report.id}?download=1`}
+                                  className="text-xs text-muted underline underline-offset-2 hover:text-lab-purple"
+                                >
+                                  Shkarko
+                                </a>
+                              </div>
                             ) : (
                               <div key={report.id}>
                                 <div className="font-semibold text-ink">
