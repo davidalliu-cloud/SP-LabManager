@@ -434,24 +434,23 @@ textarea {
   padding: 3px 4px;
 }
 
-.thermal-official-table th:nth-child(1),
-.thermal-official-table td:nth-child(1) {
-  width: 5%;
-}
-
-.thermal-official-table th:nth-child(2),
-.thermal-official-table td:nth-child(2) {
-  width: 25%;
-}
-
-.thermal-official-table th:nth-child(3),
-.thermal-official-table td:nth-child(3) {
-  width: 13%;
-}
-
-.thermal-official-table th:nth-child(4),
-.thermal-official-table td:nth-child(4) {
-  width: 6%;
+/*
+ * The certificate's two tables are laid out from one column set, declared
+ * as a colgroup by ThermalReportColumns.
+ *
+ * They used to size themselves from their contents, and the second table's
+ * headings are longer than the first's — "Nën-mostra 1 / Sub-specimen 1"
+ * against "Mostra 1 / Sample 1" — so its first result column came out wide
+ * and the last ones narrow, and the two tables did not line up with each
+ * other. Fixed layout makes the five result columns equal and both tables
+ * identical, which is what a reader comparing them expects.
+ *
+ * Widths cannot be nth-child rules under fixed layout: the first row of each
+ * table spans six columns with one cell, so there is no nth-child(5) for the
+ * browser to take the fifth column's width from.
+ */
+.thermal-official-table {
+  table-layout: fixed;
 }
 
 /* ==================================================================== *

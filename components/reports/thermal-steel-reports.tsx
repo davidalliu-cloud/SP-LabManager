@@ -62,6 +62,7 @@ export function ThermalInsulationReportPreview({
         <OfficialEnvironmental temperature={thermalInsulation.temperature} humidity={thermalInsulation.humidity} />
       </div>
       <table className="official-table thermal-official-table mt-5 w-full border-collapse text-center text-[9pt]">
+        <ThermalReportColumns />
         <thead>
           <tr><th>Nr.</th><th>Parametri i matur</th><th>Standardi i testimit</th><th>Njësia</th><th colSpan={6}>Rezultatet e testimit / <span>Test Results</span></th><th>Pasiguria në matje</th></tr>
           <tr><th><span>No.</span></th><th><span>Measured parameter</span></th><th><span>Test standard</span></th><th><span>Units</span></th>{Array.from({ length: 5 }, (_, index) => <th key={index}>Mostra {index + 1}<br /><span>Sample {index + 1}</span></th>)}<th>Mesatarja<br /><span>Average</span></th><th><span>Measurement uncertainty</span></th></tr>
@@ -78,6 +79,7 @@ export function ThermalInsulationReportPreview({
           against their own columns, and each column names the board it came
           from. */}
       <table className="official-table thermal-official-table mt-4 w-full border-collapse text-center text-[9pt]">
+        <ThermalReportColumns />
         <thead>
           <tr><th>Nr.</th><th>Parametri i matur</th><th>Standardi i testimit</th><th>Njësia</th><th colSpan={6}>Rezultatet e testimit mbi nën-mostrat / <span>Test Results on sub-specimens</span></th><th>Pasiguria në matje</th></tr>
           <tr><th><span>No.</span></th><th><span>Measured parameter</span></th><th><span>Test standard</span></th><th><span>Units</span></th>{Array.from({ length: 5 }, (_, index) => <th key={index}>Nën-mostra {index + 1}<br /><span>Sub-specimen {index + 1}</span></th>)}<th>Mesatarja<br /><span>Average</span></th><th><span>Measurement uncertainty</span></th></tr>
@@ -90,6 +92,31 @@ export function ThermalInsulationReportPreview({
       </table>
       <OfficialNotesAndFooter notes={thermalInsulation.notes} testedBy={thermalInsulation.technicianName || report.draftedBy} responsible={thermalInsulation.checkedBy} issueDate={issueDate} sampledBy={samplingOperator(sample)} />
     </OfficialReportShell>
+  );
+}
+
+/**
+ * The column widths both tables of SL-RA-PT-7.8/1 are laid out on.
+ *
+ * One set for both, so the sample table and the sub-specimen table below it
+ * line up column for column, and the five result columns are equal to each
+ * other rather than sized by whichever heading happens to be longest. The
+ * average and the uncertainty are wider: their headings are two words, and
+ * squeezing them to a result column's width wraps them to four lines.
+ */
+function ThermalReportColumns() {
+  return (
+    <colgroup>
+      <col style={{ width: "5%" }} />
+      <col style={{ width: "22%" }} />
+      <col style={{ width: "13%" }} />
+      <col style={{ width: "6%" }} />
+      {Array.from({ length: THERMAL_SUB_SPECIMEN_COUNT }, (_, index) => (
+        <col key={index} style={{ width: "7%" }} />
+      ))}
+      <col style={{ width: "8%" }} />
+      <col style={{ width: "11%" }} />
+    </colgroup>
   );
 }
 
