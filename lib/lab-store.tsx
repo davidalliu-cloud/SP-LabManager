@@ -3731,8 +3731,10 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
               lengthMm: averageNumbers(specimens.map((row) => row.lengthMm), 1),
               widthMm: averageNumbers(specimens.map((row) => row.widthMm), 1),
               thicknessMm: averageNumbers(specimens.map((row) => row.thicknessMm), 1),
-              apparentDensityKgM3: averageNumbers(specimens.map((row) => row.apparentDensityKgM3), 1),
-              waterAbsorptionKgM2: averageNumbers(specimens.map((row) => row.waterAbsorptionKgM2), 2),
+              // Each average is held to the width its row prints at on
+              // SL-RA-PT-7.8/1 - see calculateThermalApparentDensityKgM3.
+              apparentDensityKgM3: averageNumbers(specimens.map((row) => row.apparentDensityKgM3), 2),
+              waterAbsorptionKgM2: averageNumbers(specimens.map((row) => row.waterAbsorptionKgM2), 3),
               compressiveStressKpa: averageNumbers(specimens.map((row) => row.compressiveStressAtTenPercentKpa || row.compressiveStressKpa), 1)
             },
             createdAt: new Date().toISOString()

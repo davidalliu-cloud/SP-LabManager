@@ -23,7 +23,7 @@ export function ThermalInsulationReportPreview({
   project?: Project;
   thermalInsulation: ThermalInsulationTest;
 }) {
-  const sampleValues = (selector: (index: number) => number) => [0, 1, 2, 3, 4].map(selector);
+  const sampleValues = (selector: (index: number) => number | undefined) => [0, 1, 2, 3, 4].map(selector);
   const issueDate = report.issuedAt || report.approvedAt || thermalInsulation.testEndDate || sample?.reportDueDate;
   return (
     <OfficialReportShell report={report} code="SL-RA-PT-7.8/1" title="RAPORT TESTIMI / TEST REPORT" className="compact-official-report thermal-insulation-report">
@@ -55,12 +55,12 @@ export function ThermalInsulationReportPreview({
           <tr><th><span>No.</span></th><th><span>Measured parameter</span></th><th><span>Test standard</span></th><th><span>Units</span></th><th>Mostra 1<br /><span>Sample 1</span></th><th>Mostra 2<br /><span>Sample 2</span></th><th>Mostra 3<br /><span>Sample 3</span></th><th>Mostra 4<br /><span>Sample 4</span></th><th>Mostra 5<br /><span>Sample 5</span></th><th>Mesatarja<br /><span>Average</span></th><th><span>Measurement uncertainty</span></th></tr>
         </thead>
         <tbody>
-          <ThermalReportRow no="1" labelSq="Përcaktimi i gjatësisë" labelEn="Determination of length" standard="BS EN 822:2013" unit="mm" values={sampleValues((i) => thermalInsulation.specimens[i]?.lengthMm ?? 0)} average={thermalInsulation.averages.lengthMm} uncertainty="1.40" />
-          <ThermalReportRow no="2" labelSq="Përcaktimi i gjerësisë" labelEn="Determination of width" standard="BS EN 822:2013" unit="mm" values={sampleValues((i) => thermalInsulation.specimens[i]?.widthMm ?? 0)} average={thermalInsulation.averages.widthMm} uncertainty="1.70" />
-          <ThermalReportRow no="3" labelSq="Përcaktimi i trashësisë" labelEn="Determination of thickness" standard="BS EN 823:2013" unit="mm" values={sampleValues((i) => thermalInsulation.specimens[i]?.thicknessMm ?? 0)} average={thermalInsulation.averages.thicknessMm} uncertainty="1.40" />
-          <ThermalReportRow no="4" labelSq="Përcaktimi i densitetit aparent" labelEn="Determination of the apparent density" standard="BS EN 1602:2013" unit="kg/m³" values={sampleValues((i) => thermalInsulation.specimens[i]?.apparentDensityKgM3 ?? 0)} average={thermalInsulation.averages.apparentDensityKgM3} uncertainty="1.00" />
-          <ThermalReportRow no="5" labelSq="Përcaktimi i absorbimit të ujit me zhytje të pjesshme (me kohë të shkurtër)" labelEn="Determination of short-term water absorption by partial immersion" standard="BS EN ISO 29767:2019" unit="kg/m²" values={sampleValues((i) => thermalInsulation.specimens[i]?.waterAbsorptionKgM2 ?? 0)} average={thermalInsulation.averages.waterAbsorptionKgM2} uncertainty="0.36" />
-          <ThermalReportRow no="6" labelSq="Përcaktimi i sjelljes ndaj shtypjes" labelEn="Determination of compression behaviour" standard="BS EN 826:2013" unit="kPa" values={sampleValues((i) => thermalInsulation.specimens[i]?.compressiveStressAtTenPercentKpa || thermalInsulation.specimens[i]?.compressiveStressKpa || 0)} average={thermalInsulation.averages.compressiveStressKpa} uncertainty="2.70" />
+          <ThermalReportRow no="1" labelSq="Përcaktimi i gjatësisë" labelEn="Determination of length" standard="BS EN 822:2013" unit="mm" values={sampleValues((i) => thermalInsulation.specimens[i]?.lengthMm)} average={thermalInsulation.averages.lengthMm} averageDecimals={0} uncertainty="1.40" />
+          <ThermalReportRow no="2" labelSq="Përcaktimi i gjerësisë" labelEn="Determination of width" standard="BS EN 822:2013" unit="mm" values={sampleValues((i) => thermalInsulation.specimens[i]?.widthMm)} average={thermalInsulation.averages.widthMm} averageDecimals={0} uncertainty="1.70" />
+          <ThermalReportRow no="3" labelSq="Përcaktimi i trashësisë" labelEn="Determination of thickness" standard="BS EN 823:2013" unit="mm" values={sampleValues((i) => thermalInsulation.specimens[i]?.thicknessMm)} average={thermalInsulation.averages.thicknessMm} averageDecimals={0} uncertainty="1.40" />
+          <ThermalReportRow no="4" labelSq="Përcaktimi i densitetit aparent" labelEn="Determination of the apparent density" standard="BS EN 1602:2013" unit="kg/m³" values={sampleValues((i) => thermalInsulation.specimens[i]?.apparentDensityKgM3)} average={thermalInsulation.averages.apparentDensityKgM3} decimals={2} uncertainty="1.00" />
+          <ThermalReportRow no="5" labelSq="Përcaktimi i absorbimit të ujit me zhytje të pjesshme (me kohë të shkurtër)" labelEn="Determination of short-term water absorption by partial immersion" standard="BS EN ISO 29767:2019" unit="kg/m²" values={sampleValues((i) => thermalInsulation.specimens[i]?.waterAbsorptionKgM2)} average={thermalInsulation.averages.waterAbsorptionKgM2} decimals={3} uncertainty="0.001" />
+          <ThermalReportRow no="6" labelSq="Përcaktimi i sjelljes ndaj shtypjes" labelEn="Determination of compression behaviour" standard="BS EN 826:2013" unit="kPa" values={sampleValues((i) => { const specimen = thermalInsulation.specimens[i]; return specimen ? specimen.compressiveStressAtTenPercentKpa || specimen.compressiveStressKpa : undefined; })} average={thermalInsulation.averages.compressiveStressKpa} decimals={1} uncertainty="2.70" />
         </tbody>
       </table>
       <OfficialNotesAndFooter notes={thermalInsulation.notes} testedBy={thermalInsulation.technicianName || report.draftedBy} responsible={thermalInsulation.checkedBy} issueDate={issueDate} sampledBy={samplingOperator(sample)} />
@@ -68,16 +68,30 @@ export function ThermalInsulationReportPreview({
   );
 }
 
-export function ThermalReportRow({ no, labelSq, labelEn, standard, unit, values, average, uncertainty }: { no: string; labelSq: string; labelEn: string; standard: string; unit: string; values: number[]; average: number; uncertainty: string }) {
-  const valueText = (value: number) => Number.isInteger(value) ? value.toString() : value.toFixed(2).replace(/\.?0+$/, "");
+/**
+ * One parameter row of SL-RA-PT-7.8/1, printed to the width the form prints it.
+ *
+ * `decimals` is the row's fixed width, and it is fixed because the trailing
+ * zero carries meaning: an absorption of 0.050 says three places were measured,
+ * 0.05 says two were. The three dimension rows have no fixed width on the form —
+ * their cells show whatever was measured — but their average cell is whole
+ * millimetres, which is what `averageDecimals` is for: lengths of 1000, 1000,
+ * 1000, 1000 and 999 average to 999.8 and the form prints 1000.
+ *
+ * A specimen that does not exist leaves its cell empty rather than printing a
+ * measured zero.
+ */
+export function ThermalReportRow({ no, labelSq, labelEn, standard, unit, values, average, uncertainty, decimals, averageDecimals }: { no: string; labelSq: string; labelEn: string; standard: string; unit: string; values: Array<number | undefined>; average: number; uncertainty: string; decimals?: number; averageDecimals?: number }) {
+  const valueText = (value: number, places = decimals) =>
+    places === undefined ? String(round(value, 3)) : value.toFixed(places);
   return (
     <tr>
       <td>{no}</td>
       <td className="text-left">{labelSq}<br /><span>{labelEn}</span></td>
       <td>{standard}</td>
       <td>{unit}</td>
-      {values.map((value, index) => <td key={index}>{value || value === 0 ? valueText(value) : ""}</td>)}
-      <td className="font-bold">{valueText(average)}</td>
+      {values.map((value, index) => <td key={index}>{value === undefined ? "" : valueText(value)}</td>)}
+      <td className="font-bold">{valueText(average, averageDecimals ?? decimals)}</td>
       <td>{uncertainty}</td>
     </tr>
   );

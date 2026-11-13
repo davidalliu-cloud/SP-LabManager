@@ -456,15 +456,26 @@ export function calculateThermalVolumeM3(lengthMm: number, widthMm: number, thic
   return round((lengthMm * widthMm * thicknessMm) / 1_000_000_000, 6);
 }
 
+/**
+ * Decimal places on a thermal insulation result are the controlled form's,
+ * not a programmer's taste.
+ *
+ * SL-RA-PT-7.8/1 prints each row to a fixed width - density to two places,
+ * short-term water absorption to three - and those widths carry information.
+ * An EPS board absorbs about 0.049 kg/m2, so rounding that to two places
+ * reports 0.05 for every specimen and an average of 0.05, which is not a
+ * measurement, it is the nearest round number. Density at one place turns
+ * 20.57, 20.98, 20.61, 20.74, 20.26 into 20.6, 21.0, 20.6, 20.7, 20.3.
+ */
 export function calculateThermalApparentDensityKgM3(massKg: number, volumeM3: number) {
   if (!volumeM3) return 0;
-  return round(massKg / volumeM3, 1);
+  return round(massKg / volumeM3, 2);
 }
 
 export function calculateThermalAbsorptionKgM2(massBeforeKg: number, massAfterKg: number, lengthMm: number, widthMm: number) {
   const areaM2 = (lengthMm * widthMm) / 1_000_000;
   if (!areaM2) return 0;
-  return round((massAfterKg - massBeforeKg) / areaM2, 2);
+  return round((massAfterKg - massBeforeKg) / areaM2, 3);
 }
 
 export function calculateCompressionStressKpa(forceN: number, lengthMm: number, widthMm: number) {

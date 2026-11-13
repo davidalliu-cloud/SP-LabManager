@@ -1468,8 +1468,13 @@ function TestDetailView({ test }: { test: LabTest }) {
                           <td className="px-3 py-2 font-semibold text-ink">{row ? row.apparentDensityKgM3 : "Save"}</td>
                           <td className="px-3 py-2"><input name={`thermalAbsLength-${index}`} type="number" step="0.1" defaultValue={row?.absorptionLengthMm ?? ""} className="input min-w-24" /></td>
                           <td className="px-3 py-2"><input name={`thermalAbsWidth-${index}`} type="number" step="0.1" defaultValue={row?.absorptionWidthMm ?? ""} className="input min-w-24" /></td>
-                          <td className="px-3 py-2"><input name={`thermalM0-${index}`} type="number" step="0.0001" defaultValue={row?.massBeforeImmersionKg ?? ""} className="input min-w-24" /></td>
-                          <td className="px-3 py-2"><input name={`thermalM24-${index}`} type="number" step="0.0001" defaultValue={row?.massAfterImmersionKg ?? ""} className="input min-w-24" /></td>
+                          {/* 0.01 g, not 0.1 g. Absorption is the difference of these
+                              two over the immersed face, and SL-RA-PT-7.8/1 prints it to
+                              three places: on a 200 x 200 specimen a 0.1 g step is worth
+                              0.0025 kg/m2, so the form's 0.048 and 0.049 are a value the
+                              worksheet could not have expressed. */}
+                          <td className="px-3 py-2"><input name={`thermalM0-${index}`} type="number" step="0.00001" defaultValue={row?.massBeforeImmersionKg ?? ""} className="input min-w-24" /></td>
+                          <td className="px-3 py-2"><input name={`thermalM24-${index}`} type="number" step="0.00001" defaultValue={row?.massAfterImmersionKg ?? ""} className="input min-w-24" /></td>
                           <td className="px-3 py-2 font-semibold text-ink">{row ? row.waterAbsorptionKgM2 : "Save"}</td>
                           <td className="px-3 py-2"><input name={`thermalCompLength-${index}`} type="number" step="0.1" defaultValue={row?.compressionLengthMm ?? ""} className="input min-w-24" /></td>
                           <td className="px-3 py-2"><input name={`thermalCompWidth-${index}`} type="number" step="0.1" defaultValue={row?.compressionWidthMm ?? ""} className="input min-w-24" /></td>
