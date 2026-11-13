@@ -78,8 +78,11 @@ export function ThermalInsulationReportPreview({
  * millimetres, which is what `averageDecimals` is for: lengths of 1000, 1000,
  * 1000, 1000 and 999 average to 999.8 and the form prints 1000.
  *
- * A specimen that does not exist leaves its cell empty rather than printing a
- * measured zero.
+ * A cell nothing was measured in is left empty rather than printing a zero.
+ * Three insulation boards delivered means three of the five sample columns
+ * carry a length, a width, a thickness and a density; the other two are
+ * blank on the paper form and blank here. Absorption and compression are run
+ * on five sub-specimens whatever arrived, so those rows normally fill.
  */
 export function ThermalReportRow({ no, labelSq, labelEn, standard, unit, values, average, uncertainty, decimals, averageDecimals }: { no: string; labelSq: string; labelEn: string; standard: string; unit: string; values: Array<number | undefined>; average: number; uncertainty: string; decimals?: number; averageDecimals?: number }) {
   const valueText = (value: number, places = decimals) =>
@@ -90,7 +93,7 @@ export function ThermalReportRow({ no, labelSq, labelEn, standard, unit, values,
       <td className="text-left">{labelSq}<br /><span>{labelEn}</span></td>
       <td>{standard}</td>
       <td>{unit}</td>
-      {values.map((value, index) => <td key={index}>{value === undefined ? "" : valueText(value)}</td>)}
+      {values.map((value, index) => <td key={index}>{value ? valueText(value) : ""}</td>)}
       <td className="font-bold">{valueText(average, averageDecimals ?? decimals)}</td>
       <td>{uncertainty}</td>
     </tr>

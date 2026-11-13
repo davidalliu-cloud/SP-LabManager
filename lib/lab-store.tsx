@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
+  averageMeasured,
   averageNumbers,
   calculateAgeDays,
   calculateAcvPercent,
@@ -3733,15 +3734,21 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             checkedBy: input.checkedBy,
             notes: input.notes,
             specimens,
+            // Averaged over the cells that hold a reading, not over the five
+            // columns the form prints. The first four rows describe the samples
+            // delivered, and three boards arriving means three figures; the last
+            // two are run on five sub-specimens however many samples arrived, so
+            // they normally have all five. Either way an untouched cell is an
+            // empty cell, not a measurement of zero.
             averages: {
-              lengthMm: averageNumbers(specimens.map((row) => row.lengthMm), 1),
-              widthMm: averageNumbers(specimens.map((row) => row.widthMm), 1),
-              thicknessMm: averageNumbers(specimens.map((row) => row.thicknessMm), 1),
+              lengthMm: averageMeasured(specimens.map((row) => row.lengthMm), 1),
+              widthMm: averageMeasured(specimens.map((row) => row.widthMm), 1),
+              thicknessMm: averageMeasured(specimens.map((row) => row.thicknessMm), 1),
               // Each average is held to the width its row prints at on
               // SL-RA-PT-7.8/1 - see calculateThermalApparentDensityKgM3.
-              apparentDensityKgM3: averageNumbers(specimens.map((row) => row.apparentDensityKgM3), 2),
-              waterAbsorptionKgM2: averageNumbers(specimens.map((row) => row.waterAbsorptionKgM2), 3),
-              compressiveStressKpa: averageNumbers(specimens.map((row) => row.compressiveStressAtTenPercentKpa || row.compressiveStressKpa), 1)
+              apparentDensityKgM3: averageMeasured(specimens.map((row) => row.apparentDensityKgM3), 2),
+              waterAbsorptionKgM2: averageMeasured(specimens.map((row) => row.waterAbsorptionKgM2), 3),
+              compressiveStressKpa: averageMeasured(specimens.map((row) => row.compressiveStressAtTenPercentKpa || row.compressiveStressKpa), 1)
             },
             createdAt: new Date().toISOString()
           };

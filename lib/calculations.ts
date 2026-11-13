@@ -599,6 +599,23 @@ export function averageNumbers(values: number[], decimals = 3) {
   return round(valid.reduce((sum, value) => sum + value, 0) / valid.length, decimals);
 }
 
+/**
+ * The average of what was actually measured, over a fixed row of cells.
+ *
+ * A report row with five sample columns holds a zero wherever nothing was
+ * measured, and a zero is not a reading: averaging it in divides a real
+ * total by a made-up count. Three boards 1000 mm long came out as 600 mm on
+ * the thermal insulation certificate for exactly that reason, and the
+ * densities of three samples averaged to 10.60 kg/m3 against a true 17.70.
+ *
+ * None of these quantities can legitimately be zero - a board has a length,
+ * a density and a compressive strength, and an insulation product absorbs
+ * some water - so a zero can be read as an empty cell without ambiguity.
+ */
+export function averageMeasured(values: number[], decimals = 3) {
+  return averageNumbers(values.filter((value) => value), decimals);
+}
+
 export function averageDays(rows: Array<{ start?: string; end?: string }>) {
   const durations = rows
     .map((row) => {
