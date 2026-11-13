@@ -99,7 +99,7 @@ export function AggregateFractionCard({ sampleId }: { sampleId: string }) {
     ? "Fraksioni caktohet pas rezultateve: ruaj fletën e punës dhe kthehu këtu."
     : !permitted
       ? stage === "issued"
-        ? "Raporti i këtij kampioni ka shkuar te klienti — emrin e ndryshon vetëm Drejtori Ekzekutiv."
+        ? "Raporti i këtij kampioni ka shkuar te klienti — emrin e ndryshon Kryelaboranti."
         : stage === "reported"
           ? "Ky kampion ka raport të gjeneruar — emrin e ndryshon Kryelaboranti."
           : "Fraksionin e cakton personi që kryen ose kontrollon testin."

@@ -274,19 +274,23 @@ export function aggregateNamingStage(reportStatuses: ReportStatus[]): AggregateN
  * sample-edit allow-list: this is a result being recorded, not a correction
  * to somebody's registration.
  *
- * A drafted or approved certificate already carries the name, but it has not
- * left the building, so it can still be completed - by the person who signs
- * it. That is the ordinary case, not the exception: everything tested before
- * the fraction was asked for at all is already reported, and refusing to name
- * those would have left the entire backlog permanently nameless while only
- * new deliveries could ever be described properly.
+ * Once a certificate exists the name is on it, and completing it belongs to
+ * the person who signs it. That is the ordinary case, not the exception:
+ * everything tested before the fraction was asked for at all is already
+ * reported, and refusing to name those would have left the entire backlog
+ * permanently nameless while only new deliveries could ever be described
+ * properly.
  *
- * Once a report has gone to the client, they hold a copy carrying the old
- * name. Changing it means regenerating the PDF and sending it again, so it is
- * the Managing Director's call and nobody else's.
+ * That holds after the report has gone to the client too, where it was the
+ * Managing Director's alone until David opened it to the Chief of Lab on 13
+ * November 2026. She signs these certificates as laboratory responsible, so
+ * deciding that one has to go out again with the material properly named is
+ * her call; the card tells her the client's copy must be regenerated and
+ * re-sent.
  */
 export function canNameAggregateSample(role: Role | undefined, stage: AggregateNamingStage) {
-  if (stage === "issued") return isSuperAdmin(role);
-  if (stage === "reported") return canReviewTests(role);
-  return isSuperAdmin(role) || role === "Chief of Lab" || role === "Lab Engineer" || isTechnicianRole(role);
+  if (stage === "unreported") {
+    return isSuperAdmin(role) || role === "Chief of Lab" || role === "Lab Engineer" || isTechnicianRole(role);
+  }
+  return canReviewTests(role);
 }
