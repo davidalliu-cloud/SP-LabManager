@@ -9,10 +9,16 @@ import { normalizeSampleType } from "./accredited-tests";
  * The register carried neither fact: it was typed into the free-text
  * description when somebody remembered, and left blank when they did not.
  *
- * So the origin and the fraction are asked at registration, kept on the sample,
- * and written into the description the certificates already print. Structured,
- * because "every river sand we tested this year" is a question the client asks
- * and free text cannot answer.
+ * So both are kept on the sample and written into the description the
+ * certificates already print. Structured, because "every river sand we tested
+ * this year" is a question the client asks and free text cannot answer.
+ *
+ * They are not asked at the same moment. The origin is known when the bag is
+ * carried in, so it is asked at registration. The fraction is not: it is what
+ * the sieving says, so it is offered once a worksheet on the sample has been
+ * saved and until a report is generated — see components/samples/
+ * aggregate-fraction-card.tsx. Until then the sample is a river sand with no
+ * size, which is exactly what the lab knows about it.
  */
 
 /** Which fraction list a material takes, or nothing where the question does not arise. */
@@ -32,6 +38,9 @@ export const AGGREGATE_ORIGINS = ["Lumi / River", "Mali / Mountain"];
  * The fraction, named exactly as the lab names it on the bag and the delivery
  * note. Listed smallest first so a technician reading down the list is reading
  * a scale; "mixed" is last because it is not a size.
+ *
+ * The list is what the certificate may say, so it is closed: the name of a
+ * fraction is the designation the client orders by, not free text.
  */
 const SAND_FRACTIONS = ["0.0/0.2 mm", "0.0/0.3 mm", "0.0/0.4 mm", "I përzier / Mixed"];
 const GRAVEL_FRACTIONS = ["04/08 mm", "05/10 mm", "10/20 mm", "12.5/25 mm", "I përzier / Mixed"];
@@ -60,6 +69,10 @@ const ORIGIN_WORDS: Record<string, { sq: string; en: string }> = {
  * result goes into `sampleDescription`, which every report already prints
  * ahead of the bare sample type, so no certificate had to be changed to show
  * it.
+ *
+ * Either choice may be missing, and the name is simply shorter for it:
+ * "Rërë lumi / River Sand" between registration and the grading, the full
+ * name once the fraction is known.
  */
 export function aggregateSampleDescription(sampleType: string, origin?: string, fraction?: string) {
   const kind = aggregateSubtypeKind(sampleType);

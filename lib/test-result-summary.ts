@@ -412,3 +412,18 @@ export function getTestResultSummary(store: TestDetailTables, test: LabTest): Te
     result: test.completedAt ? "Test i përfunduar, por të dhënat e rezultatit nuk janë ruajtur ende." : "Në pritje të përfundimit të testit."
   };
 }
+
+/**
+ * Whether a result has been registered against any of these tests.
+ *
+ * Asked by the particle-size panel on a sand or gravel sample: the fraction is
+ * a conclusion of the grading, so it cannot be offered before a worksheet has
+ * been saved. It reads the same tables getTestResultSummary reads, so "there is
+ * a result" means the same thing in both places — a saved worksheet, whatever
+ * the test's status says.
+ */
+export function hasRegisteredResult(store: TestDetailTables, testIds: Iterable<string>) {
+  const ids = new Set(testIds);
+  if (!ids.size) return false;
+  return TEST_DETAIL_KEYS.some((key) => store[key].some((row) => ids.has(row.testId)));
+}

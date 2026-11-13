@@ -250,3 +250,16 @@ export function canGenerateReportForTest(role?: Role, status?: TestStatus, hasRe
 export function canTechnicianAccessTest(currentUserId: string, test: { assignedTechnician: string }) {
   return test.assignedTechnician === currentUserId;
 }
+
+/**
+ * Who may name the fraction of a sand or gravel sample.
+ *
+ * The particle size is read off the grading curve, so it belongs to whoever
+ * worked on the sample: the technician who sieved it, the engineer preparing
+ * the certificate, or the Chief of Lab who signs it. Deliberately not the
+ * two-name sample-edit allow-list — this is a result being recorded, not a
+ * correction to somebody's registration.
+ */
+export function canSetAggregateFraction(role?: Role) {
+  return isSuperAdmin(role) || role === "Chief of Lab" || role === "Lab Engineer" || isTechnicianRole(role);
+}

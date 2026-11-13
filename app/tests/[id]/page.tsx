@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Dispatch, FormEvent, SetStateAction, useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { StageCell } from "@/components/ui/stage-cell";
+import { AggregateFractionCard } from "@/components/samples/aggregate-fraction-card";
 import { testLifecycle } from "@/lib/sample-stage";
 import { getMortarTestKind, isAggregateAcvAccreditedTest, isAggregateBulkDensityAccreditedTest, isAggregateChemicalAccreditedTest, isAggregateDensityAbsorptionAccreditedTest, isAggregateElongationIndexAccreditedTest, isAggregateFillerDensityAccreditedTest, isAggregateFlakinessIndexAccreditedTest, isAggregateFreezeThawAccreditedTest, isAggregateGranulometrySampleType, isAggregateLosAngelesAccreditedTest, isAggregateSandEquivalentAccreditedTest, isAggregateShapeIndexAccreditedTest, isAggregateSoundnessAccreditedTest, isAsphaltAccreditedTest, isAsphaltJobMixAccreditedTest, isAdmixtureAccreditedTest, isMasonryUnitAccreditedTest, isWaterAnalysisAccreditedTest, isSclerometerAccreditedTest, isCementBlaineAstmAccreditedTest, isCementBlaineBsEnAccreditedTest, isCementConsistencyAccreditedTest, isCementStrengthAccreditedTest, isConcreteCoreAccreditedTest, isConcreteDensityAccreditedTest, isConcreteFlexuralAccreditedTest, isConcreteIndirectTensileAccreditedTest, isConcreteWaterPenetrationAccreditedTest, isMortarAccreditedTest, isSteelSampleType, isThermalInsulationAccreditedTest, isMasonryUnitSampleType, isPavingElementAccreditedTest, isPavingElementSampleType, pavingElementKind } from "@/lib/accredited-tests";
 import { admixtureDeterminationsDisagree } from "@/lib/calculations";
@@ -4537,6 +4538,10 @@ function TestDetailView({ test }: { test: LabTest }) {
                 {report ? <Link className="btn-secondary block text-center" href={`/reports/${report.id}`}>Hap raportin</Link> : null}
               </div>
             </div>
+            {/* The grading is what names the fraction, so the choice sits on this
+                worksheet rather than back on the intake form - between saving the
+                sieve rows and generating the certificate. */}
+            {sample ? <AggregateFractionCard sampleId={sample.id} /> : null}
             <div className="surface-card p-4 text-sm">
               <h2 className="text-base font-semibold text-ink">Të dhënat e testit</h2>
               <Info label="Standard" value={activeTest.standard} />

@@ -80,7 +80,9 @@ import {
 import { useAuth } from "./auth";
 import { maturityDays, reportDueFor } from "./maturity";
 import { officialClientCodes2026 } from "./client-directory";
-import { canAssignSampleClient, canDeleteSamples, canGenerateOffers, canEditSampleAfterRegistration, canEditTestData, canReviewTests, canGenerateReportForTest, canAmendEnvironment, canCloseNonconformity, canManageClients, canManageEmployees, canManageEquipment, canRaiseNonconformity, canRecordEnvironment, canRewriteSample, isSampleLocked } from "./permissions";
+import { canAssignSampleClient, canDeleteSamples, canGenerateOffers, canEditSampleAfterRegistration, canEditTestData, canReviewTests, canGenerateReportForTest, canAmendEnvironment, canCloseNonconformity, canManageClients, canManageEmployees, canManageEquipment, canRaiseNonconformity, canRecordEnvironment, canRewriteSample, canSetAggregateFraction, isSampleLocked } from "./permissions";
+import { aggregateFractions, aggregateSampleDescription, aggregateSubtypeKind } from "./aggregate-subtypes";
+import { hasRegisteredResult } from "./test-result-summary";
 import { isFieldSampleType } from "./field-register";
 import { properName } from "./proper-case";
 import { worksheetPerformerId } from "./worksheets";
@@ -1154,6 +1156,9 @@ interface LabStoreValue extends LabState {
   assignSampleClient: (sampleId: string, clientId: string, projectId: string) => void;
   assignSampleTechnician: (sampleId: string, technicianId: string) => void;
   updateSample: (sampleId: string, input: SampleCorrectionInput) => void;
+  /** Name the fraction of a sand or gravel sample once its grading is in. Pass
+   *  an empty string to take the size back off the name. */
+  setAggregateFraction: (sampleId: string, fraction: string) => void;
   /** Void a signed-off sample's approvals and rewind its tests so the whole flow
    *  can be redone. Only the sample-edit allow-list may call it. */
   rewriteSample: (sampleId: string) => void;
@@ -2931,6 +2936,55 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             "sample",
             sampleId,
             `${sample.sampleCode} assigned to ${technician.fullName} to carry out testing.`
+          );
+          return draft;
+        });
+      },
+      /**
+       * Record the particle size of a sand or gravel sample.
+       *
+       * The window is the one the laboratory actually works in: after a
+       * worksheet on the sample has been saved, because the size is read off
+       * the grading, and before any report is generated, because from then on
+       * the name is printed on a certificate and changing it would leave two
+       * certificates of the same sand disagreeing about what it was.
+       *
+       * It rewrites sampleDescription, which is how every aggregate report
+       * prints the sample. That description is machine-built for sand and
+       * gravel — registration writes it from the material and the origin — so
+       * there is nothing hand-typed here to lose.
+       */
+      setAggregateFraction(sampleId, fraction) {
+        setState((previous) => {
+          if (!canSetAggregateFraction(currentRole)) return previous;
+          const sample = previous.samples.find((row) => row.id === sampleId);
+          if (!sample) return previous;
+          const kind = aggregateSubtypeKind(sample.sampleType);
+          if (!kind) return previous;
+          if (previous.reports.some((row) => row.sampleId === sampleId)) return previous;
+          const linkedTestIds = previous.tests.filter((row) => row.sampleId === sampleId).map((row) => row.id);
+          if (!hasRegisteredResult(previous, linkedTestIds)) return previous;
+          const next = fraction.trim();
+          if (next && !aggregateFractions(kind).includes(next)) return previous;
+          if ((sample.aggregateFraction ?? "") === next) return previous;
+          const description = aggregateSampleDescription(sample.sampleType, sample.aggregateOrigin, next || undefined);
+          const draft: LabState = {
+            ...previous,
+            samples: previous.samples.map((row) =>
+              row.id === sampleId
+                ? { ...row, aggregateFraction: next || undefined, sampleDescription: description }
+                : row
+            ),
+            auditLog: [...previous.auditLog]
+          };
+          addAudit(
+            draft,
+            next ? "sample_fraction_set" : "sample_fraction_cleared",
+            "sample",
+            sampleId,
+            next
+              ? `${sample.sampleCode} fraction recorded as ${next} from the test results; sample now reads ${description}.`
+              : `${sample.sampleCode} fraction removed; sample now reads ${description}.`
           );
           return draft;
         });

@@ -14,6 +14,7 @@ import { canAssignSampleClient, canEditSampleAfterRegistration, canReviewTests, 
 import { deriveSampleStage, reportLifecycle, testLifecycle } from "@/lib/sample-stage";
 import { StageCell } from "@/components/ui/stage-cell";
 import { SampleStageStepper } from "@/components/samples/sample-stage-stepper";
+import { AggregateFractionCard } from "@/components/samples/aggregate-fraction-card";
 
 export default function SampleDetailPage() {
   const params = useParams<{ id: string }>();
@@ -387,6 +388,10 @@ export default function SampleDetailPage() {
               </div>
             )}
           </div>
+
+          {/* Sand and gravel only, and only once a worksheet has been saved: the
+              fraction completes the name the certificate prints. */}
+          <AggregateFractionCard sampleId={sample.id} />
 
           <div className="surface-card p-5">
             <div className="mb-4 flex items-center justify-between gap-3">
