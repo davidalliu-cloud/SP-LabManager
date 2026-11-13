@@ -46,7 +46,7 @@ export const OFFER_CATALOGUE_GROUPS: string[] = [
 ];
 
 export const OFFER_CATALOGUE: CatalogueTest[] = [
-  { code: "A1", group: "Agregate (EN 12620, EN 13242, EN 13043)", name: "Analiza granulometrike me sita, përfshirë përmbajtjen e grimcave të imta", detail: "EN 933-1 / AASHTO T27 / ASTM C136 | Mostra: 5 kg (rërë) – 40 kg (zhavorr) | 3 ditë", accredited: true, unit: "raport", price: 3667, priceLabel: "3,667", priceIncVat: 4400 },
+  { code: "A1", group: "Agregate (EN 12620, EN 13242, EN 13043)", name: "Analiza granulometrike me sita, përfshirë përmbajtjen e grimcave të imta", detail: "EN 933-1 / AASHTO T27 / ASTM C136 | Mostra: 5 kg (rërë) – 40 kg (granil) | 3 ditë", accredited: true, unit: "raport", price: 3667, priceLabel: "3,667", priceIncVat: 4400 },
   { code: "A2", group: "Agregate (EN 12620, EN 13242, EN 13043)", name: "Dendësia e grimcave dhe ujëthithja", detail: "EN 1097-6 / ASTM C127, C128 | Mostra: 2–5 kg | 3 ditë", accredited: true, unit: "raport", price: 2417, priceLabel: "2,417", priceIncVat: 2900 },
   { code: "A3", group: "Agregate (EN 12620, EN 13242, EN 13043)", name: "Ekuivalenti i rërës", detail: "EN 933-8 / ASTM D2419 | Mostra: 1 kg rërë 0/4 | 2 ditë", accredited: true, unit: "raport", price: 4833, priceLabel: "4,833", priceIncVat: 5800 },
   { code: "A4", group: "Agregate (EN 12620, EN 13242, EN 13043)", name: "Rezistenca në fragmentim (Los Angeles)", detail: "EN 1097-2 / ASTM C131 | Mostra: 15 kg | 3 ditë", accredited: true, unit: "raport", price: 5833, priceLabel: "5,833", priceIncVat: 7000 },

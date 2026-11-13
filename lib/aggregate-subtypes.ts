@@ -31,7 +31,7 @@ import { normalizeSampleType } from "./accredited-tests";
 export function aggregateSubtypeKind(sampleType: string) {
   const name = normalizeSampleType(sampleType);
   if (name === "Rërë / Sand") return "sand" as const;
-  if (name === "Zhavorr 1 / Gravel 1" || name === "Zhavorr 2 / Gravel 2") return "gravel" as const;
+  if (name === "Granil 1 / Gravel 1" || name === "Granil 2 / Gravel 2") return "gravel" as const;
   return undefined;
 }
 
@@ -91,7 +91,7 @@ export function parseAggregateFraction(fraction?: string) {
 
 const MATERIAL_WORDS: Record<AggregateSubtypeKind, { sq: string; en: string }> = {
   sand: { sq: "Rërë", en: "Sand" },
-  gravel: { sq: "Zhavorr", en: "Gravel" }
+  gravel: { sq: "Granil", en: "Gravel" }
 };
 
 const ORIGIN_WORDS: Record<string, { sq: string; en: string }> = {

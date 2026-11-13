@@ -9,8 +9,8 @@ export interface AccreditedTest {
 
 const sampleTypeDisplayNames: Record<string, string> = {
   "Sand": "Rërë / Sand",
-  "Gravel 1": "Zhavorr 1 / Gravel 1",
-  "Gravel 2": "Zhavorr 2 / Gravel 2",
+  "Gravel 1": "Granil 1 / Gravel 1",
+  "Gravel 2": "Granil 2 / Gravel 2",
   "Filler": "Filer / Filler",
   "Soil": "Dhe / Soil",
   "Kubike Betoni": "Kubike Betoni / Concrete Cubes",
@@ -48,8 +48,18 @@ const sampleTypeDisplayNames: Record<string, string> = {
 
 const sampleTypeAliases: Record<string, string> = {
   "Sand": "Rërë / Sand",
-  "Gravel 1": "Zhavorr 1 / Gravel 1",
-  "Gravel 2": "Zhavorr 2 / Gravel 2",
+  "Gravel 1": "Granil 1 / Gravel 1",
+  "Gravel 2": "Granil 2 / Gravel 2",
+  // The lab calls crushed gravel granil, not zhavorr, so that is what the
+  // certificates say. Nine samples were registered under the old word
+  // before the change and their reports are written; these two lines are
+  // what keeps those reading as the same material.
+  "Zhavorr 1 / Gravel 1": "Granil 1 / Gravel 1",
+  "Zhavorr 2 / Gravel 2": "Granil 2 / Gravel 2",
+  "Zhavorr 1": "Granil 1 / Gravel 1",
+  "Zhavorr 2": "Granil 2 / Gravel 2",
+  "Granil 1": "Granil 1 / Gravel 1",
+  "Granil 2": "Granil 2 / Gravel 2",
   "Filler": "Filer / Filler",
   "Soil": "Dhe / Soil",
   "Kubike Betoni": "Kubike Betoni / Concrete Cubes",
@@ -611,7 +621,7 @@ export function isAggregateGranulometryAccreditedTest(test?: AccreditedTest) {
 }
 
 export function isAggregateGranulometrySampleType(sampleType: string) {
-  return ["Rërë / Sand", "Zhavorr 1 / Gravel 1", "Zhavorr 2 / Gravel 2", "Filer / Filler", "Dhe / Soil"].includes(normalizeSampleType(sampleType));
+  return ["Rërë / Sand", "Granil 1 / Gravel 1", "Granil 2 / Gravel 2", "Filer / Filler", "Dhe / Soil"].includes(normalizeSampleType(sampleType));
 }
 
 export function isAggregateChemicalAccreditedTest(testIdOrType?: string) {
