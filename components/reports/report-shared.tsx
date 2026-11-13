@@ -417,6 +417,7 @@ export function OfficialReportShell({
   code,
   version,
   effectiveDate,
+  page = "1/1",
   title = "RAPORT TESTIM / TEST REPORT",
   className = "",
   children
@@ -436,6 +437,12 @@ export function OfficialReportShell({
    */
   version?: string;
   effectiveDate?: string;
+  /**
+   * "1/2" on a certificate written across two sheets. A page that can be
+   * separated from its partner says so, and carries the report number in its
+   * own letterhead, so neither half is anonymous.
+   */
+  page?: string;
   title?: string;
   className?: string;
   children: ReactNode;
@@ -454,7 +461,7 @@ export function OfficialReportShell({
         <div className="mt-1 flex items-start justify-between text-[6pt] leading-tight">
           <div>
             <div>Kodi / <span className="italic">Code</span>: {code}</div>
-            <div>Faqe / <span className="italic">Page</span>: 1/1</div>
+            <div>Faqe / <span className="italic">Page</span>: {page}</div>
           </div>
           {version || effectiveDate ? (
             <div className="text-right">

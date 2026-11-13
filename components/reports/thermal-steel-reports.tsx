@@ -37,8 +37,22 @@ export function ThermalInsulationReportPreview({
   const subValues = (selector: (index: number) => number | undefined) =>
     Array.from({ length: THERMAL_SUB_SPECIMEN_COUNT }, (_, index) => selector(index));
   const issueDate = report.issuedAt || report.approvedAt || thermalInsulation.testEndDate || sample?.reportDueDate;
+  // Two sheets. The sample block runs to two thirds of a page on its own, and
+  // with both result tables under it the signatures — welded to the foot of
+  // the sheet — were printed straight over the sub-specimen rows. Splitting at
+  // the point the subject changes, from the boards delivered to the
+  // sub-specimens cut from them, is also where a reader would split it.
+  const shellProps = {
+    report,
+    code: "SL-RA-PT-7.8/1",
+    version: "8",
+    effectiveDate: "10.04.2026",
+    title: "RAPORT TESTIMI / TEST REPORT",
+    className: "compact-official-report thermal-insulation-report"
+  };
   return (
-    <OfficialReportShell report={report} code="SL-RA-PT-7.8/1" version="8" effectiveDate="10.04.2026" title="RAPORT TESTIMI / TEST REPORT" className="compact-official-report thermal-insulation-report">
+    <>
+    <OfficialReportShell {...shellProps} page="1/2">
       <OfficialMetaGrid entries={[
         { sq: "Nr. REGJISTRI", en: "REGISTER No.", value: sample?.sampleCode },
         { sq: "KLIENTI", en: "PURCHASER", value: client?.clientName },
@@ -74,10 +88,21 @@ export function ThermalInsulationReportPreview({
           <ThermalReportRow no="4" labelSq="Përcaktimi i densitetit aparent" labelEn="Determination of the apparent density" standard="BS EN 1602:2013" unit="kg/m³" values={sampleValues((i) => boards[i]?.apparentDensityKgM3)} average={averages.apparentDensityKgM3} decimals={2} uncertainty="1.00" />
         </tbody>
       </table>
-      {/* The five determinations EN ISO 29767 and EN 826 each ask for are run
-          on sub-specimens cut from whatever was delivered, so they are reported
-          against their own columns, and each column names the board it came
-          from. */}
+    </OfficialReportShell>
+
+    {/* The five determinations EN ISO 29767 and EN 826 each ask for are run on
+        sub-specimens cut from whatever was delivered, so they are reported
+        against their own columns, and each column names the board it came
+        from. */}
+    <OfficialReportShell {...shellProps} page="2/2" className={`${shellProps.className} thermal-continuation`}>
+      {/* A sheet that can be separated from the first has to say which report
+          and which sample it belongs to, or it is a table of nothing. */}
+      <OfficialMetaGrid entries={[
+        { sq: "Nr. REGJISTRI", en: "REGISTER No.", value: sample?.sampleCode },
+        { sq: "KLIENTI", en: "PURCHASER", value: client?.clientName },
+        { sq: "OBJEKTI", en: "OBJECT", value: project?.projectName },
+        { sq: "KAMPIONI", en: "SAMPLE", value: sample?.sampleDescription || sample?.sampleType }
+      ]} />
       <table className="official-table thermal-official-table mt-4 w-full border-collapse text-center text-[9pt]">
         <ThermalReportColumns />
         <thead>
@@ -92,6 +117,7 @@ export function ThermalInsulationReportPreview({
       </table>
       <OfficialNotesAndFooter notes={thermalInsulation.notes} testedBy={thermalInsulation.technicianName || report.draftedBy} responsible={thermalInsulation.checkedBy} issueDate={issueDate} sampledBy={samplingOperator(sample)} />
     </OfficialReportShell>
+    </>
   );
 }
 
