@@ -1584,7 +1584,7 @@ function TestDetailView({ test }: { test: LabTest }) {
               <div className="flex justify-end"><button className="btn-secondary">Save thermal insulation data</button></div>
             </div>
           </fieldset></form>
-          <TestActionsSidebar ready={Boolean(thermalInsulation)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={thermalMeans ? `Thermal report data saved with density ${thermalMeans.apparentDensityKgM3} kg/m3.` : "Save worksheet data first to calculate the report values."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+          <TestActionsSidebar sampleId={sample?.id} ready={Boolean(thermalInsulation)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={thermalMeans ? `Thermal report data saved with density ${thermalMeans.apparentDensityKgM3} kg/m3.` : "Save worksheet data first to calculate the report values."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
     );
@@ -1779,6 +1779,7 @@ function TestDetailView({ test }: { test: LabTest }) {
             </div>
           </fieldset></form>
           <TestActionsSidebar
+            sampleId={sample?.id}
             ready={Boolean(masonryUnit)}
             activeTest={activeTest}
             reportId={report?.id}
@@ -2046,6 +2047,7 @@ function TestDetailView({ test }: { test: LabTest }) {
             </div>
           </fieldset></form>
           <TestActionsSidebar
+            sampleId={sample?.id}
             ready={Boolean(pavingElement)}
             activeTest={activeTest}
             reportId={report?.id}
@@ -2169,6 +2171,7 @@ function TestDetailView({ test }: { test: LabTest }) {
             </div>
           </fieldset></form>
           <TestActionsSidebar
+            sampleId={sample?.id}
             ready={Boolean(sclerometer)}
             activeTest={activeTest}
             reportId={report?.id}
@@ -2408,6 +2411,7 @@ function TestDetailView({ test }: { test: LabTest }) {
             </div>
           </fieldset></form>
           <TestActionsSidebar
+            sampleId={sample?.id}
             ready={Boolean(waterAnalysis)}
             activeTest={activeTest}
             reportId={report?.id}
@@ -2535,7 +2539,7 @@ function TestDetailView({ test }: { test: LabTest }) {
               </div>
             </div>
           </fieldset></form>
-          <TestActionsSidebar ready={Boolean(admixture)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={admixture ? "Rezultatet e llogaritura janë gati për raportin e aditivit." : "Ruani të dhënat e fletës së punës për të llogaritur rezultatet."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+          <TestActionsSidebar sampleId={sample?.id} ready={Boolean(admixture)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={admixture ? "Rezultatet e llogaritura janë gati për raportin e aditivit." : "Ruani të dhënat e fletës së punës për të llogaritur rezultatet."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
     );
@@ -2602,7 +2606,7 @@ function TestDetailView({ test }: { test: LabTest }) {
               <div className="lg:col-span-3 flex justify-end"><button className="btn-secondary">Save cement data</button></div>
             </div>
           </fieldset></form>
-          <TestActionsSidebar ready={Boolean(cementConsistency)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={cementConsistency ? `Water demand ${cementConsistency.consistency.waterDemandPercent}%, initial setting ${cementConsistency.setting.initialSettingMinutes} min.` : "Save worksheet data first to calculate cement consistency results."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+          <TestActionsSidebar sampleId={sample?.id} ready={Boolean(cementConsistency)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={cementConsistency ? `Water demand ${cementConsistency.consistency.waterDemandPercent}%, initial setting ${cementConsistency.setting.initialSettingMinutes} min.` : "Save worksheet data first to calculate cement consistency results."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
     );
@@ -2672,7 +2676,7 @@ function TestDetailView({ test }: { test: LabTest }) {
               <div className="mt-5 flex justify-end"><button className="btn-secondary">Save cement strength data</button></div>
             </div>
           </fieldset></form>
-          <TestActionsSidebar ready={Boolean(cementStrength)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={cementStrength ? `28-day compression average ${cementStrength.averages.compressive28DayMpa} MPa.` : "Save worksheet data first to calculate cement strength."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+          <TestActionsSidebar sampleId={sample?.id} ready={Boolean(cementStrength)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={cementStrength ? `28-day compression average ${cementStrength.averages.compressive28DayMpa} MPa.` : "Save worksheet data first to calculate cement strength."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
     );
@@ -2761,7 +2765,7 @@ function TestDetailView({ test }: { test: LabTest }) {
               </div>
             )}
           </fieldset></form>
-          <TestActionsSidebar ready={Boolean(cementBlaine)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={cementBlaine ? `Specific surface ${cementBlaine.specificSurfaceCm2G} cm2/g.` : "Save worksheet data first to calculate Blaine specific surface."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+          <TestActionsSidebar sampleId={sample?.id} ready={Boolean(cementBlaine)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={cementBlaine ? `Specific surface ${cementBlaine.specificSurfaceCm2G} cm2/g.` : "Save worksheet data first to calculate Blaine specific surface."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
     );
@@ -2802,7 +2806,7 @@ function TestDetailView({ test }: { test: LabTest }) {
               <div className="mt-5 flex justify-end"><button className="btn-secondary">Ruaj të dhënat e llaçit</button></div>
             </div>
           </fieldset></form>
-          <TestActionsSidebar ready={Boolean(mortar)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={mortar ? mortar.summary : "Ruani fillimisht të dhënat e fletës së punës."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+          <TestActionsSidebar sampleId={sample?.id} ready={Boolean(mortar)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={mortar ? mortar.summary : "Ruani fillimisht të dhënat e fletës së punës."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
     );
@@ -2842,7 +2846,7 @@ function TestDetailView({ test }: { test: LabTest }) {
               <div className="mt-5 flex justify-end"><button className="btn-secondary">Save density data</button></div>
             </div>
           </fieldset></form>
-          <TestActionsSidebar ready={Boolean(concreteDensity)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={concreteDensity ? `Average density is ${concreteDensity.averageDensityKgM3} kg/m3.` : "Save worksheet data first to calculate density."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+          <TestActionsSidebar sampleId={sample?.id} ready={Boolean(concreteDensity)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={concreteDensity ? `Average density is ${concreteDensity.averageDensityKgM3} kg/m3.` : "Save worksheet data first to calculate density."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
     );
@@ -2938,7 +2942,7 @@ function TestDetailView({ test }: { test: LabTest }) {
               <div className="mt-5 flex justify-end"><button className="btn-secondary">Ruaj të dhënat e karrotave</button></div>
             </div>
           </fieldset></form>
-          <TestActionsSidebar ready={Boolean(concreteCore)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={concreteCore ? `Raporti do të përdorë formatin ${concreteCore.reportRatioType === "1:2" ? "1 me 2" : concreteCore.reportRatioType === "1:1" ? "1 me 1" : "të përzier"}.` : "Ruaj të dhënat për të zgjedhur automatikisht raportin."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+          <TestActionsSidebar sampleId={sample?.id} ready={Boolean(concreteCore)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={concreteCore ? `Raporti do të përdorë formatin ${concreteCore.reportRatioType === "1:2" ? "1 me 2" : concreteCore.reportRatioType === "1:1" ? "1 me 1" : "të përzier"}.` : "Ruaj të dhënat për të zgjedhur automatikisht raportin."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
     );
@@ -3122,7 +3126,8 @@ function TestDetailView({ test }: { test: LabTest }) {
             </div>
           </fieldset></form>
           <aside className="space-y-4">
-            <TestActionsSidebar ready={Boolean(jobMix)} activeTest={activeTest} reportId={undefined} complete={complete} generateReport={() => generateAsphaltReport("job-mix")} message={jobMix ? `${jobMix.dosages.length} dozime të regjistruara${jobMix.optimumBitumenPercent ? `, adoptuar ${jobMix.optimumBitumenPercent}%` : ""}.` : "Ruani fillimisht përbërjen dhe dozimet."} canEdit={canEditWorksheet} canGenerateReport={canGenerateAsphaltReport("job-mix")} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+            {sample ? <AggregateFractionCard sampleId={sample.id} /> : null}
+            <TestActionsSidebar sampleId={sample?.id} ready={Boolean(jobMix)} activeTest={activeTest} reportId={undefined} complete={complete} generateReport={() => generateAsphaltReport("job-mix")} message={jobMix ? `${jobMix.dosages.length} dozime të regjistruara${jobMix.optimumBitumenPercent ? `, adoptuar ${jobMix.optimumBitumenPercent}%` : ""}.` : "Ruani fillimisht përbërjen dhe dozimet."} canEdit={canEditWorksheet} canGenerateReport={canGenerateAsphaltReport("job-mix")} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
             <div className="surface-card p-4">
               <h2 className="text-base font-semibold text-ink">Raporti</h2>
               <div className="mt-4 grid gap-2">
@@ -3281,7 +3286,8 @@ function TestDetailView({ test }: { test: LabTest }) {
             </div>
           </fieldset></form>
           <aside className="space-y-4">
-            <TestActionsSidebar ready={Boolean(asphalt)} activeTest={activeTest} reportId={undefined} complete={complete} generateReport={() => generateAsphaltReport("bitumen-content")} message={asphalt ? `Bitum ${asphalt.bitumen.bitumenContentPercent}%, dendësi mesatare ${asphalt.summaries.averageBulkDensityGcm3} g/cm3.` : "Ruani fillimisht të dhënat e fletës së asfaltit."} canEdit={canEditWorksheet} canGenerateReport={canGenerateAsphaltReport("bitumen-content")} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+            {sample ? <AggregateFractionCard sampleId={sample.id} /> : null}
+            <TestActionsSidebar sampleId={sample?.id} ready={Boolean(asphalt)} activeTest={activeTest} reportId={undefined} complete={complete} generateReport={() => generateAsphaltReport("bitumen-content")} message={asphalt ? `Bitum ${asphalt.bitumen.bitumenContentPercent}%, dendësi mesatare ${asphalt.summaries.averageBulkDensityGcm3} g/cm3.` : "Ruani fillimisht të dhënat e fletës së asfaltit."} canEdit={canEditWorksheet} canGenerateReport={canGenerateAsphaltReport("bitumen-content")} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
             <div className="surface-card p-4">
               <h2 className="text-base font-semibold text-ink">Raportet nga e njëjta fletë pune</h2>
               <div className="mt-4 grid gap-2">
@@ -3333,7 +3339,7 @@ function TestDetailView({ test }: { test: LabTest }) {
               <div className="mt-5 flex justify-end"><button className="btn-secondary">Save indirect tensile data</button></div>
             </div>
           </fieldset></form>
-          <TestActionsSidebar ready={Boolean(concreteIndirectTensile)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={concreteIndirectTensile ? `Average indirect tensile strength is ${concreteIndirectTensile.averageTensileStrengthMpa} MPa.` : "Save worksheet data first to calculate indirect tensile strength."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+          <TestActionsSidebar sampleId={sample?.id} ready={Boolean(concreteIndirectTensile)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={concreteIndirectTensile ? `Average indirect tensile strength is ${concreteIndirectTensile.averageTensileStrengthMpa} MPa.` : "Save worksheet data first to calculate indirect tensile strength."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
     );
@@ -3393,7 +3399,7 @@ function TestDetailView({ test }: { test: LabTest }) {
               <div className="mt-5 flex justify-end"><button className="btn-secondary">Save water penetration data</button></div>
             </div>
           </fieldset></form>
-          <TestActionsSidebar ready={Boolean(concreteWater)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={concreteWater ? `Average water penetration is ${concreteWater.averagePenetrationMm} mm.` : "Save worksheet data first to calculate average penetration."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+          <TestActionsSidebar sampleId={sample?.id} ready={Boolean(concreteWater)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={concreteWater ? `Average water penetration is ${concreteWater.averagePenetrationMm} mm.` : "Save worksheet data first to calculate average penetration."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
     );
@@ -3433,7 +3439,7 @@ function TestDetailView({ test }: { test: LabTest }) {
               <div className="mt-5 flex justify-end"><button className="btn-secondary">Save flexural data</button></div>
             </div>
           </fieldset></form>
-          <TestActionsSidebar ready={Boolean(concreteFlexural)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={concreteFlexural ? `Average flexural strength is ${concreteFlexural.averageFlexuralStrengthMpa} MPa.` : "Save worksheet data first to calculate flexural strength."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+          <TestActionsSidebar sampleId={sample?.id} ready={Boolean(concreteFlexural)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={concreteFlexural ? `Average flexural strength is ${concreteFlexural.averageFlexuralStrengthMpa} MPa.` : "Save worksheet data first to calculate flexural strength."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
     );
@@ -3503,7 +3509,7 @@ function TestDetailView({ test }: { test: LabTest }) {
               <div className="flex justify-end"><button className="btn-secondary">Save soundness data</button></div>
             </div>
           </fieldset></form>
-          <TestActionsSidebar ready={Boolean(aggregateSoundness)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={aggregateSoundness ? `Soundness loss calculated as ${aggregateSoundness.averageSoundnessLossPercent}%.` : "Save worksheet data first to calculate soundness."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+          <TestActionsSidebar sampleId={sample?.id} ready={Boolean(aggregateSoundness)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={aggregateSoundness ? `Soundness loss calculated as ${aggregateSoundness.averageSoundnessLossPercent}%.` : "Save worksheet data first to calculate soundness."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
     );
@@ -3562,7 +3568,7 @@ function TestDetailView({ test }: { test: LabTest }) {
               <div className="flex justify-end"><button className="btn-secondary">Save sand equivalent data</button></div>
             </div>
           </fieldset></form>
-          <TestActionsSidebar ready={Boolean(aggregateSandEquivalent)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={aggregateSandEquivalent ? `Sand equivalent calculated as ${aggregateSandEquivalent.sandEquivalentValue}.` : "Save worksheet data first to calculate sand equivalent."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+          <TestActionsSidebar sampleId={sample?.id} ready={Boolean(aggregateSandEquivalent)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={aggregateSandEquivalent ? `Sand equivalent calculated as ${aggregateSandEquivalent.sandEquivalentValue}.` : "Save worksheet data first to calculate sand equivalent."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
     );
@@ -3600,7 +3606,7 @@ function TestDetailView({ test }: { test: LabTest }) {
               <div className="mt-5 flex justify-end"><button className="btn-secondary">Save bulk density data</button></div>
             </div>
           </fieldset></form>
-          <TestActionsSidebar ready={Boolean(aggregateBulkDensity)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={aggregateBulkDensity ? `Bulk density calculated as ${aggregateBulkDensity.averageBulkDensityMgM3} Mg/m3.` : "Save worksheet data first to calculate bulk density."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+          <TestActionsSidebar sampleId={sample?.id} ready={Boolean(aggregateBulkDensity)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={aggregateBulkDensity ? `Bulk density calculated as ${aggregateBulkDensity.averageBulkDensityMgM3} Mg/m3.` : "Save worksheet data first to calculate bulk density."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
     );
@@ -3639,7 +3645,7 @@ function TestDetailView({ test }: { test: LabTest }) {
               <div className="mt-5 flex justify-end"><button className="btn-secondary">Save elongation index data</button></div>
             </div>
           </fieldset></form>
-          <TestActionsSidebar ready={Boolean(aggregateElongation)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={aggregateElongation ? `Elongation index calculated as ${aggregateElongation.elongationIndexPercent}%.` : "Save worksheet data first to calculate elongation index."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
+          <TestActionsSidebar sampleId={sample?.id} ready={Boolean(aggregateElongation)} activeTest={activeTest} reportId={report?.id} complete={complete} generateReport={generateReport} message={aggregateElongation ? `Elongation index calculated as ${aggregateElongation.elongationIndexPercent}%.` : "Save worksheet data first to calculate elongation index."} canEdit={canEditWorksheet} canGenerateReport={canGenerateReport} canReview={canReviewTest} reviewPending={isAwaitingTechnicalReview} approveTest={approveTechnicalResult} rejectTest={rejectTechnicalResult} technicianName={store.users.find((user) => user.id === activeTest.assignedTechnician)?.fullName} />
         </div>
       </>
     );
@@ -3755,6 +3761,7 @@ function TestDetailView({ test }: { test: LabTest }) {
           </fieldset></form>
 
           <aside className="space-y-4">
+            {sample ? <AggregateFractionCard sampleId={sample.id} /> : null}
             <div className="surface-card p-4">
               <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
@@ -3861,6 +3868,7 @@ function TestDetailView({ test }: { test: LabTest }) {
           </fieldset></form>
 
           <aside className="space-y-4">
+            {sample ? <AggregateFractionCard sampleId={sample.id} /> : null}
             <div className="surface-card p-4">
               <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
@@ -3969,6 +3977,7 @@ function TestDetailView({ test }: { test: LabTest }) {
           </fieldset></form>
 
           <aside className="space-y-4">
+            {sample ? <AggregateFractionCard sampleId={sample.id} /> : null}
             <div className="surface-card p-4">
               <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
@@ -4086,6 +4095,7 @@ function TestDetailView({ test }: { test: LabTest }) {
           </fieldset></form>
 
           <aside className="space-y-4">
+            {sample ? <AggregateFractionCard sampleId={sample.id} /> : null}
             <div className="surface-card p-4">
               <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
@@ -4184,6 +4194,7 @@ function TestDetailView({ test }: { test: LabTest }) {
           </fieldset></form>
 
           <aside className="space-y-4">
+            {sample ? <AggregateFractionCard sampleId={sample.id} /> : null}
             <div className="surface-card p-4">
               <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
@@ -4305,6 +4316,7 @@ function TestDetailView({ test }: { test: LabTest }) {
           </fieldset></form>
 
           <aside className="space-y-4">
+            {sample ? <AggregateFractionCard sampleId={sample.id} /> : null}
             <div className="surface-card p-4">
               <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
@@ -4418,6 +4430,7 @@ function TestDetailView({ test }: { test: LabTest }) {
           </fieldset></form>
 
           <aside className="space-y-4">
+            {sample ? <AggregateFractionCard sampleId={sample.id} /> : null}
             <div className="surface-card p-4">
               <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
@@ -4514,6 +4527,7 @@ function TestDetailView({ test }: { test: LabTest }) {
           </fieldset></form>
 
           <aside className="space-y-4">
+            {sample ? <AggregateFractionCard sampleId={sample.id} /> : null}
             <div className="surface-card p-4">
               <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
@@ -4621,6 +4635,7 @@ function TestDetailView({ test }: { test: LabTest }) {
           </fieldset></form>
 
           <aside className="space-y-4">
+            {sample ? <AggregateFractionCard sampleId={sample.id} /> : null}
             <div className="surface-card p-4">
               <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
@@ -4631,10 +4646,6 @@ function TestDetailView({ test }: { test: LabTest }) {
                 {report ? <Link className="btn-secondary block text-center" href={`/reports/${report.id}`}>Hap raportin</Link> : null}
               </div>
             </div>
-            {/* The grading is what names the fraction, so the choice sits on this
-                worksheet rather than back on the intake form - from the moment the
-                sieve rows are saved. */}
-            {sample ? <AggregateFractionCard sampleId={sample.id} /> : null}
             <div className="surface-card p-4 text-sm">
               <h2 className="text-base font-semibold text-ink">Të dhënat e testit</h2>
               <Info label="Standard" value={activeTest.standard} />
@@ -4779,6 +4790,7 @@ function TestDetailView({ test }: { test: LabTest }) {
           </fieldset></form>
 
           <aside className="space-y-4">
+            {sample ? <AggregateFractionCard sampleId={sample.id} /> : null}
             <div className="surface-card p-4">
               <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
               <div className="mt-4 space-y-3">
@@ -4956,6 +4968,7 @@ function TestDetailView({ test }: { test: LabTest }) {
         </fieldset></form>
 
         <aside className="space-y-4">
+          {sample ? <AggregateFractionCard sampleId={sample.id} /> : null}
           <div className="surface-card p-4">
             <h2 className="text-base font-semibold text-ink">Veprimet e procesit</h2>
             <div className="mt-4 space-y-3">
@@ -5200,6 +5213,7 @@ function ConcreteWaterRow({
 function TestActionsSidebar({
   ready,
   activeTest,
+  sampleId,
   reportId,
   complete,
   generateReport,
@@ -5214,6 +5228,12 @@ function TestActionsSidebar({
 }: {
   ready: boolean;
   activeTest: { status: string; standard: string; requiredTestDate: string; dueDate: string };
+  /**
+   * The sample under test, so a sand or gravel one can be given its particle
+   * size here. The card shows itself only where that applies, so every other
+   * worksheet in the building passes this and sees nothing.
+   */
+  sampleId?: string;
   reportId?: string;
   complete: () => void;
   generateReport: () => void;
@@ -5247,6 +5267,13 @@ function TestActionsSidebar({
           {reportId ? <Link className="btn-secondary block text-center" href={`/reports/${reportId}`}>Hap raportin</Link> : null}
         </div>
       </div>
+      {/* An aggregate arrives for several tests at once and the fraction
+          belongs to the sample, not to any one of them — a sand booked in for
+          grading, density and sand equivalent is three worksheets and one
+          particle size. Whichever of them is open, it can be recorded from
+          here, instead of only from the grading sheet it happens to be read
+          off. */}
+      {sampleId ? <AggregateFractionCard sampleId={sampleId} /> : null}
       <div className="surface-card p-4 text-sm">
         <h2 className="text-base font-semibold text-ink">Të dhënat e testit</h2>
         <Info label="Standard" value={activeTest.standard} />

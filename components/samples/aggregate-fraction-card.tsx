@@ -96,7 +96,7 @@ export function AggregateFractionCard({ sampleId }: { sampleId: string }) {
   }
 
   const blocked = !resultsIn
-    ? "Fraksioni caktohet pas rezultateve: ruaj fletën e punës së granulometrisë dhe kthehu këtu."
+    ? "Fraksioni caktohet pas rezultateve: ruaj fletën e punës dhe kthehu këtu."
     : !permitted
       ? stage === "issued"
         ? "Raporti i këtij kampioni ka shkuar te klienti — emrin e ndryshon vetëm Drejtori Ekzekutiv."
