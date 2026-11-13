@@ -61,6 +61,32 @@ export function calculateSteelStrength(loadKn: number, areaMm2: number) {
   return round((loadKn * 1000) / areaMm2, 2);
 }
 
+/**
+ * The gauge length a rebar's elongation is measured over: five diameters.
+ *
+ * EN ISO 6892-1 marks a proportional specimen at Lo = 5.65 * sqrt(So), and for
+ * a round bar So = pi*d^2/4, so that whole expression collapses to 5.007 * d —
+ * which is why every standard for reinforcing steel simply writes 5d, and why
+ * the elongation it produces is called A5.
+ *
+ * It was typed by hand into the worksheet, next to the diameter it is five
+ * times. 175 of the 181 specimens in the register are within rounding of 5d
+ * and the six that are not all come from one worksheet, so it was never a
+ * measurement — it was arithmetic somebody did at the bench, and occasionally
+ * got wrong. The bar is measured; the marks follow from it.
+ *
+ * Takes the nominal diameter as a fallback for the same reason the area does:
+ * a specimen whose actual diameter was not recorded is still a bar of its
+ * nominal size.
+ */
+export const GAUGE_LENGTH_DIAMETERS = 5;
+
+export function calculateInitialGaugeLength(actualDiameterMm: number, nominalDiameterMm = 0) {
+  const diameterMm = actualDiameterMm || nominalDiameterMm;
+  if (!diameterMm) return 0;
+  return round(GAUGE_LENGTH_DIAMETERS * diameterMm, 2);
+}
+
 export function calculateElongation(initialLengthMm: number, finalLengthMm: number) {
   if (!initialLengthMm) return 0;
   return round(((finalLengthMm - initialLengthMm) / initialLengthMm) * 100, 2);

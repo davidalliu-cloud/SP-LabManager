@@ -37,6 +37,7 @@ import {
   calculateFlakinessPercent,
   calculateFreezeThawMassLoss,
   calculateIndirectTensileStrengthMpa,
+  calculateInitialGaugeLength,
   calculateIrregularVolumeM3,
   calculateLosAngelesResults,
   calculateMortarAdhesionStrengthMpa,
@@ -730,7 +731,7 @@ interface SteelInput {
     actualDiameterMm: number;
     weightG: number;
     totalLengthMm: number;
-    initialGaugeLengthMm: number;
+    /** Lo is not sent: it is five diameters, and saveSteelTest works it out. */
     finalGaugeLengthMm: number;
     yieldLoadKn: number;
     ultimateLoadKn: number;
@@ -4339,12 +4340,18 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             .map((row) => {
               const crossSectionalAreaMm2 = calculateCircularArea(row.actualDiameterMm || row.nominalDiameterMm);
               const finalCrossSectionalAreaMm2 = calculateCircularArea(row.postTestDiameterMm);
+              // Five diameters, not whatever was typed in the Lo box - the box is
+              // gone. A worksheet saved again therefore re-marks its specimens,
+              // which is the point: the six in the register that were not 5d were
+              // arithmetic slips, and their elongation was computed from them.
+              const initialGaugeLengthMm = calculateInitialGaugeLength(row.actualDiameterMm, row.nominalDiameterMm);
               return {
                 ...row,
+                initialGaugeLengthMm,
                 crossSectionalAreaMm2,
                 yieldStrengthMpa: calculateSteelStrength(row.yieldLoadKn, crossSectionalAreaMm2),
                 tensileStrengthMpa: calculateSteelStrength(row.ultimateLoadKn, crossSectionalAreaMm2),
-                elongationPercent: calculateElongation(row.initialGaugeLengthMm, row.finalGaugeLengthMm),
+                elongationPercent: calculateElongation(initialGaugeLengthMm, row.finalGaugeLengthMm),
                 unitWeightKgPerM: calculateUnitWeightKgPerM(row.weightG, row.totalLengthMm),
                 finalCrossSectionalAreaMm2,
                 reductionOfAreaPercent: calculateReductionOfArea(crossSectionalAreaMm2, finalCrossSectionalAreaMm2)

@@ -14,7 +14,7 @@ import { useLabStore } from "@/lib/lab-store";
 import { canEditTestData, canGenerateReportForTest, canReviewTests, canViewClientIdentity } from "@/lib/permissions";
 import type { AsphaltGradationTarget, AsphaltReportKind, LabTest, LabUser, MasonryUnitCategory, MortarTest, MortarTestKind, Sample } from "@/lib/types";
 import { ASPHALT_GRADATION_TARGETS, assessGradation, defaultGradationTarget, formatLimit, gradationVerdict, limitAtSieve } from "@/lib/asphalt-gradation-limits";
-import { DEFAULT_BITUMEN_DENSITY_GCM3, calculateJobMixDosageMasses, calculateJobMixFractionMasses, isMarshallHeightInRange, jobMixOptimumCandidates, round } from "@/lib/calculations";
+import { DEFAULT_BITUMEN_DENSITY_GCM3, calculateInitialGaugeLength, calculateJobMixDosageMasses, calculateJobMixFractionMasses, isMarshallHeightInRange, jobMixOptimumCandidates, round } from "@/lib/calculations";
 
 /** The fractions and dosages the lab's own Job Mix master starts from. */
 const JOB_MIX_DEFAULT_FRACTIONS = [
@@ -161,6 +161,10 @@ function TestDetailView({ test }: { test: LabTest }) {
         : [];
   const [rowCount, setRowCount] = useState(Math.max(activeTest.cubeCount || 10, existingSpecimens.length));
   const [steelRowCount, setSteelRowCount] = useState(Math.max(sample?.quantity ?? 3, steel?.specimens.length ?? 0, 3));
+  // Lo is five diameters, so the column follows the diameter box as it is
+  // typed rather than waiting for a save. Only the diameters the technician has
+  // touched live here; every other row reads its own saved value.
+  const [steelDiameters, setSteelDiameters] = useState<Record<number, number>>({});
   const [aggregateRowCount, setAggregateRowCount] = useState(Math.max(aggregate?.rows.length ?? aggregateSieveSizes.length, aggregateSieveSizes.length));
   const [losAngelesRowCount, setLosAngelesRowCount] = useState(Math.max(aggregateLosAngeles?.rows.length ?? 2, 2));
   const [freezeThawRowCount, setFreezeThawRowCount] = useState(Math.max(aggregateFreezeThaw?.specimens.length ?? 3, 3));
@@ -277,7 +281,6 @@ function TestDetailView({ test }: { test: LabTest }) {
         actualDiameterMm: Number(form.get(`actualDiameterMm-${index}`) || 0),
         weightG: Number(form.get(`weightG-${index}`) || 0),
         totalLengthMm: Number(form.get(`totalLengthMm-${index}`) || 0),
-        initialGaugeLengthMm: Number(form.get(`initialGaugeLengthMm-${index}`) || 0),
         finalGaugeLengthMm: Number(form.get(`finalGaugeLengthMm-${index}`) || 0),
         yieldLoadKn: Number(form.get(`yieldLoadKn-${index}`) || 0),
         ultimateLoadKn: Number(form.get(`ultimateLoadKn-${index}`) || 0),
@@ -4624,7 +4627,7 @@ function TestDetailView({ test }: { test: LabTest }) {
                       <th className="px-3 py-2">Actual Ø [mm]</th>
                       <th className="px-3 py-2">Weight [g]</th>
                       <th className="px-3 py-2">Total length Lt [mm]</th>
-                      <th className="px-3 py-2">Initial Lo [mm]</th>
+                      <th className="px-3 py-2">Initial Lo [mm] = 5 x &Oslash;</th>
                       <th className="px-3 py-2">Final Lu [mm]</th>
                       <th className="px-3 py-2">Yield load Fe [kN]</th>
                       <th className="px-3 py-2">Ultimate load Fm [kN]</th>
@@ -4642,14 +4645,19 @@ function TestDetailView({ test }: { test: LabTest }) {
                       const diameterDefaults = [8, 8, 8, 12, 12, 12, 16, 16, 16];
                       const nominalDiameter = specimen?.nominalDiameterMm ?? diameterDefaults[index] ?? "";
                       const defaultCode = specimen?.specimenCode ?? `${sample?.sampleCode ?? "Sample"}/RB-${index + 1}`;
+                      // Whatever is in the diameter box right now: what was typed
+                      // this sitting, else what was saved, else the nominal size the
+                      // box itself defaults to.
+                      const diameterMm = steelDiameters[index] ?? specimen?.actualDiameterMm ?? (Number(nominalDiameter) || 0);
+                      const initialGaugeLengthMm = calculateInitialGaugeLength(diameterMm, Number(nominalDiameter) || 0);
                       return (
                         <tr key={index}>
                           <td className="px-3 py-2"><input name={`specimenCode-${index}`} defaultValue={defaultCode} className="input min-w-36" /></td>
                           <td className="px-3 py-2"><input name={`nominalDiameterMm-${index}`} type="number" step="0.01" defaultValue={nominalDiameter} className="input min-w-24" /></td>
-                          <td className="px-3 py-2"><input name={`actualDiameterMm-${index}`} type="number" step="0.01" defaultValue={specimen?.actualDiameterMm ?? nominalDiameter} className="input min-w-24" /></td>
+                          <td className="px-3 py-2"><input name={`actualDiameterMm-${index}`} type="number" step="0.01" defaultValue={specimen?.actualDiameterMm ?? nominalDiameter} onChange={(event) => setSteelDiameters((current) => ({ ...current, [index]: Number(event.target.value) }))} className="input min-w-24" /></td>
                           <td className="px-3 py-2"><input name={`weightG-${index}`} type="number" step="0.01" defaultValue={specimen?.weightG ?? ""} className="input min-w-24" /></td>
                           <td className="px-3 py-2"><input name={`totalLengthMm-${index}`} type="number" step="0.01" defaultValue={specimen?.totalLengthMm ?? ""} className="input min-w-24" /></td>
-                          <td className="px-3 py-2"><input name={`initialGaugeLengthMm-${index}`} type="number" step="0.01" defaultValue={specimen?.initialGaugeLengthMm ?? ""} className="input min-w-24" /></td>
+                          <td className="px-3 py-2 font-semibold text-ink">{initialGaugeLengthMm ? `${initialGaugeLengthMm} mm` : "—"}</td>
                           <td className="px-3 py-2"><input name={`finalGaugeLengthMm-${index}`} type="number" step="0.01" defaultValue={specimen?.finalGaugeLengthMm ?? ""} className="input min-w-24" /></td>
                           <td className="px-3 py-2"><input name={`yieldLoadKn-${index}`} type="number" step="0.01" defaultValue={specimen?.yieldLoadKn ?? ""} className="input min-w-24" /></td>
                           <td className="px-3 py-2"><input name={`ultimateLoadKn-${index}`} type="number" step="0.01" defaultValue={specimen?.ultimateLoadKn ?? ""} className="input min-w-24" /></td>
