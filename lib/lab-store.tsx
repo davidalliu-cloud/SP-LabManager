@@ -81,7 +81,7 @@ import { useAuth } from "./auth";
 import { maturityDays, reportDueFor } from "./maturity";
 import { officialClientCodes2026 } from "./client-directory";
 import { aggregateNamingStage, canAssignSampleClient, canDeleteSamples, canGenerateOffers, canEditSampleAfterRegistration, canEditTestData, canReviewTests, canGenerateReportForTest, canAmendEnvironment, canCloseNonconformity, canManageClients, canManageEmployees, canManageEquipment, canNameAggregateSample, canRaiseNonconformity, canRecordEnvironment, canRewriteSample, isSampleLocked } from "./permissions";
-import { AGGREGATE_ORIGINS, aggregateFractions, aggregateSampleDescription, aggregateSubtypeKind } from "./aggregate-subtypes";
+import { AGGREGATE_ORIGINS, aggregateSampleDescription, aggregateSubtypeKind, formatAggregateFraction, isValidAggregateFraction } from "./aggregate-subtypes";
 import { hasRegisteredResult } from "./test-result-summary";
 import { isFieldSampleType } from "./field-register";
 import { properName } from "./proper-case";
@@ -147,10 +147,14 @@ export interface NewSampleInput {
   notes?: string;
 }
 
-/** A partial rename of a sand or gravel sample: omit a field to leave it alone. */
+/**
+ * A partial rename of a sand or gravel sample: omit a field to leave it alone.
+ * `fraction` is the pair of sizes the lab measured, or null to take the size
+ * back off the name.
+ */
 export interface AggregateNamingInput {
   origin?: string;
-  fraction?: string;
+  fraction?: { minMm: number; maxMm: number } | null;
 }
 
 interface SampleCorrectionInput {
@@ -2986,10 +2990,31 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           if (!hasRegisteredResult(previous, linkedTestIds)) return previous;
 
           const origin = naming.origin === undefined ? sample.aggregateOrigin ?? "" : naming.origin.trim();
-          const fraction = naming.fraction === undefined ? sample.aggregateFraction ?? "" : naming.fraction.trim();
           if (origin && !AGGREGATE_ORIGINS.includes(origin)) return previous;
-          if (fraction && !aggregateFractions(kind).includes(fraction)) return previous;
-          if ((sample.aggregateOrigin ?? "") === origin && (sample.aggregateFraction ?? "") === fraction) return previous;
+
+          // Left alone, the sample keeps the sizes and the label it has - which,
+          // for the three named off the old list, is a label and no sizes.
+          let minMm = sample.aggregateFractionMinMm;
+          let maxMm = sample.aggregateFractionMaxMm;
+          let fraction = sample.aggregateFraction ?? "";
+          if (naming.fraction === null) {
+            minMm = undefined;
+            maxMm = undefined;
+            fraction = "";
+          } else if (naming.fraction) {
+            if (!isValidAggregateFraction(naming.fraction.minMm, naming.fraction.maxMm)) return previous;
+            minMm = naming.fraction.minMm;
+            maxMm = naming.fraction.maxMm;
+            fraction = formatAggregateFraction(minMm, maxMm) ?? "";
+          }
+          if (
+            (sample.aggregateOrigin ?? "") === origin &&
+            (sample.aggregateFraction ?? "") === fraction &&
+            sample.aggregateFractionMinMm === minMm &&
+            sample.aggregateFractionMaxMm === maxMm
+          ) {
+            return previous;
+          }
 
           const description = aggregateSampleDescription(sample.sampleType, origin || undefined, fraction || undefined);
           const draft: LabState = {
@@ -3000,6 +3025,8 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
                     ...row,
                     aggregateOrigin: origin || undefined,
                     aggregateFraction: fraction || undefined,
+                    aggregateFractionMinMm: minMm,
+                    aggregateFractionMaxMm: maxMm,
                     sampleDescription: description
                   }
                 : row

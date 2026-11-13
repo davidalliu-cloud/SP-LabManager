@@ -105,9 +105,16 @@ export interface Sample {
    * can still be filled in on those samples long afterwards - the fraction is
    * only knowable once the sieving is done, so it is never registration data.
    * See setAggregateNaming in lib/lab-store.tsx for who may, and when.
+   *
+   * The fraction is the two sizes the lab measured; aggregateFraction is the
+   * label built from them for printing. On the three samples named from the
+   * short list this replaced, the label is all there is and the sizes are
+   * absent - lib/aggregate-subtypes.ts reads the pair back out of it.
    */
   aggregateOrigin?: string;
   aggregateFraction?: string;
+  aggregateFractionMinMm?: number;
+  aggregateFractionMaxMm?: number;
   quantity: number;
   dateReceived: string;
   timeReceived: string;

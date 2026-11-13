@@ -294,7 +294,7 @@ export default function NewSamplePage() {
                   : "— plotëso origjinën —"}
               </span>
               <div className="mt-1">
-                Fraksioni shtohet në emër pas granulometrisë — zgjidhet në fletën e punës, para gjenerimit të raportit.
+                Fraksioni shtohet në emër pas granulometrisë — madhësitë e grimcave shkruhen në fletën e punës, para gjenerimit të raportit.
               </div>
             </div>
           </>

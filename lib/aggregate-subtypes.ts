@@ -27,7 +27,7 @@ import { normalizeSampleType } from "./accredited-tests";
  * can be done at all — see canNameAggregateSample in lib/permissions.ts.
  */
 
-/** Which fraction list a material takes, or nothing where the question does not arise. */
+/** Which materials carry an origin and a fraction at all. */
 export function aggregateSubtypeKind(sampleType: string) {
   const name = normalizeSampleType(sampleType);
   if (name === "Rërë / Sand") return "sand" as const;
@@ -41,20 +41,52 @@ export type AggregateSubtypeKind = NonNullable<ReturnType<typeof aggregateSubtyp
 export const AGGREGATE_ORIGINS = ["Lumi / River", "Mali / Mountain"];
 
 /**
- * The fraction, named exactly as the lab names it on the bag and the delivery
- * note. Listed smallest first so a technician reading down the list is reading
- * a scale; "mixed" is last because it is not a size.
+ * The fraction is two numbers the laboratory measured, not a pick from a list.
  *
- * The list is what the certificate may say, so it is closed: the name of a
- * fraction is the designation the client orders by, not free text.
+ * It was a list to begin with, holding the sizes the yards around Durrës
+ * usually deliver. That was wrong twice over: a list long enough to cover
+ * every supplier is too long to read, and a short one quietly rounds a real
+ * sample to the nearest entry somebody thought of in advance — which is how
+ * two river sands came to be recorded as "0.0/0.2 mm" when no sand is graded
+ * in tenths of a millimetre. The sieving gives a smallest and a largest size;
+ * the lab types those, and they are what the certificate prints.
+ *
+ * `d` and `D` are the EN 12620 names for the pair, which is why the card
+ * labels them that way.
  */
-const SAND_FRACTIONS = ["0.0/0.2 mm", "0.0/0.3 mm", "0.0/0.4 mm", "I përzier / Mixed"];
-const GRAVEL_FRACTIONS = ["04/08 mm", "05/10 mm", "10/20 mm", "12.5/25 mm", "I përzier / Mixed"];
-
 const MIXED = "I përzier / Mixed";
 
-export function aggregateFractions(kind: AggregateSubtypeKind) {
-  return kind === "sand" ? SAND_FRACTIONS : GRAVEL_FRACTIONS;
+/** Nothing larger than this is an aggregate, and a typo like 250 instead of 25 is worth catching. */
+const MAX_SIZE_MM = 1000;
+
+export function isValidAggregateFraction(minMm: number, maxMm: number) {
+  if (!Number.isFinite(minMm) || !Number.isFinite(maxMm)) return false;
+  if (minMm < 0 || maxMm > MAX_SIZE_MM) return false;
+  return maxMm > minMm;
+}
+
+/** The fraction as the certificate prints it: "0/4 mm", "12.5/25 mm". */
+export function formatAggregateFraction(minMm?: number, maxMm?: number) {
+  if (minMm === undefined || maxMm === undefined) return undefined;
+  if (!isValidAggregateFraction(minMm, maxMm)) return undefined;
+  return `${minMm}/${maxMm} mm`;
+}
+
+/**
+ * The two sizes behind a fraction that was recorded as text.
+ *
+ * Three samples were named from the old list before this changed, and their
+ * label is all there is. Reading the pair back out of it means the card opens
+ * on the numbers rather than on two empty boxes, and saving stores them
+ * properly. "I përzier / Mixed" names no sizes and yields nothing, which is
+ * correct — it was never a size.
+ */
+export function parseAggregateFraction(fraction?: string) {
+  const match = fraction?.match(/^\s*([0-9]+(?:\.[0-9]+)?)\s*\/\s*([0-9]+(?:\.[0-9]+)?)/);
+  if (!match) return undefined;
+  const minMm = Number(match[1]);
+  const maxMm = Number(match[2]);
+  return isValidAggregateFraction(minMm, maxMm) ? { minMm, maxMm } : undefined;
 }
 
 const MATERIAL_WORDS: Record<AggregateSubtypeKind, { sq: string; en: string }> = {
@@ -79,6 +111,10 @@ const ORIGIN_WORDS: Record<string, { sq: string; en: string }> = {
  * Either choice may be missing, and the name is simply shorter for it:
  * "Rërë lumi / River Sand" between registration and the grading, the full
  * name once the fraction is known.
+ *
+ * `fraction` is the printed label, which is now built from the measured sizes
+ * by formatAggregateFraction. It still takes the three samples named from the
+ * old list, "I përzier / Mixed" among them, as the text they were given.
  */
 export function aggregateSampleDescription(sampleType: string, origin?: string, fraction?: string) {
   const kind = aggregateSubtypeKind(sampleType);
