@@ -4539,8 +4539,8 @@ function TestDetailView({ test }: { test: LabTest }) {
               </div>
             </div>
             {/* The grading is what names the fraction, so the choice sits on this
-                worksheet rather than back on the intake form - between saving the
-                sieve rows and generating the certificate. */}
+                worksheet rather than back on the intake form - from the moment the
+                sieve rows are saved. */}
             {sample ? <AggregateFractionCard sampleId={sample.id} /> : null}
             <div className="surface-card p-4 text-sm">
               <h2 className="text-base font-semibold text-ink">Të dhënat e testit</h2>

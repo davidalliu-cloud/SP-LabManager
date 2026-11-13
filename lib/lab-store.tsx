@@ -80,8 +80,8 @@ import {
 import { useAuth } from "./auth";
 import { maturityDays, reportDueFor } from "./maturity";
 import { officialClientCodes2026 } from "./client-directory";
-import { canAssignSampleClient, canDeleteSamples, canGenerateOffers, canEditSampleAfterRegistration, canEditTestData, canReviewTests, canGenerateReportForTest, canAmendEnvironment, canCloseNonconformity, canManageClients, canManageEmployees, canManageEquipment, canRaiseNonconformity, canRecordEnvironment, canRewriteSample, canSetAggregateFraction, isSampleLocked } from "./permissions";
-import { aggregateFractions, aggregateSampleDescription, aggregateSubtypeKind } from "./aggregate-subtypes";
+import { aggregateNamingStage, canAssignSampleClient, canDeleteSamples, canGenerateOffers, canEditSampleAfterRegistration, canEditTestData, canReviewTests, canGenerateReportForTest, canAmendEnvironment, canCloseNonconformity, canManageClients, canManageEmployees, canManageEquipment, canNameAggregateSample, canRaiseNonconformity, canRecordEnvironment, canRewriteSample, isSampleLocked } from "./permissions";
+import { AGGREGATE_ORIGINS, aggregateFractions, aggregateSampleDescription, aggregateSubtypeKind } from "./aggregate-subtypes";
 import { hasRegisteredResult } from "./test-result-summary";
 import { isFieldSampleType } from "./field-register";
 import { properName } from "./proper-case";
@@ -145,6 +145,12 @@ export interface NewSampleInput {
     reportDueDate: string;
   }>;
   notes?: string;
+}
+
+/** A partial rename of a sand or gravel sample: omit a field to leave it alone. */
+export interface AggregateNamingInput {
+  origin?: string;
+  fraction?: string;
 }
 
 interface SampleCorrectionInput {
@@ -1156,9 +1162,10 @@ interface LabStoreValue extends LabState {
   assignSampleClient: (sampleId: string, clientId: string, projectId: string) => void;
   assignSampleTechnician: (sampleId: string, technicianId: string) => void;
   updateSample: (sampleId: string, input: SampleCorrectionInput) => void;
-  /** Name the fraction of a sand or gravel sample once its grading is in. Pass
-   *  an empty string to take the size back off the name. */
-  setAggregateFraction: (sampleId: string, fraction: string) => void;
+  /** Name a sand or gravel sample once its grading is in: the fraction, and the
+   *  origin where the sample was registered before that was asked for. Pass an
+   *  empty string for either to take it back off the name. */
+  setAggregateNaming: (sampleId: string, naming: AggregateNamingInput) => void;
   /** Void a signed-off sample's approvals and rewind its tests so the whole flow
    *  can be redone. Only the sample-edit allow-list may call it. */
   rewriteSample: (sampleId: string) => void;
@@ -2941,50 +2948,73 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
         });
       },
       /**
-       * Record the particle size of a sand or gravel sample.
+       * Record what a sand or gravel sample is actually called.
        *
-       * The window is the one the laboratory actually works in: after a
-       * worksheet on the sample has been saved, because the size is read off
-       * the grading, and before any report is generated, because from then on
-       * the name is printed on a certificate and changing it would leave two
-       * certificates of the same sand disagreeing about what it was.
+       * The fraction, because the particle size is read off the grading and so
+       * cannot be asked at registration; and the origin, because everything in
+       * the register from before that question existed has none, and a backlog
+       * of sands reported as a bare "Rërë / Sand" is exactly what this is for.
        *
-       * It rewrites sampleDescription, which is how every aggregate report
-       * prints the sample. That description is machine-built for sand and
-       * gravel — registration writes it from the material and the origin — so
-       * there is nothing hand-typed here to lose.
+       * The gate is not the sample lock. Registration data is frozen once a
+       * report exists, and rightly - but the name is the one part of a sand's
+       * description the laboratory may still be learning, and the samples that
+       * most need naming are the ones already reported. So the window follows
+       * how far the certificate has travelled instead: open to whoever runs the
+       * test until a report exists, to whoever signs it until one is sent, and
+       * to the Managing Director alone after that, since by then the client
+       * holds a copy of the old name and it has to be re-issued.
+       *
+       * Results first, always: the size is a conclusion, so there is nothing to
+       * conclude it from until a worksheet has been saved.
+       *
+       * It rewrites sampleDescription, which is how all nine aggregate reports
+       * print the sample. That description is machine-built for sand and gravel,
+       * so there is nothing hand-typed to lose. The stored PDF of an existing
+       * report is NOT rewritten - it is a file, taken at the time - so the card
+       * that calls this says to regenerate it.
        */
-      setAggregateFraction(sampleId, fraction) {
+      setAggregateNaming(sampleId, naming) {
         setState((previous) => {
-          if (!canSetAggregateFraction(currentRole)) return previous;
           const sample = previous.samples.find((row) => row.id === sampleId);
           if (!sample) return previous;
           const kind = aggregateSubtypeKind(sample.sampleType);
           if (!kind) return previous;
-          if (previous.reports.some((row) => row.sampleId === sampleId)) return previous;
+          const linkedReports = previous.reports.filter((row) => row.sampleId === sampleId);
+          const stage = aggregateNamingStage(linkedReports.map((row) => row.reportStatus));
+          if (!canNameAggregateSample(currentRole, stage)) return previous;
           const linkedTestIds = previous.tests.filter((row) => row.sampleId === sampleId).map((row) => row.id);
           if (!hasRegisteredResult(previous, linkedTestIds)) return previous;
-          const next = fraction.trim();
-          if (next && !aggregateFractions(kind).includes(next)) return previous;
-          if ((sample.aggregateFraction ?? "") === next) return previous;
-          const description = aggregateSampleDescription(sample.sampleType, sample.aggregateOrigin, next || undefined);
+
+          const origin = naming.origin === undefined ? sample.aggregateOrigin ?? "" : naming.origin.trim();
+          const fraction = naming.fraction === undefined ? sample.aggregateFraction ?? "" : naming.fraction.trim();
+          if (origin && !AGGREGATE_ORIGINS.includes(origin)) return previous;
+          if (fraction && !aggregateFractions(kind).includes(fraction)) return previous;
+          if ((sample.aggregateOrigin ?? "") === origin && (sample.aggregateFraction ?? "") === fraction) return previous;
+
+          const description = aggregateSampleDescription(sample.sampleType, origin || undefined, fraction || undefined);
           const draft: LabState = {
             ...previous,
             samples: previous.samples.map((row) =>
               row.id === sampleId
-                ? { ...row, aggregateFraction: next || undefined, sampleDescription: description }
+                ? {
+                    ...row,
+                    aggregateOrigin: origin || undefined,
+                    aggregateFraction: fraction || undefined,
+                    sampleDescription: description
+                  }
                 : row
             ),
             auditLog: [...previous.auditLog]
           };
           addAudit(
             draft,
-            next ? "sample_fraction_set" : "sample_fraction_cleared",
+            "sample_aggregate_named",
             "sample",
             sampleId,
-            next
-              ? `${sample.sampleCode} fraction recorded as ${next} from the test results; sample now reads ${description}.`
-              : `${sample.sampleCode} fraction removed; sample now reads ${description}.`
+            `${sample.sampleCode} named from its test results as ${description}` +
+              (linkedReports.length
+                ? `; ${linkedReports.length} report${linkedReports.length === 1 ? "" : "s"} already drafted on this sample now print the new name and their stored PDFs need regenerating.`
+                : ".")
           );
           return draft;
         });

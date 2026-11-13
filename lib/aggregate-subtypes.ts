@@ -16,9 +16,15 @@ import { normalizeSampleType } from "./accredited-tests";
  * They are not asked at the same moment. The origin is known when the bag is
  * carried in, so it is asked at registration. The fraction is not: it is what
  * the sieving says, so it is offered once a worksheet on the sample has been
- * saved and until a report is generated — see components/samples/
- * aggregate-fraction-card.tsx. Until then the sample is a river sand with no
- * size, which is exactly what the lab knows about it.
+ * saved — see components/samples/aggregate-fraction-card.tsx. Until then the
+ * sample is a river sand with no size, which is exactly what the lab knows
+ * about it.
+ *
+ * Neither closes when the certificate is drafted. Most of the register was
+ * tested before either was asked for and is reported already, so the samples
+ * that most need naming are precisely the ones that have certificates; what
+ * narrows with each step the report takes is who may do it, not whether it
+ * can be done at all — see canNameAggregateSample in lib/permissions.ts.
  */
 
 /** Which fraction list a material takes, or nothing where the question does not arise. */

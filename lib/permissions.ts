@@ -252,14 +252,41 @@ export function canTechnicianAccessTest(currentUserId: string, test: { assignedT
 }
 
 /**
- * Who may name the fraction of a sand or gravel sample.
+ * How far a sand or gravel sample's certificates have got.
  *
- * The particle size is read off the grading curve, so it belongs to whoever
- * worked on the sample: the technician who sieved it, the engineer preparing
- * the certificate, or the Chief of Lab who signs it. Deliberately not the
- * two-name sample-edit allow-list — this is a result being recorded, not a
- * correction to somebody's registration.
+ * The origin and the fraction are not registration data, they are the name
+ * the certificate prints, so what decides who may still set them is not the
+ * sample's own lock but how far that name has already travelled.
  */
-export function canSetAggregateFraction(role?: Role) {
+export type AggregateNamingStage = "unreported" | "reported" | "issued";
+
+export function aggregateNamingStage(reportStatuses: ReportStatus[]): AggregateNamingStage {
+  if (!reportStatuses.length) return "unreported";
+  return reportStatuses.includes("Sent to Client") ? "issued" : "reported";
+}
+
+/**
+ * Who may name a sand or gravel sample at each of those stages.
+ *
+ * Before any certificate exists the name is still the laboratory's own
+ * working description, and the particle size is read off the grading, so it
+ * belongs to whoever worked on the sample. Deliberately not the two-name
+ * sample-edit allow-list: this is a result being recorded, not a correction
+ * to somebody's registration.
+ *
+ * A drafted or approved certificate already carries the name, but it has not
+ * left the building, so it can still be completed - by the person who signs
+ * it. That is the ordinary case, not the exception: everything tested before
+ * the fraction was asked for at all is already reported, and refusing to name
+ * those would have left the entire backlog permanently nameless while only
+ * new deliveries could ever be described properly.
+ *
+ * Once a report has gone to the client, they hold a copy carrying the old
+ * name. Changing it means regenerating the PDF and sending it again, so it is
+ * the Managing Director's call and nobody else's.
+ */
+export function canNameAggregateSample(role: Role | undefined, stage: AggregateNamingStage) {
+  if (stage === "issued") return isSuperAdmin(role);
+  if (stage === "reported") return canReviewTests(role);
   return isSuperAdmin(role) || role === "Chief of Lab" || role === "Lab Engineer" || isTechnicianRole(role);
 }
