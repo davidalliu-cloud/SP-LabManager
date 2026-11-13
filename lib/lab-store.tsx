@@ -83,6 +83,7 @@ import { maturityDays, reportDueFor } from "./maturity";
 import { officialClientCodes2026 } from "./client-directory";
 import { aggregateNamingStage, canAssignSampleClient, canDeleteSamples, canGenerateOffers, canEditSampleAfterRegistration, canEditTestData, canReviewTests, canGenerateReportForTest, canAmendEnvironment, canCloseNonconformity, canManageClients, canManageEmployees, canManageEquipment, canNameAggregateSample, canRaiseNonconformity, canRecordEnvironment, canRewriteSample, isSampleLocked } from "./permissions";
 import { AGGREGATE_ORIGINS, aggregateSampleDescription, aggregateSubtypeKind, formatAggregateFraction, isValidAggregateFraction } from "./aggregate-subtypes";
+import { plateCase } from "./truck-plates";
 import { hasRegisteredResult } from "./test-result-summary";
 import { isFieldSampleType } from "./field-register";
 import { properName } from "./proper-case";
@@ -3358,6 +3359,9 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
               const loadedAreaMm2 = calculateArea(row.lengthMm, row.widthMm);
               return {
                 ...row,
+                // The cube's link to its lorry is the plate text itself, so it is
+                // raised with the list - otherwise the two stop matching.
+                truckPlate: row.truckPlate ? plateCase(row.truckPlate) : row.truckPlate,
                 loadedAreaMm2,
                 compressiveStrengthMpa: calculateCompressiveStrength(row.maximumLoadKn, loadedAreaMm2)
               };
@@ -3365,8 +3369,10 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
           const firstSpecimen = specimens[0];
           const loadedAreaMm2 = firstSpecimen?.loadedAreaMm2 ?? calculateArea(input.cubeLength, input.cubeWidth);
           // Three boxes are offered before anyone types; empty ones are not
-          // trucks and must not become blank rows in the record.
-          const truckPlates = (input.truckPlates ?? []).map((plate) => plate.trim()).filter(Boolean);
+          // trucks and must not become blank rows in the record. Raised to
+          // capitals here as well as in the box, so a plate that arrives from
+          // anywhere else is stored the way the certificate prints it.
+          const truckPlates = (input.truckPlates ?? []).map((plate) => plateCase(plate.trim())).filter(Boolean);
           const concreteTest: ConcreteCompressiveTest = {
             id: previous.concreteTests.find((row) => row.testId === testId)?.id ?? crypto.randomUUID(),
             testId,

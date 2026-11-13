@@ -101,6 +101,23 @@ const PLATE_ENDS = /[,;]|\b(?:ora|ore|data|kuota|imp|impiant|impjant|fabrik)/i;
  * by `batchingPlant`, and the line as typed stays in the register and on the
  * worksheet.
  */
+/**
+ * A plate box as it is written down: in capitals.
+ *
+ * The worksheet's boxes were styled `uppercase`, which is a CSS rule and so
+ * changed nothing but the pixels - what was typed in lower case stayed in
+ * lower case in the register, came back lower case in the drop-down each cube
+ * is linked through, and printed lower case on the certificate. 132 of the
+ * 1848 plate boxes recorded so far are in that state, and nine lorries appear
+ * twice in the list because the same plate was typed both ways.
+ *
+ * So the text itself is raised, not its rendering. Albanian plates, ORA and
+ * the slump marking are all written in capitals on the delivery note.
+ */
+export function plateCase(text: string) {
+  return text.toUpperCase();
+}
+
 export function plateOnly(text: string) {
   // Whichever comes first: a separator, a word that names something else, or
   // the hour. The hour is its own test because it is written in forms the

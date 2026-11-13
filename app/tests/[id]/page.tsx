@@ -14,6 +14,7 @@ import { useLabStore } from "@/lib/lab-store";
 import { canEditTestData, canGenerateReportForTest, canReviewTests, canViewClientIdentity } from "@/lib/permissions";
 import type { AsphaltGradationTarget, AsphaltReportKind, LabTest, LabUser, MasonryUnitCategory, MortarTest, MortarTestKind, Sample } from "@/lib/types";
 import { ASPHALT_GRADATION_TARGETS, assessGradation, defaultGradationTarget, formatLimit, gradationVerdict, limitAtSieve } from "@/lib/asphalt-gradation-limits";
+import { plateCase } from "@/lib/truck-plates";
 import { DEFAULT_BITUMEN_DENSITY_GCM3, calculateInitialGaugeLength, calculateJobMixDosageMasses, calculateJobMixFractionMasses, isMarshallHeightInRange, jobMixOptimumCandidates, round } from "@/lib/calculations";
 
 /** The fractions and dosages the lab's own Job Mix master starts from. */
@@ -198,12 +199,15 @@ function TestDetailView({ test }: { test: LabTest }) {
   const gradationAssessment = asphalt
     ? assessGradation(asphalt.granulometry, gradationTarget, asphalt.projectGradationLimits)
     : undefined;
-  // Three boxes to start with, as asked; more are added one at a time.
+  // Three boxes to start with, as asked; more are added one at a time. Plates
+  // saved before they were raised to capitals come up raised, so the drop-down
+  // each cube is linked through reads in one case, and the same lorry typed two
+  // ways stops appearing twice in it.
   const [truckPlates, setTruckPlates] = useState<string[]>(() => {
-    const saved = concrete?.truckPlates ?? [];
+    const saved = (concrete?.truckPlates ?? []).map(plateCase);
     return saved.length >= 3 ? saved : [...saved, ...Array(3 - saved.length).fill("")];
   });
-  const filledPlates = truckPlates.map((plate) => plate.trim()).filter(Boolean);
+  const filledPlates = Array.from(new Set(truckPlates.map((plate) => plateCase(plate.trim())).filter(Boolean)));
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -4816,6 +4820,7 @@ function TestDetailView({ test }: { test: LabTest }) {
                 <tbody className="divide-y divide-line">
                   {Array.from({ length: rowCount }, (_, index) => {
                     const specimen = existingSpecimens[index];
+                    const savedPlate = specimen?.truckPlate ? plateCase(specimen.truckPlate) : "";
                     const defaultCode = specimen?.specimenCode ?? `${sample?.sampleCode ?? "Sample"}/${activeTest.scheduledAgeDays}d-${index + 1}`;
                     return (
                       <tr key={index}>
@@ -4831,16 +4836,18 @@ function TestDetailView({ test }: { test: LabTest }) {
                         <td className="px-3 py-2">
                           <select
                             name={`truckPlate-${index}`}
-                            defaultValue={specimen?.truckPlate ?? ""}
+                            defaultValue={savedPlate}
                             key={`plate-${index}-${filledPlates.join("|")}`}
                             className="input min-w-32"
                           >
                             <option value="">—</option>
                             {/* A plate saved earlier but since removed from the
                                 list above still has to be selectable, or saving
-                                the sheet would silently clear it. */}
-                            {(specimen?.truckPlate && !filledPlates.includes(specimen.truckPlate)
-                              ? [specimen.truckPlate, ...filledPlates]
+                                the sheet would silently clear it. Both sides are
+                                raised to capitals, so a plate saved in lower case
+                                still matches an option and keeps its cube. */}
+                            {(savedPlate && !filledPlates.includes(savedPlate)
+                              ? [savedPlate, ...filledPlates]
                               : filledPlates
                             ).map((plate) => (
                               <option key={plate} value={plate}>{plate}</option>
@@ -5331,7 +5338,10 @@ function TruckPlates({ plates, setPlates }: { plates: string[]; setPlates: (plat
           <div key={index} className="relative">
             <input
               value={plate}
-              onChange={(event) => setPlates(plates.map((row, i) => (i === index ? event.target.value : row)))}
+              // The box was styled `uppercase`, which moves pixels and not the
+              // value, so the register kept whatever case was typed. Raised here
+              // instead, where it becomes the text everything else reads.
+              onChange={(event) => setPlates(plates.map((row, i) => (i === index ? plateCase(event.target.value) : row)))}
               placeholder={`Targa ${index + 1}`}
               className="input pr-8 uppercase"
             />
