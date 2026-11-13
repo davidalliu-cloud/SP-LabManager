@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import type { AggregateAcvTest, AggregateBulkDensityTest, AggregateChemicalTest, AggregateDensityAbsorptionTest, AggregateElongationIndexTest, AggregateFillerDensityTest, AggregateFlakinessIndexTest, AggregateFreezeThawTest, AggregateGradationTest, AggregateLosAngelesTest, AggregateSandEquivalentTest, AggregateShapeIndexTest, AggregateSoundnessTest, AsphaltTest, CementBlaineTest, CementConsistencyTest, CementStrengthTest, Client, ConcreteCompressiveTest, ConcreteCoreTest, ConcreteDensityTest, ConcreteFlexuralTest, ConcreteIndirectTensileTest, ConcreteWaterPenetrationTest, LabTest, MortarTest, Project, Report, Sample, SteelTensileTest, ThermalInsulationTest } from "@/lib/types";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { round } from "@/lib/calculations";
+import { THERMAL_SUB_SPECIMEN_COUNT, thermalSampleLabel, thermalSubSpecimens } from "@/lib/thermal-insulation";
 import { formatEuropeanDate, formatEuropeanDateRange } from "@/lib/date-format";
 import { ReportHeader, ConcreteCubeMeta, Info, Bilingual, BilingualInfo, OfficialReportShell, OfficialMetaGrid, OfficialTestingDates, OfficialEnvironmental, OfficialAsterisk, OfficialNotesAndFooter, sampleDimensions, ReportInfoRow, headOfLabName, splitBilingualLabel, CoreMetaRow, averageReportValues, formatReportNumber, formatSieveSize, FreezeThawResultRow, ChemicalReportRow, samplingOperator, BiText } from "./report-shared";
 import type { OfficialMetaEntry } from "./report-shared";
@@ -24,6 +25,12 @@ export function ThermalInsulationReportPreview({
   thermalInsulation: ThermalInsulationTest;
 }) {
   const sampleValues = (selector: (index: number) => number | undefined) => [0, 1, 2, 3, 4].map(selector);
+  // Absorption and compression are measured on sub-specimens, not on the
+  // boards delivered, so they are reported in their own table against their
+  // own columns — see lib/thermal-insulation.ts.
+  const subSpecimens = thermalSubSpecimens(thermalInsulation);
+  const subValues = (selector: (index: number) => number | undefined) =>
+    Array.from({ length: THERMAL_SUB_SPECIMEN_COUNT }, (_, index) => selector(index));
   const issueDate = report.issuedAt || report.approvedAt || thermalInsulation.testEndDate || sample?.reportDueDate;
   return (
     <OfficialReportShell report={report} code="SL-RA-PT-7.8/1" version="8" effectiveDate="10.04.2026" title="RAPORT TESTIMI / TEST REPORT" className="compact-official-report thermal-insulation-report">
@@ -52,15 +59,28 @@ export function ThermalInsulationReportPreview({
       <table className="official-table thermal-official-table mt-5 w-full border-collapse text-center text-[9pt]">
         <thead>
           <tr><th>Nr.</th><th>Parametri i matur</th><th>Standardi i testimit</th><th>Njësia</th><th colSpan={6}>Rezultatet e testimit / <span>Test Results</span></th><th>Pasiguria në matje</th></tr>
-          <tr><th><span>No.</span></th><th><span>Measured parameter</span></th><th><span>Test standard</span></th><th><span>Units</span></th><th>Mostra 1<br /><span>Sample 1</span></th><th>Mostra 2<br /><span>Sample 2</span></th><th>Mostra 3<br /><span>Sample 3</span></th><th>Mostra 4<br /><span>Sample 4</span></th><th>Mostra 5<br /><span>Sample 5</span></th><th>Mesatarja<br /><span>Average</span></th><th><span>Measurement uncertainty</span></th></tr>
+          <tr><th><span>No.</span></th><th><span>Measured parameter</span></th><th><span>Test standard</span></th><th><span>Units</span></th>{Array.from({ length: 5 }, (_, index) => <th key={index}>Mostra {index + 1}<br /><span>Sample {index + 1}</span></th>)}<th>Mesatarja<br /><span>Average</span></th><th><span>Measurement uncertainty</span></th></tr>
         </thead>
         <tbody>
           <ThermalReportRow no="1" labelSq="Përcaktimi i gjatësisë" labelEn="Determination of length" standard="BS EN 822:2013" unit="mm" values={sampleValues((i) => thermalInsulation.specimens[i]?.lengthMm)} average={thermalInsulation.averages.lengthMm} averageDecimals={0} uncertainty="1.40" />
           <ThermalReportRow no="2" labelSq="Përcaktimi i gjerësisë" labelEn="Determination of width" standard="BS EN 822:2013" unit="mm" values={sampleValues((i) => thermalInsulation.specimens[i]?.widthMm)} average={thermalInsulation.averages.widthMm} uncertainty="1.70" />
           <ThermalReportRow no="3" labelSq="Përcaktimi i trashësisë" labelEn="Determination of thickness" standard="BS EN 823:2013" unit="mm" values={sampleValues((i) => thermalInsulation.specimens[i]?.thicknessMm)} average={thermalInsulation.averages.thicknessMm} averageDecimals={0} uncertainty="1.40" />
           <ThermalReportRow no="4" labelSq="Përcaktimi i densitetit aparent" labelEn="Determination of the apparent density" standard="BS EN 1602:2013" unit="kg/m³" values={sampleValues((i) => thermalInsulation.specimens[i]?.apparentDensityKgM3)} average={thermalInsulation.averages.apparentDensityKgM3} decimals={2} uncertainty="1.00" />
-          <ThermalReportRow no="5" labelSq="Përcaktimi i absorbimit të ujit me zhytje të pjesshme (me kohë të shkurtër)" labelEn="Determination of short-term water absorption by partial immersion" standard="BS EN ISO 29767:2019" unit="kg/m²" values={sampleValues((i) => thermalInsulation.specimens[i]?.waterAbsorptionKgM2)} average={thermalInsulation.averages.waterAbsorptionKgM2} decimals={3} uncertainty="0.001" />
-          <ThermalReportRow no="6" labelSq="Përcaktimi i sjelljes ndaj shtypjes" labelEn="Determination of compression behaviour" standard="BS EN 826:2013" unit="kPa" values={sampleValues((i) => { const specimen = thermalInsulation.specimens[i]; return specimen ? specimen.compressiveStressAtTenPercentKpa || specimen.compressiveStressKpa : undefined; })} average={thermalInsulation.averages.compressiveStressKpa} decimals={1} uncertainty="2.70" />
+        </tbody>
+      </table>
+      {/* The five determinations EN ISO 29767 and EN 826 each ask for are run
+          on sub-specimens cut from whatever was delivered, so they are reported
+          against their own columns, and each column names the board it came
+          from. */}
+      <table className="official-table thermal-official-table mt-4 w-full border-collapse text-center text-[9pt]">
+        <thead>
+          <tr><th>Nr.</th><th>Parametri i matur</th><th>Standardi i testimit</th><th>Njësia</th><th colSpan={6}>Rezultatet e testimit mbi nën-mostrat / <span>Test Results on sub-specimens</span></th><th>Pasiguria në matje</th></tr>
+          <tr><th><span>No.</span></th><th><span>Measured parameter</span></th><th><span>Test standard</span></th><th><span>Units</span></th>{Array.from({ length: 5 }, (_, index) => <th key={index}>Nën-mostra {index + 1}<br /><span>Sub-specimen {index + 1}</span></th>)}<th>Mesatarja<br /><span>Average</span></th><th><span>Measurement uncertainty</span></th></tr>
+          <tr><th colSpan={4} className="text-right">Nga mostra / <span>From sample</span></th>{Array.from({ length: THERMAL_SUB_SPECIMEN_COUNT }, (_, index) => <th key={index} className="font-normal">{thermalSampleLabel(subSpecimens[index]?.fromSpecimenCode ?? "", thermalInsulation.specimens) || "—"}</th>)}<th /><th /></tr>
+        </thead>
+        <tbody>
+          <ThermalReportRow no="5" labelSq="Përcaktimi i absorbimit të ujit me zhytje të pjesshme (me kohë të shkurtër)" labelEn="Determination of short-term water absorption by partial immersion" standard="BS EN ISO 29767:2019" unit="kg/m²" values={subValues((i) => subSpecimens[i]?.waterAbsorptionKgM2)} average={thermalInsulation.averages.waterAbsorptionKgM2} decimals={3} uncertainty="0.001" />
+          <ThermalReportRow no="6" labelSq="Përcaktimi i sjelljes ndaj shtypjes" labelEn="Determination of compression behaviour" standard="BS EN 826:2013" unit="kPa" values={subValues((i) => { const row = subSpecimens[i]; return row ? row.compressiveStressAtTenPercentKpa || row.compressiveStressKpa : undefined; })} average={thermalInsulation.averages.compressiveStressKpa} decimals={1} uncertainty="2.70" />
         </tbody>
       </table>
       <OfficialNotesAndFooter notes={thermalInsulation.notes} testedBy={thermalInsulation.technicianName || report.draftedBy} responsible={thermalInsulation.checkedBy} issueDate={issueDate} sampledBy={samplingOperator(sample)} />

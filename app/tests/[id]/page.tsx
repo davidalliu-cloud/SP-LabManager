@@ -15,6 +15,7 @@ import { canEditTestData, canGenerateReportForTest, canReviewTests, canViewClien
 import type { AsphaltGradationTarget, AsphaltReportKind, LabTest, LabUser, MasonryUnitCategory, MortarTest, MortarTestKind, Sample } from "@/lib/types";
 import { ASPHALT_GRADATION_TARGETS, assessGradation, defaultGradationTarget, formatLimit, gradationVerdict, limitAtSieve } from "@/lib/asphalt-gradation-limits";
 import { plateCase } from "@/lib/truck-plates";
+import { THERMAL_SUB_SPECIMEN_COUNT, thermalSubSpecimens } from "@/lib/thermal-insulation";
 import { DEFAULT_BITUMEN_DENSITY_GCM3, calculateInitialGaugeLength, calculateJobMixDosageMasses, calculateJobMixFractionMasses, isMarshallHeightInRange, jobMixOptimumCandidates, round } from "@/lib/calculations";
 
 /** The fractions and dosages the lab's own Job Mix master starts from. */
@@ -773,7 +774,11 @@ function TestDetailView({ test }: { test: LabTest }) {
         lengthMm: Number(form.get(`thermalLength-${index}`) || 0),
         widthMm: Number(form.get(`thermalWidth-${index}`) || 0),
         thicknessMm: Number(form.get(`thermalThickness-${index}`) || 0),
-        massKg: Number(form.get(`thermalMass-${index}`) || 0),
+        massKg: Number(form.get(`thermalMass-${index}`) || 0)
+      })),
+      subSpecimens: [1, 2, 3, 4, 5].map((index) => ({
+        subSpecimenCode: String(form.get(`thermalSubCode-${index}`) ?? ""),
+        fromSpecimenCode: String(form.get(`thermalSubFrom-${index}`) ?? ""),
         absorptionLengthMm: Number(form.get(`thermalAbsLength-${index}`) || 0),
         absorptionWidthMm: Number(form.get(`thermalAbsWidth-${index}`) || 0),
         massBeforeImmersionKg: Number(form.get(`thermalM0-${index}`) || 0),
@@ -1428,6 +1433,13 @@ function TestDetailView({ test }: { test: LabTest }) {
     : 1;
 
   if (isThermalInsulationTest) {
+    // The sub-specimen rows as recorded, reading a pre-split certificate as
+    // the sub-specimens it effectively held; and the board codes those rows
+    // may be linked to, which is what the sheet has typed above them.
+    const savedSubSpecimens = thermalInsulation ? thermalSubSpecimens(thermalInsulation) : [];
+    const sampleCodes = [1, 2, 3, 4, 5]
+      .map((index) => thermalInsulation?.specimens[index - 1]?.specimenCode || `${sample?.sampleCode ?? "Sample"}/${index}`)
+      .filter((code, index, codes) => codes.indexOf(code) === index);
     return (
       <>
         <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Thermal insulation`} action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />} />
@@ -1455,45 +1467,90 @@ function TestDetailView({ test }: { test: LabTest }) {
               <Field label="Humidity"><input name="humidity" defaultValue={thermalInsulation?.humidity ?? ""} className="input" /></Field>
             </div>
             <div className="space-y-6 p-5">
-              <div className="overflow-x-auto rounded-md border border-line">
-                <table className="w-full min-w-[1800px] text-left text-sm">
-                  <thead className="table-head"><tr><th className="px-3 py-2">Sample</th><th className="px-3 py-2">l [mm]</th><th className="px-3 py-2">b [mm]</th><th className="px-3 py-2">d [mm]</th><th className="px-3 py-2">m [kg]</th><th className="px-3 py-2">V [m3]</th><th className="px-3 py-2">Density [kg/m3]</th><th className="px-3 py-2">Abs l [mm]</th><th className="px-3 py-2">Abs b [mm]</th><th className="px-3 py-2">m0 [kg]</th><th className="px-3 py-2">m24 [kg]</th><th className="px-3 py-2">Wp [kg/m2]</th><th className="px-3 py-2">Comp l [mm]</th><th className="px-3 py-2">Comp b [mm]</th><th className="px-3 py-2">d0 [mm]</th><th className="px-3 py-2">Xm [mm]</th><th className="px-3 py-2">εm [%]</th><th className="px-3 py-2">Fm [N]</th><th className="px-3 py-2">F10 [N]</th><th className="px-3 py-2">s10/sm [kPa]</th></tr></thead>
-                  <tbody className="divide-y divide-line">
-                    {[1, 2, 3, 4, 5].map((index) => {
-                      const row = thermalInsulation?.specimens[index - 1];
-                      return (
-                        <tr key={index}>
-                          <td className="px-3 py-2"><input name={`thermalCode-${index}`} defaultValue={row?.specimenCode ?? `${sample?.sampleCode ?? "Sample"}/${index}`} className="input min-w-32" /></td>
-                          <td className="px-3 py-2"><input name={`thermalLength-${index}`} type="number" step="0.1" defaultValue={row?.lengthMm ?? ""} className="input min-w-24" /></td>
-                          <td className="px-3 py-2"><input name={`thermalWidth-${index}`} type="number" step="0.1" defaultValue={row?.widthMm ?? ""} className="input min-w-24" /></td>
-                          <td className="px-3 py-2"><input name={`thermalThickness-${index}`} type="number" step="0.1" defaultValue={row?.thicknessMm ?? ""} className="input min-w-24" /></td>
-                          <td className="px-3 py-2"><input name={`thermalMass-${index}`} type="number" step="0.0001" defaultValue={row?.massKg ?? ""} className="input min-w-24" /></td>
-                          <td className="px-3 py-2 font-semibold text-ink">{row ? row.volumeM3 : "Save"}</td>
-                          <td className="px-3 py-2 font-semibold text-ink">{row ? row.apparentDensityKgM3 : "Save"}</td>
-                          <td className="px-3 py-2"><input name={`thermalAbsLength-${index}`} type="number" step="0.1" defaultValue={row?.absorptionLengthMm ?? ""} className="input min-w-24" /></td>
-                          <td className="px-3 py-2"><input name={`thermalAbsWidth-${index}`} type="number" step="0.1" defaultValue={row?.absorptionWidthMm ?? ""} className="input min-w-24" /></td>
-                          {/* 0.01 g, not 0.1 g. Absorption is the difference of these
-                              two over the immersed face, and SL-RA-PT-7.8/1 prints it to
-                              three places: on a 200 x 200 specimen a 0.1 g step is worth
-                              0.0025 kg/m2, so the form's 0.048 and 0.049 are a value the
-                              worksheet could not have expressed. */}
-                          <td className="px-3 py-2"><input name={`thermalM0-${index}`} type="number" step="0.00001" defaultValue={row?.massBeforeImmersionKg ?? ""} className="input min-w-24" /></td>
-                          <td className="px-3 py-2"><input name={`thermalM24-${index}`} type="number" step="0.00001" defaultValue={row?.massAfterImmersionKg ?? ""} className="input min-w-24" /></td>
-                          <td className="px-3 py-2 font-semibold text-ink">{row ? row.waterAbsorptionKgM2 : "Save"}</td>
-                          <td className="px-3 py-2"><input name={`thermalCompLength-${index}`} type="number" step="0.1" defaultValue={row?.compressionLengthMm ?? ""} className="input min-w-24" /></td>
-                          <td className="px-3 py-2"><input name={`thermalCompWidth-${index}`} type="number" step="0.1" defaultValue={row?.compressionWidthMm ?? ""} className="input min-w-24" /></td>
-                          <td className="px-3 py-2"><input name={`thermalInitialThickness-${index}`} type="number" step="0.1" defaultValue={row?.initialThicknessMm ?? ""} className="input min-w-24" /></td>
-                          <td className="px-3 py-2"><input name={`thermalDisplacement-${index}`} type="number" step="0.01" defaultValue={row?.displacementMm ?? ""} className="input min-w-24" /></td>
-                          <td className="px-3 py-2 font-semibold text-ink">{row ? row.deformationPercent : "Save"}</td>
-                          <td className="px-3 py-2"><input name={`thermalMaxForce-${index}`} type="number" step="0.1" defaultValue={row?.maximumForceN ?? ""} className="input min-w-24" /></td>
-                          <td className="px-3 py-2"><input name={`thermalForce10-${index}`} type="number" step="0.1" defaultValue={row?.forceAtTenPercentN ?? ""} className="input min-w-24" /></td>
-                          <td className="px-3 py-2 font-semibold text-ink">{row ? row.compressiveStressAtTenPercentKpa || row.compressiveStressKpa : "Save"}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+              {/* Two things are measured here, and they are not the same thing.
+                  A board that was delivered has a size and a density; short-term
+                  water absorption and compression behaviour want five
+                  determinations each, run on five sub-specimens cut from
+                  whatever arrived. One board can yield all five, so they cannot
+                  share the board's row. */}
+              <div>
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">Mostrat e dorëzuara / Samples delivered</h3>
+                <p className="mt-1 text-sm text-muted">Dimensions and apparent density, one row per board. Leave a row empty where fewer arrived.</p>
+                <div className="mt-3 overflow-x-auto rounded-md border border-line">
+                  <table className="w-full min-w-[900px] text-left text-sm">
+                    <thead className="table-head"><tr><th className="px-3 py-2">Sample</th><th className="px-3 py-2">l [mm]</th><th className="px-3 py-2">b [mm]</th><th className="px-3 py-2">d [mm]</th><th className="px-3 py-2">m [kg]</th><th className="px-3 py-2">V [m3]</th><th className="px-3 py-2">Density [kg/m3]</th></tr></thead>
+                    <tbody className="divide-y divide-line">
+                      {[1, 2, 3, 4, 5].map((index) => {
+                        const row = thermalInsulation?.specimens[index - 1];
+                        return (
+                          <tr key={index}>
+                            <td className="px-3 py-2"><input name={`thermalCode-${index}`} defaultValue={row?.specimenCode ?? `${sample?.sampleCode ?? "Sample"}/${index}`} className="input min-w-32" /></td>
+                            <td className="px-3 py-2"><input name={`thermalLength-${index}`} type="number" step="0.1" defaultValue={row?.lengthMm ?? ""} className="input min-w-24" /></td>
+                            <td className="px-3 py-2"><input name={`thermalWidth-${index}`} type="number" step="0.1" defaultValue={row?.widthMm ?? ""} className="input min-w-24" /></td>
+                            <td className="px-3 py-2"><input name={`thermalThickness-${index}`} type="number" step="0.1" defaultValue={row?.thicknessMm ?? ""} className="input min-w-24" /></td>
+                            <td className="px-3 py-2"><input name={`thermalMass-${index}`} type="number" step="0.0001" defaultValue={row?.massKg ?? ""} className="input min-w-24" /></td>
+                            <td className="px-3 py-2 font-semibold text-ink">{row ? row.volumeM3 : "Save"}</td>
+                            <td className="px-3 py-2 font-semibold text-ink">{row ? row.apparentDensityKgM3 : "Save"}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
+
+              <div>
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">Nën-mostrat / Sub-specimens</h3>
+                <p className="mt-1 text-sm text-muted">
+                  Five determinations of water absorption (BS EN ISO 29767) and compression behaviour (BS EN 826), whatever
+                  the number of boards. Each row records the board it was cut from, so every result stays traceable to its material.
+                </p>
+                <div className="mt-3 overflow-x-auto rounded-md border border-line">
+                  <table className="w-full min-w-[1500px] text-left text-sm">
+                    <thead className="table-head"><tr><th className="px-3 py-2">Sub-specimen</th><th className="px-3 py-2">Nga mostra / From sample</th><th className="px-3 py-2">Abs l [mm]</th><th className="px-3 py-2">Abs b [mm]</th><th className="px-3 py-2">m0 [kg]</th><th className="px-3 py-2">m24 [kg]</th><th className="px-3 py-2">Wp [kg/m2]</th><th className="px-3 py-2">Comp l [mm]</th><th className="px-3 py-2">Comp b [mm]</th><th className="px-3 py-2">d0 [mm]</th><th className="px-3 py-2">Xm [mm]</th><th className="px-3 py-2">εm [%]</th><th className="px-3 py-2">Fm [N]</th><th className="px-3 py-2">F10 [N]</th><th className="px-3 py-2">s10/sm [kPa]</th></tr></thead>
+                    <tbody className="divide-y divide-line">
+                      {Array.from({ length: THERMAL_SUB_SPECIMEN_COUNT }, (_, position) => {
+                        const index = position + 1;
+                        const row = savedSubSpecimens[position];
+                        return (
+                          <tr key={index}>
+                            <td className="px-3 py-2"><input name={`thermalSubCode-${index}`} defaultValue={row?.subSpecimenCode ?? `${sample?.sampleCode ?? "Sample"}/N${index}`} className="input min-w-32" /></td>
+                            <td className="px-3 py-2">
+                              {/* The link is chosen from the boards above rather than
+                                  typed, so it can only ever point at one of them. */}
+                              <select name={`thermalSubFrom-${index}`} defaultValue={row?.fromSpecimenCode ?? ""} key={`from-${index}-${sampleCodes.join("|")}`} className="input min-w-36">
+                                <option value="">—</option>
+                                {sampleCodes.map((code, codeIndex) => (
+                                  <option key={code} value={code}>{`${codeIndex + 1} · ${code}`}</option>
+                                ))}
+                              </select>
+                            </td>
+                            <td className="px-3 py-2"><input name={`thermalAbsLength-${index}`} type="number" step="0.1" defaultValue={row?.absorptionLengthMm ?? ""} className="input min-w-24" /></td>
+                            <td className="px-3 py-2"><input name={`thermalAbsWidth-${index}`} type="number" step="0.1" defaultValue={row?.absorptionWidthMm ?? ""} className="input min-w-24" /></td>
+                            {/* 0.01 g, not 0.1 g. Absorption is the difference of these
+                                two over the immersed face, and SL-RA-PT-7.8/1 prints it to
+                                three places: on a 200 x 200 specimen a 0.1 g step is worth
+                                0.0025 kg/m2, so the form's 0.048 and 0.049 are a value the
+                                worksheet could not have expressed. */}
+                            <td className="px-3 py-2"><input name={`thermalM0-${index}`} type="number" step="0.00001" defaultValue={row?.massBeforeImmersionKg ?? ""} className="input min-w-24" /></td>
+                            <td className="px-3 py-2"><input name={`thermalM24-${index}`} type="number" step="0.00001" defaultValue={row?.massAfterImmersionKg ?? ""} className="input min-w-24" /></td>
+                            <td className="px-3 py-2 font-semibold text-ink">{row ? row.waterAbsorptionKgM2 : "Save"}</td>
+                            <td className="px-3 py-2"><input name={`thermalCompLength-${index}`} type="number" step="0.1" defaultValue={row?.compressionLengthMm ?? ""} className="input min-w-24" /></td>
+                            <td className="px-3 py-2"><input name={`thermalCompWidth-${index}`} type="number" step="0.1" defaultValue={row?.compressionWidthMm ?? ""} className="input min-w-24" /></td>
+                            <td className="px-3 py-2"><input name={`thermalInitialThickness-${index}`} type="number" step="0.1" defaultValue={row?.initialThicknessMm ?? ""} className="input min-w-24" /></td>
+                            <td className="px-3 py-2"><input name={`thermalDisplacement-${index}`} type="number" step="0.01" defaultValue={row?.displacementMm ?? ""} className="input min-w-24" /></td>
+                            <td className="px-3 py-2 font-semibold text-ink">{row ? row.deformationPercent : "Save"}</td>
+                            <td className="px-3 py-2"><input name={`thermalMaxForce-${index}`} type="number" step="0.1" defaultValue={row?.maximumForceN ?? ""} className="input min-w-24" /></td>
+                            <td className="px-3 py-2"><input name={`thermalForce10-${index}`} type="number" step="0.1" defaultValue={row?.forceAtTenPercentN ?? ""} className="input min-w-24" /></td>
+                            <td className="px-3 py-2 font-semibold text-ink">{row ? row.compressiveStressAtTenPercentKpa || row.compressiveStressKpa : "Save"}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
               <div className="grid gap-3 text-sm md:grid-cols-3">
                 <InfoInline label="Average length" value={thermalInsulation ? `${thermalInsulation.averages.lengthMm} mm` : "Save"} />
                 <InfoInline label="Average density" value={thermalInsulation ? `${thermalInsulation.averages.apparentDensityKgM3} kg/m3` : "Save"} />

@@ -581,11 +581,20 @@ export interface ThermalInsulationTest {
   technicianName: string;
   checkedBy?: string;
   notes?: string;
+  /** The boards delivered: one row each, however many arrived. */
   specimens: ThermalInsulationSpecimen[];
+  /**
+   * The five sub-specimens absorption and compression are measured on.
+   * Absent on the certificates written before the two were split off the
+   * sample row — thermalSubSpecimens() in lib/thermal-insulation.ts reads
+   * those records as they stand.
+   */
+  subSpecimens?: ThermalInsulationSubSpecimen[];
   averages: ThermalInsulationAverages;
   createdAt: string;
 }
 
+/** One delivered board: what it measures and what it weighs. */
 export interface ThermalInsulationSpecimen {
   specimenCode: string;
   lengthMm: number;
@@ -594,6 +603,42 @@ export interface ThermalInsulationSpecimen {
   massKg: number;
   volumeM3: number;
   apparentDensityKgM3: number;
+  /**
+   * Absorption and compression used to sit here, one set per delivered
+   * board. They are measured on sub-specimens now; these remain only
+   * because three certificates were written before the split and are read
+   * back as they were recorded.
+   */
+  absorptionLengthMm?: number;
+  absorptionWidthMm?: number;
+  massBeforeImmersionKg?: number;
+  massAfterImmersionKg?: number;
+  waterAbsorptionKgM2?: number;
+  compressionLengthMm?: number;
+  compressionWidthMm?: number;
+  initialThicknessMm?: number;
+  displacementMm?: number;
+  deformationPercent?: number;
+  maximumForceN?: number;
+  forceAtTenPercentN?: number;
+  compressiveStressKpa?: number;
+  compressiveStressAtTenPercentKpa?: number;
+}
+
+/**
+ * One of the five sub-specimens absorption and compression are run on.
+ *
+ * EN ISO 29767 and EN 826 each want five determinations, and five is what
+ * the laboratory cuts from whatever arrived: one board can yield all five,
+ * five boards one each. So a sub-specimen is not a sample and cannot be a
+ * column of the sample table — it is a row of its own, and it records the
+ * board it was cut from, because a result has to be traceable to the
+ * material it describes.
+ */
+export interface ThermalInsulationSubSpecimen {
+  subSpecimenCode: string;
+  /** The specimenCode of the delivered board this was cut from. */
+  fromSpecimenCode: string;
   absorptionLengthMm: number;
   absorptionWidthMm: number;
   massBeforeImmersionKg: number;

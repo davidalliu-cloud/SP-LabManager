@@ -441,12 +441,18 @@ interface ThermalInsulationInput {
   technicianName: string;
   checkedBy?: string;
   notes?: string;
+  /** The boards delivered. */
   specimens: Array<{
     specimenCode: string;
     lengthMm: number;
     widthMm: number;
     thicknessMm: number;
     massKg: number;
+  }>;
+  /** The sub-specimens absorption and compression are run on, each naming the board it came from. */
+  subSpecimens: Array<{
+    subSpecimenCode: string;
+    fromSpecimenCode: string;
     absorptionLengthMm: number;
     absorptionWidthMm: number;
     massBeforeImmersionKg: number;
@@ -3704,20 +3710,27 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       saveThermalInsulationTest(testId, input) {
         setState((previous) => {
           if (!canCurrentUserEditTest(previous, testId)) return previous;
+          // A board is kept when something was measured on it; its code alone
+          // is a default the form fills in and not evidence of a delivery.
           const specimens = input.specimens
-            .filter((row) => row.specimenCode || row.lengthMm || row.widthMm || row.thicknessMm || row.massKg || row.maximumForceN)
+            .filter((row) => row.lengthMm || row.widthMm || row.thicknessMm || row.massKg)
             .map((row) => {
               const volumeM3 = calculateThermalVolumeM3(row.lengthMm, row.widthMm, row.thicknessMm);
               return {
                 ...row,
                 volumeM3,
-                apparentDensityKgM3: calculateThermalApparentDensityKgM3(row.massKg, volumeM3),
-                waterAbsorptionKgM2: calculateThermalAbsorptionKgM2(row.massBeforeImmersionKg, row.massAfterImmersionKg, row.absorptionLengthMm, row.absorptionWidthMm),
-                deformationPercent: calculateCompressionDeformationPercent(row.displacementMm, row.initialThicknessMm),
-                compressiveStressKpa: calculateCompressionStressKpa(row.maximumForceN, row.compressionLengthMm, row.compressionWidthMm),
-                compressiveStressAtTenPercentKpa: calculateCompressionStressKpa(row.forceAtTenPercentN, row.compressionLengthMm, row.compressionWidthMm)
+                apparentDensityKgM3: calculateThermalApparentDensityKgM3(row.massKg, volumeM3)
               };
             });
+          const subSpecimens = input.subSpecimens
+            .filter((row) => row.massAfterImmersionKg || row.maximumForceN || row.forceAtTenPercentN)
+            .map((row) => ({
+              ...row,
+              waterAbsorptionKgM2: calculateThermalAbsorptionKgM2(row.massBeforeImmersionKg, row.massAfterImmersionKg, row.absorptionLengthMm, row.absorptionWidthMm),
+              deformationPercent: calculateCompressionDeformationPercent(row.displacementMm, row.initialThicknessMm),
+              compressiveStressKpa: calculateCompressionStressKpa(row.maximumForceN, row.compressionLengthMm, row.compressionWidthMm),
+              compressiveStressAtTenPercentKpa: calculateCompressionStressKpa(row.forceAtTenPercentN, row.compressionLengthMm, row.compressionWidthMm)
+            }));
           const thermalTest: ThermalInsulationTest = {
             id: previous.thermalInsulationTests.find((row) => row.testId === testId)?.id ?? crypto.randomUUID(),
             testId,
@@ -3734,21 +3747,21 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             checkedBy: input.checkedBy,
             notes: input.notes,
             specimens,
-            // Averaged over the cells that hold a reading, not over the five
-            // columns the form prints. The first four rows describe the samples
-            // delivered, and three boards arriving means three figures; the last
-            // two are run on five sub-specimens however many samples arrived, so
-            // they normally have all five. Either way an untouched cell is an
-            // empty cell, not a measurement of zero.
+            subSpecimens,
+            // Averaged over the cells that hold a reading. The first four are
+            // taken over the boards delivered - three arriving means three
+            // figures - and the last two over the sub-specimens the five-fold
+            // determinations were run on, which is a different count and a
+            // different set of things. Each average is held to the width its
+            // row prints at on SL-RA-PT-7.8/1; see
+            // calculateThermalApparentDensityKgM3.
             averages: {
               lengthMm: averageMeasured(specimens.map((row) => row.lengthMm), 1),
               widthMm: averageMeasured(specimens.map((row) => row.widthMm), 1),
               thicknessMm: averageMeasured(specimens.map((row) => row.thicknessMm), 1),
-              // Each average is held to the width its row prints at on
-              // SL-RA-PT-7.8/1 - see calculateThermalApparentDensityKgM3.
               apparentDensityKgM3: averageMeasured(specimens.map((row) => row.apparentDensityKgM3), 2),
-              waterAbsorptionKgM2: averageMeasured(specimens.map((row) => row.waterAbsorptionKgM2), 3),
-              compressiveStressKpa: averageMeasured(specimens.map((row) => row.compressiveStressAtTenPercentKpa || row.compressiveStressKpa), 1)
+              waterAbsorptionKgM2: averageMeasured(subSpecimens.map((row) => row.waterAbsorptionKgM2), 3),
+              compressiveStressKpa: averageMeasured(subSpecimens.map((row) => row.compressiveStressAtTenPercentKpa || row.compressiveStressKpa), 1)
             },
             createdAt: new Date().toISOString()
           };
