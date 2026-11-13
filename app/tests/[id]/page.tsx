@@ -200,6 +200,24 @@ function TestDetailView({ test }: { test: LabTest }) {
   const gradationAssessment = asphalt
     ? assessGradation(asphalt.granulometry, gradationTarget, asphalt.projectGradationLimits)
     : undefined;
+  // Which of the five sample rows a board was actually delivered against, and
+  // the code it carries. Held in state rather than read off the inputs because
+  // the sub-specimen table below offers these as the boards a sub-specimen can
+  // have been cut from, and it has to offer them while they are being typed —
+  // not only once the sheet has been saved.
+  const [thermalBoardRows, setThermalBoardRows] = useState(() =>
+    [1, 2, 3, 4, 5].map((index) => {
+      const saved = thermalInsulation?.specimens[index - 1];
+      return {
+        code: saved?.specimenCode ?? `${sample?.sampleCode ?? "Sample"}/${index}`,
+        delivered: Boolean(saved && (saved.lengthMm || saved.widthMm || saved.thicknessMm || saved.massKg))
+      };
+    })
+  );
+  function setThermalBoardRow(index: number, change: { code?: string; delivered?: boolean }) {
+    setThermalBoardRows((rows) => rows.map((row, position) => (position === index - 1 ? { ...row, ...change } : row)));
+  }
+
   // Three boxes to start with, as asked; more are added one at a time. Plates
   // saved before they were raised to capitals come up raised, so the drop-down
   // each cube is linked through reads in one case, and the same lorry typed two
@@ -1438,9 +1456,13 @@ function TestDetailView({ test }: { test: LabTest }) {
     // may be linked to, which is what the sheet has typed above them.
     const savedSubSpecimens = thermalInsulation ? thermalSubSpecimens(thermalInsulation) : [];
     const thermalMeans = thermalInsulation ? thermalAverages(thermalInsulation) : undefined;
-    const sampleCodes = [1, 2, 3, 4, 5]
-      .map((index) => thermalInsulation?.specimens[index - 1]?.specimenCode || `${sample?.sampleCode ?? "Sample"}/${index}`)
-      .filter((code, index, codes) => codes.indexOf(code) === index);
+    // Only the rows a board was actually delivered against: a sub-specimen
+    // cannot have been cut from a sample that never arrived, and the old sheet
+    // saying it was is what put "Nga mostra 4" on a certificate with three.
+    const sampleCodes = thermalBoardRows
+      .map((row, position) => ({ ...row, number: position + 1 }))
+      .filter((row) => row.delivered && row.code.trim())
+      .filter((row, index, rows) => rows.findIndex((other) => other.code === row.code) === index);
     return (
       <>
         <PageHeader title={activeTest.testCode} description={`${client?.clientName ?? ""} / ${project?.projectName ?? ""} / ${sample?.sampleCode ?? ""} / Thermal insulation`} action={<StageCell lifecycle={testLifecycle(activeTest, store.reports)} />} />
@@ -1485,11 +1507,11 @@ function TestDetailView({ test }: { test: LabTest }) {
                         const row = thermalInsulation?.specimens[index - 1];
                         return (
                           <tr key={index}>
-                            <td className="px-3 py-2"><input name={`thermalCode-${index}`} defaultValue={row?.specimenCode ?? `${sample?.sampleCode ?? "Sample"}/${index}`} className="input min-w-32" /></td>
-                            <td className="px-3 py-2"><input name={`thermalLength-${index}`} type="number" step="0.1" defaultValue={row?.lengthMm ?? ""} className="input min-w-24" /></td>
-                            <td className="px-3 py-2"><input name={`thermalWidth-${index}`} type="number" step="0.1" defaultValue={row?.widthMm ?? ""} className="input min-w-24" /></td>
-                            <td className="px-3 py-2"><input name={`thermalThickness-${index}`} type="number" step="0.1" defaultValue={row?.thicknessMm ?? ""} className="input min-w-24" /></td>
-                            <td className="px-3 py-2"><input name={`thermalMass-${index}`} type="number" step="0.0001" defaultValue={row?.massKg ?? ""} className="input min-w-24" /></td>
+                            <td className="px-3 py-2"><input name={`thermalCode-${index}`} defaultValue={row?.specimenCode ?? `${sample?.sampleCode ?? "Sample"}/${index}`} onChange={(event) => setThermalBoardRow(index, { code: event.target.value })} className="input min-w-32" /></td>
+                            <td className="px-3 py-2"><input name={`thermalLength-${index}`} type="number" step="0.1" defaultValue={row?.lengthMm ?? ""} onChange={(event) => setThermalBoardRow(index, { delivered: boardRowDelivered(event.currentTarget.form, index) })} className="input min-w-24" /></td>
+                            <td className="px-3 py-2"><input name={`thermalWidth-${index}`} type="number" step="0.1" defaultValue={row?.widthMm ?? ""} onChange={(event) => setThermalBoardRow(index, { delivered: boardRowDelivered(event.currentTarget.form, index) })} className="input min-w-24" /></td>
+                            <td className="px-3 py-2"><input name={`thermalThickness-${index}`} type="number" step="0.1" defaultValue={row?.thicknessMm ?? ""} onChange={(event) => setThermalBoardRow(index, { delivered: boardRowDelivered(event.currentTarget.form, index) })} className="input min-w-24" /></td>
+                            <td className="px-3 py-2"><input name={`thermalMass-${index}`} type="number" step="0.0001" defaultValue={row?.massKg ?? ""} onChange={(event) => setThermalBoardRow(index, { delivered: boardRowDelivered(event.currentTarget.form, index) })} className="input min-w-24" /></td>
                             <td className="px-3 py-2 font-semibold text-ink">{row ? row.volumeM3 : "Save"}</td>
                             <td className="px-3 py-2 font-semibold text-ink">{row ? row.apparentDensityKgM3 : "Save"}</td>
                           </tr>
@@ -1505,6 +1527,7 @@ function TestDetailView({ test }: { test: LabTest }) {
                 <p className="mt-1 text-sm text-muted">
                   Five determinations of water absorption (BS EN ISO 29767) and compression behaviour (BS EN 826), whatever
                   the number of boards. Each row records the board it was cut from, so every result stays traceable to its material.
+                  {sampleCodes.length ? "" : " Fill the sample table above first — a sub-specimen is cut from a board that arrived."}
                 </p>
                 <div className="mt-3 overflow-x-auto rounded-md border border-line">
                   <table className="w-full min-w-[1500px] text-left text-sm">
@@ -1519,10 +1542,10 @@ function TestDetailView({ test }: { test: LabTest }) {
                             <td className="px-3 py-2">
                               {/* The link is chosen from the boards above rather than
                                   typed, so it can only ever point at one of them. */}
-                              <select name={`thermalSubFrom-${index}`} defaultValue={row?.fromSpecimenCode ?? ""} key={`from-${index}-${sampleCodes.join("|")}`} className="input min-w-36">
+                              <select name={`thermalSubFrom-${index}`} defaultValue={row?.fromSpecimenCode ?? ""} key={`from-${index}-${sampleCodes.map((option) => option.code).join("|")}`} className="input min-w-36">
                                 <option value="">—</option>
-                                {sampleCodes.map((code, codeIndex) => (
-                                  <option key={code} value={code}>{`${codeIndex + 1} · ${code}`}</option>
+                                {sampleCodes.map((option) => (
+                                  <option key={option.code} value={option.code}>{`${option.number} · ${option.code}`}</option>
                                 ))}
                               </select>
                             </td>
@@ -5362,6 +5385,22 @@ const testUiLabels: Record<string, string> = {
   Humidity: "Lagështia",
   "General notes": "Shënime të përgjithshme"
 };
+
+/**
+ * Whether a sample row of the thermal sheet has a board in it, read off the
+ * form as it stands.
+ *
+ * The four inputs are uncontrolled, so the one being typed into is not yet in
+ * state when its onChange runs; asking the form is simpler than threading
+ * four values through and always agrees with what is on screen.
+ */
+function boardRowDelivered(form: HTMLFormElement | null, index: number) {
+  if (!form) return false;
+  return ["thermalLength", "thermalWidth", "thermalThickness", "thermalMass"].some((field) => {
+    const input = form.elements.namedItem(`${field}-${index}`);
+    return input instanceof HTMLInputElement && Number(input.value) > 0;
+  });
+}
 
 function testUiLabel(label: string) {
   return testUiLabels[label] ?? label;

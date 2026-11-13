@@ -96,10 +96,42 @@ export function thermalBoards(
 export function thermalSubSpecimens(
   test: Pick<ThermalInsulationTest, "specimens" | "subSpecimens">
 ): ThermalInsulationSubSpecimen[] {
-  const rows = test.subSpecimens?.length
-    ? test.subSpecimens
-    : test.specimens.filter(hasLegacySubSpecimenData).map(fromLegacySpecimen);
+  const rows = test.subSpecimens?.length ? test.subSpecimens : legacySubSpecimens(test.specimens);
   return rows.map(recomputed);
+}
+
+/** A row of the sample table that a board was actually delivered against. */
+function isDeliveredBoard(specimen: ThermalInsulationSpecimen) {
+  return Boolean(specimen.lengthMm || specimen.widthMm || specimen.thicknessMm || specimen.massKg);
+}
+
+/**
+ * The sub-specimens of a certificate written before they were recorded as
+ * such, and the board each is shown against.
+ *
+ * The old sheet had one row per sample carrying both, so the obvious reading
+ * is that the fourth set of absorption figures belongs to the fourth sample.
+ * It does not: five determinations were run whatever arrived, and where three
+ * boards arrived the fourth and fifth rows carried absorption against a board
+ * that was never delivered. The certificate said so in as many words —
+ * "Nga mostra 4" under a column with no board in it.
+ *
+ * Which board each was actually cut from was not recorded by that sheet and
+ * cannot be recovered. They are therefore dealt out evenly over the boards
+ * that did arrive: an arbitrary assignment, but one over real material, and
+ * the same every time the certificate is printed rather than a number that
+ * changes between a reading on screen and the PDF beside it. Worksheets filled
+ * in since record the real answer, because the technician chooses it.
+ */
+function legacySubSpecimens(specimens: ThermalInsulationSpecimen[]): ThermalInsulationSubSpecimen[] {
+  const delivered = specimens.filter(isDeliveredBoard);
+  return specimens
+    .filter(hasLegacySubSpecimenData)
+    .map(fromLegacySpecimen)
+    .map((row, index) => ({
+      ...row,
+      fromSpecimenCode: delivered.length ? delivered[index % delivered.length].specimenCode : ""
+    }));
 }
 
 /** As thermalBoards, for the figures a sub-specimen's readings imply. */
@@ -159,15 +191,17 @@ function fromLegacySpecimen(specimen: ThermalInsulationSpecimen): ThermalInsulat
  *
  * The board's position in the delivery — "Mostra 2" — rather than its code,
  * because the column headings above it are numbered the same way and the two
- * have to line up at a glance. A sub-specimen whose board is not among the
- * delivered rows falls back to whatever was recorded, so a link that points
- * somewhere unexpected is shown rather than swallowed.
+ * have to line up at a glance. Counted over the whole sample table, so the
+ * number names the column the board is printed in.
+ *
+ * A link pointing at a row no board was delivered against is not shown: the
+ * certificate would otherwise cite a sample that is blank three lines above
+ * it. A link to something outside the table altogether falls back to whatever
+ * was recorded, so it is visible rather than swallowed.
  */
-export function thermalSampleLabel(
-  fromSpecimenCode: string,
-  specimens: Array<{ specimenCode: string }>
-) {
+export function thermalSampleLabel(fromSpecimenCode: string, specimens: ThermalInsulationSpecimen[]) {
   if (!fromSpecimenCode) return "";
   const index = specimens.findIndex((specimen) => specimen.specimenCode === fromSpecimenCode);
-  return index >= 0 ? String(index + 1) : fromSpecimenCode;
+  if (index < 0) return fromSpecimenCode;
+  return isDeliveredBoard(specimens[index]) ? String(index + 1) : "";
 }
