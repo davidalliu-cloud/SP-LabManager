@@ -9,6 +9,7 @@ import { DEFAULT_PAGE_SIZE, Pagination, paginate, useTablePage } from "@/compone
 import { useParamState } from "@/components/ui/filter-bar";
 import { SavedViews } from "@/components/ui/saved-views";
 import { useLabStore } from "@/lib/lab-store";
+import { reportEmailDraft } from "@/lib/client-email";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { canSendReportsToClient } from "@/lib/permissions";
 import { formatInternational, toWhatsAppNumber, whatsAppLink } from "@/lib/phone";
@@ -208,16 +209,22 @@ Dëshironi t'i dërgoni përsëri?`
     if (!testToSelf && !confirmResends()) return;
     const reportIds = selectedSendableRows.map(({ report }) => report.id);
     const reportNumbers = selectedSendableRows.map(({ report }) => report.reportNumber);
-    const subject = `Raportet laboratorike SARP LAB - ${selectedClient?.clientCode ?? ""}`;
-    const body = [
-      "Pershendetje,",
-      "",
-      "Bashkengjitur gjeni raportet laboratorike te miratuara:",
-      ...reportNumbers.map((number) => `- ${number}`),
-      "",
-      "Me respekt,",
-      "SARP LAB"
-    ].join("\n");
+    // One project, or none named at all: a batch spanning two sites cannot
+    // name either in the letter without saying something false about half
+    // the reports it is covering.
+    const projectIds = new Set(selectedSendableRows.map(({ report }) => report.projectId));
+    const { subject, body } = reportEmailDraft({
+      items: selectedSendableRows.map(({ report, test, sample }) => ({
+        report,
+        test,
+        sample,
+        concrete: store.concreteTests.find((row) => row.testId === report.testId)
+      })),
+      client: selectedClient,
+      project: projectIds.size === 1 ? selectedSendableRows[0].project : undefined,
+      signer: store.users.find((user) => user.id === store.currentUserId),
+      delivery: "attached"
+    });
 
     setSending(true);
     setSendMessage("");

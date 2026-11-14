@@ -10,6 +10,7 @@ import {
   sendMail,
   withoutDuplicates
 } from "@/lib/graph-mail";
+import { clientSummaryEmailDraft } from "@/lib/client-email";
 import type { LabState } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -108,15 +109,14 @@ export async function POST(request: Request) {
     );
   }
 
-  const subject = `Përmbledhje e punës laboratorike — ${client.clientName} — ${payload.from} / ${payload.to}`;
-  const body = [
-    "Pershendetje,",
-    "",
-    `Bashkengjitur permbledhja e punes laboratorike per periudhen ${payload.from} - ${payload.to}.`,
-    "",
-    "Me respekt,",
-    "SARP & LAB sh.p.k."
-  ].join("\n");
+  const { subject, body } = clientSummaryEmailDraft({
+    client,
+    from: payload.from,
+    to: payload.to,
+    // The mail leaves as njoftime@, so the letter has to say which person at
+    // the lab sent it. Their address is already the Reply-To.
+    signer: (state.users ?? []).find((user) => user.email.toLowerCase() === auth.email.toLowerCase())
+  });
 
   try {
     await sendMail({

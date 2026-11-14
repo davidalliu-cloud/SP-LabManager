@@ -11,7 +11,8 @@ import { generateAndStoreReportPdf } from "@/lib/pdf";
 import { formatInternational, toWhatsAppNumber, whatsAppLink } from "@/lib/phone";
 import { formatEuropeanDate } from "@/lib/date-format";
 import { newShareToken, reportShareUrl } from "@/lib/report-link";
-import { concreteResultLines, reportWhatsAppMessage } from "@/lib/report-message";
+import { reportWhatsAppMessage } from "@/lib/report-message";
+import { reportEmailDraft } from "@/lib/client-email";
 
 
 /**
@@ -239,32 +240,22 @@ export default function ReportDetailPage() {
     }
     if (alreadySent && !confirmResend()) return;
     const shareUrl = reportShareUrl(window.location.origin, activeReport.reportNumber, shareToken);
-    const subject = `Raporti laboratorik SARP LAB - ${activeReport.reportNumber}`;
-    const body = toMailtoText(
-      [
-        "Pershendetje,",
-        "",
-        `Raporti ${activeReport.reportNumber} eshte miratuar dhe gati per shqyrtim.`,
-        // Labelled as the certificate labels it, so the reader is looking at
-        // the same words in the email and on the sheet.
-        test?.testType ? `Testimi: ${test.testType}` : undefined,
-        // The pour date and the strengths, for a cube report only — the same
-        // lines, from the same helpers, as the WhatsApp message.
-        ...concreteResultLines(messageItem(shareUrl)),
-        "",
-        // The short link rather than the storage URL, for the same reason as the
-        // WhatsApp message: a hundred characters of bucket path and signing token
-        // is a wall of noise the reader can only take on trust. `/reports/<id>`
-        // was tried once and is worse — that page is behind a login the client
-        // does not have.
-        `Shkarkoni PDF-ne e raportit: ${shareUrl}`,
-        "",
-        "Me respekt,",
-        "SARP LAB"
-      ]
-        .filter((line): line is string => line !== undefined)
-        .join("\n")
-    );
+    // The same letter the register sends, carrying a link instead of the file:
+    // this screen hands the message to the user's own mail client, and no mail
+    // client will attach a PDF for us. The short link rather than the storage
+    // URL, for the same reason as the WhatsApp message - a hundred characters
+    // of bucket path and signing token is a wall of noise the reader can only
+    // take on trust. `/reports/<id>` was tried once and is worse: that page is
+    // behind a login the client does not have.
+    const draft = reportEmailDraft({
+      items: [{ report: activeReport, test, sample, concrete, shareUrl }],
+      client,
+      project,
+      signer: currentUser,
+      delivery: "link"
+    });
+    const subject = draft.subject;
+    const body = toMailtoText(draft.body);
     // Recorded first, then handed over: whatever the mail client does to this
     // page afterwards, the register already knows the report went out.
     store.setReportShareToken(activeReport.id, shareToken);
