@@ -12,6 +12,10 @@ import {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// A full batch is thirty certificates fetched from storage and uploaded to
+// Graph one after another. The default handful of seconds does not cover
+// that, and a send cut off halfway is worse than a slow one.
+export const maxDuration = 60;
 
 /**
  * Sends approved reports to a client with the PDFs actually attached.
