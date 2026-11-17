@@ -15,6 +15,7 @@ import { deriveSampleStage, reportLifecycle, testLifecycle } from "@/lib/sample-
 import { StageCell } from "@/components/ui/stage-cell";
 import { SampleStageStepper } from "@/components/samples/sample-stage-stepper";
 import { AggregateFractionCard } from "@/components/samples/aggregate-fraction-card";
+import { TestScheduleCard } from "@/components/samples/test-schedule-card";
 
 export default function SampleDetailPage() {
   const params = useParams<{ id: string }>();
@@ -392,6 +393,10 @@ export default function SampleDetailPage() {
           {/* Sand and gravel only, and only once a worksheet has been saved: the
               fraction completes the name the certificate prints. */}
           <AggregateFractionCard sampleId={sample.id} />
+
+          {/* Concrete only: the ages its cubes are booked for, correctable
+              after registration by the two who may edit the sample. */}
+          <TestScheduleCard sampleId={sample.id} />
 
           <div className="surface-card p-5">
             <div className="mb-4 flex items-center justify-between gap-3">

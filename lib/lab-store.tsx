@@ -81,6 +81,7 @@ import {
 } from "./calculations";
 import { useAuth } from "./auth";
 import { maturityDays, reportDueFor } from "./maturity";
+import { correctTestSchedules, movedScheduleFor, retargetedTestType } from "./test-schedule";
 import { officialClientCodes2026 } from "./client-directory";
 import { aggregateNamingStage, canAssignSampleClient, canDeleteSamples, canGenerateOffers, canEditSampleAfterRegistration, canEditTestData, canReviewTests, canGenerateReportForTest, canAmendEnvironment, canCloseNonconformity, canManageClients, canManageEmployees, canManageEquipment, canNameAggregateSample, canRaiseNonconformity, canRecordEnvironment, canRewriteSample, isSampleLocked } from "./permissions";
 import { AGGREGATE_ORIGINS, aggregateSampleDescription, aggregateSubtypeKind, formatAggregateFraction, isValidAggregateFraction } from "./aggregate-subtypes";
@@ -1176,6 +1177,16 @@ interface LabStoreValue extends LabState {
   assignSampleClient: (sampleId: string, clientId: string, projectId: string) => void;
   assignSampleTechnician: (sampleId: string, technicianId: string) => void;
   updateSample: (sampleId: string, input: SampleCorrectionInput) => void;
+  /**
+   * Correct the ages a concrete sample's cubes are booked for, after it has
+   * been registered. One row per group, in the order they were registered;
+   * the dates follow from the casting date and the age. Only the sample-edit
+   * allow-list may call it, and only while a row's cubes are still waiting.
+   */
+  setTestSchedules: (
+    sampleId: string,
+    rows: Array<{ cubeCount: number; ageDays: number; concretingDate?: string }>
+  ) => void;
   /** Name a sand or gravel sample once its grading is in: the fraction, and the
    *  origin where the sample was registered before that was asked for. Pass an
    *  empty string for either to take it back off the name. */
@@ -3182,6 +3193,101 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
             `Sample ${sample.sampleCode} details updated after registration.` +
               (retargeted.length ? ` ${retargeted.length} linked test${retargeted.length === 1 ? "" : "s"} retargeted to "${input.requestedTestType}".` : "") +
               (heldBack.length ? ` ${heldBack.length} linked test${heldBack.length === 1 ? "" : "s"} already in progress kept its original test type - review manually.` : "")
+          );
+          return draft;
+        });
+      },
+      /**
+       * The booked ages, corrected.
+       *
+       * A technician registering a delivery types the ages its cubes are to be
+       * crushed at, and types 7 where the client asked for 14. Nothing after
+       * that notices: the test is created for the wrong day, it comes up on the
+       * wrong day's work list, and the certificate would carry the wrong age.
+       * The sample edit form could not fix it either - with more than one group
+       * it leaves every date alone, because one date cannot stand for three.
+       *
+       * So the groups are edited as groups. Each row keeps its own casting date
+       * and age, and the test date and the report deadline are recomputed from
+       * the two rather than typed, which is what kept them consistent at
+       * registration.
+       */
+      setTestSchedules(sampleId, rows) {
+        setState((previous) => {
+          if (!canEditSampleAfterRegistration(currentUser?.email)) return previous;
+          const sample = previous.samples.find((row) => row.id === sampleId);
+          const existing = sample?.testSchedules ?? [];
+          if (!sample || !existing.length || rows.length !== existing.length) return previous;
+          const linkedTests = previous.tests.filter((row) => row.sampleId === sampleId);
+          if (
+            isSampleLocked(
+              linkedTests.map((row) => row.status),
+              previous.reports.some((row) => row.sampleId === sampleId)
+            )
+          ) {
+            return previous;
+          }
+
+          // Cubes already crushed, or being crushed, are not a booking any more.
+          const started = (ageDays: number) =>
+            linkedTests.some(
+              (row) => row.scheduledAgeDays === ageDays && !["Pending", "Scheduled"].includes(row.status)
+            );
+
+          // The arithmetic, and the two edits it refuses, are in lib/test-schedule.
+          const nextSchedules = correctTestSchedules(existing, rows, started);
+          if (!nextSchedules) return previous;
+
+          const draft: LabState = {
+            ...previous,
+            samples: previous.samples.map((row) =>
+              row.id === sampleId
+                ? {
+                    ...row,
+                    testSchedules: nextSchedules,
+                    // The sample's own two dates are the first group's, which is
+                    // how registration writes them.
+                    requiredTestDate: nextSchedules[0]?.requiredTestDate || row.requiredTestDate,
+                    reportDueDate: nextSchedules[0]?.reportDueDate || row.reportDueDate
+                  }
+                : row
+            ),
+            tests: previous.tests.map((test) => {
+              if (test.sampleId !== sampleId || !["Pending", "Scheduled"].includes(test.status)) return test;
+              const moved = movedScheduleFor(existing, nextSchedules, test.scheduledAgeDays);
+              if (!moved) return test;
+              return {
+                ...test,
+                // "... - 7 ditë" is written into the test's name at acceptance
+                // and read from there by the worksheet and the certificate.
+                testType: retargetedTestType(test.testType, moved.ageDays),
+                cubeCount: moved.cubeCount,
+                scheduledAgeDays: moved.ageDays,
+                concretingDate: moved.concretingDate || test.concretingDate,
+                requiredTestDate: moved.requiredTestDate,
+                dueDate: moved.reportDueDate,
+                notes: `${moved.cubeCount} mostra të planifikuara në ${moved.ageDays} ditë${
+                  moved.concretingDate ? ` nga betonimi i datës ${moved.concretingDate}` : ""
+                }.`
+              };
+            }),
+            auditLog: [...previous.auditLog]
+          };
+          addAudit(
+            draft,
+            "sample_updated",
+            "sample",
+            sampleId,
+            `Sample ${sample.sampleCode} testing plan corrected: ` +
+              nextSchedules
+                .map((row, index) =>
+                  row === existing[index]
+                    ? undefined
+                    : `${existing[index].cubeCount} cubes at ${existing[index].ageDays} days (${existing[index].requiredTestDate}) ` +
+                      `-> ${row.cubeCount} at ${row.ageDays} days (${row.requiredTestDate})`
+                )
+                .filter(Boolean)
+                .join("; ")
           );
           return draft;
         });
