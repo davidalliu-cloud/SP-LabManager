@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import type { User } from "@supabase/supabase-js";
+import { isAuthRetryableFetchError, type User } from "@supabase/supabase-js";
 import { createSupabaseBrowserClient } from "./supabase/client";
 
 interface AuthContextValue {
@@ -30,11 +30,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const supabase = createSupabaseBrowserClient();
+    let isCancelled = false;
 
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user ?? null);
-      setIsLoading(false);
-    });
+    /**
+     * Who is signed in - without mistaking a bad connection for nobody.
+     *
+     * getUser() asks the server, and supabase-js answers a network failure
+     * exactly as it answers "no one is signed in": { user: null }. The shell
+     * reads that and sends the person to the login page. On 17 November it did
+     * that to the Chief of Lab six times in twenty-four minutes while her
+     * session - which Supabase had never touched, and which is still alive -
+     * sat in this browser the whole time.
+     *
+     * So when the question cannot be put to Supabase, fall back to the session
+     * the browser already holds rather than throwing her out. A real answer
+     * still decides it: a session that is genuinely gone signs her out as before.
+     */
+    async function resolveUser() {
+      const { data, error } = await supabase.auth.getUser();
+      if (!error) return data.user ?? null;
+      if (!isAuthRetryableFetchError(error)) return null;
+      const { data: stored } = await supabase.auth.getSession();
+      return stored.session?.user ?? null;
+    }
+
+    resolveUser()
+      .catch(() => null)
+      .then((resolved) => {
+        if (isCancelled) return;
+        setUser(resolved);
+        setIsLoading(false);
+      });
 
     const {
       data: { subscription }
@@ -43,7 +69,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isCancelled = true;
+      subscription.unsubscribe();
+    };
   }, [isConfigured]);
 
   const value = useMemo<AuthContextValue>(

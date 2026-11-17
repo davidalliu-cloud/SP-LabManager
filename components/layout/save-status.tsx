@@ -15,6 +15,16 @@ export function SaveStatus() {
   const { t } = useI18n();
   const state = store.saveState;
 
+  // Nothing has been read yet, so there is nothing to claim either way.
+  if (state.kind === "loading") {
+    return (
+      <span className="no-print inline-flex items-center gap-1.5 text-xs font-medium text-muted" aria-live="polite">
+        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-line" aria-hidden="true" />
+        {t("save.loading")}
+      </span>
+    );
+  }
+
   if (state.kind === "saved") {
     return (
       <span className="no-print inline-flex items-center gap-1.5 text-xs font-medium text-muted" aria-live="polite">
@@ -42,6 +52,30 @@ export function SaveStatus() {
       >
         <span className="h-1.5 w-1.5 rounded-full bg-[#b8791f]" aria-hidden="true" />
         {t("save.offline")}
+      </span>
+    );
+  }
+
+  // The register itself never arrived: the screen is a copy on this device,
+  // and nothing will be saved until a read succeeds. Said plainly, because
+  // the alternative is a morning's work typed into a page that is not the
+  // register and does not know it.
+  if (state.kind === "unread") {
+    return (
+      <span
+        className="no-print inline-flex items-center gap-2 rounded-md border border-[#ff3d3d] bg-brand-late px-2 py-1 text-xs font-semibold text-ink"
+        aria-live="assertive"
+        title={t("save.unreadHint")}
+      >
+        <span className="h-1.5 w-1.5 rounded-full bg-lab-red" aria-hidden="true" />
+        {t("save.unread")}
+        <button
+          type="button"
+          onClick={() => store.retrySave()}
+          className="rounded border border-ink/20 bg-white px-1.5 py-0.5 font-semibold text-lab-burgundy hover:bg-lab-burgundy hover:text-white"
+        >
+          {t("save.retry")}
+        </button>
       </span>
     );
   }

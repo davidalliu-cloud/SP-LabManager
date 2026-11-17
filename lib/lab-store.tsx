@@ -1319,6 +1319,8 @@ const SAVE_DEBOUNCE_MS = 2_500;
  * of their saves should cost us one read rather than one read each.
  */
 const REMOTE_REFRESH_DEBOUNCE_MS = 1_200;
+/** Waits before the second and third attempt at reading the register. */
+const READ_RETRY_DELAYS_MS = [1_500, 4_000];
 
 /** First wait after a failed save; doubles each attempt, capped. */
 const SAVE_RETRY_BASE_MS = 2_000;
@@ -1362,23 +1364,34 @@ function forPersistence(state: LabState): LabState {
  * full set of results, watch them appear on screen, close the laptop and lose
  * them - with the interface showing nothing but success the whole time.
  *
+ *   loading  - the register has not been read yet; nothing to report
  *   saved    - in sync with the server
  *   saving   - a write is in flight
  *   offline  - no connection; the change is held locally and will retry
+ *   unread   - the register could not be read, so this page is showing the
+ *              copy on this device and nothing will be saved until it can
  *   error    - the server rejected the write
  *   conflict - someone else saved first and we could not merge; nothing was
  *              written, because overwriting their work is not ours to decide
  */
 export type SaveState =
+  | { kind: "loading" }
   | { kind: "saved" }
   | { kind: "saving" }
   | { kind: "offline" }
+  | { kind: "unread" }
   | { kind: "error"; message?: string }
   | { kind: "conflict" };
 
-/** True while the change is not safely on the server. */
+/**
+ * True while the change is not safely on the server.
+ *
+ * Not while the register is still being read: there is nothing of the
+ * user's to lose yet, and warning them before they have typed a character
+ * teaches them to dismiss the warning that matters.
+ */
 export function isSavePending(state: SaveState) {
-  return state.kind !== "saved";
+  return state.kind !== "saved" && state.kind !== "loading";
 }
 
 function hasSupabaseConfig() {
@@ -1732,7 +1745,15 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
   // over the real register. Tracking the account means the load runs again the
   // moment one appears.
   const [authUserId, setAuthUserId] = useState<string | null>(null);
-  const [saveState, setSaveState] = useState<SaveState>({ kind: "saved" });
+  // Starts at "loading", not "saved". A green "U ruajt" before the register
+  // has even been read is the lie that let a browser sit all afternoon on a
+  // cached copy, saving nothing, while the corner of the screen said it was
+  // all safely on the server.
+  const [saveState, setSaveState] = useState<SaveState>({ kind: "loading" });
+  // Bumped by retrySave() when it is the READ that failed, to run the load
+  // effect again without a reload - a reload would discard the unsaved work
+  // that the failed read is the reason nobody can save.
+  const [loadNonce, setLoadNonce] = useState(0);
   // Bumped by retrySave() to re-run the save effect on demand (e.g. from the
   // conflict banner) without any state change — so a save that lost a race can
   // be retried against the current, already-merged in-memory state instead of
@@ -1868,24 +1889,42 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
 
     if (!hasSupabaseConfig() || isPortalPath()) {
       setIsRemoteChecked(true);
+      setSaveState({ kind: "saved" });
       return;
     }
 
     let isCancelled = false;
 
-    async function loadOnlineState() {
-      try {
-        const supabase = createSupabaseBrowserClient();
+    /**
+     * Read the register, and do not give up on the first refusal.
+     *
+     * On 17 November this read came back 500 while the database was busy
+     * decoding the register's own size for Realtime. One failed read used to
+     * be the end of it: the page kept the copy in local storage, carried on as
+     * though it were the register, and refused every save for as long as the
+     * tab stayed open - with a green "U ruajt" in the corner throughout. So
+     * ask again before concluding anything.
+     */
+    async function readRegister() {
+      const supabase = createSupabaseBrowserClient();
+      for (let attempt = 0; ; attempt++) {
         const { data, error } = await supabase
           .from("app_state")
           .select("state, updated_at")
           .eq("id", ONLINE_STATE_ROW_ID)
           .maybeSingle();
 
-        if (error) {
-          console.warn("Could not load online SARP LAB data.", error.message);
-          return;
-        }
+        if (!error) return data;
+        console.warn(`Could not load online SARP LAB data (attempt ${attempt + 1}).`, error.message);
+        if (isCancelled || attempt >= READ_RETRY_DELAYS_MS.length) return null;
+        await new Promise((resolve) => window.setTimeout(resolve, READ_RETRY_DELAYS_MS[attempt]));
+        if (isCancelled) return null;
+      }
+    }
+
+    async function loadOnlineState() {
+      try {
+        const data = await readRegister();
 
         // A read that comes back with no row is not a successful read of an
         // empty register — it is RLS declining to show it, which is what a
@@ -1894,17 +1933,29 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
         // seed data over everyone's work; only the write policy stopped it, and
         // the attempt repeated for as long as the tab stayed open.
         remoteLoadOkRef.current = Boolean(data?.state);
+        if (isCancelled) return;
 
-        if (!isCancelled && data?.state) {
+        if (data?.state) {
           const mergedState = mergeWithInitialState(data.state as Partial<LabState>);
           lastSavedOnlineJson.current = JSON.stringify(mergedState);
           remoteUpdatedAtRef.current = data.updated_at ?? null;
           lastSyncedStateRef.current = mergedState;
           setState(mergedState);
           window.localStorage.setItem(STORAGE_KEY, JSON.stringify(mergedState));
+          // Only lift the badge out of the two states this effect owns; a save
+          // already in flight keeps its own.
+          setSaveState((current) =>
+            current.kind === "loading" || current.kind === "unread" ? { kind: "saved" } : current
+          );
+        } else {
+          // Either the read never came, or it came back empty because this
+          // browser is not signed in. Both mean the same thing to whoever is
+          // looking at the screen: what they can see is not the register.
+          setSaveState({ kind: "unread" });
         }
       } catch (error) {
         console.warn("Could not connect to Supabase online storage.", error);
+        if (!isCancelled) setSaveState({ kind: "unread" });
       } finally {
         if (!isCancelled) setIsRemoteChecked(true);
       }
@@ -1915,7 +1966,7 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
     return () => {
       isCancelled = true;
     };
-  }, [isHydrated, authUserId]);
+  }, [isHydrated, authUserId, loadNonce]);
 
   // Live updates: pick up other users' saves without waiting for a page refresh.
   useEffect(() => {
@@ -1999,7 +2050,13 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       if (refreshTimer !== null) window.clearTimeout(refreshTimer);
       supabase.removeChannel(channel);
     };
-  }, [isHydrated, isRemoteChecked]);
+    // Re-subscribed when the account changes or the register is read again.
+    // The channel used to be opened once, at whatever moment the first read
+    // finished - including a read that had failed, or one made before anybody
+    // had signed in. A channel opened in that state never carries an account,
+    // so the tab heard nothing anyone else did for as long as it stayed open,
+    // which is the other half of "I could not see the latest work".
+  }, [isHydrated, isRemoteChecked, authUserId, loadNonce]);
 
   useEffect(() => {
     if (!isHydrated || !isRemoteChecked || !hasSupabaseConfig() || isPortalPath()) return;
@@ -2375,6 +2432,14 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
       currentUserId,
       saveState,
       retrySave() {
+        // When the register was never read, there is nothing to retry a save
+        // against - the save effect would refuse before it started. Read it
+        // again instead, which is what the button in that state is offering.
+        if (!remoteLoadOkRef.current) {
+          setSaveState({ kind: "loading" });
+          setLoadNonce((n) => n + 1);
+          return;
+        }
         // Show progress immediately, then bump the nonce to re-run the save
         // effect against the current (already-merged) in-memory state.
         setSaveState({ kind: "saving" });
