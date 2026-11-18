@@ -145,8 +145,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <aside className="no-print fixed inset-y-0 left-0 z-30 hidden w-72 flex-col overflow-hidden bg-sidebar lg:flex">
         <div className="shrink-0 border-b border-sidebar-line px-6 py-8">
           {/* The logo is dark ink on transparent, so it needs lifting off a dark
-              ground the way it does on the login panel. */}
-          <img src="/brand/sarp-logo.png" alt="SARP" className="h-auto w-40 brightness-0 invert" />
+              ground the way it does on the login panel. It doubles as the way
+              home: clicking it returns to the dashboard panel. */}
+          <Link href="/" aria-label={t("nav.dashboard")} className="inline-block transition hover:opacity-80">
+            <img src="/brand/sarp-logo.png" alt="SARP" className="h-auto w-40 brightness-0 invert" />
+          </Link>
           <div className="mt-6 text-[11px] font-semibold uppercase tracking-[0.2em] text-sidebar-active">SARP Laboratory</div>
           <div className="mt-2 text-xl font-bold tracking-[-0.01em] leading-tight text-white">{t("brand.lab")}</div>
           <div className="mt-2 max-w-[13rem] text-xs leading-5 text-sidebar-ink/70">{t("brand.domain")}</div>
@@ -168,7 +171,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <header className="no-print sticky top-0 z-20 border-b border-lab-steel bg-white/95 backdrop-blur">
           <div className="flex min-h-16 items-center justify-between gap-2 px-4 sm:gap-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-3">
-              <img src="/brand/sarp-logo.png" alt="SARP" className="h-8 w-auto lg:hidden" />
+              <Link href="/" aria-label={t("nav.dashboard")} className="transition hover:opacity-80 lg:hidden">
+                <img src="/brand/sarp-logo.png" alt="SARP" className="h-8 w-auto" />
+              </Link>
               <div className="hidden sm:block">
                 <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-lab-burgundy">Materials testing</div>
                 <div className="text-sm font-semibold tracking-[-0.01em] text-ink">{t("app.title")}</div>
