@@ -60,23 +60,29 @@ function formatNumber(value?: number, digits = 2) {
 export function getTestResultSummary(store: TestDetailTables, test: LabTest): TestResultSummary {
   const sclerometer = store.sclerometerTests.find((item) => item.testId === test.id);
   if (sclerometer) {
+    const elements = sclerometer.elements ?? [];
+    // One line for the whole visit: how many elements, and the spread of the
+    // strengths across them. Each element still has its own certificate.
+    const rcks = elements
+      .map((element) => element.cubeStrengthRck)
+      .filter((value): value is number => typeof value === "number");
     const parts: string[] = [];
-    if (sclerometer.averageRebound !== undefined) {
-      parts.push(`Leximi mesatar: ${formatNumber(sclerometer.averageRebound, 1)} (${sclerometer.reboundCount ?? 0} goditje)`);
-    }
-    if (sclerometer.cubeStrengthRck !== undefined) {
-      const band =
-        sclerometer.strengthMin !== undefined && sclerometer.strengthMax !== undefined
-          ? ` (${formatNumber(sclerometer.strengthMin)}–${formatNumber(sclerometer.strengthMax)})`
-          : "";
-      parts.push(`Rck: ${formatNumber(sclerometer.cubeStrengthRck)} MPa${band}`);
+    parts.push(`${elements.length} element${elements.length === 1 ? "" : "e"}`);
+    if (rcks.length) {
+      const min = Math.min(...rcks);
+      const max = Math.max(...rcks);
+      parts.push(
+        min === max
+          ? `Rck: ${formatNumber(min)} MPa`
+          : `Rck: ${formatNumber(min)}–${formatNumber(max)} MPa`
+      );
     }
     return {
       testStartDate: sclerometer.testStartDate,
       testEndDate: sclerometer.testEndDate,
       technicianName: sclerometer.technicianName,
       checkedBy: sclerometer.checkedBy,
-      result: parts.length ? parts.join("; ") : "Sklerometër: pa goditje të regjistruara"
+      result: elements.length ? parts.join("; ") : "Sklerometër: pa elemente të regjistruar"
     };
   }
 

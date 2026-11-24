@@ -517,17 +517,20 @@ interface CementStrengthInput {
   }>;
 }
 
-interface SclerometerInput {
+interface SclerometerElementInput {
+  element?: string;
+  quote?: string;
   castingDate?: string;
-  testStartDate?: string;
-  testEndDate?: string;
   concreteAge?: string;
   impactAngle?: string;
   readings: Array<number | undefined>;
   cubeStrengthRck?: number;
   meanError?: number;
-  element?: string;
-  quote?: string;
+}
+
+interface SclerometerInput {
+  testStartDate?: string;
+  testEndDate?: string;
   orderDate?: string;
   temperature?: string;
   humidity?: string;
@@ -537,6 +540,7 @@ interface SclerometerInput {
   technicianName: string;
   checkedBy?: string;
   notes?: string;
+  elements: SclerometerElementInput[];
 }
 
 interface WaterAnalysisInput {
@@ -4102,11 +4106,17 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
         setState((previous) => {
           if (!canCurrentUserEditTest(previous, testId)) return previous;
           const existingRow = previous.sclerometerTests.find((row) => row.testId === testId);
+          const { elements, ...shared } = input;
           const sclerometerTest: SclerometerTest = {
             id: existingRow?.id ?? crypto.randomUUID(),
             testId,
-            ...input,
-            ...deriveSclerometerResults(input),
+            ...shared,
+            // Each element is counted and averaged on its own — one element is
+            // one certificate, so its readings must not bleed into another's.
+            elements: elements.map((element) => ({
+              ...element,
+              ...deriveSclerometerResults(element)
+            })),
             createdAt: existingRow?.createdAt ?? new Date().toISOString()
           };
           const draft: LabState = {
@@ -5315,10 +5325,19 @@ export function LabStoreProvider({ children }: { children: React.ReactNode }) {
                 }, new Map<string, string[]>()).values()
               ).flatMap((codes) => balancedGroups(codes, 2))
             : undefined;
+          // A rebound-hammer visit issues one certificate per tested element, so
+          // each element becomes its own report group. The group carries the
+          // element's label for the register; the report preview reads the
+          // element itself by the report's sequence number.
+          const sclerometerGroups = sclerometer?.elements?.length
+            ? sclerometer.elements.map((element, index) => [element.element?.trim() || `Elementi ${index + 1}`])
+            : undefined;
           const reportGroups = steel?.specimens.length
             ? groupSteelSpecimensByDiameter(steel)
             : coreReportGroups?.length
               ? coreReportGroups
+            : sclerometerGroups?.length
+              ? sclerometerGroups
             : concreteWater || concreteFlexural || concreteDensity || concreteIndirectTensile || concreteCore || asphalt || thermalInsulation || cementConsistency || cementStrength || cementBlaine || mortar || aggregate || aggregateChemical || aggregateLosAngeles || aggregateFreezeThaw || aggregateAcv || aggregateDensity || aggregateFillerDensity || aggregateShapeIndex || aggregateFlakiness || aggregateElongation || aggregateBulkDensity || aggregateSandEquivalent || aggregateSoundness || admixture
               ? [[previous.samples.find((sample) => sample.id === test.sampleId)?.sampleCode ?? test.testCode]]
               : concrete?.specimens?.length

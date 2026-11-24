@@ -2061,28 +2061,21 @@ export interface WaterAnalysisTest {
 }
 
 /**
- * Rebound hammer / sclerometer — the SL-RA-PJ-7.8/1.3 report.
+ * One tested element on a rebound-hammer job — one SL-RA-PJ-7.8/1.3 report.
  *
- * Modelled on the laboratory's own template rather than on the standard alone.
- * The template takes a single test location, records each hammer blow in a
- * working column, and prints only how many blows were taken and their average —
- * the individual readings sit outside the printed area.
- *
- * It also departs from BS EN 12504-2 in two ways that are the laboratory's to
- * make, so they are reproduced rather than corrected: the reported index is the
- * plain average of the readings, not the median with outliers discarded; and
- * the strength is read off the instrument's curve and typed in as Rck with a
- * mean error, giving a maximum and a minimum rather than one figure.
+ * A rebound-hammer visit tests many elements of a structure (a column at one
+ * level, a beam at another), and the laboratory issues one certificate per
+ * element. Each certificate takes a single location: its own casting date, its
+ * own column of hammer blows, its own Rck off the instrument's curve. So the
+ * element, not the visit, is the unit that carries the readings and the result.
  */
-export interface SclerometerTest {
-  id: string;
-  testId: string;
-
+export interface SclerometerElement {
+  /** ELEMENT — the column, beam or location this certificate is for. */
+  element?: string;
+  /** KUOTA / QUOTE — the level the element sits at. */
+  quote?: string;
   /** Row 1 — Data e betonimit / Casting date. */
   castingDate?: string;
-  /** Row 2 — Data e testimit, fillimi and mbarimi. */
-  testStartDate?: string;
-  testEndDate?: string;
   /** Row 3 — Koha e maturimit. Free text: the template carries ">28". */
   concreteAge?: string;
   /** Row 4 — Kendi i goditjes, the angle the hammer was held at. */
@@ -2101,10 +2094,36 @@ export interface SclerometerTest {
   averageRebound?: number;
   strengthMax?: number;
   strengthMin?: number;
+}
+
+/**
+ * Rebound hammer / sclerometer — the SL-RA-PJ-7.8/1.3 report(s).
+ *
+ * Modelled on the laboratory's own template rather than on the standard alone.
+ * Each element records its hammer blows in a working column and prints only how
+ * many blows were taken and their average — the individual readings sit outside
+ * the printed area. One `element` yields one certificate, so a visit that tests
+ * forty-nine elements produces forty-nine reports.
+ *
+ * It also departs from BS EN 12504-2 in two ways that are the laboratory's to
+ * make, so they are reproduced rather than corrected: the reported index is the
+ * plain average of the readings, not the median with outliers discarded; and
+ * the strength is read off the instrument's curve and typed in as Rck with a
+ * mean error, giving a maximum and a minimum rather than one figure.
+ *
+ * The fields below the elements are shared by the whole visit: the testing
+ * window, the instrument, who tested and who checked, and the conditions on the
+ * day — they print the same on every certificate the visit issues.
+ */
+export interface SclerometerTest {
+  id: string;
+  testId: string;
+
+  /** Row 2 — Data e testimit, fillimi and mbarimi. Shared across the visit. */
+  testStartDate?: string;
+  testEndDate?: string;
 
   /** Report header fields the template carries above the results table. */
-  element?: string;
-  quote?: string;
   orderDate?: string;
   temperature?: string;
   humidity?: string;
@@ -2115,5 +2134,9 @@ export interface SclerometerTest {
   technicianName: string;
   checkedBy?: string;
   notes?: string;
+
+  /** One entry per tested element — one report each, in report order. */
+  elements: SclerometerElement[];
+
   createdAt: string;
 }

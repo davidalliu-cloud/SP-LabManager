@@ -56,6 +56,10 @@ export function SclerometerReportPreview({
   sclerometer: SclerometerTest;
 }) {
   const s = sclerometer;
+  // One report per element: the report's sequence number (1-based) is the
+  // element it certifies. An empty object keeps the template drawing its "-"
+  // rows if an element is somehow missing rather than throwing.
+  const el = sclerometer.elements?.[(report.reportSequence ?? 1) - 1] ?? sclerometer.elements?.[0] ?? ({} as (typeof sclerometer.elements)[number]);
   const issueDate = report.issuedAt || report.approvedAt || s.testEndDate || sample?.reportDueDate;
 
   const entries: OfficialMetaEntry[] = [
@@ -64,8 +68,8 @@ export function SclerometerReportPreview({
     { sq: "ADRESA", en: "ADRESS", value: client?.address },
     { sq: "KONTAKTET", en: "CONTACT", value: [client?.phone, client?.email].filter(Boolean).join(" ; ") },
     { sq: "OBJEKTI", en: "OBJECT", value: project?.projectName },
-    { sq: "ELEMENTI", en: "ELEMENT", value: s.element },
-    { sq: "KUOTA", en: "QUOTE", value: s.quote },
+    { sq: "ELEMENTI", en: "ELEMENT", value: el.element },
+    { sq: "KUOTA", en: "QUOTE", value: el.quote },
     { sq: "DATA E MARRJES SË POROSISË", en: "ORDER DATE", value: formatEuropeanDate(s.orderDate) },
     {
       sq: "TESTI",
@@ -82,7 +86,7 @@ export function SclerometerReportPreview({
   ];
 
   const rows: Row[] = [
-    { no: "1", sq: "Data e betonimit", en: "Casting date", unit: "(dd/mm/vv)", value: formatEuropeanDate(s.castingDate) },
+    { no: "1", sq: "Data e betonimit", en: "Casting date", unit: "(dd/mm/vv)", value: formatEuropeanDate(el.castingDate) },
     {
       no: "2",
       sq: "Data e testimit",
@@ -93,15 +97,15 @@ export function SclerometerReportPreview({
         { sq: "Mbarimi", en: "Ending", value: formatEuropeanDate(s.testEndDate) }
       ]
     },
-    { no: "3", sq: "Koha e maturimit të betonit", en: "Concrete age", unit: "ditë / days", value: s.concreteAge },
-    { no: "4", sq: "Kendi i goditjes së sklerometrit", en: "Angle", unit: "α", value: s.impactAngle },
-    { no: "5", sq: "Goditjet e sklerometrit", en: "Hammer rebound", unit: "nr. / no.", value: show(s.reboundCount) },
+    { no: "3", sq: "Koha e maturimit të betonit", en: "Concrete age", unit: "ditë / days", value: el.concreteAge },
+    { no: "4", sq: "Kendi i goditjes së sklerometrit", en: "Angle", unit: "α", value: el.impactAngle },
+    { no: "5", sq: "Goditjet e sklerometrit", en: "Hammer rebound", unit: "nr. / no.", value: show(el.reboundCount) },
     {
       no: "6",
       sq: "Leximi mesatar i sklerometrit *",
       en: "Average of rebound number*",
       unit: "R",
-      value: show(s.averageRebound, s.averageRebound === undefined ? undefined : 1),
+      value: show(el.averageRebound, el.averageRebound === undefined ? undefined : 1),
       bold: true
     },
     {
@@ -109,23 +113,23 @@ export function SclerometerReportPreview({
       sq: "Rezistenca në shtypje kubike",
       en: "Cube compressive strength Rck",
       unit: "MPa",
-      value: show(s.cubeStrengthRck, s.cubeStrengthRck === undefined ? undefined : 1),
+      value: show(el.cubeStrengthRck, el.cubeStrengthRck === undefined ? undefined : 1),
       bold: true
     },
-    { no: "8", sq: "Gabimi mesatar", en: "Mean error", unit: "∆MPa", value: show(s.meanError, s.meanError === undefined ? undefined : 2) },
+    { no: "8", sq: "Gabimi mesatar", en: "Mean error", unit: "∆MPa", value: show(el.meanError, el.meanError === undefined ? undefined : 2) },
     {
       no: "9",
       sq: "Rezistenca në shtypje kubike maksimale",
       en: "Maximal cube compressive strength  Rmax = Rck + ∆",
       unit: "MPa",
-      value: show(s.strengthMax, s.strengthMax === undefined ? undefined : 2)
+      value: show(el.strengthMax, el.strengthMax === undefined ? undefined : 2)
     },
     {
       no: "10",
       sq: "Rezistenca në shtypje kubike minimale",
       en: "Minimal cube compressive strength  Rmin = Rck − ∆",
       unit: "MPa",
-      value: show(s.strengthMin, s.strengthMin === undefined ? undefined : 2)
+      value: show(el.strengthMin, el.strengthMin === undefined ? undefined : 2)
     }
   ];
 

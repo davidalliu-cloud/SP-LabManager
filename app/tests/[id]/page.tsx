@@ -163,6 +163,12 @@ function TestDetailView({ test }: { test: LabTest }) {
         : [];
   const [rowCount, setRowCount] = useState(Math.max(activeTest.cubeCount || 10, existingSpecimens.length));
   const [steelRowCount, setSteelRowCount] = useState(Math.max(sample?.quantity ?? 3, steel?.specimens.length ?? 0, 3));
+  // A rebound-hammer visit tests many elements, one certificate each. Seed the
+  // list from what is already saved, else from the quantity the sample was
+  // booked under (e.g. 49), else one.
+  const [sclerometerElementCount, setSclerometerElementCount] = useState(
+    Math.max(sclerometer?.elements?.length ?? 0, sample?.quantity ?? activeTest.cubeCount ?? 1, 1)
+  );
   // Lo is five diameters, so the column follows the diameter box as it is
   // typed rather than waiting for a save. Only the diameters the technician has
   // touched live here; every other row reads its own saved value.
@@ -423,18 +429,33 @@ function TestDetailView({ test }: { test: LabTest }) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const text = (name: string) => String(form.get(name) ?? "");
+    const elements = Array.from({ length: sclerometerElementCount }, (_, index) => ({
+      element: text(`sclEl-${index}-element`),
+      quote: text(`sclEl-${index}-quote`),
+      castingDate: text(`sclEl-${index}-castingDate`),
+      concreteAge: text(`sclEl-${index}-concreteAge`),
+      impactAngle: text(`sclEl-${index}-impactAngle`),
+      // A blank slot is a blow not struck, not a rebound of zero.
+      readings: SCLEROMETER_READING_SLOTS.map((slot) => optionalNumber(form.get(`sclEl-${index}-R-${slot}`))),
+      cubeStrengthRck: optionalNumber(form.get(`sclEl-${index}-rck`)),
+      meanError: optionalNumber(form.get(`sclEl-${index}-meanError`))
+    }));
+    // An angle select always has a value, so it does not count as content. A row
+    // the technician never touched is dropped rather than becoming a blank
+    // certificate; one with a name, a reading or an Rck is kept, even part-done.
+    const nonEmpty = elements.filter(
+      (element) =>
+        element.element.trim() ||
+        element.quote.trim() ||
+        element.castingDate ||
+        element.concreteAge.trim() ||
+        element.readings.some((reading) => reading !== undefined) ||
+        element.cubeStrengthRck !== undefined ||
+        element.meanError !== undefined
+    );
     store.saveSclerometerTest(activeTest.id, {
-      castingDate: text("castingDate"),
       testStartDate: text("testStartDate"),
       testEndDate: text("testEndDate"),
-      concreteAge: text("concreteAge"),
-      impactAngle: text("impactAngle"),
-      // A blank slot is a blow not struck, not a rebound of zero.
-      readings: SCLEROMETER_READING_SLOTS.map((slot) => optionalNumber(form.get(`sclR-${slot}`))),
-      cubeStrengthRck: optionalNumber(form.get("cubeStrengthRck")),
-      meanError: optionalNumber(form.get("meanError")),
-      element: text("element"),
-      quote: text("quote"),
       orderDate: text("orderDate"),
       temperature: text("temperature"),
       humidity: text("humidity"),
@@ -443,7 +464,8 @@ function TestDetailView({ test }: { test: LabTest }) {
       instrumentSerial: text("instrumentSerial"),
       technicianName: text("technicianName"),
       checkedBy: text("checkedBy"),
-      notes: text("notes")
+      notes: text("notes"),
+      elements: nonEmpty
     });
   }
 
@@ -2095,9 +2117,9 @@ function TestDetailView({ test }: { test: LabTest }) {
               <Field label="Numri i regjistrit"><input className="input bg-lab-porcelain" value={sample?.sampleCode ?? ""} readOnly /></Field>
               <Field label="Standardi i aplikuar"><input className="input bg-lab-porcelain" value={activeTest.standard || "BS EN 12504-2:2021"} readOnly /></Field>
               <Field label="Vendi i testimit"><input name="testingLocation" defaultValue={scl?.testingLocation ?? "Në terren / In-situ"} className="input" /></Field>
-              <Field label="Elementi / Element"><input name="element" defaultValue={scl?.element ?? ""} className="input" placeholder="p.sh. K9 AKSI E, OBJEKTI B3/1" /></Field>
-              <Field label="Kuota / Quote"><input name="quote" defaultValue={scl?.quote ?? ""} className="input" placeholder="p.sh. KUOTA +21.94" /></Field>
               <Field label="Data e marrjes së porosisë"><input name="orderDate" type="date" defaultValue={scl?.orderDate ?? ""} className="input" /></Field>
+              <Field label="2. Data e testimit — fillimi"><input name="testStartDate" type="date" defaultValue={scl?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
+              <Field label="2. Data e testimit — mbarimi"><input name="testEndDate" type="date" defaultValue={scl?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
               <Field label="Çekiçi / Instrument"><input name="instrumentModel" defaultValue={scl?.instrumentModel ?? ""} className="input" /></Field>
               <Field label="Seria / Serial"><input name="instrumentSerial" defaultValue={scl?.instrumentSerial ?? ""} className="input" /></Field>
               <Field label="Tekniku"><EmployeeSelect name="technicianName" employees={activeEmployees} required value={scl?.technicianName ?? ""} /></Field>
@@ -2107,63 +2129,92 @@ function TestDetailView({ test }: { test: LabTest }) {
             </div>
 
             <div className="border-b border-line p-5">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">Rreshtat 1–4 të raportit</h3>
-              <div className="mt-3 grid gap-4 md:grid-cols-4">
-                <Field label="1. Data e betonimit"><input name="castingDate" type="date" defaultValue={scl?.castingDate ?? ""} className="input" /></Field>
-                <Field label="2. Data e testimit — fillimi"><input name="testStartDate" type="date" defaultValue={scl?.testStartDate ?? activeTest.requiredTestDate} className="input" /></Field>
-                <Field label="2. Data e testimit — mbarimi"><input name="testEndDate" type="date" defaultValue={scl?.testEndDate ?? activeTest.requiredTestDate} className="input" /></Field>
-                <Field label="3. Koha e maturimit [ditë]"><input name="concreteAge" defaultValue={scl?.concreteAge ?? ""} className="input" placeholder="p.sh. >28" /></Field>
-                <Field label="4. Kendi i goditjes (α)">
-                  <select name="impactAngle" defaultValue={scl?.impactAngle ?? "0°"} className="input">
-                    {SCLEROMETER_ANGLES.map((angle) => (
-                      <option key={angle} value={angle}>{angle}</option>
-                    ))}
-                  </select>
-                </Field>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">Elementet / <span className="italic font-normal normal-case">Elements</span></h3>
+                  <p className="mt-1 text-xs text-muted">
+                    Çdo element merr një raport më vete (SL-RA-PJ-7.8/1.3). Kur gjenerohen, do të dalin {sclerometerElementCount} raporte.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="btn-secondary px-3"
+                    onClick={() => setSclerometerElementCount((count) => Math.max(1, count - 1))}
+                    disabled={!canEditWorksheet || sclerometerElementCount <= 1}
+                  >
+                    Hiq të fundit
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary px-3"
+                    onClick={() => setSclerometerElementCount((count) => count + 1)}
+                    disabled={!canEditWorksheet}
+                  >
+                    Shto element
+                  </button>
+                </div>
               </div>
-            </div>
 
-            <div className="border-b border-line p-5">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">Goditjet e sklerometrit / <span className="italic font-normal normal-case">Hammer rebound</span></h3>
-              <p className="mt-1 text-xs text-muted">
-                Lini bosh çdo goditje që nuk është kryer — nuk numërohet dhe nuk hyn në mesatare.
-                Leximet nuk shfaqen në raport; raporti jep numrin e tyre dhe mesataren.
-              </p>
-              <div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-8 md:grid-cols-16">
-                {SCLEROMETER_READING_SLOTS.map((slot) => (
-                  <input
-                    key={slot}
-                    name={`sclR-${slot}`}
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="100"
-                    defaultValue={scl?.readings?.[slot - 1] ?? ""}
-                    className="input px-1 text-center"
-                    aria-label={`Goditja ${slot}`}
-                  />
-                ))}
-              </div>
-              <div className="mt-3 grid gap-4 md:grid-cols-2">
-                <InfoInline label="5. Goditjet / Rebounds" value={scl?.reboundCount !== undefined ? String(scl.reboundCount) : "Ruaj për ta numëruar"} />
-                <InfoInline label="6. Leximi mesatar (R)" value={scl?.averageRebound !== undefined ? String(scl.averageRebound) : "Ruaj për ta llogaritur"} />
+              <div className="mt-4 space-y-4">
+                {Array.from({ length: sclerometerElementCount }, (_, index) => {
+                  const el = scl?.elements?.[index];
+                  return (
+                    <div key={index} className="rounded-lg border border-line p-4">
+                      <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-lab-burgundy">
+                        Elementi {index + 1} / Element {index + 1}
+                      </div>
+                      <div className="grid gap-3 md:grid-cols-5">
+                        <Field label="Elementi / Element"><input name={`sclEl-${index}-element`} defaultValue={el?.element ?? ""} className="input" placeholder="p.sh. K9 AKSI E, OBJEKTI B3/1" /></Field>
+                        <Field label="Kuota / Quote"><input name={`sclEl-${index}-quote`} defaultValue={el?.quote ?? ""} className="input" placeholder="p.sh. +21.94" /></Field>
+                        <Field label="1. Data e betonimit"><input name={`sclEl-${index}-castingDate`} type="date" defaultValue={el?.castingDate ?? ""} className="input" /></Field>
+                        <Field label="3. Koha e maturimit [ditë]"><input name={`sclEl-${index}-concreteAge`} defaultValue={el?.concreteAge ?? ""} className="input" placeholder="p.sh. >28" /></Field>
+                        <Field label="4. Kendi i goditjes (α)">
+                          <select name={`sclEl-${index}-impactAngle`} defaultValue={el?.impactAngle ?? "0°"} className="input">
+                            {SCLEROMETER_ANGLES.map((angle) => (
+                              <option key={angle} value={angle}>{angle}</option>
+                            ))}
+                          </select>
+                        </Field>
+                      </div>
+
+                      <div className="mt-3">
+                        <div className="text-xs font-medium text-muted">
+                          Goditjet e sklerometrit / <span className="italic">Hammer rebound</span> — lini bosh çdo goditje që nuk është kryer.
+                        </div>
+                        <div className="mt-2 grid grid-cols-4 gap-2 sm:grid-cols-8 md:grid-cols-16">
+                          {SCLEROMETER_READING_SLOTS.map((slot) => (
+                            <input
+                              key={slot}
+                              name={`sclEl-${index}-R-${slot}`}
+                              type="number"
+                              step="0.1"
+                              min="0"
+                              max="100"
+                              defaultValue={el?.readings?.[slot - 1] ?? ""}
+                              className="input px-1 text-center"
+                              aria-label={`Elementi ${index + 1} goditja ${slot}`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="mt-3 grid gap-3 md:grid-cols-6">
+                        <Field label="7. Rck [MPa]"><input name={`sclEl-${index}-rck`} type="number" step="0.1" min="0" max="150" defaultValue={el?.cubeStrengthRck ?? ""} className="input" /></Field>
+                        <Field label="8. Gabimi ∆ [MPa]"><input name={`sclEl-${index}-meanError`} type="number" step="0.01" min="0" max="50" defaultValue={el?.meanError ?? ""} className="input" /></Field>
+                        <InfoInline label="5. Goditjet" value={el?.reboundCount !== undefined ? String(el.reboundCount) : "—"} />
+                        <InfoInline label="6. Mesatar (R)" value={el?.averageRebound !== undefined ? String(el.averageRebound) : "—"} />
+                        <InfoInline label="9. Rmax" value={el?.strengthMax !== undefined ? `${el.strengthMax} MPa` : "—"} />
+                        <InfoInline label="10. Rmin" value={el?.strengthMin !== undefined ? `${el.strengthMin} MPa` : "—"} />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
             <div className="p-5">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-ink">Rezistenca / <span className="italic font-normal normal-case">Strength</span></h3>
-              <p className="mt-1 text-xs text-muted">
-                Rck lexohet nga kurba e çekiçit sipas leximit mesatar. Rmax dhe Rmin dalin si Rck ± gabimi mesatar.
-              </p>
-              <div className="mt-3 grid gap-4 md:grid-cols-4">
-                <Field label="7. Rck [MPa]"><input name="cubeStrengthRck" type="number" step="0.1" min="0" max="150" defaultValue={scl?.cubeStrengthRck ?? ""} className="input" /></Field>
-                <Field label="8. Gabimi mesatar ∆ [MPa]"><input name="meanError" type="number" step="0.01" min="0" max="50" defaultValue={scl?.meanError ?? ""} className="input" /></Field>
-                <InfoInline label="9. Rmax = Rck + ∆" value={scl?.strengthMax !== undefined ? `${scl.strengthMax} MPa` : "—"} />
-                <InfoInline label="10. Rmin = Rck − ∆" value={scl?.strengthMin !== undefined ? `${scl.strengthMin} MPa` : "—"} />
-              </div>
-              <div className="mt-4">
-                <Field label="Shënime"><input name="notes" defaultValue={scl?.notes ?? ""} className="input" /></Field>
-              </div>
+              <Field label="Shënime"><input name="notes" defaultValue={scl?.notes ?? ""} className="input" /></Field>
             </div>
 
             <div className="flex justify-end border-t border-line p-5">
@@ -2172,17 +2223,15 @@ function TestDetailView({ test }: { test: LabTest }) {
           </fieldset></form>
           <TestActionsSidebar
             sampleId={sample?.id}
-            ready={Boolean(sclerometer)}
+            ready={Boolean(scl?.elements?.length)}
             activeTest={activeTest}
             reportId={report?.id}
             complete={complete}
             generateReport={generateReport}
             message={
-              scl?.cubeStrengthRck !== undefined
-                ? `Rck ${scl.cubeStrengthRck} MPa nga ${scl.reboundCount ?? 0} goditje.`
-                : scl?.averageRebound !== undefined
-                  ? `Leximi mesatar ${scl.averageRebound}, pa Rck.`
-                  : "Ruani goditjet për të llogaritur leximin mesatar."
+              scl?.elements?.length
+                ? `${scl.elements.length} element të ruajtur — gjenerimi do të nxjerrë ${scl.elements.length} raporte.`
+                : "Shtoni dhe ruani elementet për të gjeneruar raportet."
             }
             canEdit={canEditWorksheet}
             canGenerateReport={canGenerateReport}
