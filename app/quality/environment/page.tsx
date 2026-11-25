@@ -191,7 +191,7 @@ export default function EnvironmentPage() {
               hint={`${ENVIRONMENT_LIMITS.humidity.min}–${ENVIRONMENT_LIMITS.humidity.max} %`}
             >
               <div className="relative">
-                <input type="number" name="humidity" step="1" min="0" max="100" placeholder="45" className="field no-spinner pr-11" />
+                <input type="number" name="humidity" step="0.1" min="0" max="100" placeholder="45.0" className="field no-spinner pr-11" />
                 <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm font-semibold text-muted">%</span>
               </div>
             </Field>
