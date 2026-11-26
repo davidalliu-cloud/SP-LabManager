@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
-import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { PageHeader } from "@/components/ui/page-header";
 import { analysisShareUrl, newAnalysisToken } from "@/lib/analysis-link";
 import { buildClientAnalysis, formatPeriod, monthPeriod } from "@/lib/client-analysis";
@@ -14,6 +14,21 @@ import { formatEuropeanDate } from "@/lib/date-format";
 import { money } from "@/lib/offer-fields";
 import { useLabStore } from "@/lib/lab-store";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+
+/**
+ * As much of a test name as an upright column label can carry.
+ *
+ * "Percaktimi i karakteristikave fiziko-mekanike te produkteve termoizoluese"
+ * is eighty characters. Cut at a word where there is one, so the label ends
+ * on a word rather than mid-syllable; the tooltip has the whole name.
+ */
+function shortTestLabel(label: string) {
+  const text = String(label);
+  if (text.length <= 26) return text;
+  const cut = text.slice(0, 26);
+  const space = cut.lastIndexOf(" ");
+  return `${(space > 12 ? cut.slice(0, space) : cut).trimEnd()}…`;
+}
 
 /**
  * Përmbledhje e punës për klientin — the analysis that goes to a client each
@@ -206,11 +221,6 @@ export default function ClientAnalysisPage() {
 
   const { client } = analysis;
   const nothing = analysis.samplesReceived === 0 && analysis.testsCompleted === 0 && analysis.reportsIssued === 0;
-  const strengthChart = analysis.concrete?.byClass.map((row) => ({
-    name: row.strengthClass,
-    mpa: row.averageStrengthMpa,
-    specimens: row.specimens
-  }));
 
   return (
     <>
@@ -403,23 +413,34 @@ export default function ClientAnalysisPage() {
           />
         </section>
 
-        {/* Two across: landscape has the width, and a client comparing volume
-            against strength should see both without scrolling. */}
+        {/* Two across: landscape has the width, and the volume by test and the
+            month-by-month flow read against each other. */}
         <div className="grid gap-6 lg:grid-cols-2">
         {analysis.byTestType.length ? (
           <section className="summary-chart surface-card p-4">
             <h2 className="text-sm font-semibold text-ink">Testet sipas tipit</h2>
             <p className="mt-0.5 text-xs text-muted">Teste të përfunduara dhe raporte të lëshuara në periudhë.</p>
-            <div className="mt-4" style={{ height: Math.max(220, analysis.byTestType.length * 34) }}>
+            <div className="mt-4 h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={analysis.byTestType} layout="vertical" margin={{ left: 8, right: 24, top: 4, bottom: 4 }}>
+                <BarChart data={analysis.byTestType} margin={{ left: 8, right: 16, top: 4, bottom: 4 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e6e6e6" />
-                  <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
-                  <YAxis type="category" dataKey="label" width={230} tick={{ fontSize: 11 }} />
+                  {/* The names are far longer than any upright column is wide, so
+                      the axis carries as much as fits and the tooltip, which is
+                      given the value untouched, still names the test in full. */}
+                  <XAxis
+                    dataKey="label"
+                    interval={0}
+                    angle={-35}
+                    textAnchor="end"
+                    height={118}
+                    tickFormatter={shortTestLabel}
+                    tick={{ fontSize: 10 }}
+                  />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
                   <Tooltip />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Bar dataKey="tests" name="Teste" fill="#6B1D3F" radius={[0, 3, 3, 0]} />
-                  <Bar dataKey="reports" name="Raporte" fill="#C9A227" radius={[0, 3, 3, 0]} />
+                  <Bar dataKey="tests" name="Teste" fill="#6B1D3F" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="reports" name="Raporte" fill="#C9A227" radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -447,36 +468,51 @@ export default function ClientAnalysisPage() {
           </section>
         ) : null}
 
-        {analysis.concrete && strengthChart ? (
-          <section className="summary-chart surface-card p-4">
-            <h2 className="text-sm font-semibold text-ink">Rezistenca në shtypje</h2>
-            <p className="mt-0.5 text-xs text-muted">
-              {analysis.concrete.specimens} kampione · mesatarja {analysis.concrete.averageStrengthMpa} MPa · minimumi{" "}
-              {analysis.concrete.minStrengthMpa} MPa · maksimumi {analysis.concrete.maxStrengthMpa} MPa
-            </p>
-            <div className="mt-4 h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={strengthChart} margin={{ left: 8, right: 16, top: 4, bottom: 4 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e6e6e6" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                  <YAxis unit=" MPa" tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(value: number, name) => (name === "mpa" ? `${value} MPa` : value)} />
-                  <Bar dataKey="mpa" name="Mesatarja" radius={[3, 3, 0, 0]}>
-                    {strengthChart.map((row) => (
-                      <Cell key={row.name} fill="#6B1D3F" />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+        </div>
+
+        {analysis.bySampleType.length ? (
+          <section className="surface-card overflow-hidden">
+            <header className="flex items-baseline justify-between gap-3 border-b border-line bg-lab-porcelain px-4 py-2.5">
+              <div>
+                <h2 className="text-sm font-semibold text-ink">Sipas tipit të mostrës</h2>
+                <p className="text-xs text-muted">
+                  Mostra të pranuara, teste të përfunduara dhe raporte të lëshuara, sipas materialit.
+                </p>
+              </div>
+              <span className="whitespace-nowrap text-xs text-muted">{analysis.bySampleType.length} tipe</span>
+            </header>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[32rem] text-sm">
+                <thead className="border-b border-line text-left text-xs uppercase tracking-wide text-muted">
+                  <tr>
+                    <th className="px-4 py-2">Tipi i mostrës</th>
+                    <th className="px-4 py-2 text-right">Mostra</th>
+                    <th className="px-4 py-2 text-right">Teste</th>
+                    <th className="px-4 py-2 text-right">Raporte</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {analysis.bySampleType.map((row) => (
+                    <tr key={row.type} className="border-b border-line/70 last:border-0">
+                      <td className="px-4 py-2.5 text-ink">{row.type}</td>
+                      <td className="px-4 py-2.5 text-right tabular-nums">{row.samples}</td>
+                      <td className="px-4 py-2.5 text-right tabular-nums">{row.tests}</td>
+                      <td className="px-4 py-2.5 text-right tabular-nums">{row.reports}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot className="border-t border-line bg-lab-porcelain/60 text-sm font-semibold">
+                  <tr>
+                    <td className="px-4 py-2.5 text-ink">Gjithsej</td>
+                    <td className="px-4 py-2.5 text-right tabular-nums">{analysis.samplesReceived}</td>
+                    <td className="px-4 py-2.5 text-right tabular-nums">{analysis.testsCompleted}</td>
+                    <td className="px-4 py-2.5 text-right tabular-nums">{analysis.reportsIssued}</td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
-            <p className="mt-2 text-xs leading-5 text-muted">
-              Mesataret janë të kampionëve të testuar në këtë periudhë, grupuar sipas klasës së deklaruar. Konformiteti
-              me klasën vlerësohet sipas EN 206 mbi të gjithë derdhjen dhe nuk deklarohet në këtë përmbledhje.
-            </p>
           </section>
         ) : null}
-
-        </div>
 
         {analysis.projects.length ? (
           <section className="surface-card overflow-hidden">
@@ -517,9 +553,14 @@ export default function ClientAnalysisPage() {
                   Çdo set kubikësh: data e betonimit, data e provës, mosha dhe rezultatet.
                 </p>
               </div>
+              {/* The averages used to be stated under a chart of them, which is
+                  gone; they belong beside the results they are drawn from. */}
               <span className="whitespace-nowrap text-xs text-muted">
                 {analysis.concreteRows.reduce((sum, row) => sum + row.cubes.length, 0)} kubikë ·{" "}
                 {analysis.concreteRows.length} sete
+                {analysis.concrete
+                  ? ` · mesatarja ${analysis.concrete.averageStrengthMpa} MPa · ${analysis.concrete.minStrengthMpa}–${analysis.concrete.maxStrengthMpa} MPa`
+                  : ""}
               </span>
             </header>
             <div className="overflow-x-auto">

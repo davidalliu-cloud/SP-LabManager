@@ -297,6 +297,18 @@ export async function buildSummaryPdf(input: SummaryPdfInput): Promise<Blob> {
     "Konformiteti me klasën vlerësohet sipas EN 206 mbi të gjithë derdhjen dhe nuk deklarohet në këtë përmbledhje."
   );
 
+  // --- by sample type ------------------------------------------------------
+  table<ClientAnalysis["bySampleType"][number]>(
+    "Sipas tipit të mostrës",
+    [
+      { header: "Tipi i mostrës", width: 160, value: (row) => row.type },
+      { header: "Mostra", width: 39, align: "right", value: (row) => String(row.samples) },
+      { header: "Teste", width: 39, align: "right", value: (row) => String(row.tests) },
+      { header: "Raporte", width: 39, align: "right", value: (row) => String(row.reports) }
+    ],
+    analysis.bySampleType
+  );
+
   // --- projects ------------------------------------------------------------
   table<ClientAnalysis["projects"][number]>(
     "Objektet",

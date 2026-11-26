@@ -40,6 +40,15 @@ export type ClientAnalysis = {
   averageTurnaroundDays: number | undefined;
   projects: Array<{ id: string; name: string; samples: number; tests: number; reports: number }>;
   byTestType: Array<{ label: string; tests: number; reports: number }>;
+  /**
+   * The same three counts against the material, not the test.
+   *
+   * byTestType answers what was done; this answers what it was done to,
+   * which is the division a client reads first - forty sets of cubes, nine
+   * rebar, two sands. Neither stands in for the other: one material is
+   * tested several ways, and one test type runs on several materials.
+   */
+  bySampleType: Array<{ type: string; samples: number; tests: number; reports: number }>;
   byMonth: Array<{ key: string; label: string; samples: number; tests: number; reports: number }>;
   concrete: ConcreteSummary | undefined;
   concreteRows: ConcreteCubeRow[];
@@ -292,6 +301,31 @@ export function buildClientAnalysis(
     .map(([label, counts]) => ({ label, ...counts }))
     .sort((a, b) => b.tests - a.tests || b.reports - a.reports);
 
+  // --- by sample type -----------------------------------------------------
+  // Neither a test nor a report carries the material - each carries the
+  // sample - so both are counted through it, on the same three dates as
+  // everything else here. A test whose sample has left the register counts
+  // under a dash rather than going missing from the totals.
+  const sampleTypes = new Map<string, { samples: number; tests: number; reports: number }>();
+  const bumpSampleType = (type: string, field: "samples" | "tests" | "reports") => {
+    const row = sampleTypes.get(type) ?? { samples: 0, tests: 0, reports: 0 };
+    row[field] += 1;
+    sampleTypes.set(type, row);
+  };
+  for (const sample of periodSamples) bumpSampleType(sample.sampleType || "—", "samples");
+  for (const test of periodTests) {
+    bumpSampleType(sampleById.get(test.sampleId)?.sampleType || "—", "tests");
+  }
+  for (const report of periodReports) {
+    bumpSampleType(sampleById.get(report.sampleId)?.sampleType || "—", "reports");
+  }
+  const bySampleType = [...sampleTypes.entries()]
+    .map(([type, counts]) => ({ type, ...counts }))
+    .sort(
+      (a, b) =>
+        b.samples - a.samples || b.reports - a.reports || b.tests - a.tests || a.type.localeCompare(b.type, "sq")
+    );
+
   // --- by month -----------------------------------------------------------
   const monthKeys = new Set<string>([
     ...periodSamples.map((row) => monthKey(row.dateReceived)),
@@ -424,6 +458,7 @@ export function buildClientAnalysis(
     averageTurnaroundDays,
     projects,
     byTestType,
+    bySampleType,
     byMonth,
     concrete,
     concreteRows,
